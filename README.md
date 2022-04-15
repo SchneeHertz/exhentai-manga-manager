@@ -1,6 +1,6 @@
 # Doujinshi-tagger
 
-
+![cover.png](https://raw.githubusercontent.com/SchneeHertz/doujinshi-tagger/master/cover.png)  
 管理从E-Hentai下载的短篇漫画
 
 功能:

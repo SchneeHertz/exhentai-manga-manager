@@ -10,6 +10,8 @@ const { nanoid } = require('nanoid')
 const sharp = require('sharp')
 const { spawn } = require('child_process')
 const { createHash } = require('crypto')
+const superagent = require('superagent')
+require('superagent-proxy')(superagent)
 
 const STORE_PATH = app.getPath('userData')
 const TEMP_PATH = path.join(STORE_PATH, 'tmp')
@@ -110,15 +112,20 @@ ipcMain.handle('load-doujinshi-list', async (event, ...arg)=>{
             tempCoverPath,
             filepath,
             id,
-            status: 'non-tag'
+            status: 'non-tag',
+            exist: true
           })
         }
+      } else {
+        foundData.exist = true
       }
       mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
     } catch {
       mainWindow.webContents.send('send-message', `load ${list[i]} failed`)
     }
   }
+  existData = _.filter(existData, {exist: true})
+  _.forIn(existData, b=>b.exist = undefined)
   fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(existData, null, '  '), {encoding: 'utf-8'})
   return existData
 })
@@ -195,6 +202,16 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
 
 ipcMain.handle('open-local-book', async (event, filepath)=>{
   spawn(setting.imageExplorer, [filepath])
+})
+
+ipcMain.handle('get-ex-url', async (event, {hash, cookie})=>{
+  return await superagent
+  .get(`https://exhentai.org/?f_shash=${hash}&fs_exp=on`)
+  .set('Cookie', cookie)
+  .proxy(setting.proxy)
+  .then(res=>{
+    return res.text
+  })
 })
 
 ipcMain.handle('get-cover-hash', async (event, filepath)=>{

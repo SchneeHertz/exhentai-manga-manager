@@ -22,7 +22,7 @@
         v-model:page-size="setting.pageSize"
         :page-sizes="[10, 12, 16, 24, 60, 600, 6000]"
         :small="true"
-        layout="sizes, prev, pager, next"
+        layout="sizes, prev, pager, next, total"
         :total="displayBookList.length"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
@@ -40,8 +40,11 @@
           <el-row class="book-detail-function"><img class="book-cover" :src="bookDetail.coverPath" /></el-row>
           <el-row class="book-detail-function">
             <el-button type="success" plain @click="openLocalBook">阅读</el-button>
-            <el-button type="primary" plain @click="getBookInfo(this.bookDetail)">获取元数据</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
+          </el-row>
+          <el-row class="book-detail-function">
+            <el-button type="primary" plain @click="getBookInfo(this.bookDetail, 'e-hentai')">获取元数据</el-button>
+            <el-button type="primary" plain @click="getBookInfo(this.bookDetail, 'exhentai')">获取EX元数据</el-button>
           </el-row>
         </el-col>
         <el-col :span="14">
@@ -82,13 +85,6 @@
       <el-row :gutter="20">
         <el-col :span="24">
           <div class="setting-line">
-            <el-input v-model="setting.proxy" @change="saveSetting">
-              <template #prepend><span class="setting-label">代理服务器</span></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
             <el-input v-model="setting.library">
               <template #prepend><span class="setting-label">库文件夹</span></template>
               <template #append><el-button @click="selectLibraryPath">选择</el-button></template>
@@ -103,6 +99,34 @@
             </el-input>
           </div>
         </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
+            <el-input v-model="setting.igneous" @change="saveSetting">
+              <template #prepend><span class="setting-label">igneous</span></template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
+            <el-input v-model="setting.ipb_pass_hash" @change="saveSetting">
+              <template #prepend><span class="setting-label">ipb_pass_hash</span></template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
+            <el-input v-model="setting.ipb_member_id" @change="saveSetting">
+              <template #prepend><span class="setting-label">ipb_member_id</span></template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
+            <el-input v-model="setting.proxy" @change="saveSetting">
+              <template #prepend><span class="setting-label">代理服务器</span></template>
+            </el-input>
+          </div>
+        </el-col>
         <el-col :span="5">
           <div class="setting-line">
             <el-button class="function-button" type="danger" @click="forceGeneBookList">强制重建漫画库</el-button>
@@ -110,7 +134,12 @@
         </el-col>
         <el-col :span="5">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" @click="getBookListMetadata">批量获取元数据</el-button>
+            <el-button class="function-button" type="primary" @click="getBookListMetadata('e-hentai')">批量获取元数据</el-button>
+          </div>
+        </el-col>
+        <el-col :span="5">
+          <div class="setting-line">
+            <el-button class="function-button" type="primary" @click="getBookListMetadata('exhentai')">批量获取EX元数据</el-button>
           </div>
         </el-col>
       </el-row>
@@ -162,6 +191,7 @@ export default {
       ElMessage[type](msg)
     },
     chunkList () {
+      this.currentPage = 1
       this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[0]
     },
     openBookDetail (book) {
@@ -171,19 +201,19 @@ export default {
     openLocalBook () {
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
     },
-    getBookInfo (book) {
-      if (book.url) {
-        try {
-          let match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
-          axios.post('https://api.e-hentai.org/api.php', {
-            "method": "gdata",
-            "gidlist": [
-                [+match[1], match[2]]
-            ],
-            "namespace": 1
-          })
-          .then(res=>{
-            _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'filecount', 'rating']))
+    getBookInfo (book, server = 'e-hentai') {
+      let getTag = (book, url) => {
+        let match = /(\d+)\/([a-z0-9]+)/.exec(url)
+        axios.post('https://api.e-hentai.org/api.php', {
+          "method": "gdata",
+          "gidlist": [
+              [+match[1], match[2]]
+          ],
+          "namespace": 1
+        })
+        .then(res=>{
+          try {
+            _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'filecount', 'rating']), {url: url})
             book.rating = +book.rating
             let tagObject = _.groupBy(book.tags, tag=>{
               let result = /(.+):/.exec(tag)
@@ -206,69 +236,76 @@ export default {
             book.tags = tagObject
             book.status = 'tagged'
             this.saveBookList()
-          })
-        } catch {
-          book.status = 'tag-failed'
-          this.printMessage('error', 'Get tag failed')
-        }
+          } catch {
+            if (_.includes(res.data, 'Your IP address has been')) {
+              book.status = 'non-tag'
+              this.printMessage('error', 'Your IP address has been temporarily banned')
+              this.saveBookList()
+            } else {
+              book.status = 'tag-failed'
+              this.printMessage('error', 'Get tag failed')
+              this.saveBookList()
+            }
+          }
+        })
+      }
+      if (book.url) {
+        getTag(book, book.url)
       } else {
         ipcRenderer['get-cover-hash'](book.tempCoverPath)
         .then(hash=>{
-          axios.get('https://e-hentai.org/?f_shash=' + hash.toUpperCase())
-          .then(res=>{
-            let bookUrl
-            try {
-              bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-              let match = /(\d+)\/([a-z0-9]+)/.exec(bookUrl)
-              axios.post('https://api.e-hentai.org/api.php', {
-                "method": "gdata",
-                "gidlist": [
-                    [+match[1], match[2]]
-                ],
-                "namespace": 1
-              })
-              .then(res=>{
-                _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'filecount', 'rating']), {url: bookUrl})
-                book.rating = +book.rating
-                let tagObject = _.groupBy(book.tags, tag=>{
-                  let result = /(.+):/.exec(tag)
-                  if (result) {
-                    return /(.+):/.exec(tag)[1]
-                  } else {
-                    return 'misc'
-                  }
-                })
-                _.forIn(tagObject, (arr, key)=>{
-                  tagObject[key] = arr.map(tag=>{
-                    let result = /:(.+)$/.exec(tag)
-                    if (result) {
-                      return /:(.+)$/.exec(tag)[1]
-                    } else {
-                      return tag
-                    }
-                  })
-                })
-                book.tags = tagObject
-                book.status = 'tagged'
-                this.saveBookList()
-              })
-            } catch {
-              book.status = 'tag-failed'
-              this.printMessage('error', 'Get tag failed')
-            }
-          })
+          if (server == 'e-hentai') {
+            axios.get('https://e-hentai.org/?f_shash=' + hash.toUpperCase() + '&fs_exp=on')
+            .then(res=>{
+              try {
+                let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
+                getTag(book, bookUrl)
+              } catch {
+                if (res.data.includes('Your IP address has been')) {
+                  book.status = 'non-tag'
+                  this.printMessage('error', 'Your IP address has been temporarily banned')
+                  this.saveBookList()
+                } else {
+                  book.status = 'tag-failed'
+                  this.printMessage('error', 'Get tag failed')
+                  this.saveBookList()
+                }
+              }
+            })
+          } else {
+            ipcRenderer['get-ex-url']({
+              hash: hash.toUpperCase(),
+              cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+            })
+            .then(res=>{
+              try {
+                let bookUrl = new DOMParser().parseFromString(res, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
+                getTag(book, bookUrl)
+              } catch {
+                if (res.includes('Your IP address has been')) {
+                  book.status = 'non-tag'
+                  this.printMessage('error', 'Your IP address has been temporarily banned')
+                  this.saveBookList()
+                } else {
+                  book.status = 'tag-failed'
+                  this.printMessage('error', 'Get tag failed')
+                  this.saveBookList()
+                }
+              }
+            })
+          }
         })
       }
     },
-    getBookListMetadata () {
+    getBookListMetadata (server) {
       this.dialogVisibleSetting = false
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let load = async () => {
         for (let i = 0; i < this.doujinshiList.length; i++) {
-          if (this.doujinshiList[i].status != 'tagged') {
-            this.getBookInfo(this.doujinshiList[i])
+          if (this.doujinshiList[i].status == 'non-tag') {
+            this.getBookInfo(this.doujinshiList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.doujinshiList.length}`)
-            await timer(3000)
+            await timer(1000)
           }
         }
       }
@@ -283,7 +320,7 @@ export default {
         let bookString = JSON.stringify(_.pick(book, ['title', 'tags', 'status'])).toLowerCase()
         return _.every(searchStringArray, (str)=>bookString.includes(str.replace(/["']/g, '').toLowerCase()))
       })
-      this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[0]
+      this.chunkList()
     },
     searchFromTag (tag) {
       this.dialogVisibleBookDetail = false
@@ -321,8 +358,7 @@ export default {
         this.printMessage('success', '强制重建漫画库完成')
       })
     },
-    handleSizeChange (pageSize) {
-      this.currentPage = 1
+    handleSizeChange () {
       this.chunkList()
       this.saveSetting()
     },
@@ -357,6 +393,8 @@ export default {
 <style lang="stylus">
 :root
   --el-text-color-primary: #FFFFFF
+.el-pagination__total
+  color: #FFFFFF
 body, .el-dialog, .el-descriptions__body, .el-pager li, .el-pagination button:disabled, .el-pagination .btn-next, .el-pagination .btn-prev
   background-color: #515460
 body

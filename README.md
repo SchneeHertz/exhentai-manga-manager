@@ -1,6 +1,17 @@
 # Doujinshi-tagger
 
-管理短篇漫画
+
+管理从E-Hentai下载的短篇漫画
+
+功能:
+- 从一个文件夹建立漫画库
+- 从漫画的压缩包中提取封面，然后批量从E-Hentai获取漫画的标签
+- 编辑标签
+- 基于标签，漫画名的搜索
+- 关联外部图片浏览器
+
+
+开发过程:
 - 陈列漫画
   - vite vue element-plus
   - electron electron
@@ -23,6 +34,3 @@
 ## Recommended IDE Setup
 
 - [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar)
-
-- Electron
-- Electron-builder

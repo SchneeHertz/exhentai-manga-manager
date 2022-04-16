@@ -10,7 +10,7 @@
     </el-row>
     <el-row :gutter="20" class="book-card-area">
       <div class="doujinshi-card" v-for="book in chunkDisplayBookList" :key="book.id">
-        <p class="book-title">{{book.title}}</p>
+        <p class="book-title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
         <el-tag :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'">{{book.status}}</el-tag>
         <el-rate v-model="book.rating" />
@@ -34,7 +34,7 @@
       :modal="false"
     >
       <template #title>
-        <p class="detail-book-title">{{bookDetail.title}}</p>
+        <p class="detail-book-title">{{bookDetail.title_jpn ? bookDetail.title_jpn : bookDetail.title}}</p>
       </template>
       <el-row :gutter="20" class="book-detail-card">
         <el-col :span="10">
@@ -280,7 +280,7 @@ export default {
         })
         .then(res=>{
           try {
-            _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'filecount', 'rating']), {url: url})
+            _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating']), {url: url})
             book.rating = +book.rating
             let tagObject = _.groupBy(book.tags, tag=>{
               let result = /(.+):/.exec(tag)
@@ -389,7 +389,7 @@ export default {
     searchBook () {
       let searchStringArray = this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/)
       this.displayBookList = _.filter(this.doujinshiList, (book)=>{
-        let bookString = JSON.stringify(_.pick(book, ['title', 'tags', 'status'])).toLowerCase()
+        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status'])).toLowerCase()
         return _.every(searchStringArray, (str)=>bookString.includes(str.replace(/["']/g, '').toLowerCase()))
       })
       this.chunkList()

@@ -282,7 +282,7 @@ ipcMain.handle('export-database', async (event, arg)=>{
       if (!book.hash) {
         book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
       }
-      return _.pick(book, ['hash', 'tags', 'title', 'filecount', 'rating', 'url'])
+      return _.pick(book, ['hash', 'tags', 'title', 'title_jpn', 'filecount', 'rating', 'url'])
     } catch {
       return {}
     }

@@ -10,7 +10,7 @@
     </el-row>
     <el-row :gutter="20" class="book-card-area">
       <div class="doujinshi-card" v-for="book in chunkDisplayBookList" :key="book.id">
-        <p class="book-title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+        <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
         <el-tag :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'">{{book.status}}</el-tag>
         <el-rate v-model="book.rating" />
@@ -34,7 +34,7 @@
       :modal="false"
     >
       <template #title>
-        <p class="detail-book-title">{{bookDetail.title_jpn ? bookDetail.title_jpn : bookDetail.title}}</p>
+        <p class="detail-book-title"><span class="url-link" @click="openUrl(bookDetail.url)">{{bookDetail.title_jpn ? bookDetail.title_jpn : bookDetail.title}}</span></p>
       </template>
       <el-row :gutter="20" class="book-detail-card">
         <el-col :span="10">
@@ -437,6 +437,9 @@ export default {
     handleCurrentChange (currentPage) {
       this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[currentPage - 1]
     },
+    openUrl (url) {
+      ipcRenderer['open-url'](url)
+    },
     editTags () {
       this.editingTag = !this.editingTag
       if (this.editingTag) {
@@ -512,6 +515,8 @@ body
   margin: 0 24px
 .book-cover
   border-radius: 4px
+.url-link
+  cursor: pointer
 .book-detail-card
   .el-descriptions__label
     display: inline-block

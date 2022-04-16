@@ -301,6 +301,10 @@ ipcMain.handle('load-import-database', async (event, arg)=>{
   }
 })
 
+ipcMain.handle('open-url', async(event, url)=>{
+  shell.openExternal(url)
+})
+
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

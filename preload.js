@@ -14,5 +14,6 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'send-message': (func)=>ipcRenderer.on('send-message', func),
   'get-ex-url': (obj)=>ipcRenderer.invoke('get-ex-url', obj),
   'export-database': ()=>ipcRenderer.invoke('export-database'),
-  'load-import-database': ()=>ipcRenderer.invoke('load-import-database')
+  'load-import-database': ()=>ipcRenderer.invoke('load-import-database'),
+  'open-url': (url)=>ipcRenderer.invoke('open-url', url)
 })

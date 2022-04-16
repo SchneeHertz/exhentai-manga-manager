@@ -31,6 +31,7 @@
     <el-dialog
       v-model="dialogVisibleBookDetail"
       width="50%"
+      :modal="false"
     >
       <template #title>
         <p class="detail-book-title">{{bookDetail.title}}</p>
@@ -80,6 +81,7 @@
     <el-dialog
       v-model="dialogVisibleSetting"
       width="50%"
+      :modal="false"
     >
       <template #title><p class="detail-book-title">设置</p></template>
       <el-row :gutter="20">
@@ -129,17 +131,35 @@
         </el-col>
         <el-col :span="5">
           <div class="setting-line">
-            <el-button class="function-button" type="danger" @click="forceGeneBookList">强制重建漫画库</el-button>
+            <el-popover
+              placement="top-start"
+              trigger="hover"
+              content="此操作将重建漫画库并清空元数据"
+            >
+              <template #reference>
+                <el-button class="function-button" type="danger" plain @click="forceGeneBookList">强制重建漫画库</el-button>
+              </template>
+            </el-popover>
           </div>
         </el-col>
         <el-col :span="5">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" @click="getBookListMetadata('e-hentai')">批量获取元数据</el-button>
+            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">批量获取元数据</el-button>
           </div>
         </el-col>
         <el-col :span="5">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" @click="getBookListMetadata('exhentai')">批量获取EX元数据</el-button>
+            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">批量获取EX元数据</el-button>
+          </div>
+        </el-col>
+        <el-col :span="4">
+          <div class="setting-line">
+            <el-button class="function-button" type="primary" plain @click="exportDatabase">导出元数据</el-button>
+          </div>
+        </el-col>
+        <el-col :span="4">
+          <div class="setting-line">
+            <el-button class="function-button" type="primary" plain @click="importDatabase">导入元数据</el-button>
           </div>
         </el-col>
       </el-row>
@@ -202,8 +222,44 @@ export default {
     openLocalBook () {
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
     },
+    exportDatabase () {
+      ipcRenderer['export-database']()
+      .then(database=>{
+        let dataStr = JSON.stringify(database, null, '  ')
+        let dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+        let exportFileDefaultName = 'bookHashMetadata.json'
+        let linkElement = document.createElement('a')
+        linkElement.setAttribute('href', dataUri)
+        linkElement.setAttribute('download', exportFileDefaultName)
+        linkElement.click()
+      })
+    },
+    importDatabase () {
+      ipcRenderer['load-import-database']()
+      .then(database=>{
+        _.forIn(this.doujinshiList, (book, index)=>{
+          ipcRenderer['get-cover-hash'](book.tempCoverPath)
+          .then(hash=>{
+            let findData = _.find(database, {hash})
+            if (findData) {
+              _.assign(book, findData)
+              if (book.url){
+                book.status = 'tagged'
+              } else {
+                book.status = 'tag-failed'
+              }
+              this.saveBookList()
+            }
+          })
+          if (index == this.doujinshiList.length - 1) {
+            this.dialogVisibleSetting = false
+            this.printMessage('success', '导入完成')
+          }
+        })
+      })
+    },
     getBookInfo (book, server = 'e-hentai') {
-      let getTag = (book, url) => {
+      let getTag = (book, url, hash) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
         axios.post('https://api.e-hentai.org/api.php', {
           "method": "gdata",
@@ -236,6 +292,7 @@ export default {
             })
             book.tags = tagObject
             book.status = 'tagged'
+            book.hash = hash
             this.saveBookList()
           } catch {
             if (_.includes(res.data, 'Your IP address has been')) {
@@ -261,7 +318,7 @@ export default {
             .then(res=>{
               try {
                 let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-                getTag(book, bookUrl)
+                getTag(book, bookUrl, hash)
               } catch {
                 if (res.data.includes('Your IP address has been')) {
                   book.status = 'non-tag'
@@ -283,7 +340,7 @@ export default {
             .then(res=>{
               try {
                 let bookUrl = new DOMParser().parseFromString(res, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-                getTag(book, bookUrl)
+                getTag(book, bookUrl, hash)
               } catch {
                 if (res.includes('Your IP address has been')) {
                   book.status = 'non-tag'

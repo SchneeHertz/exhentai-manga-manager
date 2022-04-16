@@ -270,6 +270,32 @@ ipcMain.handle('save-setting', async (event, receiveSetting)=>{
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 })
 
+ipcMain.handle('export-database', async (event, arg)=>{
+  let bookList = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
+  let database = bookList.map(book=>{
+    try {
+      if (!book.hash) {
+        book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
+      }
+      return _.pick(book, ['hash', 'tags', 'title', 'filecount', 'rating', 'url'])
+    } catch {
+      return {}
+    }
+  })
+  return database
+})
+
+ipcMain.handle('load-import-database', async (event, arg)=>{
+  let result = await dialog.showOpenDialog({
+    properties: ['openFile']
+  })
+  if (!result.canceled) {
+    return JSON.parse(fs.readFileSync(result.filePaths[0], {encoding: 'utf-8'}))
+  } else {
+    return []
+  }
+})
+
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

@@ -11,5 +11,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'select-file': ()=>ipcRenderer.invoke('select-file'),
   'force-gene-book-list': ()=>ipcRenderer.invoke('force-gene-book-list'),
   'send-message': (func)=>ipcRenderer.on('send-message', func),
-  'get-ex-url': (obj)=>ipcRenderer.invoke('get-ex-url', obj)
+  'get-ex-url': (obj)=>ipcRenderer.invoke('get-ex-url', obj),
+  'export-database': ()=>ipcRenderer.invoke('export-database'),
+  'load-import-database': ()=>ipcRenderer.invoke('load-import-database')
 })

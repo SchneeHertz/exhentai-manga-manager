@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, session, dialog, shell } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const process = require('process')
@@ -205,6 +205,11 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
 ipcMain.handle('open-local-book', async (event, filepath)=>{
   spawn(setting.imageExplorer, [filepath])
 })
+
+ipcMain.handle('delete-local-book', async (event, filepath)=>{
+  return shell.trashItem(filepath)
+})
+
 
 ipcMain.handle('get-ex-url', async (event, {hash, cookie})=>{
   if (setting.proxy) {

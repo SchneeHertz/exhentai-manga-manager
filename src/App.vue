@@ -4,7 +4,7 @@
       <el-col :span="8" :offset="5">
         <el-input v-model="searchString" @keyup.enter="searchBook" clearable></el-input>
       </el-col>
-      <el-col :span="2"><el-button type="primary" plain class="function-button" @click="searchBook">搜索</el-button></el-col>
+      <el-col :span="2"><el-button type="primary" class="function-button" @click="searchBook">搜索</el-button></el-col>
       <el-col :span="2"><el-button type="primary" plain class="function-button" @click="shuffleBook">打乱</el-button></el-col>
       <el-col :span="2"><el-button type="warning" plain class="function-button" @click="dialogVisibleSetting = true">设置</el-button></el-col>
     </el-row>
@@ -40,7 +40,8 @@
         <el-col :span="10">
           <el-row class="book-detail-function"><img class="book-cover" :src="bookDetail.coverPath" /></el-row>
           <el-row class="book-detail-function">
-            <el-button type="success" plain @click="openLocalBook">阅读</el-button>
+            <el-button type="success" @click="openLocalBook">阅读</el-button>
+            <el-button type="danger" plain @click="deleteLocalBook">删除</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
@@ -221,6 +222,15 @@ export default {
     },
     openLocalBook () {
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
+    },
+    deleteLocalBook () {
+      ipcRenderer['delete-local-book'](this.bookDetail.filepath)
+      .then(()=>{
+        _.remove(this.doujinshiList, {filepath: this.bookDetail.filepath})
+        _.remove(this.displayBookList, {filepath: this.bookDetail.filepath})
+        this.dialogVisibleBookDetail = false
+        this.chunkList()
+      })
     },
     exportDatabase () {
       ipcRenderer['export-database']()
@@ -442,7 +452,7 @@ export default {
           })
         })
         _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.uniq(tagArray)
+          tempTagGroup[tagCat] = _.sortBy(_.uniq(tagArray))
         })
         this.tagGroup = tempTagGroup
       } else {

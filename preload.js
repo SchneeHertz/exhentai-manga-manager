@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('ipcRenderer', {
   'load-doujinshi-list': ()=>ipcRenderer.invoke('load-doujinshi-list'),
   'open-local-book': (filepath)=>ipcRenderer.invoke('open-local-book', filepath),
+  'delete-local-book': (filepath)=>ipcRenderer.invoke('delete-local-book', filepath),
   'get-cover-hash': (filepath)=>ipcRenderer.invoke('get-cover-hash', filepath),
   'save-book-list': (list)=>ipcRenderer.invoke('save-book-list', list),
   'load-setting': ()=>ipcRenderer.invoke('load-setting'),

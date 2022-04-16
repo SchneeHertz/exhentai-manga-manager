@@ -444,10 +444,12 @@ export default {
         let tempTagGroup = {}
         _.forIn(this.doujinshiList.map(b=>b.tags), (tagObject)=>{
           _.forIn(tagObject, (tagArray, tagCat)=>{
-            if (_.has(tempTagGroup, tagCat)) {
-              tempTagGroup[tagCat] = [...tempTagGroup[tagCat], ...tagArray]
-            } else {
-              tempTagGroup[tagCat] = tagArray
+            if (_.isArray(tagArray)) {
+              if (_.has(tempTagGroup, tagCat)) {
+                tempTagGroup[tagCat] = [...tempTagGroup[tagCat], ...tagArray]
+              } else {
+                tempTagGroup[tagCat] = tagArray
+              }
             }
           })
         })
@@ -456,6 +458,11 @@ export default {
         })
         this.tagGroup = tempTagGroup
       } else {
+        _.forIn(this.bookDetail.tags, (tagarr, tagCat)=>{
+          if (_.isEmpty(tagarr)) {
+            this.bookDetail.tags[tagCat] = undefined
+          }
+        })
         this.saveBookList()
       }
     }

@@ -164,7 +164,8 @@ export default {
       currentPage: 1,
       chunkDisplayBookList: [],
       editingTag: false,
-      tagGroup: {}
+      tagGroup: {},
+      serviceAvaible: true
     }
   },
   computed: {
@@ -241,6 +242,7 @@ export default {
               book.status = 'non-tag'
               this.printMessage('error', 'Your IP address has been temporarily banned')
               this.saveBookList()
+              this.serviceAvaible = false
             } else {
               book.status = 'tag-failed'
               this.printMessage('error', 'Get tag failed')
@@ -265,6 +267,7 @@ export default {
                   book.status = 'non-tag'
                   this.printMessage('error', 'Your IP address has been temporarily banned')
                   this.saveBookList()
+                  this.serviceAvaible = false
                 } else {
                   book.status = 'tag-failed'
                   this.printMessage('error', 'Get tag failed')
@@ -286,6 +289,7 @@ export default {
                   book.status = 'non-tag'
                   this.printMessage('error', 'Your IP address has been temporarily banned')
                   this.saveBookList()
+                  this.serviceAvaible = false
                 } else {
                   book.status = 'tag-failed'
                   this.printMessage('error', 'Get tag failed')
@@ -299,10 +303,11 @@ export default {
     },
     getBookListMetadata (server) {
       this.dialogVisibleSetting = false
+      this.serviceAvaible = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let load = async () => {
         for (let i = 0; i < this.doujinshiList.length; i++) {
-          if (this.doujinshiList[i].status == 'non-tag') {
+          if (this.doujinshiList[i].status == 'non-tag' && this.serviceAvaible) {
             this.getBookInfo(this.doujinshiList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.doujinshiList.length}`)
             await timer(1000)

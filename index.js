@@ -32,7 +32,7 @@ try {
   setting = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'setting.json'), {encoding: 'utf-8'}))
 } catch {
   setting = {
-    proxy: 'http://127.0.0.1:1081',
+    proxy: undefined,
     library: app.getPath('downloads'),
     imageExplorer: 'C:\\Windows\\explorer.exe',
     pageSize: 10
@@ -80,10 +80,12 @@ app.on('activate', () => {
 
 app.on('ready', async () => {
   // await session.defaultSession.loadExtension(path.resolve(__dirname,'./6.0.12_0'))
-  await session.defaultSession.setProxy({
-    mode: 'fixed_servers',
-    proxyRules: setting.proxy
-  })
+  if (setting.proxy) {
+    await session.defaultSession.setProxy({
+      mode: 'fixed_servers',
+      proxyRules: setting.proxy
+    })
+  }
 })
 
 
@@ -205,13 +207,22 @@ ipcMain.handle('open-local-book', async (event, filepath)=>{
 })
 
 ipcMain.handle('get-ex-url', async (event, {hash, cookie})=>{
-  return await superagent
-  .get(`https://exhentai.org/?f_shash=${hash}&fs_exp=on`)
-  .set('Cookie', cookie)
-  .proxy(setting.proxy)
-  .then(res=>{
-    return res.text
-  })
+  if (setting.proxy) {
+    return await superagent
+    .get(`https://exhentai.org/?f_shash=${hash}&fs_exp=on`)
+    .set('Cookie', cookie)
+    .proxy(setting.proxy)
+    .then(res=>{
+      return res.text
+    })
+  } else {
+    return await superagent
+    .get(`https://exhentai.org/?f_shash=${hash}&fs_exp=on`)
+    .set('Cookie', cookie)
+    .then(res=>{
+      return res.text
+    })
+  }
 })
 
 ipcMain.handle('get-cover-hash', async (event, filepath)=>{
@@ -250,10 +261,12 @@ ipcMain.handle('load-setting', async (event, arg)=>{
 
 ipcMain.handle('save-setting', async (event, receiveSetting)=>{
   setting = receiveSetting
-  await session.defaultSession.setProxy({
-    mode: 'fixed_servers',
-    proxyRules: setting.proxy
-  })
+  if (setting.proxy) {
+    await session.defaultSession.setProxy({
+      mode: 'fixed_servers',
+      proxyRules: setting.proxy
+    })
+  }
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 })
 

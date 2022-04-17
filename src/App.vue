@@ -13,7 +13,7 @@
         <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
         <el-tag :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'">{{book.status}}</el-tag>
-        <el-rate v-model="book.rating" />
+        <el-rate v-model="book.rating" allow-half/>
       </div>
     </el-row>
     <el-row class="pagination-bar">
@@ -30,7 +30,7 @@
     </el-row>
     <el-dialog
       v-model="dialogVisibleBookDetail"
-      width="50%"
+      width="60%"
       :modal="false"
     >
       <template #title>
@@ -38,7 +38,9 @@
       </template>
       <el-row :gutter="20" class="book-detail-card">
         <el-col :span="10">
-          <el-row class="book-detail-function"><img class="book-cover" :src="bookDetail.coverPath" /></el-row>
+          <el-row class="book-detail-function">
+            <img class="book-cover" :src="bookDetail.coverPath" />
+          </el-row>
           <el-row class="book-detail-function">
             <el-button type="success" @click="openLocalBook">阅读</el-button>
             <el-button type="danger" plain @click="deleteLocalBook">删除</el-button>
@@ -59,9 +61,7 @@
               </el-select>
             </div>
             <div class="edit-line">
-              <el-input v-model="bookDetail.url">
-                <template #prepend>漫画网址</template>
-              </el-input>
+              <el-input v-model="bookDetail.url" placeholder="eh/ex地址"></el-input>
             </div>
             <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
               <el-select v-model="bookDetail.tags[key]" :placeholder="key" filterable allow-create multiple>
@@ -72,7 +72,7 @@
           <div v-else>
             <el-descriptions :column="1">
               <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
-                <el-tag class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag)">{{tag}}</el-tag>
+                <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag)">{{tag}}</el-tag>
               </el-descriptions-item>
             </el-descriptions>
           </div>
@@ -81,11 +81,11 @@
     </el-dialog>
     <el-dialog
       v-model="dialogVisibleSetting"
-      width="50%"
+      width="40%"
       :modal="false"
     >
       <template #title><p class="detail-book-title">设置</p></template>
-      <el-row :gutter="20">
+      <el-row :gutter="8">
         <el-col :span="24">
           <div class="setting-line">
             <el-input v-model="setting.library">
@@ -148,7 +148,7 @@
             <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">批量获取元数据</el-button>
           </div>
         </el-col>
-        <el-col :span="5">
+        <el-col :span="6">
           <div class="setting-line">
             <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">批量获取EX元数据</el-button>
           </div>
@@ -487,12 +487,21 @@ body
   text-align: center
   color: #2c3e50
   margin-top: 20px
+
+
 .function-button
   width: 100%
+
 .book-card-area
-  height: calc(100vh - 90px)
+  height: calc(100vh - 98px)
   overflow-x: auto
   justify-content: center
+  margin-top: 8px;
+.el-rate
+  display: inline-block
+  height: 18px
+  margin: 0 10px
+
 .pagination-bar
   margin: 4px 0
   justify-content: center
@@ -500,27 +509,33 @@ body
 .doujinshi-card
   width: 260px
   height: 470px
-  border: solid 1px gray
-  border-radius: 4px
+  border: solid 1px #bbbbbb
+  border-radius: 8px
   margin: 10px 20px
 .book-title
   color: white
   height: 60px
   overflow-y: hidden
   margin: 8px 0px
+
+.book-cover
+  border-radius: 8px
+
+.el-dialog
+  border: solid 4px #f5f7fa
+  border-radius: 16px
+.el-dialog__body
+  padding: 5px 20px 16px
+
+
 .detail-book-title
   color: white
   height: 44px
   overflow-y: hidden
   margin: 0 24px
-.book-cover
-  border-radius: 4px
 .url-link
   cursor: pointer
 .book-detail-card
-  .el-descriptions__label
-    display: inline-block
-    width: 64px
   .book-detail-function
     justify-content: center
     margin-bottom: 10px
@@ -528,17 +543,18 @@ body
     margin: 4px 0
     .el-select
       width: 100%
+  .el-descriptions__label
+    display: inline-block
+    width: 64px
+  .el-tag.el-tag--info
+    --el-tag-text-color: var(--el-text-color-regular)
 .book-tag
   margin: 4px 6px
   cursor: pointer
 
 .setting-line
   margin: 6px 0
+  .el-input-group__prepend
+    width: 100px
 
-.el-dialog__body
-  padding: 5px 20px 16px
-.el-rate
-  display: inline-block
-  height: 18px
-  margin: 0 10px
 </style>

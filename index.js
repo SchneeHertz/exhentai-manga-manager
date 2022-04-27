@@ -115,13 +115,15 @@ ipcMain.handle('load-doujinshi-list', async (event, ...arg)=>{
             filepath,
             id,
             status: 'non-tag',
-            exist: true
+            exist: true,
+            date: Date.now()
           })
+          mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
         }
       } else {
         foundData.exist = true
       }
-      mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+      if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
     } catch {
       mainWindow.webContents.send('send-message', `load ${list[i]} failed`)
     }
@@ -136,6 +138,7 @@ let geneCover = async (filepath, id) => {
   let zip = new AdmZip(filepath)
   let zipFileList = zip.getEntries()
   let tempCoverPath
+  let coverPath
   if (zipFileList[0].isDirectory) {
     zip.extractEntryTo(zipFileList[0], TEMP_PATH)
     let subFileList = await fs.promises.readdir(path.join(TEMP_PATH, zipFileList[0].entryName))
@@ -143,14 +146,15 @@ let geneCover = async (filepath, id) => {
     tempCoverPath = path.join(TEMP_PATH, id + path.extname(subFileList[0]))
     await fs.promises.rename(path.join(TEMP_PATH, zipFileList[0].entryName, subFileList[0]), tempCoverPath)
     await fs.promises.rm(path.join(TEMP_PATH, zipFileList[0].entryName), {recursive: true})
+    coverPath = path.join(COVER_PATH, id + path.extname(subFileList[0]))
   } else {
     zipFileList = zipFileList.sort((a,b)=>a.entryName.localeCompare(b.entryName, undefined, {numeric: true, sensitivity: 'base'}))
     zip.extractEntryTo(zipFileList[0], TEMP_PATH)
     tempCoverPath = path.join(TEMP_PATH, id + path.extname(zipFileList[0].entryName))
     await fs.promises.rename(path.join(TEMP_PATH, zipFileList[0].entryName), tempCoverPath)
+    coverPath = path.join(COVER_PATH, id + path.extname(zipFileList[0].entryName))
   }
 
-  let coverPath = path.join(COVER_PATH, id + path.extname(zipFileList[0].entryName))
   let imageResizeResult = await sharp(tempCoverPath)
   .resize(250, 360, {
     fit: 'contain'
@@ -189,7 +193,8 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
           tempCoverPath,
           filepath,
           id,
-          status: 'non-tag'
+          status: 'non-tag',
+          date: Date.now()
         })
       }
       mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)

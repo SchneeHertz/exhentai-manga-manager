@@ -202,12 +202,29 @@ export default {
     })
     ipcRenderer['load-doujinshi-list']()
     .then(res=>{
-      this.doujinshiList = res
+      this.doujinshiList = res.sort(this.sortList)
       this.displayBookList = this.doujinshiList
       this.chunkList()
     })
   },
   methods: {
+    sortList(a, b) {
+      if (a['date'] && b['date']) {
+        if (a['date'] > b['date']) {
+          return -1
+        } else if (a['date'] < b['date']) {
+          return 1
+        } else {
+          return 0
+        }
+      } else if (a['date']) {
+        return -1
+      } else if (b['date']) {
+        return 1
+      } else {
+        return 0
+      }
+    },
     printMessage(type, msg) {
       ElMessage.closeAll()
       ElMessage[type](msg)
@@ -282,6 +299,8 @@ export default {
           try {
             _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating']), {url: url})
             book.rating = +book.rating
+            book.title = _.unescape(book.title)
+            book.title_jpn = _.unescape(book.title_jpn)
             let tagObject = _.groupBy(book.tags, tag=>{
               let result = /(.+):/.exec(tag)
               if (result) {
@@ -387,7 +406,7 @@ export default {
       ipcRenderer['save-book-list'](_.cloneDeep(this.doujinshiList))
     },
     searchBook () {
-      let searchStringArray = this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/)
+      let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
       this.displayBookList = _.filter(this.doujinshiList, (book)=>{
         let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status'])).toLowerCase()
         return _.every(searchStringArray, (str)=>bookString.includes(str.replace(/["']/g, '').toLowerCase()))
@@ -424,7 +443,7 @@ export default {
       this.dialogVisibleSetting = false
       ipcRenderer['force-gene-book-list']()
       .then(res=>{
-        this.doujinshiList = res
+        this.doujinshiList = res.sort(this.sortList)
         this.displayBookList = this.doujinshiList
         this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[0]
         this.printMessage('success', '强制重建漫画库完成')

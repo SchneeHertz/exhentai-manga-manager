@@ -39,7 +39,7 @@
       <el-row :gutter="20" class="book-detail-card">
         <el-col :span="10">
           <el-row class="book-detail-function">
-            <img class="book-cover" :src="bookDetail.coverPath" />
+            <img class="book-cover" :src="bookDetail.coverPath" @click="viewManga"/>
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="success" @click="openLocalBook">阅读</el-button>
@@ -165,14 +165,46 @@
         </el-col>
       </el-row>
     </el-dialog>
+    <el-drawer
+      v-model="drawerVisibleViewer"
+      direction="ttb"
+      size="100%"
+      :with-header="false"
+      destroy-on-close
+    >
+      <el-button type="text" :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
+      <div>
+        <div
+          v-for="(image, index) in viewerImageList"
+          :key="image.id"
+          class="image-frame"
+        >
+          <div
+            class="viewer-image-frame"
+            :id="image.id"
+            :style="{width: viewerImageWidth + 'px', height: (image.height * (viewerImageWidth / image.width)) + 'px' }"
+          >
+            <img :src="image.filepath" class="viewer-image" :style="{width: viewerImageWidth + 'px'}"/>
+            <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
+          </div>
+          <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { Close } from '@element-plus/icons-vue'
 
 export default {
+  setup () {
+    return {
+      Close
+    }
+  },
   data () {
     return {
       doujinshiList: [],
@@ -186,7 +218,10 @@ export default {
       chunkDisplayBookList: [],
       editingTag: false,
       tagGroup: {},
-      serviceAvaible: true
+      serviceAvaible: true,
+      drawerVisibleViewer: false,
+      viewerImageList: [],
+      viewerImageWidth: 1280
     }
   },
   computed: {
@@ -206,6 +241,7 @@ export default {
       this.displayBookList = this.doujinshiList
       this.chunkList()
     })
+    this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
   },
   methods: {
     sortList(a, b) {
@@ -487,6 +523,26 @@ export default {
         })
         this.saveBookList()
       }
+    },
+    viewManga () {
+      this.drawerVisibleViewer = true
+      ipcRenderer['load-manga-image-list'](this.bookDetail.filepath)
+      .then(list=>{
+        this.viewerImageList = list
+      })
+    },
+    initResize (id) {
+      let element = document.getElementById(id)
+      let Resize = (e)=>{
+        this.viewerImageWidth = e.clientX - element.offsetLeft
+      }
+      let stopResize = (e)=>{
+        window.removeEventListener('mousemove', Resize, false)
+        window.removeEventListener('mouseup', stopResize, false)
+        localStorage.setItem('viewerImageWidth', this.viewerImageWidth)
+      }
+      window.addEventListener('mousemove', Resize, false)
+      window.addEventListener('mouseup', stopResize, false)
     }
   }
 }
@@ -494,9 +550,9 @@ export default {
 <style lang="stylus">
 :root
   --el-text-color-primary: #FFFFFF
-.el-pagination__total
+.el-pagination__total, .viewer-image-page
   color: #FFFFFF
-body, .el-dialog, .el-descriptions__body, .el-pager li, .el-pagination button:disabled, .el-pagination .btn-next, .el-pagination .btn-prev
+body, .el-dialog, .el-descriptions__body, .el-pager li, .el-pagination button:disabled, .el-pagination .btn-next, .el-pagination .btn-prev, .el-drawer
   background-color: #515460
 body
   margin: auto
@@ -575,5 +631,37 @@ body
   margin: 6px 0
   .el-input-group__prepend
     width: 100px
+
+.el-drawer__body
+  padding-top: 0
+  padding-bottom: 0
+
+.viewer-close-button
+  position: absolute
+  top: 1em
+  right: 2em
+  z-index: 10
+  .el-icon
+    width: 2em
+    svg
+      height: 2em
+      width: 2em
+.image-frame
+  margin-bottom: 10px
+  .viewer-image-frame
+    position: relative
+    margin: 0 auto
+    .viewer-image
+      position: absolute
+      right: 0
+      user-select: none
+    .viewer-image-bar
+      position: absolute
+      height: 100%
+      width: 6px
+      right: -3px
+      cursor: ew-resize
+    .viewer-image-bar:hover
+      background-color: #409EFF
 
 </style>

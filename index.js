@@ -16,6 +16,7 @@ require('superagent-proxy')(superagent)
 const STORE_PATH = app.getPath('userData')
 const TEMP_PATH = path.join(STORE_PATH, 'tmp')
 const COVER_PATH = path.join(STORE_PATH, 'cover')
+const VIEWER_PATH = path.join(STORE_PATH, 'viewer')
 
 if (!fs.existsSync(STORE_PATH)) {
   fs.mkdirSync(STORE_PATH)
@@ -24,6 +25,9 @@ fs.mkdir(TEMP_PATH, {recursive: true}, (err) => {
   if (err) throw err
 })
 fs.mkdir(COVER_PATH, {recursive: true}, (err)=>{
+  if (err) throw err
+})
+fs.mkdir(VIEWER_PATH, {recursive: true}, (err)=>{
   if (err) throw err
 })
 
@@ -310,6 +314,28 @@ ipcMain.handle('open-url', async(event, url)=>{
   shell.openExternal(url)
 })
 
+ipcMain.handle('load-manga-image-list', async(event, filepath)=>{
+  await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})
+  await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
+  let zip = new AdmZip(filepath)
+  zip.extractAllTo(VIEWER_PATH, true)
+  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp)', {
+    cwd: VIEWER_PATH,
+    nocase: true
+  })
+  list = list.map(f=>path.join(VIEWER_PATH, f)).sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  let result = []
+  for (let filepath of list) {
+    let metadata = await sharp(filepath).metadata()
+    result.push({
+      id: nanoid(),
+      filepath,
+      width: metadata.width,
+      height: metadata.height
+    })
+  }
+  return result
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

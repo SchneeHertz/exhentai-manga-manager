@@ -15,5 +15,6 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'get-ex-url': (obj)=>ipcRenderer.invoke('get-ex-url', obj),
   'export-database': ()=>ipcRenderer.invoke('export-database'),
   'load-import-database': ()=>ipcRenderer.invoke('load-import-database'),
-  'open-url': (url)=>ipcRenderer.invoke('open-url', url)
+  'open-url': (url)=>ipcRenderer.invoke('open-url', url),
+  'load-manga-image-list': (filepath)=>ipcRenderer.invoke('load-manga-image-list', filepath),
 })

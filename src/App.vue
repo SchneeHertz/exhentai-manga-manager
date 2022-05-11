@@ -548,12 +548,6 @@ export default {
 }
 </script>
 <style lang="stylus">
-:root
-  --el-text-color-primary: #FFFFFF
-.el-pagination__total, .viewer-image-page
-  color: #FFFFFF
-body, .el-dialog, .el-descriptions__body, .el-pager li, .el-pagination button:disabled, .el-pagination .btn-next, .el-pagination .btn-prev, .el-drawer
-  background-color: #515460
 body
   margin: auto
   width: 98vw
@@ -595,6 +589,8 @@ body
 
 .book-cover
   border-radius: 8px
+  width: 250px
+  height: 360px
 
 .el-dialog
   border: solid 4px #f5f7fa

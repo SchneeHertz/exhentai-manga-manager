@@ -160,7 +160,7 @@ let geneCover = async (filepath, id) => {
   }
 
   let imageResizeResult = await sharp(tempCoverPath)
-  .resize(250, 360, {
+  .resize(500, 720, {
     fit: 'contain'
   })
   .toFile(coverPath)

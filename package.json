@@ -1,7 +1,7 @@
 {
   "name": "doujinshi-tagger",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

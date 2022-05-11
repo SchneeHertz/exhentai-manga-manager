@@ -1,6 +1,6 @@
-# Doujinshi-tagger
+# exhentai-manga-manager
 
-![cover.png](https://raw.githubusercontent.com/SchneeHertz/doujinshi-tagger/master/cover.png)  
+![cover.png](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/cover.png)  
 管理从E-Hentai下载的短篇漫画
 
 功能:

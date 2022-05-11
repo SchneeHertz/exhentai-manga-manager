@@ -172,7 +172,7 @@
       :with-header="false"
       destroy-on-close
     >
-      <el-button type="text" :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
+      <el-button type="primary" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
       <div>
         <div
           v-for="(image, index) in viewerImageList"
@@ -554,9 +554,7 @@ body
 #app
   font-family: Avenir, Helvetica, Arial, sans-serif
   text-align: center
-  color: #2c3e50
   margin-top: 20px
-
 
 .function-button
   width: 100%
@@ -565,7 +563,7 @@ body
   height: calc(100vh - 98px)
   overflow-x: auto
   justify-content: center
-  margin-top: 8px;
+  margin-top: 8px
 .el-rate
   display: inline-block
   height: 18px
@@ -578,11 +576,10 @@ body
 .doujinshi-card
   width: 260px
   height: 470px
-  border: solid 1px #bbbbbb
+  border: solid 1px
   border-radius: 8px
   margin: 10px 20px
 .book-title
-  color: white
   height: 60px
   overflow-y: hidden
   margin: 8px 0px
@@ -593,14 +590,13 @@ body
   height: 360px
 
 .el-dialog
-  border: solid 4px #f5f7fa
+  border: solid 4px
   border-radius: 16px
 .el-dialog__body
   padding: 5px 20px 16px
 
 
 .detail-book-title
-  color: white
   height: 44px
   overflow-y: hidden
   margin: 0 24px
@@ -617,8 +613,6 @@ body
   .el-descriptions__label
     display: inline-block
     width: 64px
-  .el-tag.el-tag--info
-    --el-tag-text-color: var(--el-text-color-regular)
 .book-tag
   margin: 4px 6px
   cursor: pointer

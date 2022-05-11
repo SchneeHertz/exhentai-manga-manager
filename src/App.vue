@@ -173,18 +173,31 @@
       destroy-on-close
     >
       <el-button type="primary" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
-      <div>
+      <el-switch
+        v-model="imageStyleType"
+        size="small"
+        inline-prompt
+        active-text="卷轴"
+        inactive-text="单页"
+        active-value="scroll"
+        inactive-value="click"
+        @change="saveImageStyleType"
+        class="viewer-switch"
+        width="60px"
+      />
+      <div class="drawer-content" @click="scrollPage">
         <div
           v-for="(image, index) in viewerImageList"
           :key="image.id"
           class="image-frame"
+          :style="returnImageFrameStyle()"
         >
           <div
             class="viewer-image-frame"
             :id="image.id"
-            :style="{width: viewerImageWidth + 'px', height: (image.height * (viewerImageWidth / image.width)) + 'px' }"
+            :style="returnImageStyle(image)"
           >
-            <img :src="image.filepath" class="viewer-image" :style="{width: viewerImageWidth + 'px'}"/>
+            <img :src="image.filepath" class="viewer-image" :style="{height: returnImageStyle(image).height}"/>
             <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
           </div>
           <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
@@ -195,11 +208,12 @@
 </template>
 
 <script>
+import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
 
-export default {
+export default defineComponent({
   setup () {
     return {
       Close
@@ -221,7 +235,8 @@ export default {
       serviceAvaible: true,
       drawerVisibleViewer: false,
       viewerImageList: [],
-      viewerImageWidth: 1280
+      viewerImageWidth: 1280,
+      imageStyleType: 'scroll'
     }
   },
   computed: {
@@ -242,8 +257,35 @@ export default {
       this.chunkList()
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
+    this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
+    window.addEventListener('keydown', event=>{
+      if (this.drawerVisibleViewer && this.imageStyleType == 'click') {
+        if (event.key === 'ArrowRight') {
+          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
+        } else if (event.key === 'ArrowLeft') {
+          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
+        }
+      }
+    })
   },
   methods: {
+    returnImageStyle(image) {
+      if (this.imageStyleType == 'scroll') {
+        return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
+      } else {
+        return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
+      }
+    },
+    returnImageFrameStyle () {
+      if (this.imageStyleType == 'scroll') {
+        return {}
+      } else {
+        return {height: '100vh'}
+      }
+    },
+    saveImageStyleType (val) {
+      localStorage.setItem('imageStyleType', val)
+    },
     sortList(a, b) {
       if (a['date'] && b['date']) {
         if (a['date'] > b['date']) {
@@ -325,11 +367,11 @@ export default {
       let getTag = (book, url, hash) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
         axios.post('https://api.e-hentai.org/api.php', {
-          "method": "gdata",
-          "gidlist": [
+          'method': 'gdata',
+          'gidlist': [
               [+match[1], match[2]]
           ],
-          "namespace": 1
+          'namespace': 1
         })
         .then(res=>{
           try {
@@ -532,22 +574,33 @@ export default {
       })
     },
     initResize (id) {
-      let element = document.getElementById(id)
-      let Resize = (e)=>{
-        this.viewerImageWidth = e.clientX - element.offsetLeft
+      if (this.imageStyleType == 'scroll') {
+        let element = document.getElementById(id)
+        let Resize = (e)=>{
+          this.viewerImageWidth = e.clientX - element.offsetLeft
+        }
+        let stopResize = (e)=>{
+          window.removeEventListener('mousemove', Resize, false)
+          window.removeEventListener('mouseup', stopResize, false)
+          localStorage.setItem('viewerImageWidth', this.viewerImageWidth)
+        }
+        window.addEventListener('mousemove', Resize, false)
+        window.addEventListener('mouseup', stopResize, false)
       }
-      let stopResize = (e)=>{
-        window.removeEventListener('mousemove', Resize, false)
-        window.removeEventListener('mouseup', stopResize, false)
-        localStorage.setItem('viewerImageWidth', this.viewerImageWidth)
+    },
+    scrollPage (event) {
+      if (this.imageStyleType == 'click') {
+        if(event.clientX > window.innerWidth / 2) {
+          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
+        } else {
+          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
+        }
       }
-      window.addEventListener('mousemove', Resize, false)
-      window.addEventListener('mouseup', stopResize, false)
     }
   }
-}
+})
 </script>
-<style lang="stylus">
+<style lang='stylus'>
 body
   margin: auto
   width: 98vw
@@ -636,8 +689,13 @@ body
     svg
       height: 2em
       width: 2em
+.viewer-switch
+  position: absolute
+  top: 1em
+  left: 1em
+  z-index: 10
 .image-frame
-  margin-bottom: 10px
+  overflow-y: hidden
   .viewer-image-frame
     position: relative
     margin: 0 auto
@@ -653,5 +711,7 @@ body
       cursor: ew-resize
     .viewer-image-bar:hover
       background-color: #409EFF
+  .viewer-image-page
+    margin-bottom: 10px
 
 </style>

@@ -32,6 +32,15 @@
   - 批量获取标签
   - 编辑标签
 
+## TODO
+- 主页直接进入浏览界面
+- 免安装版，自定义数据文件位置
+- 详情页显示更多信息
+- 收藏漫画
+- 排序
+- 启动时扫描的开关和手动扫描
+
+
 ## Recommended IDE Setup
 
 - [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar)

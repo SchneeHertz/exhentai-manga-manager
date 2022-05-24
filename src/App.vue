@@ -96,6 +96,14 @@
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
+            <el-input v-model="setting.STORE_PATH">
+              <template #prepend><span class="setting-label">数据文件夹</span></template>
+              <template #append><el-button @click="selectStoragePath" title="取消选择以恢复默认数据文件夹">选择</el-button></template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
             <el-input v-model="setting.imageExplorer">
               <template #prepend><span class="setting-label">默认程序</span></template>
               <template #append><el-button @click="selectImageExplorerPath">选择</el-button></template>
@@ -161,6 +169,19 @@
         <el-col :span="4">
           <div class="setting-line">
             <el-button class="function-button" type="primary" plain @click="importDatabase">导入元数据</el-button>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <el-switch
+            v-model="setting.loadOnStart"
+            inactive-text="启动时扫描"
+            @change="saveSetting"
+            class="setting-switch"
+          />
+        </el-col>
+        <el-col :span="4">
+          <div class="setting-line">
+            <el-button class="function-button" type="primary" plain @click="loadBookList">手动扫描</el-button>
           </div>
         </el-col>
       </el-row>
@@ -249,12 +270,12 @@ export default defineComponent({
     ipcRenderer['load-setting']()
     .then(res=>{
       this.setting = res
-    })
-    ipcRenderer['load-doujinshi-list']()
-    .then(res=>{
-      this.doujinshiList = res.sort(this.sortList)
-      this.displayBookList = this.doujinshiList
-      this.chunkList()
+      ipcRenderer['load-doujinshi-list'](this.setting.loadOnStart)
+      .then(res=>{
+        this.doujinshiList = res.sort(this.sortList)
+        this.displayBookList = this.doujinshiList
+        this.chunkList()
+      })
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
@@ -269,6 +290,14 @@ export default defineComponent({
     })
   },
   methods: {
+    loadBookList () {
+      ipcRenderer['load-doujinshi-list'](true)
+      .then(res=>{
+        this.doujinshiList = res.sort(this.sortList)
+        this.displayBookList = this.doujinshiList
+        this.chunkList()
+      })
+    },
     returnImageStyle(image) {
       if (this.imageStyleType == 'scroll') {
         return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
@@ -507,6 +536,14 @@ export default defineComponent({
         this.saveSetting()
       })
     },
+    selectStoragePath () {
+      ipcRenderer['select-folder']()
+      .then(res=>{
+        this.setting.STORE_PATH = res
+        this.saveSetting()
+        this.printMessage('success', '关闭软件后重新打开以应用设置')
+      })
+    },
     selectImageExplorerPath () {
       ipcRenderer['select-file']()
       .then(res=>{
@@ -674,6 +711,8 @@ body
   margin: 6px 0
   .el-input-group__prepend
     width: 100px
+.setting-switch
+  margin-top: 6px
 
 .el-drawer__body
   padding-top: 0

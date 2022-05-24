@@ -13,14 +13,45 @@ const { createHash } = require('crypto')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
 
-const STORE_PATH = app.getPath('userData')
+let STORE_PATH = app.getPath('userData')
+if (!fs.existsSync(STORE_PATH)) {
+  fs.mkdirSync(STORE_PATH)
+}
+
+let setting
+let readSetting = (storePath) => {
+  try {
+    setting = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'setting.json'), {encoding: 'utf-8'}))
+    if (storePath) {
+      setting.STORE_PATH = storePath
+      fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
+    }
+  } catch {
+    setting = {
+      proxy: undefined,
+      library: app.getPath('downloads'),
+      imageExplorer: 'C:\\Windows\\explorer.exe',
+      pageSize: 10,
+      loadOnStart: false,
+      STORE_PATH: storePath
+    }
+    fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
+  }
+}
+readSetting()
+
+if (setting.STORE_PATH) {
+  try {
+    fs.accessSync(setting.STORE_PATH)
+    STORE_PATH = setting.STORE_PATH
+    readSetting(setting.STORE_PATH)
+  } catch {}
+}
+
 const TEMP_PATH = path.join(STORE_PATH, 'tmp')
 const COVER_PATH = path.join(STORE_PATH, 'cover')
 const VIEWER_PATH = path.join(STORE_PATH, 'viewer')
 
-if (!fs.existsSync(STORE_PATH)) {
-  fs.mkdirSync(STORE_PATH)
-}
 fs.mkdir(TEMP_PATH, {recursive: true}, (err) => {
   if (err) throw err
 })
@@ -31,18 +62,6 @@ fs.mkdir(VIEWER_PATH, {recursive: true}, (err)=>{
   if (err) throw err
 })
 
-let setting
-try {
-  setting = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'setting.json'), {encoding: 'utf-8'}))
-} catch {
-  setting = {
-    proxy: undefined,
-    library: app.getPath('downloads'),
-    imageExplorer: 'C:\\Windows\\explorer.exe',
-    pageSize: 10
-  }
-  fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
-}
 
 let mainWindow
 function createWindow () {
@@ -94,48 +113,52 @@ app.on('ready', async () => {
 
 
 
-ipcMain.handle('load-doujinshi-list', async (event, ...arg)=>{
-  let list = await promisify(glob)('**/*.zip', {
-    cwd: setting.library
-  })
-  let existData
-  try {
-    existData = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
-  } catch {
-    existData = []
-  }
-  for (let i = 0; i < list.length; i++) {
+ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
+  if (scan) {
+    let list = await promisify(glob)('**/*.zip', {
+      cwd: setting.library
+    })
+    let existData
     try {
-      let filepath = path.join(setting.library, list[i])
-      let foundData = _.find(existData, {filepath: filepath})
-      if (!foundData) {
-        let id = nanoid()
-        let {coverPath, tempCoverPath} = await geneCover(filepath, id)
-        if (coverPath && tempCoverPath){
-          existData.push({
-            title: path.basename(filepath),
-            coverPath,
-            tempCoverPath,
-            filepath,
-            id,
-            status: 'non-tag',
-            exist: true,
-            date: Date.now()
-          })
-          mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
-        }
-      } else {
-        foundData.exist = true
-      }
-      if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+      existData = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
     } catch {
-      mainWindow.webContents.send('send-message', `load ${list[i]} failed`)
+      existData = []
     }
+    for (let i = 0; i < list.length; i++) {
+      try {
+        let filepath = path.join(setting.library, list[i])
+        let foundData = _.find(existData, {filepath: filepath})
+        if (!foundData) {
+          let id = nanoid()
+          let {coverPath, tempCoverPath} = await geneCover(filepath, id)
+          if (coverPath && tempCoverPath){
+            existData.push({
+              title: path.basename(filepath),
+              coverPath,
+              tempCoverPath,
+              filepath,
+              id,
+              status: 'non-tag',
+              exist: true,
+              date: Date.now()
+            })
+            mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+          }
+        } else {
+          foundData.exist = true
+        }
+        if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+      } catch {
+        mainWindow.webContents.send('send-message', `load ${list[i]} failed`)
+      }
+    }
+    existData = _.filter(existData, {exist: true})
+    _.forIn(existData, b=>b.exist = undefined)
+    fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(existData, null, '  '), {encoding: 'utf-8'})
+    return existData
+  } else {
+    return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
   }
-  existData = _.filter(existData, {exist: true})
-  _.forIn(existData, b=>b.exist = undefined)
-  fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(existData, null, '  '), {encoding: 'utf-8'})
-  return existData
 })
 
 let geneCover = async (filepath, id) => {
@@ -281,6 +304,7 @@ ipcMain.handle('save-setting', async (event, receiveSetting)=>{
       proxyRules: setting.proxy
     })
   }
+  await fs.promises.writeFile(path.join(app.getPath('userData'), 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 })
 

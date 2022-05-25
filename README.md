@@ -40,6 +40,9 @@
 - 排序
 - 启动时扫描的开关和手动扫描
 
+## 爱发电
+https://afdian.net/@SeldonHorizon
+如果这个软件帮到了你，可以请我喝杯奶茶
 
 ## Recommended IDE Setup
 

@@ -252,7 +252,7 @@
 <script>
 import { defineComponent } from 'vue'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElLoading } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
 
 export default defineComponent({
@@ -630,10 +630,17 @@ export default defineComponent({
       }
     },
     viewManga () {
-      this.drawerVisibleViewer = true
+      this.viewerImageList = []
+      const loading = ElLoading.service({
+        lock: true,
+        text: 'Loading',
+        background: 'rgba(0, 0, 0, 0.7)',
+      })
       ipcRenderer['load-manga-image-list'](this.bookDetail.filepath)
       .then(list=>{
         this.viewerImageList = list
+        loading.close()
+        this.drawerVisibleViewer = true
       })
     },
     initResize (id) {

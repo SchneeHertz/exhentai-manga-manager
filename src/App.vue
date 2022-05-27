@@ -772,13 +772,14 @@ body
 .url-link
   cursor: pointer
 .book-detail-card
-  position: relative
   .book-detail-function
     justify-content: center
     margin-bottom: 10px
   .detail-cover
+    position: relative
     width: 250px
     margin: 0 auto
+    margin-bottom: 10px
   .edit-line
     margin: 4px 0
     .el-select

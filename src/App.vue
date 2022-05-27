@@ -1,17 +1,33 @@
 <template>
   <div>
     <el-row :gutter="20">
-      <el-col :span="8" :offset="5">
+      <el-col :span="8" :offset="3">
         <el-input v-model="searchString" @keyup.enter="searchBook" clearable></el-input>
       </el-col>
       <el-col :span="2"><el-button type="primary" class="function-button" @click="searchBook">搜索</el-button></el-col>
       <el-col :span="2"><el-button type="primary" plain class="function-button" @click="shuffleBook">打乱</el-button></el-col>
       <el-col :span="2"><el-button type="warning" plain class="function-button" @click="dialogVisibleSetting = true">设置</el-button></el-col>
+      <el-col :span="4">
+        <el-select placeholder="排序" @change="handleSortChange" clearable v-model="sortValue">
+          <el-option label="仅收藏" value="mark"></el-option>
+          <el-option label="添加时间正序" value="addAscend"></el-option>
+          <el-option label="添加时间倒序" value="addDescend"></el-option>
+          <el-option label="上传时间正序" value="postAscend"></el-option>
+          <el-option label="上传时间倒序" value="postDescend"></el-option>
+          <el-option label="评分正序" value="scoreAscend"></el-option>
+          <el-option label="评分倒序" value="scoreDescend"></el-option>
+        </el-select>
+      </el-col>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
       <div class="doujinshi-card" v-for="book in chunkDisplayBookList" :key="book.id">
         <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
+        <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
+        <el-button-group class="outer-read-button-group">
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+        </el-button-group>
         <el-tag :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'">{{book.status}}</el-tag>
         <el-rate v-model="book.rating" allow-half/>
       </div>
@@ -38,8 +54,9 @@
       </template>
       <el-row :gutter="20" class="book-detail-card">
         <el-col :span="10">
-          <el-row class="book-detail-function">
+          <el-row class="book-detail-function detail-cover">
             <img class="book-cover" :src="bookDetail.coverPath" @click="viewManga"/>
+            <el-icon :size="30" :color="bookDetail.mark ? '#E6A23C' : '#666666'" class="book-detail-star" @click="switchMark(bookDetail)"><StarFilled /></el-icon>
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="success" @click="openLocalBook">阅读</el-button>
@@ -71,6 +88,10 @@
           </div>
           <div v-else>
             <el-descriptions :column="1">
+              <el-descriptions-item label="英文标题:">{{bookDetail.title}}</el-descriptions-item>
+              <el-descriptions-item label="页数:">{{bookDetail.filecount}}</el-descriptions-item>
+              <el-descriptions-item label="文件大小:">{{Math.floor(bookDetail.filesize / 1048576)}} MB</el-descriptions-item>
+              <el-descriptions-item label="类别:"><el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag></el-descriptions-item>
               <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
                 <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag)">{{tag}}</el-tag>
               </el-descriptions-item>
@@ -257,7 +278,8 @@ export default defineComponent({
       drawerVisibleViewer: false,
       viewerImageList: [],
       viewerImageWidth: 1280,
-      imageStyleType: 'scroll'
+      imageStyleType: 'scroll',
+      sortValue: undefined
     }
   },
   computed: {
@@ -272,7 +294,7 @@ export default defineComponent({
       this.setting = res
       ipcRenderer['load-doujinshi-list'](this.setting.loadOnStart)
       .then(res=>{
-        this.doujinshiList = res.sort(this.sortList)
+        this.doujinshiList = res.sort(this.sortList('date'))
         this.displayBookList = this.doujinshiList
         this.chunkList()
       })
@@ -293,7 +315,7 @@ export default defineComponent({
     loadBookList () {
       ipcRenderer['load-doujinshi-list'](true)
       .then(res=>{
-        this.doujinshiList = res.sort(this.sortList)
+        this.doujinshiList = res.sort(this.sortList('date'))
         this.displayBookList = this.doujinshiList
         this.chunkList()
       })
@@ -315,21 +337,23 @@ export default defineComponent({
     saveImageStyleType (val) {
       localStorage.setItem('imageStyleType', val)
     },
-    sortList(a, b) {
-      if (a['date'] && b['date']) {
-        if (a['date'] > b['date']) {
+    sortList(label) {
+      return (a, b)=>{
+        if (a[label] && b[label]) {
+          if (a[label] > b[label]) {
+            return -1
+          } else if (a[label] < b[label]) {
+            return 1
+          } else {
+            return 0
+          }
+        } else if (a[label]) {
           return -1
-        } else if (a['date'] < b['date']) {
+        } else if (b[label]) {
           return 1
         } else {
           return 0
         }
-      } else if (a['date']) {
-        return -1
-      } else if (b['date']) {
-        return 1
-      } else {
-        return 0
       }
     },
     printMessage(type, msg) {
@@ -404,7 +428,9 @@ export default defineComponent({
         })
         .then(res=>{
           try {
-            _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating']), {url: url})
+            _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']), {url: url})
+            book.posted = +book.posted
+            book.filecount = +book.filecount
             book.rating = +book.rating
             book.title = _.unescape(book.title)
             book.title_jpn = _.unescape(book.title_jpn)
@@ -515,7 +541,7 @@ export default defineComponent({
     searchBook () {
       let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
       this.displayBookList = _.filter(this.doujinshiList, (book)=>{
-        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status'])).toLowerCase()
+        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category'])).toLowerCase()
         return _.every(searchStringArray, (str)=>bookString.includes(str.replace(/["']/g, '').toLowerCase()))
       })
       this.chunkList()
@@ -558,7 +584,7 @@ export default defineComponent({
       this.dialogVisibleSetting = false
       ipcRenderer['force-gene-book-list']()
       .then(res=>{
-        this.doujinshiList = res.sort(this.sortList)
+        this.doujinshiList = res.sort(this.sortList('date'))
         this.displayBookList = this.doujinshiList
         this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[0]
         this.printMessage('success', '强制重建漫画库完成')
@@ -597,7 +623,7 @@ export default defineComponent({
       } else {
         _.forIn(this.bookDetail.tags, (tagarr, tagCat)=>{
           if (_.isEmpty(tagarr)) {
-            this.bookDetail.tags[tagCat] = undefined
+            delete this.bookDetail.tags[tagCat]
           }
         })
         this.saveBookList()
@@ -632,6 +658,46 @@ export default defineComponent({
         } else {
           document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
         }
+      }
+    },
+    switchMark (book) {
+      book.mark = !book.mark
+      this.saveBookList()
+    },
+    handleSortChange (val) {
+      switch(val){
+        case 'mark':
+          this.displayBookList = _.filter(this.doujinshiList, 'mark')
+          this.chunkList()
+          break
+        case 'addAscend':
+          this.displayBookList = _.reverse(_.cloneDeep(this.doujinshiList).sort(this.sortList('date')))
+          this.chunkList()
+          break
+        case 'addDescend':
+          this.displayBookList = _.cloneDeep(this.doujinshiList).sort(this.sortList('date'))
+          this.chunkList()
+          break
+        case 'postAscend':
+          this.displayBookList = _.reverse(_.cloneDeep(this.doujinshiList).sort(this.sortList('posted')))
+          this.chunkList()
+          break
+        case 'postDescend':
+          this.displayBookList = _.cloneDeep(this.doujinshiList).sort(this.sortList('posted'))
+          this.chunkList()
+          break
+        case 'scoreAscend':
+          this.displayBookList = _.reverse(_.cloneDeep(this.doujinshiList).sort(this.sortList('rating')))
+          this.chunkList()
+          break
+        case 'scoreDescend':
+          this.displayBookList = _.cloneDeep(this.doujinshiList).sort(this.sortList('rating'))
+          this.chunkList()
+          break
+        default:
+          this.displayBookList = this.doujinshiList
+          this.chunkList()
+          break
       }
     }
   }
@@ -669,6 +735,7 @@ body
   border: solid 1px
   border-radius: 8px
   margin: 10px 20px
+  position: relative
 .book-title
   height: 60px
   overflow-y: hidden
@@ -678,6 +745,18 @@ body
   border-radius: 8px
   width: 250px
   height: 360px
+.book-card-star, .book-detail-star
+  position: absolute
+.book-card-star
+  right: 0
+  top: 2em
+.book-detail-star
+  right: 0
+  top: -0.5em
+.outer-read-button-group
+  margin-right: 8px
+.outer-read-button
+  padding: 0 2px
 
 .el-dialog
   border: solid 4px
@@ -693,9 +772,13 @@ body
 .url-link
   cursor: pointer
 .book-detail-card
+  position: relative
   .book-detail-function
     justify-content: center
     margin-bottom: 10px
+  .detail-cover
+    width: 250px
+    margin: 0 auto
   .edit-line
     margin: 4px 0
     .el-select

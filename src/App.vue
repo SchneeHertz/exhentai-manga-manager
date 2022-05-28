@@ -71,8 +71,11 @@
             <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="primary" plain @click="getBookInfo(this.bookDetail, 'e-hentai')">获取元数据</el-button>
-            <el-button type="primary" plain @click="getBookInfo(this.bookDetail, 'exhentai')">获取EX元数据</el-button>
+            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'e-hentai')">获取元数据</el-button>
+            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
+          </el-row>
+          <el-row class="book-detail-function">
+            <el-button type="primary" plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
           </el-row>
         </el-col>
         <el-col :span="14">
@@ -695,7 +698,10 @@ export default defineComponent({
           this.chunkList()
           break
       }
-    }
+    },
+    showFile(filepath) {
+      ipcRenderer['show-file'](filepath)
+    },
   }
 })
 </script>

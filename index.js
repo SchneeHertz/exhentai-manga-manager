@@ -351,6 +351,10 @@ ipcMain.handle('load-manga-image-list', async(event, filepath)=>{
   return result
 })
 
+ipcMain.handle('show-file', async (event, filepath)=>{
+  shell.showItemInFolder(filepath)
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()

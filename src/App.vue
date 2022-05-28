@@ -59,6 +59,13 @@
             <el-icon :size="30" :color="bookDetail.mark ? '#E6A23C' : '#666666'" class="book-detail-star" @click="switchMark(bookDetail)"><StarFilled /></el-icon>
           </el-row>
           <el-row class="book-detail-function">
+            <el-descriptions :column="1">
+              <el-descriptions-item label="页数:">{{bookDetail.filecount}}</el-descriptions-item>
+              <el-descriptions-item label="文件大小:">{{Math.floor(bookDetail.filesize / 1048576)}} MB</el-descriptions-item>
+              <el-descriptions-item label="上传时间:">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
+            </el-descriptions>
+          </el-row>
+          <el-row class="book-detail-function">
             <el-button type="success" @click="openLocalBook">阅读</el-button>
             <el-button type="danger" plain @click="deleteLocalBook">删除</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
@@ -89,8 +96,6 @@
           <div v-else>
             <el-descriptions :column="1">
               <el-descriptions-item label="英文标题:">{{bookDetail.title}}</el-descriptions-item>
-              <el-descriptions-item label="页数:">{{bookDetail.filecount}}</el-descriptions-item>
-              <el-descriptions-item label="文件大小:">{{Math.floor(bookDetail.filesize / 1048576)}} MB</el-descriptions-item>
               <el-descriptions-item label="类别:"><el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag></el-descriptions-item>
               <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
                 <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag)">{{tag}}</el-tag>
@@ -112,14 +117,6 @@
             <el-input v-model="setting.library">
               <template #prepend><span class="setting-label">库文件夹</span></template>
               <template #append><el-button @click="selectLibraryPath">选择</el-button></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model="setting.STORE_PATH">
-              <template #prepend><span class="setting-label">数据文件夹</span></template>
-              <template #append><el-button @click="selectStoragePath" title="取消选择以恢复默认数据文件夹">选择</el-button></template>
             </el-input>
           </div>
         </el-col>
@@ -562,14 +559,6 @@ export default defineComponent({
         this.saveSetting()
       })
     },
-    selectStoragePath () {
-      ipcRenderer['select-folder']()
-      .then(res=>{
-        this.setting.STORE_PATH = res
-        this.saveSetting()
-        this.printMessage('success', '关闭软件后重新打开以应用设置')
-      })
-    },
     selectImageExplorerPath () {
       ipcRenderer['select-file']()
       .then(res=>{
@@ -678,27 +667,27 @@ export default defineComponent({
           this.chunkList()
           break
         case 'addAscend':
-          this.displayBookList = _.reverse(_.cloneDeep(this.doujinshiList).sort(this.sortList('date')))
+          this.displayBookList = _.reverse(this.doujinshiList.sort(this.sortList('date')))
           this.chunkList()
           break
         case 'addDescend':
-          this.displayBookList = _.cloneDeep(this.doujinshiList).sort(this.sortList('date'))
+          this.displayBookList = this.doujinshiList.sort(this.sortList('date'))
           this.chunkList()
           break
         case 'postAscend':
-          this.displayBookList = _.reverse(_.cloneDeep(this.doujinshiList).sort(this.sortList('posted')))
+          this.displayBookList = _.reverse(this.doujinshiList.sort(this.sortList('posted')))
           this.chunkList()
           break
         case 'postDescend':
-          this.displayBookList = _.cloneDeep(this.doujinshiList).sort(this.sortList('posted'))
+          this.displayBookList = this.doujinshiList.sort(this.sortList('posted'))
           this.chunkList()
           break
         case 'scoreAscend':
-          this.displayBookList = _.reverse(_.cloneDeep(this.doujinshiList).sort(this.sortList('rating')))
+          this.displayBookList = _.reverse(this.doujinshiList.sort(this.sortList('rating')))
           this.chunkList()
           break
         case 'scoreDescend':
-          this.displayBookList = _.cloneDeep(this.doujinshiList).sort(this.sortList('rating'))
+          this.displayBookList = this.doujinshiList.sort(this.sortList('rating'))
           this.chunkList()
           break
         default:

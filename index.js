@@ -18,34 +18,11 @@ if (!fs.existsSync(STORE_PATH)) {
   fs.mkdirSync(STORE_PATH)
 }
 
-let setting
-let readSetting = (storePath) => {
-  try {
-    setting = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'setting.json'), {encoding: 'utf-8'}))
-    if (storePath) {
-      setting.STORE_PATH = storePath
-      fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
-    }
-  } catch {
-    setting = {
-      proxy: undefined,
-      library: app.getPath('downloads'),
-      imageExplorer: 'C:\\Windows\\explorer.exe',
-      pageSize: 10,
-      loadOnStart: false,
-      STORE_PATH: storePath
-    }
-    fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
-  }
-}
-readSetting()
-
-if (setting.STORE_PATH) {
-  try {
-    fs.accessSync(setting.STORE_PATH)
-    STORE_PATH = setting.STORE_PATH
-    readSetting(setting.STORE_PATH)
-  } catch {}
+try {
+  fs.accessSync(path.join(process.cwd(), 'portable'))
+  STORE_PATH = process.cwd()
+} catch {
+  STORE_PATH = app.getPath('userData')
 }
 
 const TEMP_PATH = path.join(STORE_PATH, 'tmp')
@@ -61,6 +38,20 @@ fs.mkdir(COVER_PATH, {recursive: true}, (err)=>{
 fs.mkdir(VIEWER_PATH, {recursive: true}, (err)=>{
   if (err) throw err
 })
+
+let setting
+try {
+  setting = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'setting.json'), {encoding: 'utf-8'}))
+} catch {
+  setting = {
+    proxy: undefined,
+    library: app.getPath('downloads'),
+    imageExplorer: 'C:\\Windows\\explorer.exe',
+    pageSize: 10,
+    loadOnStart: false
+  }
+  fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
+}
 
 
 let mainWindow
@@ -304,7 +295,6 @@ ipcMain.handle('save-setting', async (event, receiveSetting)=>{
       proxyRules: setting.proxy
     })
   }
-  await fs.promises.writeFile(path.join(app.getPath('userData'), 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 })
 

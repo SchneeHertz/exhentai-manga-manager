@@ -2,6 +2,7 @@
 
 ![cover.png](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/cover.png)  
 管理从E-Hentai下载的短篇漫画
+使用说明见 https://github.com/SchneeHertz/exhentai-manga-manager/wiki
 
 ## 功能
 - 从一个文件夹建立漫画库

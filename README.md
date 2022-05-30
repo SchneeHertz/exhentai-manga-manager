@@ -18,6 +18,9 @@
 - 按上传时间，添加时间，评分排序
 
 ## TODO
+- 多章节漫画的合集展示
+- 显示exhentai上的评论
+- 漫画内容缩略图，进度定位与选择
 
 ## 爱发电
 https://afdian.net/@SeldonHorizon

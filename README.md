@@ -1,7 +1,7 @@
 # exhentai-manga-manager
 
 ![cover.png](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/cover.png)  
-管理从E-Hentai下载的短篇漫画
+管理从ExHentai下载的短篇漫画  
 使用说明见 https://github.com/SchneeHertz/exhentai-manga-manager/wiki
 
 ## 功能

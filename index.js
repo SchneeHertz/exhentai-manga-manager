@@ -113,7 +113,7 @@ let geneCover = async (filepath, id, type) => {
   switch (type){
     case 'zip':
       ;({coverPath, tempCoverPath} = await solveBookTypeZip(filepath, id, TEMP_PATH, COVER_PATH))
-      break  
+      break
   }
 
   let imageResizeResult = await sharp(tempCoverPath)
@@ -122,7 +122,8 @@ let geneCover = async (filepath, id, type) => {
   })
   .toFile(coverPath)
   .catch((e)=>{
-    console.log(e)
+    console.log(filepath, e)
+    mainWindow.webContents.send('send-message', `get ${filepath} failed because ${e}`)
     fs.promises.rm(tempCoverPath, {recursive: true})
     return false
   })
@@ -136,19 +137,23 @@ let geneCover = async (filepath, id, type) => {
 
 ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
   if (scan) {
-    
+
     let existData
     try {
       existData = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
       _.forIn(existData, book=>{
-        if (!book.hash) {
-          book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
+        if (!book.hash && !book.url) {
+          try {
+            book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
+          } catch {
+            book.filepath = undefined
+          }
         }
       })
     } catch {
       existData = []
     }
-    
+
     let list = await getBookFilelist()
 
     for (let i = 0; i < list.length; i++) {

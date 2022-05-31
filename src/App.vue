@@ -363,6 +363,7 @@ export default defineComponent({
     chunkList () {
       this.currentPage = 1
       this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[0]
+      this.scrollMainPageTop()
     },
     openBookDetail (book) {
       this.bookDetail = book
@@ -579,9 +580,14 @@ export default defineComponent({
     handleSizeChange () {
       this.chunkList()
       this.saveSetting()
+      this.scrollMainPageTop()
     },
     handleCurrentChange (currentPage) {
       this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[currentPage - 1]
+      this.scrollMainPageTop()
+    },
+    scrollMainPageTop () {
+      document.getElementsByClassName('book-card-area')[0].scrollTop = 0
     },
     openUrl (url) {
       ipcRenderer['open-url'](url)

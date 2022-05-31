@@ -15,6 +15,7 @@
     "files": [
       "dist/index.html",
       "dist/assets/*",
+      "fileLoader/*",
       "index.js",
       "preload.js"
     ],

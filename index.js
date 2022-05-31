@@ -2,8 +2,6 @@ const { app, BrowserWindow, ipcMain, session, dialog, shell } = require('electro
 const path = require('path')
 const fs = require('fs')
 const process = require('process')
-const glob = require('glob')
-const {promisify} = require('util')
 const _ = require('lodash')
 const { nanoid } = require('nanoid')
 const sharp = require('sharp')
@@ -12,7 +10,7 @@ const { createHash } = require('crypto')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
 
-const {getZipFilelist, solveBookTypeZip, extractZip} = require('./fileLoader/zip')
+const {getZipFilelist, solveBookTypeZip, getImageListFromZip} = require('./fileLoader/zip')
 
 let STORE_PATH = app.getPath('userData')
 if (!fs.existsSync(STORE_PATH)) {
@@ -105,7 +103,7 @@ app.on('ready', async () => {
 
 
 let getBookFilelist = async ()=>{
-  let zipList = await getZipFilelist(setting)
+  let zipList = await getZipFilelist(setting.library)
   return [...zipList.map(filepath=>({filepath, type: 'zip'}))]
 }
 
@@ -155,7 +153,7 @@ ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
     for (let i = 0; i < list.length; i++) {
       try {
         let {filepath, type} = list[i]
-        let filepath = path.join(setting.library, filepath)
+        filepath = path.join(setting.library, filepath)
         let foundData = _.find(existData, {filepath: filepath})
         if (!foundData) {
           let id = nanoid()
@@ -206,7 +204,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
   for (let i = 0; i < list.length; i++) {
     try {
       let {filepath, type} = list[i]
-      let filepath = path.join(setting.library, filepath)
+      filepath = path.join(setting.library, filepath)
       let id = nanoid()
       let {coverPath, tempCoverPath} = await geneCover(filepath, id, type)
       if (coverPath && tempCoverPath){
@@ -240,20 +238,17 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
   await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
   let {filepath, type} = book
 
+  let list
   switch (type) {
     case 'zip':
-      extractZip(filepath)
+      list = await getImageListFromZip(filepath)
       break
     default:
-      extractZip(filepath)
+      list = await getImageListFromZip(filepath)
       break
   }
 
-  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp)', {
-    cwd: VIEWER_PATH,
-    nocase: true
-  })
-  list = list.map(f=>path.join(VIEWER_PATH, f)).sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  list = list.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f=>path.join(VIEWER_PATH, f))
   let result = []
   for (let filepath of list) {
     let metadata = await sharp(filepath).metadata()

@@ -109,6 +109,11 @@ ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
     let existData
     try {
       existData = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
+      _.forIn(existData, book=>{
+        if (!book.hash) {
+          book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
+        }
+      })
     } catch {
       existData = []
     }

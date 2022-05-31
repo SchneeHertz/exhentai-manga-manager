@@ -60,8 +60,6 @@ function createWindow () {
     width: 1560,
     height: 1000,
     webPreferences: {
-      // nodeIntegration: true,
-      // contextIsolation: false,
       // webSecurity: false,
       preload: path.join(__dirname, 'preload.js')
     },
@@ -70,7 +68,6 @@ function createWindow () {
 
   win.loadFile('dist/index.html')
   // win.loadURL('http://localhost:3000')
-  // win.webContents.openDevTools()
   win.setMenuBarVisibility(false)
   win.webContents.on('did-finish-load', ()=>{
     let name = "EH漫画管理"
@@ -123,10 +120,11 @@ ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
           let id = nanoid()
           let {coverPath, tempCoverPath} = await geneCover(filepath, id)
           if (coverPath && tempCoverPath){
+            let hash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
             existData.push({
               title: path.basename(filepath),
               coverPath,
-              tempCoverPath,
+              hash,
               filepath,
               id,
               status: 'non-tag',
@@ -143,6 +141,9 @@ ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
         mainWindow.webContents.send('send-message', `load ${list[i]} failed`)
       }
     }
+    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+
     existData = _.filter(existData, {exist: true})
     _.forIn(existData, b=>b.exist = undefined)
     fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(existData, null, '  '), {encoding: 'utf-8'})
@@ -205,10 +206,11 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
       let id = nanoid()
       let {coverPath, tempCoverPath} = await geneCover(filepath, id)
       if (coverPath && tempCoverPath){
+        let hash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
         data.push({
           title: path.basename(filepath),
           coverPath,
-          tempCoverPath,
+          hash,
           filepath,
           id,
           status: 'non-tag',
@@ -220,6 +222,9 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
       mainWindow.webContents.send('send-message', `load ${list[i]} failed`)
     }
   }
+  await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+  await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+
   fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(data, null, '  '), {encoding: 'utf-8'})
   return data
 })
@@ -253,9 +258,9 @@ ipcMain.handle('get-ex-url', async (event, {hash, cookie})=>{
   }
 })
 
-ipcMain.handle('get-cover-hash', async (event, filepath)=>{
-  return createHash('sha1').update(fs.readFileSync(filepath)).digest('hex')
-})
+// ipcMain.handle('get-cover-hash', async (event, filepath)=>{
+//   return createHash('sha1').update(fs.readFileSync(filepath)).digest('hex')
+// })
 
 ipcMain.handle('save-book-list', async (event, list)=>{
   return await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(list, null, '  '), {encoding: 'utf-8'})

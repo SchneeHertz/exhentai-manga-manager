@@ -112,7 +112,7 @@ let geneCover = async (filepath, id, type) => {
 
   switch (type){
     case 'zip':
-      ;({coverPath, tempCoverPath} = await solveBookTypeZip(filepath, id))
+      ;({coverPath, tempCoverPath} = await solveBookTypeZip(filepath, id, TEMP_PATH, COVER_PATH))
       break  
   }
 
@@ -121,7 +121,8 @@ let geneCover = async (filepath, id, type) => {
     fit: 'contain'
   })
   .toFile(coverPath)
-  .catch(()=>{
+  .catch((e)=>{
+    console.log(e)
     fs.promises.rm(tempCoverPath, {recursive: true})
     return false
   })
@@ -177,7 +178,8 @@ ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
           foundData.exist = true
         }
         if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
-      } catch {
+      } catch (e) {
+        console.log(e)
         mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed`)
       }
     }
@@ -221,7 +223,8 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
         })
       }
       mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
-    } catch {
+    } catch (e) {
+      console.log(e)
       mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed`)
     }
   }
@@ -241,10 +244,10 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
   let list
   switch (type) {
     case 'zip':
-      list = await getImageListFromZip(filepath)
+      list = await getImageListFromZip(filepath, VIEWER_PATH)
       break
     default:
-      list = await getImageListFromZip(filepath)
+      list = await getImageListFromZip(filepath, VIEWER_PATH)
       break
   }
 
@@ -283,12 +286,20 @@ ipcMain.handle('get-ex-url', async (event, {hash, cookie})=>{
     .then(res=>{
       return res.text
     })
+    .catch(e=>{
+      console.log(e)
+      mainWindow.webContents.send('send-message', `get ex url failed because ${e}`)
+    })
   } else {
     return await superagent
     .get(`https://exhentai.org/?f_shash=${hash}&fs_exp=on`)
     .set('Cookie', cookie)
     .then(res=>{
       return res.text
+    })
+    .catch(e=>{
+      console.log(e)
+      mainWindow.webContents.send('send-message', `get ex url failed because ${e}`)
     })
   }
 })

@@ -1,3 +1,6 @@
+
+const fs = require('fs')
+const path = require('path')
 const glob = require('glob')
 const {promisify} = require('util')
 const AdmZip = require('adm-zip')
@@ -8,7 +11,7 @@ let getZipFilelist = async (libraryPath)=>{
   })
 }
 
-let solveBookTypeZip = async (filepath, id)=>{
+let solveBookTypeZip = async (filepath, id, TEMP_PATH, COVER_PATH)=>{
   let zip = new AdmZip(filepath)
   let zipFileList = zip.getEntries()
   let tempCoverPath
@@ -32,7 +35,7 @@ let solveBookTypeZip = async (filepath, id)=>{
   return {tempCoverPath, coverPath}
 }
 
-let getImageListFromZip = async (filepath)=>{
+let getImageListFromZip = async (filepath, VIEWER_PATH)=>{
   let zip = new AdmZip(filepath)
   zip.extractAllTo(VIEWER_PATH, true)
   return await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp)', {

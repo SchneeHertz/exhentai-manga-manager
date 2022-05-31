@@ -622,7 +622,7 @@ export default defineComponent({
         text: 'Loading',
         background: 'rgba(0, 0, 0, 0.7)',
       })
-      ipcRenderer['load-manga-image-list'](this.bookDetail.filepath)
+      ipcRenderer['load-manga-image-list'](this.bookDetail)
       .then(list=>{
         this.viewerImageList = list
         loading.close()

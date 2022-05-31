@@ -5,13 +5,14 @@ const process = require('process')
 const glob = require('glob')
 const {promisify} = require('util')
 const _ = require('lodash')
-const AdmZip = require('adm-zip')
 const { nanoid } = require('nanoid')
 const sharp = require('sharp')
 const { spawn } = require('child_process')
 const { createHash } = require('crypto')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
+
+const {getZipFilelist, solveBookTypeZip, extractZip} = require('./fileLoader/zip')
 
 let STORE_PATH = app.getPath('userData')
 if (!fs.existsSync(STORE_PATH)) {
@@ -101,82 +102,20 @@ app.on('ready', async () => {
 
 
 
-ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
-  if (scan) {
-    let list = await promisify(glob)('**/*.zip', {
-      cwd: setting.library
-    })
-    let existData
-    try {
-      existData = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
-      _.forIn(existData, book=>{
-        if (!book.hash) {
-          book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
-        }
-      })
-    } catch {
-      existData = []
-    }
-    for (let i = 0; i < list.length; i++) {
-      try {
-        let filepath = path.join(setting.library, list[i])
-        let foundData = _.find(existData, {filepath: filepath})
-        if (!foundData) {
-          let id = nanoid()
-          let {coverPath, tempCoverPath} = await geneCover(filepath, id)
-          if (coverPath && tempCoverPath){
-            let hash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
-            existData.push({
-              title: path.basename(filepath),
-              coverPath,
-              hash,
-              filepath,
-              id,
-              status: 'non-tag',
-              exist: true,
-              date: Date.now()
-            })
-            mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
-          }
-        } else {
-          foundData.exist = true
-        }
-        if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
-      } catch {
-        mainWindow.webContents.send('send-message', `load ${list[i]} failed`)
-      }
-    }
-    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
-    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
 
-    existData = _.filter(existData, {exist: true})
-    _.forIn(existData, b=>b.exist = undefined)
-    fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(existData, null, '  '), {encoding: 'utf-8'})
-    return existData
-  } else {
-    return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
-  }
-})
 
-let geneCover = async (filepath, id) => {
-  let zip = new AdmZip(filepath)
-  let zipFileList = zip.getEntries()
-  let tempCoverPath
-  let coverPath
-  if (zipFileList[0].isDirectory) {
-    zip.extractEntryTo(zipFileList[0], TEMP_PATH)
-    let subFileList = await fs.promises.readdir(path.join(TEMP_PATH, zipFileList[0].entryName))
-    subFileList = subFileList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
-    tempCoverPath = path.join(TEMP_PATH, id + path.extname(subFileList[0]))
-    await fs.promises.rename(path.join(TEMP_PATH, zipFileList[0].entryName, subFileList[0]), tempCoverPath)
-    await fs.promises.rm(path.join(TEMP_PATH, zipFileList[0].entryName), {recursive: true})
-    coverPath = path.join(COVER_PATH, id + path.extname(subFileList[0]))
-  } else {
-    zipFileList = zipFileList.sort((a,b)=>a.entryName.localeCompare(b.entryName, undefined, {numeric: true, sensitivity: 'base'}))
-    zip.extractEntryTo(zipFileList[0], TEMP_PATH)
-    tempCoverPath = path.join(TEMP_PATH, id + path.extname(zipFileList[0].entryName))
-    await fs.promises.rename(path.join(TEMP_PATH, zipFileList[0].entryName), tempCoverPath)
-    coverPath = path.join(COVER_PATH, id + path.extname(zipFileList[0].entryName))
+let getBookFilelist = async ()=>{
+  let zipList = await getZipFilelist(setting)
+  return [...zipList.map(filepath=>({filepath, type: 'zip'}))]
+}
+
+let geneCover = async (filepath, id, type) => {
+  let coverPath, tempCoverPath
+
+  switch (type){
+    case 'zip':
+      ;({coverPath, tempCoverPath} = await solveBookTypeZip(filepath, id))
+      break  
   }
 
   let imageResizeResult = await sharp(tempCoverPath)
@@ -196,20 +135,80 @@ let geneCover = async (filepath, id) => {
 
 }
 
+ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
+  if (scan) {
+    
+    let existData
+    try {
+      existData = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
+      _.forIn(existData, book=>{
+        if (!book.hash) {
+          book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
+        }
+      })
+    } catch {
+      existData = []
+    }
+    
+    let list = await getBookFilelist()
+
+    for (let i = 0; i < list.length; i++) {
+      try {
+        let {filepath, type} = list[i]
+        let filepath = path.join(setting.library, filepath)
+        let foundData = _.find(existData, {filepath: filepath})
+        if (!foundData) {
+          let id = nanoid()
+          let {coverPath, tempCoverPath} = await geneCover(filepath, id, type)
+          if (coverPath && tempCoverPath){
+            let hash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
+            existData.push({
+              title: path.basename(filepath),
+              coverPath,
+              hash,
+              filepath,
+              type,
+              id,
+              status: 'non-tag',
+              exist: true,
+              date: Date.now()
+            })
+            mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+          }
+        } else {
+          foundData.exist = true
+        }
+        if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+      } catch {
+        mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed`)
+      }
+    }
+    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+
+    existData = _.filter(existData, {exist: true})
+    _.forIn(existData, b=>b.exist = undefined)
+    fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(existData, null, '  '), {encoding: 'utf-8'})
+    return existData
+  } else {
+    return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
+  }
+})
+
+
 ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
   await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
   await fs.promises.mkdir(TEMP_PATH, {recursive: true})
   await fs.promises.rm(COVER_PATH, {recursive: true, force: true})
   await fs.promises.mkdir(COVER_PATH, {recursive: true})
-  let list = await promisify(glob)('**/*.zip', {
-    cwd: setting.library
-  })
+  let list = await getBookFilelist()
   let data = []
   for (let i = 0; i < list.length; i++) {
     try {
-      filepath = path.join(setting.library, list[i])
+      let {filepath, type} = list[i]
+      let filepath = path.join(setting.library, filepath)
       let id = nanoid()
-      let {coverPath, tempCoverPath} = await geneCover(filepath, id)
+      let {coverPath, tempCoverPath} = await geneCover(filepath, id, type)
       if (coverPath && tempCoverPath){
         let hash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
         data.push({
@@ -217,6 +216,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
           coverPath,
           hash,
           filepath,
+          type,
           id,
           status: 'non-tag',
           date: Date.now()
@@ -224,7 +224,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
       }
       mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
     } catch {
-      mainWindow.webContents.send('send-message', `load ${list[i]} failed`)
+      mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed`)
     }
   }
   await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
@@ -235,6 +235,42 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
 })
 
 
+ipcMain.handle('load-manga-image-list', async(event, book)=>{
+  await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})
+  await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
+  let {filepath, type} = book
+
+  switch (type) {
+    case 'zip':
+      extractZip(filepath)
+      break
+    default:
+      extractZip(filepath)
+      break
+  }
+
+  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp)', {
+    cwd: VIEWER_PATH,
+    nocase: true
+  })
+  list = list.map(f=>path.join(VIEWER_PATH, f)).sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  let result = []
+  for (let filepath of list) {
+    let metadata = await sharp(filepath).metadata()
+    result.push({
+      id: nanoid(),
+      filepath,
+      width: metadata.width,
+      height: metadata.height
+    })
+  }
+  return result
+})
+
+
+
+
+
 ipcMain.handle('open-local-book', async (event, filepath)=>{
   spawn(setting.imageExplorer, [filepath])
 })
@@ -242,7 +278,6 @@ ipcMain.handle('open-local-book', async (event, filepath)=>{
 ipcMain.handle('delete-local-book', async (event, filepath)=>{
   return shell.trashItem(filepath)
 })
-
 
 ipcMain.handle('get-ex-url', async (event, {hash, cookie})=>{
   if (setting.proxy) {
@@ -338,32 +373,13 @@ ipcMain.handle('open-url', async(event, url)=>{
   shell.openExternal(url)
 })
 
-ipcMain.handle('load-manga-image-list', async(event, filepath)=>{
-  await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})
-  await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
-  let zip = new AdmZip(filepath)
-  zip.extractAllTo(VIEWER_PATH, true)
-  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp)', {
-    cwd: VIEWER_PATH,
-    nocase: true
-  })
-  list = list.map(f=>path.join(VIEWER_PATH, f)).sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
-  let result = []
-  for (let filepath of list) {
-    let metadata = await sharp(filepath).metadata()
-    result.push({
-      id: nanoid(),
-      filepath,
-      width: metadata.width,
-      height: metadata.height
-    })
-  }
-  return result
-})
-
 ipcMain.handle('show-file', async (event, filepath)=>{
   shell.showItemInFolder(filepath)
 })
+
+
+
+
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

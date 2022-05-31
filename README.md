@@ -22,6 +22,7 @@
 - 多章节漫画的合集展示
 - 显示exhentai上的评论
 - 漫画内容缩略图，进度定位与选择
+- 支持rar, 7z压缩包, 已解压漫画文件夹
 
 ## 爱发电
 https://afdian.net/@SeldonHorizon

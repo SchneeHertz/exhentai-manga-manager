@@ -23,6 +23,7 @@
 - 显示exhentai上的评论
 - 漫画内容缩略图，进度定位与选择
 - 支持rar, 7z压缩包, 已解压漫画文件夹
+- 根据规则重命名和移动漫画文件
 
 ## 爱发电
 https://afdian.net/@SeldonHorizon

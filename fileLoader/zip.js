@@ -1,4 +1,3 @@
-
 const fs = require('fs')
 const path = require('path')
 const glob = require('glob')
@@ -7,7 +6,8 @@ const AdmZip = require('adm-zip')
 
 let getZipFilelist = async (libraryPath)=>{
   return await promisify(glob)('**/*.zip', {
-    cwd: libraryPath
+    cwd: libraryPath,
+    nocase: true
   })
 }
 

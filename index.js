@@ -47,7 +47,8 @@ try {
     library: app.getPath('downloads'),
     imageExplorer: 'C:\\Windows\\explorer.exe',
     pageSize: 10,
-    loadOnStart: false
+    loadOnStart: false,
+    requireGap: 10000
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }
@@ -107,12 +108,12 @@ let getBookFilelist = async ()=>{
   return [...zipList.map(filepath=>({filepath, type: 'zip'}))]
 }
 
-let geneCover = async (filepath, id, type) => {
-  let coverPath, tempCoverPath
+let geneCover = async (filepath, type) => {
+  let targetFilePath, coverPath, tempCoverPath
 
   switch (type){
     case 'zip':
-      ;({coverPath, tempCoverPath} = await solveBookTypeZip(filepath, id, TEMP_PATH, COVER_PATH))
+      ;({targetFilePath, coverPath, tempCoverPath} = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
       break
   }
 
@@ -128,9 +129,9 @@ let geneCover = async (filepath, id, type) => {
     return false
   })
   if (imageResizeResult){
-    return {coverPath, tempCoverPath}
+    return {targetFilePath, coverPath}
   } else {
-    return {coverPath:undefined, tempCoverPath:undefined}
+    return {targetFilePath:undefined, coverPath:undefined}
   }
 
 }
@@ -163,9 +164,9 @@ ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
         let foundData = _.find(existData, {filepath: filepath})
         if (!foundData) {
           let id = nanoid()
-          let {coverPath, tempCoverPath} = await geneCover(filepath, id, type)
-          if (coverPath && tempCoverPath){
-            let hash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
+          let {targetFilePath, coverPath} = await geneCover(filepath, type)
+          if (targetFilePath && coverPath){
+            let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
             existData.push({
               title: path.basename(filepath),
               coverPath,
@@ -213,9 +214,9 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
       let {filepath, type} = list[i]
       filepath = path.join(setting.library, filepath)
       let id = nanoid()
-      let {coverPath, tempCoverPath} = await geneCover(filepath, id, type)
-      if (coverPath && tempCoverPath){
-        let hash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
+      let {targetFilePath, coverPath} = await geneCover(filepath, type)
+      if (targetFilePath && coverPath){
+        let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         data.push({
           title: path.basename(filepath),
           coverPath,

@@ -133,6 +133,13 @@
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
+            <el-input v-model.number="setting.requireGap" @change="saveSetting">
+              <template #prepend><span class="setting-label">请求间隔(毫秒)</span></template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
             <el-input v-model="setting.igneous" @change="saveSetting">
               <template #prepend><span class="setting-label">igneous</span></template>
             </el-input>
@@ -239,7 +246,7 @@
             :id="image.id"
             :style="returnImageStyle(image)"
           >
-            <img :src="image.filepath" class="viewer-image" :style="{height: returnImageStyle(image).height}"/>
+            <img :src="image.filepath + '?a=' + Math.random()" class="viewer-image" :style="{height: returnImageStyle(image).height}"/>
             <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
           </div>
           <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
@@ -254,6 +261,7 @@ import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
+import he from 'he'
 
 export default defineComponent({
   setup () {
@@ -274,7 +282,7 @@ export default defineComponent({
       chunkDisplayBookList: [],
       editingTag: false,
       tagGroup: {},
-      serviceAvaible: true,
+      serviceAvailable: true,
       drawerVisibleViewer: false,
       viewerImageList: [],
       viewerImageWidth: 1280,
@@ -430,8 +438,8 @@ export default defineComponent({
             book.posted = +book.posted
             book.filecount = +book.filecount
             book.rating = +book.rating
-            book.title = _.unescape(book.title)
-            book.title_jpn = _.unescape(book.title_jpn)
+            book.title = he.decode(book.title)
+            book.title_jpn = he.decode(book.title_jpn)
             let tagObject = _.groupBy(book.tags, tag=>{
               let result = /(.+):/.exec(tag)
               if (result) {
@@ -454,12 +462,13 @@ export default defineComponent({
             book.status = 'tagged'
             book.hash = hash
             this.saveBookList()
-          } catch {
+          } catch (e) {
+            console.log(e)
             if (_.includes(res.data, 'Your IP address has been')) {
               book.status = 'non-tag'
               this.printMessage('error', 'Your IP address has been temporarily banned')
               this.saveBookList()
-              this.serviceAvaible = false
+              this.serviceAvailable = false
             } else {
               book.status = 'tag-failed'
               this.printMessage('error', 'Get tag failed')
@@ -477,12 +486,13 @@ export default defineComponent({
             try {
               let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
               getTag(book, bookUrl, book.hash)
-            } catch {
+            } catch (e) {
+              console.log(e)
               if (res.data.includes('Your IP address has been')) {
                 book.status = 'non-tag'
                 this.printMessage('error', 'Your IP address has been temporarily banned')
                 this.saveBookList()
-                this.serviceAvaible = false
+                this.serviceAvailable = false
               } else {
                 book.status = 'tag-failed'
                 this.printMessage('error', 'Get tag failed')
@@ -499,12 +509,13 @@ export default defineComponent({
             try {
               let bookUrl = new DOMParser().parseFromString(res, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
               getTag(book, bookUrl, book.hash)
-            } catch {
+            } catch (e) {
+              console.log(e)
               if (res.includes('Your IP address has been')) {
                 book.status = 'non-tag'
                 this.printMessage('error', 'Your IP address has been temporarily banned')
                 this.saveBookList()
-                this.serviceAvaible = false
+                this.serviceAvailable = false
               } else {
                 book.status = 'tag-failed'
                 this.printMessage('error', 'Get tag failed')
@@ -517,18 +528,18 @@ export default defineComponent({
     },
     getBookListMetadata (server) {
       this.dialogVisibleSetting = false
-      this.serviceAvaible = true
+      this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
-      let load = async () => {
+      let load = async (gap) => {
         for (let i = 0; i < this.doujinshiList.length; i++) {
-          if (this.doujinshiList[i].status == 'non-tag' && this.serviceAvaible) {
+          if (this.doujinshiList[i].status == 'non-tag' && this.serviceAvailable) {
             this.getBookInfo(this.doujinshiList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.doujinshiList.length}`)
-            await timer(1000)
+            await timer(gap)
           }
         }
       }
-      load()
+      load(this.setting.requireGap || 10000)
     },
     saveBookList () {
       ipcRenderer['save-book-list'](_.cloneDeep(this.doujinshiList))
@@ -537,7 +548,13 @@ export default defineComponent({
       let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
       this.displayBookList = _.filter(this.doujinshiList, (book)=>{
         let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category'])).toLowerCase()
-        return _.every(searchStringArray, (str)=>bookString.includes(str.replace(/["']/g, '').toLowerCase()))
+        return _.every(searchStringArray, (str)=>{
+          if (_.startsWith(str, '-')) {
+            return !bookString.includes(str.slice(1).replace(/["']/g, '').toLowerCase())
+          } else {
+            return bookString.includes(str.replace(/["']/g, '').toLowerCase())
+          }
+        })
       })
       this.chunkList()
     },

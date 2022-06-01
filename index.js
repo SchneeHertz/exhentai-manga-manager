@@ -80,7 +80,7 @@ function createWindow () {
   })
   return win
 }
-// app.disableHardwareAcceleration()
+app.disableHardwareAcceleration()
 app.whenReady().then(()=>{
   mainWindow = createWindow()
 })

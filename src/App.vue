@@ -46,14 +46,13 @@
     </el-row>
     <el-dialog
       v-model="dialogVisibleBookDetail"
-      width="60%"
-      :modal="false"
+      fullscreen
     >
-      <template #title>
+      <template #header>
         <p class="detail-book-title"><span class="url-link" @click="openUrl(bookDetail.url)">{{bookDetail.title_jpn ? bookDetail.title_jpn : bookDetail.title}}</span></p>
       </template>
       <el-row :gutter="20" class="book-detail-card">
-        <el-col :span="10">
+        <el-col :span="showComment?6:9">
           <el-row class="book-detail-function detail-cover">
             <img class="book-cover" :src="bookDetail.coverPath" @click="viewManga"/>
             <el-icon :size="30" :color="bookDetail.mark ? '#E6A23C' : '#666666'" class="book-detail-star" @click="switchMark(bookDetail)"><StarFilled /></el-icon>
@@ -76,35 +75,46 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="primary" plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
+            <el-button type="primary" plain @click="triggerShowComment">{{showComment?'隐藏':'显示'}}评论</el-button>
           </el-row>
         </el-col>
-        <el-col :span="14">
-          <div v-if="editingTag">
-            <div class="edit-line">
-              <el-select v-model="bookDetail.status" placeholder="元数据状态">
-                <el-option value="non-tag">non-tag</el-option>
-                <el-option value="tagged">tagged</el-option>
-                <el-option value="tag-failed">tag-failed</el-option>
-              </el-select>
+        <el-col :span="showComment?10:15">
+          <el-scrollbar class="book-tag-frame">
+            <div v-if="editingTag">
+              <div class="edit-line">
+                <el-select v-model="bookDetail.status" placeholder="元数据状态">
+                  <el-option value="non-tag">non-tag</el-option>
+                  <el-option value="tagged">tagged</el-option>
+                  <el-option value="tag-failed">tag-failed</el-option>
+                </el-select>
+              </div>
+              <div class="edit-line">
+                <el-input v-model="bookDetail.url" placeholder="eh/ex地址"></el-input>
+              </div>
+              <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
+                <el-select v-model="bookDetail.tags[key]" :placeholder="key" filterable allow-create multiple>
+                  <el-option v-for="tag in arr" :key="tag" :value="tag">{{tag}}</el-option>
+                </el-select>
+              </div>
             </div>
-            <div class="edit-line">
-              <el-input v-model="bookDetail.url" placeholder="eh/ex地址"></el-input>
+            <div v-else>
+              <el-descriptions :column="1">
+                <el-descriptions-item label="英文标题:">{{bookDetail.title}}</el-descriptions-item>
+                <el-descriptions-item label="类别:"><el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag></el-descriptions-item>
+                <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
+                  <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag)">{{tag}}</el-tag>
+                </el-descriptions-item>
+              </el-descriptions>
             </div>
-            <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-              <el-select v-model="bookDetail.tags[key]" :placeholder="key" filterable allow-create multiple>
-                <el-option v-for="tag in arr" :key="tag" :value="tag">{{tag}}</el-option>
-              </el-select>
+          </el-scrollbar>
+        </el-col>
+        <el-col :span="8" v-show="showComment">
+          <el-scrollbar class="book-comment-frame">
+            <div class="book-comment" v-for="comment in comments" :key="comment.id">
+              <div class="book-comment-postby">{{comment.author}}<span class="book-comment-score">{{comment.score}}</span></div>
+              <p class="book-comment-content">{{comment.content}}</p>
             </div>
-          </div>
-          <div v-else>
-            <el-descriptions :column="1">
-              <el-descriptions-item label="英文标题:">{{bookDetail.title}}</el-descriptions-item>
-              <el-descriptions-item label="类别:"><el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag></el-descriptions-item>
-              <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
-                <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag)">{{tag}}</el-tag>
-              </el-descriptions-item>
-            </el-descriptions>
-          </div>
+          </el-scrollbar>
         </el-col>
       </el-row>
     </el-dialog>
@@ -113,7 +123,7 @@
       width="40%"
       :modal="false"
     >
-      <template #title><p class="detail-book-title">设置</p></template>
+      <template #header><p class="detail-book-title">设置</p></template>
       <el-row :gutter="8">
         <el-col :span="24">
           <div class="setting-line">
@@ -135,6 +145,13 @@
           <div class="setting-line">
             <el-input v-model.number="setting.requireGap" @change="saveSetting">
               <template #prepend><span class="setting-label">请求间隔(毫秒)</span></template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
+            <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
+              <template #prepend><span class="setting-label">缩略图列数</span></template>
             </el-input>
           </div>
         </el-col>
@@ -212,6 +229,14 @@
             <el-button class="function-button" type="primary" plain @click="loadBookList">手动扫描</el-button>
           </div>
         </el-col>
+        <el-col :span="6">
+          <el-switch
+            v-model="setting.showComment"
+            inactive-text="显示评论"
+            @change="saveSetting"
+            class="setting-switch"
+          />
+        </el-col>
       </el-row>
     </el-dialog>
     <el-drawer
@@ -234,7 +259,17 @@
         class="viewer-switch"
         width="60px"
       />
-      <div class="drawer-content" @click="scrollPage">
+      <el-switch
+        v-model="showThumbnail"
+        size="small"
+        inline-prompt
+        active-text="缩略图"
+        inactive-text="内容"
+        @change="switchThumbnail"
+        class="viewer-thumbnail-switch"
+        width="60px"
+      />
+      <div class="drawer-image-content" @click="scrollPage" v-show="!showThumbnail">
         <div
           v-for="(image, index) in viewerImageList"
           :key="image.id"
@@ -252,6 +287,19 @@
           <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </div>
+      <div class="drawer-thumbnail-content"  v-show="showThumbnail">
+        <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
+          <div v-for="(image, index) in chunk" :key="image.id">
+            <img
+              :src="image.filepath + '?a=' + Math.random()"
+              class="viewer-thumbnail"
+              :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
+              @click="handleClickThumbnail(chunkIndex, index)"
+            />
+            <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
+          </div>
+        </el-space>
+      </div>
     </el-drawer>
   </div>
 </template>
@@ -262,6 +310,7 @@ import axios from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
 import he from 'he'
+import {nanoid} from 'nanoid'
 
 export default defineComponent({
   setup () {
@@ -287,10 +336,21 @@ export default defineComponent({
       viewerImageList: [],
       viewerImageWidth: 1280,
       imageStyleType: 'scroll',
-      sortValue: undefined
+      sortValue: undefined,
+      comments: [],
+      showComment: true,
+      showThumbnail: false,
+      thumbnailColumn: 10,
+      storeDrawerScrollTop: undefined
     }
   },
   computed: {
+    thumbnailList () {
+      if (this.setting.thumbnailColumn) {
+        this.thumbnailColumn = this.setting.thumbnailColumn
+      }
+      return _.chunk(this.viewerImageList, this.thumbnailColumn)
+    }
   },
   mounted () {
     ipcRenderer['send-message']((event, arg)=>{
@@ -332,6 +392,7 @@ export default defineComponent({
       if (this.imageStyleType == 'scroll') {
         return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
       } else {
+        // 28是.viewer-image-page的高度
         return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
       }
     },
@@ -376,6 +437,8 @@ export default defineComponent({
     openBookDetail (book) {
       this.bookDetail = book
       this.dialogVisibleBookDetail = true
+      this.showComment = !!this.setting.showComment
+      this.getComments(book.url)
     },
     openLocalBook () {
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
@@ -719,6 +782,59 @@ export default defineComponent({
     showFile(filepath) {
       ipcRenderer['show-file'](filepath)
     },
+    getComments (url) {
+      this.comments = []
+      if (url) {
+        axios.get(url)
+        .then(res=>{
+          let commentElements = new DOMParser().parseFromString(res.data, 'text/html').querySelectorAll('#cdiv>.c1')
+          commentElements.forEach(e=>{
+            let author = e.querySelector('.c2 .c3').textContent
+            let score = e.querySelector('.c2 .nosel').textContent
+            let content = e.querySelector('.c6').innerHTML
+            content = content.replace(/<br>/gi, '\n')
+            content = content.replace(/<.+?>/gi, '')
+            this.comments.push({
+              author, score, content, id: nanoid()
+            })
+          })
+        })
+      }
+    },
+    triggerShowComment () {
+      if (this.showComment) {
+        this.showComment = false
+      } else {
+        this.getComments(this.bookDetail.url)
+        this.showComment = true
+      }
+    },
+    switchThumbnail (val) {
+      if (!val) {
+        if (this.storeDrawerScrollTop) {
+          this.$nextTick(()=>{
+            document.getElementsByClassName('el-drawer__body')[0].scrollTop = this.storeDrawerScrollTop
+            this.storeDrawerScrollTop = undefined
+          })
+        }
+      } else {
+        this.storeDrawerScrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollTop
+      }
+    },
+    handleClickThumbnail(chunkIndex, index) {
+      this.showThumbnail = false
+      let scrollTopValue = 0
+      if (this.imageStyleType == 'scroll') {
+        _.forIn(this.viewerImageList, (image, i)=>{
+          if (i == (chunkIndex * this.thumbnailColumn + index)) return false
+          // 28.3是.viewer-image-page的高度的平均值
+          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28.3
+        })
+      } else {
+        scrollTopValue = window.innerHeight * (chunkIndex * this.thumbnailColumn + index)
+      }
+      this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
+    },
   }
 })
 </script>
@@ -778,8 +894,8 @@ body
   padding: 0 2px
 
 .el-dialog
-  border: solid 4px
-  border-radius: 16px
+  //border: solid 4px
+  //border-radius: 16px
 .el-dialog__body
   padding: 5px 20px 16px
 
@@ -806,9 +922,28 @@ body
   .el-descriptions__label
     display: inline-block
     width: 64px
+.book-tag-frame
+  height: calc(100vh - 100px)
+  overflow-y: auto
+  padding-right: 10px
 .book-tag
   margin: 4px 6px
   cursor: pointer
+.book-comment-frame
+  text-align: left
+  height: calc(100vh - 100px)
+  overflow-y: auto
+  padding-right: 10px
+  .book-comment
+    .book-comment-postby
+      font-size: 12px
+      background-color: #333333
+    .book-comment-score
+      float: right
+      margin-right: 4px
+    .book-comment-content
+      font-size: 14px
+      white-space: pre-wrap
 
 .setting-line
   margin: 6px 0
@@ -855,5 +990,15 @@ body
       background-color: #409EFF
   .viewer-image-page
     margin-bottom: 10px
-
+.viewer-thumbnail-switch
+  position: absolute
+  top: 3em
+  left: 1em
+  z-index: 10
+.drawer-thumbnail-content
+  text-align: left
+.viewer-thumbnail
+  margin: 8px 0 0
+.viewer-thunmnail-page
+  text-align: center
 </style>

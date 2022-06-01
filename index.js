@@ -48,7 +48,8 @@ try {
     imageExplorer: 'C:\\Windows\\explorer.exe',
     pageSize: 10,
     loadOnStart: false,
-    requireGap: 10000
+    requireGap: 10000,
+    thumbnailColumn: 10
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }
@@ -79,7 +80,7 @@ function createWindow () {
   })
   return win
 }
-app.disableHardwareAcceleration()
+// app.disableHardwareAcceleration()
 app.whenReady().then(()=>{
   mainWindow = createWindow()
 })

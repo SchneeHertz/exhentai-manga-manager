@@ -311,6 +311,33 @@ ipcMain.handle('get-ex-url', async (event, {hash, cookie})=>{
   }
 })
 
+ipcMain.handle('get-ex-comments', async (event, {url, cookie})=>{
+  if (setting.proxy) {
+    return await superagent
+    .get(url)
+    .set('Cookie', cookie)
+    .proxy(setting.proxy)
+    .then(res=>{
+      return res.text
+    })
+    .catch(e=>{
+      console.log(e)
+      mainWindow.webContents.send('send-message', `get ex comments failed because ${e}`)
+    })
+  } else {
+    return await superagent
+    .get(url)
+    .set('Cookie', cookie)
+    .then(res=>{
+      return res.text
+    })
+    .catch(e=>{
+      console.log(e)
+      mainWindow.webContents.send('send-message', `get ex comments failed because ${e}`)
+    })
+  }
+})
+
 // ipcMain.handle('get-cover-hash', async (event, filepath)=>{
 //   return createHash('sha1').update(fs.readFileSync(filepath)).digest('hex')
 // })

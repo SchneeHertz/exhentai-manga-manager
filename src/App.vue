@@ -288,6 +288,7 @@
         </div>
       </div>
       <div class="drawer-thumbnail-content"  v-show="showThumbnail">
+        <!-- eslint-disable-next-line vue/valid-v-for -->
         <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
           <div v-for="(image, index) in chunk" :key="image.id">
             <img
@@ -369,17 +370,40 @@ export default defineComponent({
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
-    window.addEventListener('keydown', event=>{
-      if (this.drawerVisibleViewer && this.imageStyleType == 'click') {
-        if (event.key === 'ArrowRight') {
-          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
-        } else if (event.key === 'ArrowLeft') {
-          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
-        }
-      }
-    })
+    window.addEventListener('keydown', this.resolveKey)
+  },
+  beforeUnmount () {
+    window.removeEventListener('keydown', this.resolveKey)
   },
   methods: {
+    resolveKey (event) {
+      if (this.drawerVisibleViewer) {
+        if (this.imageStyleType == 'click') {
+          if (event.key === 'ArrowRight') {
+            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
+          } else if (event.key === 'ArrowLeft') {
+            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
+          }
+        }
+        if (event.key === 'ArrowUp') {
+          if (event.ctrlKey) {
+            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 100)
+          } else {
+            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 10)
+          }
+        } else if (event.key === 'ArrowDown') {
+          if (event.ctrlKey) {
+            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 100)
+          } else {
+            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 10)
+          }
+        } else if (event.key === 'Home') {
+          document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
+        } else if (event.key === 'End') {
+          document.getElementsByClassName('el-drawer__body')[0].scrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollHeight
+        }
+      }
+    },
     loadBookList () {
       ipcRenderer['load-doujinshi-list'](true)
       .then(res=>{
@@ -523,7 +547,7 @@ export default defineComponent({
             })
             book.tags = tagObject
             book.status = 'tagged'
-            book.hash = hash
+            // book.hash = hash
             this.saveBookList()
           } catch (e) {
             console.log(e)
@@ -785,15 +809,20 @@ export default defineComponent({
     getComments (url) {
       this.comments = []
       if (url) {
-        axios.get(url)
+        ipcRenderer['get-ex-comments']({
+          url,
+          cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+        })
         .then(res=>{
-          let commentElements = new DOMParser().parseFromString(res.data, 'text/html').querySelectorAll('#cdiv>.c1')
+          let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
           commentElements.forEach(e=>{
             let author = e.querySelector('.c2 .c3').textContent
-            let score = e.querySelector('.c2 .nosel').textContent
+            let scoreTail = e.querySelectorAll('.c2 .nosel')
+            let score = scoreTail[scoreTail.length - 1].textContent
             let content = e.querySelector('.c6').innerHTML
             content = content.replace(/<br>/gi, '\n')
             content = content.replace(/<.+?>/gi, '')
+            content = he.decode(content)
             this.comments.push({
               author, score, content, id: nanoid()
             })
@@ -938,12 +967,16 @@ body
     .book-comment-postby
       font-size: 12px
       background-color: #333333
+      padding-left: 4px
+      color: #A8ABB2
     .book-comment-score
       float: right
       margin-right: 4px
     .book-comment-content
       font-size: 14px
       white-space: pre-wrap
+      padding-left: 4px
+      color: #909399
 
 .setting-line
   margin: 6px 0
@@ -1001,4 +1034,5 @@ body
   margin: 8px 0 0
 .viewer-thunmnail-page
   text-align: center
+  font-size: 11px
 </style>

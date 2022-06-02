@@ -1,13 +1,13 @@
 <template>
   <div>
     <el-row :gutter="20">
-      <el-col :span="8" :offset="3">
-        <el-input v-model="searchString" @keyup.enter="searchBook" clearable></el-input>
+      <el-col :span="9" :offset="3">
+        <el-input v-model="searchString" @keyup.enter="searchBook"  @change="handleSearchStringChange" clearable></el-input>
       </el-col>
-      <el-col :span="2"><el-button type="primary" class="function-button" @click="searchBook">搜索</el-button></el-col>
-      <el-col :span="2"><el-button type="primary" plain class="function-button" @click="shuffleBook">打乱</el-button></el-col>
-      <el-col :span="2"><el-button type="warning" plain class="function-button" @click="dialogVisibleSetting = true">设置</el-button></el-col>
-      <el-col :span="4">
+      <el-col :span="1"><el-button type="primary" :icon="Search" plain class="function-button" @click="searchBook"></el-button></el-col>
+      <el-col :span="1"><el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button></el-col>
+      <el-col :span="1"><el-button type="warning" :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button></el-col>
+      <el-col :span="3">
         <el-select placeholder="排序" @change="handleSortChange" clearable v-model="sortValue">
           <el-option label="仅收藏" value="mark"></el-option>
           <el-option label="添加时间正序" value="addAscend"></el-option>
@@ -18,21 +18,36 @@
           <el-option label="评分倒序" value="scoreDescend"></el-option>
         </el-select>
       </el-col>
+      <el-col :span="2" :offset="3"><el-button type="primary" plain class="function-button" @click="createCollection">创建合集</el-button></el-col>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
-      <div class="doujinshi-card" v-for="book in chunkDisplayBookList" :key="book.id">
-        <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
-        <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
-        <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
-        <el-button-group class="outer-read-button-group">
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
-        </el-button-group>
-        <el-tag :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'">{{book.status}}</el-tag>
-        <el-rate v-model="book.rating" allow-half/>
-      </div>
+      <el-col :span="24" v-show="!editCollectionView">
+        <el-badge value="合集" v-for="book in chunkDisplayBookList" :key="book.id" class="book-badge" :hidden="!book.merged">
+          <div class="book-card">
+            <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+            <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
+            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
+            <el-button-group class="outer-read-button-group">
+              <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
+              <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+            </el-button-group>
+            <el-tag class="book-status-tag" :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'">{{book.status}}</el-tag>
+            <el-rate v-model="book.rating" allow-half/>
+          </div>
+        </el-badge>
+      </el-col>
+      <el-col :span="20" v-show="editCollectionView">
+        <el-badge value="合集" v-for="book in chunkDisplayBookList" :key="book.id" class="book-badge">
+          <div class="book-card">
+            <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+            <img class="book-cover" :src="book.coverPath"/>
+            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><StarFilled /></el-icon>
+          </div>
+        </el-badge>
+      </el-col>
+      <el-col :span="4" v-show="editCollectionView"></el-col>
     </el-row>
-    <el-row class="pagination-bar">
+    <el-row class="pagination-bar" v-show="!editCollectionView">
       <el-pagination
         v-model:currentPage="currentPage"
         v-model:page-size="setting.pageSize"
@@ -53,8 +68,8 @@
       </template>
       <el-row :gutter="20" class="book-detail-card">
         <el-col :span="showComment?6:9">
-          <el-row class="book-detail-function detail-cover">
-            <img class="book-cover" :src="bookDetail.coverPath" @click="viewManga"/>
+          <el-row class="book-detail-function book-detail-cover-frame">
+            <img class="book-detail-cover" :src="bookDetail.coverPath" @click="viewManga"/>
             <el-icon :size="30" :color="bookDetail.mark ? '#E6A23C' : '#666666'" class="book-detail-star" @click="switchMark(bookDetail)"><StarFilled /></el-icon>
           </el-row>
           <el-row class="book-detail-function">
@@ -65,7 +80,7 @@
             </el-descriptions>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="success" @click="openLocalBook">阅读</el-button>
+            <el-button type="success" plain @click="openLocalBook">阅读</el-button>
             <el-button type="danger" plain @click="deleteLocalBook">删除</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
           </el-row>
@@ -309,19 +324,20 @@
 import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
-import { Close } from '@element-plus/icons-vue'
+import { Close, Search, Setting } from '@element-plus/icons-vue'
+import { MdShuffle } from '@vicons/ionicons4'
 import he from 'he'
 import {nanoid} from 'nanoid'
 
 export default defineComponent({
   setup () {
     return {
-      Close
+      Close, Search, Setting, MdShuffle
     }
   },
   data () {
     return {
-      doujinshiList: [],
+      bookList: [],
       dialogVisibleBookDetail: false,
       bookDetail: {},
       displayBookList: [],
@@ -342,7 +358,8 @@ export default defineComponent({
       showComment: true,
       showThumbnail: false,
       thumbnailColumn: 10,
-      storeDrawerScrollTop: undefined
+      storeDrawerScrollTop: undefined,
+      editCollectionView: false
     }
   },
   computed: {
@@ -361,10 +378,10 @@ export default defineComponent({
     ipcRenderer['load-setting']()
     .then(res=>{
       this.setting = res
-      ipcRenderer['load-doujinshi-list'](this.setting.loadOnStart)
+      ipcRenderer['load-book-list'](this.setting.loadOnStart)
       .then(res=>{
-        this.doujinshiList = res.sort(this.sortList('date'))
-        this.displayBookList = this.doujinshiList
+        this.bookList = res.sort(this.sortList('date'))
+        this.displayBookList = this.bookList
         this.chunkList()
       })
     })
@@ -405,10 +422,10 @@ export default defineComponent({
       }
     },
     loadBookList () {
-      ipcRenderer['load-doujinshi-list'](true)
+      ipcRenderer['load-book-list'](true)
       .then(res=>{
-        this.doujinshiList = res.sort(this.sortList('date'))
-        this.displayBookList = this.doujinshiList
+        this.bookList = res.sort(this.sortList('date'))
+        this.displayBookList = this.bookList
         this.chunkList()
       })
     },
@@ -470,7 +487,7 @@ export default defineComponent({
     deleteLocalBook () {
       ipcRenderer['delete-local-book'](this.bookDetail.filepath)
       .then(()=>{
-        _.remove(this.doujinshiList, {filepath: this.bookDetail.filepath})
+        _.remove(this.bookList, {filepath: this.bookDetail.filepath})
         _.remove(this.displayBookList, {filepath: this.bookDetail.filepath})
         this.dialogVisibleBookDetail = false
         this.chunkList()
@@ -491,7 +508,7 @@ export default defineComponent({
     importDatabase () {
       ipcRenderer['load-import-database']()
       .then(database=>{
-        _.forIn(this.doujinshiList, (book, index)=>{
+        _.forIn(this.bookList, (book, index)=>{
           let findData = _.find(database, {hash: book.hash})
           if (findData) {
             _.assign(book, findData)
@@ -502,7 +519,7 @@ export default defineComponent({
             }
             this.saveBookList()
           }
-          if (index == this.doujinshiList.length - 1) {
+          if (index == this.bookList.length - 1) {
             this.dialogVisibleSetting = false
             this.printMessage('success', '导入完成')
           }
@@ -588,8 +605,8 @@ export default defineComponent({
             }
           })
         } else {
-          ipcRenderer['get-ex-url']({
-            hash: book.hash.toUpperCase(),
+          ipcRenderer['get-ex-webpage']({
+            url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_exp=on`,
             cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
@@ -618,10 +635,10 @@ export default defineComponent({
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let load = async (gap) => {
-        for (let i = 0; i < this.doujinshiList.length; i++) {
-          if (this.doujinshiList[i].status == 'non-tag' && this.serviceAvailable) {
-            this.getBookInfo(this.doujinshiList[i], server)
-            this.printMessage('info', `Get Metadata ${i+1} of ${this.doujinshiList.length}`)
+        for (let i = 0; i < this.bookList.length; i++) {
+          if (this.bookList[i].status == 'non-tag' && this.serviceAvailable) {
+            this.getBookInfo(this.bookList[i], server)
+            this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
           }
         }
@@ -629,11 +646,17 @@ export default defineComponent({
       load(this.setting.requireGap || 10000)
     },
     saveBookList () {
-      ipcRenderer['save-book-list'](_.cloneDeep(this.doujinshiList))
+      ipcRenderer['save-book-list'](_.cloneDeep(this.bookList))
+    },
+    handleSearchStringChange (val) {
+      if (!val) {
+        this.displayBookList = this.bookList
+        this.chunkList()
+      }
     },
     searchBook () {
       let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
-      this.displayBookList = _.filter(this.doujinshiList, (book)=>{
+      this.displayBookList = _.filter(this.bookList, (book)=>{
         let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category'])).toLowerCase()
         return _.every(searchStringArray, (str)=>{
           if (_.startsWith(str, '-')) {
@@ -675,8 +698,8 @@ export default defineComponent({
       this.dialogVisibleSetting = false
       ipcRenderer['force-gene-book-list']()
       .then(res=>{
-        this.doujinshiList = res.sort(this.sortList('date'))
-        this.displayBookList = this.doujinshiList
+        this.bookList = res.sort(this.sortList('date'))
+        this.displayBookList = this.bookList
         this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[0]
         this.printMessage('success', '强制重建漫画库完成')
       })
@@ -701,7 +724,7 @@ export default defineComponent({
       if (this.editingTag) {
         if (!_.has(this.bookDetail, 'tags')) this.bookDetail.tags = {}
         let tempTagGroup = {}
-        _.forIn(this.doujinshiList.map(b=>b.tags), (tagObject)=>{
+        _.forIn(this.bookList.map(b=>b.tags), (tagObject)=>{
           _.forIn(tagObject, (tagArray, tagCat)=>{
             if (_.isArray(tagArray)) {
               if (_.has(tempTagGroup, tagCat)) {
@@ -770,35 +793,35 @@ export default defineComponent({
     handleSortChange (val) {
       switch(val){
         case 'mark':
-          this.displayBookList = _.filter(this.doujinshiList, 'mark')
+          this.displayBookList = _.filter(this.bookList, 'mark')
           this.chunkList()
           break
         case 'addAscend':
-          this.displayBookList = _.reverse(this.doujinshiList.sort(this.sortList('date')))
+          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('date')))
           this.chunkList()
           break
         case 'addDescend':
-          this.displayBookList = this.doujinshiList.sort(this.sortList('date'))
+          this.displayBookList = this.bookList.sort(this.sortList('date'))
           this.chunkList()
           break
         case 'postAscend':
-          this.displayBookList = _.reverse(this.doujinshiList.sort(this.sortList('posted')))
+          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('posted')))
           this.chunkList()
           break
         case 'postDescend':
-          this.displayBookList = this.doujinshiList.sort(this.sortList('posted'))
+          this.displayBookList = this.bookList.sort(this.sortList('posted'))
           this.chunkList()
           break
         case 'scoreAscend':
-          this.displayBookList = _.reverse(this.doujinshiList.sort(this.sortList('rating')))
+          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('rating')))
           this.chunkList()
           break
         case 'scoreDescend':
-          this.displayBookList = this.doujinshiList.sort(this.sortList('rating'))
+          this.displayBookList = this.bookList.sort(this.sortList('rating'))
           this.chunkList()
           break
         default:
-          this.displayBookList = this.doujinshiList
+          this.displayBookList = this.bookList
           this.chunkList()
           break
       }
@@ -809,7 +832,7 @@ export default defineComponent({
     getComments (url) {
       this.comments = []
       if (url) {
-        ipcRenderer['get-ex-comments']({
+        ipcRenderer['get-ex-webpage']({
           url,
           cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
         })
@@ -864,6 +887,9 @@ export default defineComponent({
       }
       this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
     },
+    createCollection () {
+      this.editCollectionView = !this.editCollectionView
+    },
   }
 })
 </script>
@@ -884,49 +910,64 @@ body
   overflow-x: auto
   justify-content: center
   margin-top: 8px
-.el-rate
-  display: inline-block
-  height: 18px
-  margin: 0 10px
 
 .pagination-bar
   margin: 4px 0
   justify-content: center
 
-.doujinshi-card
+.book-badge
+  .el-badge__content.is-fixed
+    top: 10px
+    right: calc(32px + 18px / 2)
+
+.book-card
   width: 260px
-  height: 470px
+  height: 372px
   border: solid 1px
   border-radius: 8px
-  margin: 10px 20px
+  margin: 6px 10px
   position: relative
 .book-title
-  height: 60px
+  height: 36px
   overflow-y: hidden
   margin: 8px 0px
-
-.book-cover
-  border-radius: 8px
-  width: 250px
-  height: 360px
+  font-size: 14px
 .book-card-star, .book-detail-star
   position: absolute
 .book-card-star
-  right: 0
-  top: 2em
+  right: 32px
+  top: 40px
 .book-detail-star
   right: 0
   top: -0.5em
+.book-cover
+  border-radius: 8px
+  width: 200px
+  height: 288px
+  margin: 0 20px
 .outer-read-button-group
-  margin-right: 8px
+  margin: 0 8px
 .outer-read-button
   padding: 0 2px
+.book-status-tag
+  padding: 0 2px
+  margin-right: 8px
+.el-rate
+  display: inline-block
+  height: 18px
+
 
 .el-dialog
-  //border: solid 4px
-  //border-radius: 16px
-.el-dialog__body
-  padding: 5px 20px 16px
+  .el-dialog__header
+    .el-dialog__headerbtn
+      margin: 0.5em 1em 0 0
+      .el-icon
+        width: 2em
+        svg
+          height: 2em
+          width: 2em
+  .el-dialog__body
+    padding: 5px 20px 16px
 
 
 .detail-book-title
@@ -939,11 +980,14 @@ body
   .book-detail-function
     justify-content: center
     margin-bottom: 10px
-  .detail-cover
+  .book-detail-cover-frame
     position: relative
     width: 250px
     margin: 0 auto
     margin-bottom: 10px
+    .book-detail-cover
+      width: 250px
+      height: 360px
   .edit-line
     margin: 4px 0
     .el-select

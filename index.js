@@ -61,14 +61,17 @@ function createWindow () {
     width: 1560,
     height: 1000,
     webPreferences: {
-      // webSecurity: false,
+      webSecurity: app.isPackaged ? true : false,
       preload: path.join(__dirname, 'preload.js')
     },
     show: false
   })
 
-  win.loadFile('dist/index.html')
-  // win.loadURL('http://localhost:3000')
+  if (app.isPackaged) {
+    win.loadFile('dist/index.html')
+  } else {
+    win.loadURL('http://localhost:3000')
+  }
   win.setMenuBarVisibility(false)
   win.webContents.on('did-finish-load', ()=>{
     let name = "EH漫画管理"
@@ -137,7 +140,7 @@ let geneCover = async (filepath, type) => {
 
 }
 
-ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
+ipcMain.handle('load-book-list', async (event, scan)=>{
   if (scan) {
 
     let existData
@@ -284,34 +287,7 @@ ipcMain.handle('delete-local-book', async (event, filepath)=>{
   return shell.trashItem(filepath)
 })
 
-ipcMain.handle('get-ex-url', async (event, {hash, cookie})=>{
-  if (setting.proxy) {
-    return await superagent
-    .get(`https://exhentai.org/?f_shash=${hash}&fs_exp=on`)
-    .set('Cookie', cookie)
-    .proxy(setting.proxy)
-    .then(res=>{
-      return res.text
-    })
-    .catch(e=>{
-      console.log(e)
-      mainWindow.webContents.send('send-message', `get ex url failed because ${e}`)
-    })
-  } else {
-    return await superagent
-    .get(`https://exhentai.org/?f_shash=${hash}&fs_exp=on`)
-    .set('Cookie', cookie)
-    .then(res=>{
-      return res.text
-    })
-    .catch(e=>{
-      console.log(e)
-      mainWindow.webContents.send('send-message', `get ex url failed because ${e}`)
-    })
-  }
-})
-
-ipcMain.handle('get-ex-comments', async (event, {url, cookie})=>{
+ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
   if (setting.proxy) {
     return await superagent
     .get(url)

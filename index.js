@@ -187,7 +187,7 @@ ipcMain.handle('load-doujinshi-list', async (event, scan)=>{
         if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
       } catch (e) {
         console.log(e)
-        mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed`)
+        mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed because ${e}`)
       }
     }
     await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
@@ -232,7 +232,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
       mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
     } catch (e) {
       console.log(e)
-      mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed`)
+      mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed because ${e}`)
     }
   }
   await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})

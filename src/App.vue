@@ -66,7 +66,7 @@
       <template #header>
         <p class="detail-book-title"><span class="url-link" @click="openUrl(bookDetail.url)">{{bookDetail.title_jpn ? bookDetail.title_jpn : bookDetail.title}}</span></p>
       </template>
-      <el-row :gutter="20" class="book-detail-card">
+      <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
         <el-col :span="showComment?6:9">
           <el-row class="book-detail-function book-detail-cover-frame">
             <img class="book-detail-cover" :src="bookDetail.coverPath" @click="viewManga"/>

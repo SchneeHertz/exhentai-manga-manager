@@ -164,7 +164,6 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
     for (let i = 0; i < list.length; i++) {
       try {
         let {filepath, type} = list[i]
-        filepath = path.join(setting.library, filepath)
         let foundData = _.find(existData, {filepath: filepath})
         if (!foundData) {
           let id = nanoid()
@@ -216,7 +215,6 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
   for (let i = 0; i < list.length; i++) {
     try {
       let {filepath, type} = list[i]
-      filepath = path.join(setting.library, filepath)
       let id = nanoid()
       let {targetFilePath, coverPath} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){

@@ -585,7 +585,7 @@ export default defineComponent({
         getTag(book, book.url)
       } else {
         if (server == 'e-hentai') {
-          axios.get('https://e-hentai.org/?f_shash=' + book.hash.toUpperCase() + '&fs_exp=on')
+          axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`)
           .then(res=>{
             try {
               let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
@@ -606,7 +606,7 @@ export default defineComponent({
           })
         } else {
           ipcRenderer['get-ex-webpage']({
-            url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_exp=on`,
+            url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`,
             cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{

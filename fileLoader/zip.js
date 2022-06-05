@@ -6,10 +6,12 @@ const AdmZip = require('adm-zip')
 const { nanoid } = require('nanoid')
 
 let getZipFilelist = async (libraryPath)=>{
-  return await promisify(glob)('**/*.zip', {
+  let list = await promisify(glob)('**/*.zip', {
     cwd: libraryPath,
     nocase: true
   })
+  list = list.map(filepath=>path.join(libraryPath, filepath))
+  return list
 }
 
 let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{

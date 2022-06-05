@@ -57,10 +57,12 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
 let getImageListFromZip = async (filepath, VIEWER_PATH)=>{
   let zip = new AdmZip(filepath)
   zip.extractAllTo(VIEWER_PATH, true)
-  return await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp|bmp)', {
+  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp|bmp)', {
     cwd: VIEWER_PATH,
     nocase: true
   })
+  list = list.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f=>path.join(VIEWER_PATH, f))
+  return list
 }
 
 module.exports = {

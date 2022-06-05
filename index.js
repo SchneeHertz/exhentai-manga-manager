@@ -261,7 +261,6 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
       break
   }
 
-  list = list.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f=>path.join(VIEWER_PATH, f))
   let result = []
   for (let filepath of list) {
     let metadata = await sharp(filepath).metadata()
@@ -366,7 +365,7 @@ ipcMain.handle('export-database', async (event, arg)=>{
       if (!book.hash) {
         book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
       }
-      return _.pick(book, ['hash', 'tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'url'])
+      return _.pick(book, ['hash', 'tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url'])
     } catch {
       return {}
     }

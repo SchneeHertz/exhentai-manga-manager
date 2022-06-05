@@ -47,7 +47,7 @@
       </el-col>
       <el-col :span="4" v-show="editCollectionView"></el-col>
     </el-row>
-    <el-row class="pagination-bar" v-show="!editCollectionView">
+    <el-row class="pagination-bar">
       <el-pagination
         v-model:currentPage="currentPage"
         v-model:page-size="setting.pageSize"
@@ -921,21 +921,21 @@ body
     right: calc(32px + 18px / 2)
 
 .book-card
-  width: 260px
+  width: 240px
   height: 372px
   border: solid 1px
   border-radius: 8px
   margin: 6px 10px
   position: relative
 .book-title
-  height: 36px
+  height: 37px
   overflow-y: hidden
-  margin: 8px 0px
+  margin: 8px 2px
   font-size: 14px
 .book-card-star, .book-detail-star
   position: absolute
 .book-card-star
-  right: 32px
+  right: 16px
   top: 40px
 .book-detail-star
   right: 0

@@ -10,6 +10,7 @@
       <el-col :span="3">
         <el-select placeholder="排序" @change="handleSortChange" clearable v-model="sortValue">
           <el-option label="仅收藏" value="mark"></el-option>
+          <el-option label="仅合集" value="collection"></el-option>
           <el-option label="添加时间正序" value="addAscend"></el-option>
           <el-option label="添加时间倒序" value="addDescend"></el-option>
           <el-option label="上传时间正序" value="postAscend"></el-option>
@@ -900,6 +901,10 @@ export default defineComponent({
       switch(val){
         case 'mark':
           this.displayBookList = _.filter(this.bookList, 'mark')
+          this.chunkList()
+          break
+        case 'collection':
+          this.displayBookList = _.filter(this.bookList, 'collection')
           this.chunkList()
           break
         case 'addAscend':

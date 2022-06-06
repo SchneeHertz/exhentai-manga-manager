@@ -34,7 +34,7 @@
     </el-row>
     <el-row :gutter="20" class="book-card-area">
       <el-col :span="24" v-show="!editCollectionView">
-        <div 
+        <div
           v-for="book in chunkDisplayBookList"
           :key="book.id"
           class="book-card-frame"
@@ -55,10 +55,11 @@
             <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
           </div>
           <div class="book-card" v-if="book.collection">
-            <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+            <el-tag effect="dark" type="warning" class="book-collection-tag">合集</el-tag>
+            <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><StarFilled /></el-icon>
-            <el-rate :value="book.rating"  v-if="book.collection" allow-half/>
+            <el-rate v-model="book.rating" allow-half disabled/>
           </div>
         </div>
       </el-col>
@@ -69,6 +70,7 @@
           v-for="book in chunkDisplayBookList" :key="book.id"
           class="book-add-badge"
           @click="handleClickCollectBadge(book)"
+          v-show="!book.collection"
         >
           <div class="book-collect-card">
             <p class="book-collect-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
@@ -292,7 +294,7 @@
         </el-col>
         <el-col :span="4">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="loadBookList">手动扫描</el-button>
+            <el-button class="function-button" type="primary" plain @click="loadBookList(true)">手动扫描</el-button>
           </div>
         </el-col>
         <el-col :span="6">
@@ -368,6 +370,29 @@
         </el-space>
       </div>
     </el-drawer>
+    <el-drawer
+      v-model="drawerVisibleCollection"
+      direction="btt"
+      :size="464"
+      destroy-on-close
+    >
+      <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
+      <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
+        <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+        <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
+        <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
+        <el-button-group class="outer-read-button-group">
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+        </el-button-group>
+        <el-tag
+          class="book-status-tag"
+          :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'"
+          @click="searchFromTag(book.status)"
+        >{{book.status}}</el-tag>
+        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -418,6 +443,9 @@ export default defineComponent({
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
       collectionList: [],
+      drawerVisibleCollection: false,
+      openCollectionTitle: undefined,
+      openCollectionBookList: []
     }
   },
   computed: {
@@ -453,13 +481,7 @@ export default defineComponent({
     ipcRenderer['load-setting']()
     .then(res=>{
       this.setting = res
-      ipcRenderer['load-book-list'](this.setting.loadOnStart)
-      .then(res=>{
-        this.bookList = res.sort(this.sortList('date'))
-        this.displayBookList = this.bookList
-        this.chunkList()
-        this.loadCollectionList()
-      })      
+      this.loadBookList(this.setting.loadOnStart)
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
@@ -497,8 +519,8 @@ export default defineComponent({
         }
       }
     },
-    loadBookList () {
-      ipcRenderer['load-book-list'](true)
+    loadBookList (scan) {
+      ipcRenderer['load-book-list'](scan)
       .then(res=>{
         this.bookList = res.sort(this.sortList('date'))
         this.displayBookList = this.bookList
@@ -986,14 +1008,20 @@ export default defineComponent({
           list: []
         })
         this.selectCollection = id
+        this.handleSelectCollectionChange(this.selectCollection)
       })
       .catch(() => {
         this.printMessage('info', '已取消')
       })
     },
     saveCollection () {
-      this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(c.list))
+      this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(_.compact(c.list)))
       ipcRenderer['save-collection-list'](_.cloneDeep(this.collectionList))
+      .then(()=>{
+        this.loadBookList(false)
+        this.selectCollection = undefined,
+        this.selectCollectionObject = {list:[]}
+      })
       this.editCollectionView = false
     },
     loadCollectionList () {
@@ -1008,11 +1036,21 @@ export default defineComponent({
           let date = _.reverse(_.sortBy(collectBook.map(book=>book.date)))[0]
           let posted = _.reverse(_.sortBy(collectBook.map(book=>book.posted)))[0]
           let rating = _.reverse(_.sortBy(collectBook.map(book=>book.rating)))[0]
+          console.log(rating)
+          let mark = _.some(collectBook, 'mark')
+          let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
+            if (_.isArray(obj) && _.isArray(src)) {
+              return _.uniq(obj.concat(src))
+            } else {
+              return src
+            }
+          })
+          let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
           this.bookList.push({
             title: collection.title,
             id: collection.id,
             coverPath: collectBook[0].coverPath,
-            date, posted, rating,
+            date, posted, rating, mark, tags, title_jpn,
             list: collection.list,
             collection: true
           })
@@ -1024,10 +1062,12 @@ export default defineComponent({
     handleSelectCollectionChange (val) {
       this.selectCollectionObject= _.find(this.collectionList, {id: val})
       _.forIn(this.bookList, book=>{
-        if (this.selectCollectionObject.list.includes(book.hash)) {
-          book.collected = true
-        } else {
-          book.collected = false
+        if (!book.collection) {
+          if (this.selectCollectionObject.list.includes(book.hash)) {
+            book.collected = true
+          } else {
+            book.collected = false
+          }
         }
       })
     },
@@ -1039,6 +1079,13 @@ export default defineComponent({
         this.selectCollectionObject.list.push(book.hash)
         book.collected = true
       }
+    },
+    openCollection(book) {
+      this.drawerVisibleCollection = true
+      this.openCollectionBookList = _.compact(book.list.map(hash=>{
+        return _.find(this.bookList, {hash})
+      }))
+      this.openCollectionTitle = book.title
     }
   }
 })
@@ -1082,12 +1129,17 @@ body
 .book-card-frame
   display: inline-block
 .book-card
+  display: inline-block
   width: 240px
   height: 372px
   border: solid 1px
   border-radius: 8px
   margin: 6px 10px
   position: relative
+.book-collection-tag
+  position: absolute
+  right: -1px
+  top: -1px
 .book-title
   height: 37px
   overflow-y: hidden
@@ -1279,4 +1331,7 @@ body
 .viewer-thunmnail-page
   text-align: center
   font-size: 11px
+
+.open-collection-title
+  margin: 0 10px
 </style>

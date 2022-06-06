@@ -18,12 +18,28 @@
           <el-option label="评分倒序" value="scoreDescend"></el-option>
         </el-select>
       </el-col>
-      <el-col :span="2" :offset="3"><el-button type="primary" plain class="function-button" @click="createCollection">创建合集</el-button></el-col>
+      <el-col :span="4" :offset="2">
+        <el-row :gutter="4">
+          <el-col :span="10" :offset="7"  v-if="!editCollectionView">
+            <el-button type="primary" plain class="function-button" @click="createCollection">编辑合集</el-button>
+          </el-col>
+          <el-col :span="10" :offset="2" v-if="editCollectionView">
+            <el-button type="primary" plain class="function-button" @click="addCollection">新增合集</el-button>
+          </el-col>
+          <el-col :span="10" v-if="editCollectionView">
+            <el-button type="primary" plain class="function-button" @click="saveCollection">保存</el-button>
+          </el-col>
+        </el-row>
+      </el-col>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
       <el-col :span="24" v-show="!editCollectionView">
-        <el-badge value="合集" v-for="book in chunkDisplayBookList" :key="book.id" class="book-badge" :hidden="!book.merged">
-          <div class="book-card">
+        <div 
+          v-for="book in chunkDisplayBookList"
+          :key="book.id"
+          class="book-card-frame"
+        >
+          <div class="book-card" v-if="!book.collection && !book.hidden">
             <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
@@ -31,21 +47,54 @@
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
             </el-button-group>
-            <el-tag class="book-status-tag" :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'">{{book.status}}</el-tag>
-            <el-rate v-model="book.rating" allow-half/>
+            <el-tag
+              class="book-status-tag"
+              :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'"
+              @click="searchFromTag(book.status)"
+            >{{book.status}}</el-tag>
+            <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
           </div>
-        </el-badge>
-      </el-col>
-      <el-col :span="20" v-show="editCollectionView">
-        <el-badge value="合集" v-for="book in chunkDisplayBookList" :key="book.id" class="book-badge">
-          <div class="book-card">
+          <div class="book-card" v-if="book.collection">
             <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
-            <img class="book-cover" :src="book.coverPath"/>
+            <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><StarFilled /></el-icon>
+            <el-rate :value="book.rating"  v-if="book.collection" allow-half/>
+          </div>
+        </div>
+      </el-col>
+      <el-col :span="18" v-show="editCollectionView" class="book-collect">
+        <el-badge
+          :value="book.collected ? '✓' : '+'"
+          :type="book.collected ? 'success' : 'warning'"
+          v-for="book in chunkDisplayBookList" :key="book.id"
+          class="book-add-badge"
+          @click="handleClickCollectBadge(book)"
+        >
+          <div class="book-collect-card">
+            <p class="book-collect-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+            <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
         </el-badge>
       </el-col>
-      <el-col :span="4" v-show="editCollectionView"></el-col>
+      <el-col :span="6" v-show="editCollectionView" class="book-collection">
+        <el-select v-model="selectCollection" class="book-collection-select" @change="handleSelectCollectionChange">
+          <el-option v-for="collection in collectionList" :key="collection.id" :value="collection.id" :label="collection.title"></el-option>
+        </el-select>
+        <div>
+          <draggable
+            v-model="displaySelectCollectionList"
+            item-key="id"
+            animation="200"
+          >
+            <template #item="{element}">
+              <div class="book-collection-line">
+                <img class="book-collection-cover" :src="element.coverPath" />
+                <p class="book-collection-title" :title="element.title_jpn ? element.title_jpn : element.title">{{element.title_jpn ? element.title_jpn : element.title}}</p>
+              </div>
+            </template>
+          </draggable>
+        </div>
+      </el-col>
     </el-row>
     <el-row class="pagination-bar">
       <el-pagination
@@ -115,7 +164,9 @@
             <div v-else>
               <el-descriptions :column="1">
                 <el-descriptions-item label="英文标题:">{{bookDetail.title}}</el-descriptions-item>
-                <el-descriptions-item label="类别:"><el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag></el-descriptions-item>
+                <el-descriptions-item label="类别:">
+                  <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
+                </el-descriptions-item>
                 <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
                   <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag)">{{tag}}</el-tag>
                 </el-descriptions-item>
@@ -323,13 +374,17 @@
 <script>
 import { defineComponent } from 'vue'
 import axios from 'axios'
-import { ElMessage, ElLoading } from 'element-plus'
+import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Close, Search, Setting } from '@element-plus/icons-vue'
 import { MdShuffle } from '@vicons/ionicons4'
 import he from 'he'
 import {nanoid} from 'nanoid'
+import draggable from 'vuedraggable'
 
 export default defineComponent({
+  components: {
+    draggable
+  },
   setup () {
     return {
       Close, Search, Setting, MdShuffle
@@ -359,7 +414,10 @@ export default defineComponent({
       showThumbnail: false,
       thumbnailColumn: 10,
       storeDrawerScrollTop: undefined,
-      editCollectionView: false
+      editCollectionView: false,
+      selectCollection: undefined,
+      selectCollectionObject: {list:[]},
+      collectionList: [],
     }
   },
   computed: {
@@ -368,6 +426,23 @@ export default defineComponent({
         this.thumbnailColumn = this.setting.thumbnailColumn
       }
       return _.chunk(this.viewerImageList, this.thumbnailColumn)
+    },
+    displaySelectCollectionList: {
+      get () {
+        let list = this.selectCollectionObject.list.map(hash=>{
+          let findBook = _.find(this.bookList, {hash})
+          if (findBook) {
+            return findBook
+          } else {
+            return undefined
+          }
+        })
+        return _.compact(list)
+      },
+      set (val) {
+        let list = val.map(b=>b.hash)
+        this.selectCollectionObject.list = list
+      }
     }
   },
   mounted () {
@@ -383,7 +458,8 @@ export default defineComponent({
         this.bookList = res.sort(this.sortList('date'))
         this.displayBookList = this.bookList
         this.chunkList()
-      })
+        this.loadCollectionList()
+      })      
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
@@ -427,6 +503,7 @@ export default defineComponent({
         this.bookList = res.sort(this.sortList('date'))
         this.displayBookList = this.bookList
         this.chunkList()
+        this.loadCollectionList()
       })
     },
     returnImageStyle(image) {
@@ -646,7 +723,13 @@ export default defineComponent({
       load(this.setting.requireGap || 10000)
     },
     saveBookList () {
-      ipcRenderer['save-book-list'](_.cloneDeep(this.bookList))
+      let bookList = _.cloneDeep(this.bookList)
+      bookList = _.filter(bookList, book=>!book.collection)
+      _.forIn(bookList, book=>{
+        delete book.collected
+        delete book.hidden
+      })
+      ipcRenderer['save-book-list'](bookList)
     },
     handleSearchStringChange (val) {
       if (!val) {
@@ -700,7 +783,8 @@ export default defineComponent({
       .then(res=>{
         this.bookList = res.sort(this.sortList('date'))
         this.displayBookList = this.bookList
-        this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[0]
+        this.chunkList()
+        this.loadCollectionList()
         this.printMessage('success', '强制重建漫画库完成')
       })
     },
@@ -888,8 +972,74 @@ export default defineComponent({
       this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
     },
     createCollection () {
-      this.editCollectionView = !this.editCollectionView
+      this.editCollectionView = true
+      if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
     },
+    addCollection () {
+      ElMessageBox.prompt('请输入合集名', '新增合集', {
+      })
+      .then(({ value }) => {
+        let id = nanoid()
+        this.collectionList.push({
+          id,
+          title: value,
+          list: []
+        })
+        this.selectCollection = id
+      })
+      .catch(() => {
+        this.printMessage('info', '已取消')
+      })
+    },
+    saveCollection () {
+      this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(c.list))
+      ipcRenderer['save-collection-list'](_.cloneDeep(this.collectionList))
+      this.editCollectionView = false
+    },
+    loadCollectionList () {
+      ipcRenderer['load-collection-list']()
+      .then(res=>{
+        this.collectionList = res
+        _.forIn(this.collectionList, collection=>{
+          let collectBook = _.compact(collection.list.map(hash=>{
+            return _.find(this.bookList, {hash})
+          }))
+          collectBook.map(book=>book.hidden = true)
+          let date = _.reverse(_.sortBy(collectBook.map(book=>book.date)))[0]
+          let posted = _.reverse(_.sortBy(collectBook.map(book=>book.posted)))[0]
+          let rating = _.reverse(_.sortBy(collectBook.map(book=>book.rating)))[0]
+          this.bookList.push({
+            title: collection.title,
+            id: collection.id,
+            coverPath: collectBook[0].coverPath,
+            date, posted, rating,
+            list: collection.list,
+            collection: true
+          })
+        })
+        this.displayBookList = this.bookList.sort(this.sortList('date'))
+        this.chunkList()
+      })
+    },
+    handleSelectCollectionChange (val) {
+      this.selectCollectionObject= _.find(this.collectionList, {id: val})
+      _.forIn(this.bookList, book=>{
+        if (this.selectCollectionObject.list.includes(book.hash)) {
+          book.collected = true
+        } else {
+          book.collected = false
+        }
+      })
+    },
+    handleClickCollectBadge (book) {
+      if (book.collected) {
+        book.collected = false
+        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, hash=>hash != book.hash)
+      } else {
+        this.selectCollectionObject.list.push(book.hash)
+        book.collected = true
+      }
+    }
   }
 })
 </script>
@@ -910,6 +1060,10 @@ body
   overflow-x: auto
   justify-content: center
   margin-top: 8px
+  .book-collect, .book-collection
+    height: calc(100vh - 98px)
+    overflow-x: auto
+    justify-content: center
 
 .pagination-bar
   margin: 4px 0
@@ -919,7 +1073,14 @@ body
   .el-badge__content.is-fixed
     top: 10px
     right: calc(32px + 18px / 2)
+.book-add-badge
+  .el-badge__content.is-fixed
+    top: 10px
+    right: calc(10px + 18px / 2)
+    cursor: pointer
 
+.book-card-frame
+  display: inline-block
 .book-card
   width: 240px
   height: 372px
@@ -956,6 +1117,45 @@ body
   display: inline-block
   height: 18px
 
+.book-collect-card
+  width: 155px
+  height: 232px
+  border: solid 1px
+  border-radius: 4px
+  margin: 4px 8px
+  position: relative
+.book-collect-title
+  height: 38px
+  overflow-y: hidden
+  margin: 4px 2px
+  font-size: 10px
+.book-collect-cover
+  border-radius: 4px
+  width: 125px
+  height: 180px
+.book-collection
+  .book-collection-select
+    width: 100%
+  .book-collection-line
+    text-align:left
+    width: 100%
+    height: 80px
+    border: solid 1px
+    border-radius: 4px
+    margin: 2px 4px
+    position: relative
+    .book-collection-cover
+      border-radius: 2px
+      width: 50px
+      height: 72px
+      position: absolute
+      top: 4px
+      left: 2px
+    .book-collection-title
+      height: 72px
+      overflow-y: hidden
+      margin: 4px 4px 4px 54px
+      font-size: 12px
 
 .el-dialog
   .el-dialog__header

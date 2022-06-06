@@ -94,7 +94,9 @@ app.on('activate', () => {
 })
 
 app.on('ready', async () => {
-  // await session.defaultSession.loadExtension(path.resolve(__dirname,'./6.0.12_0'))
+  if (!app.isPackaged) {
+    await session.defaultSession.loadExtension(path.resolve(__dirname,'./6.0.12_0'))
+  }
   if (setting.proxy) {
     await session.defaultSession.setProxy({
       mode: 'fixed_servers',
@@ -390,8 +392,20 @@ ipcMain.handle('show-file', async (event, filepath)=>{
   shell.showItemInFolder(filepath)
 })
 
+ipcMain.handle('load-collection-list', async (event, arg)=>{
+  let list
+  try {
+    list = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'collectionList.json'), {encoding: 'utf-8'}))
+  } catch (e) {
+    console.log(e)
+    list = []
+  }
+  return list
+})
 
-
+ipcMain.handle('save-collection-list', async (event, list)=>{
+  return await fs.promises.writeFile(path.join(STORE_PATH, 'collectionList.json'), JSON.stringify(list, null, '  '), {encoding: 'utf-8'})
+})
 
 
 app.on('window-all-closed', () => {

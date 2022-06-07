@@ -106,7 +106,7 @@
         :page-sizes="[10, 12, 16, 24, 60, 600, 6000]"
         :small="true"
         layout="sizes, prev, pager, next, total"
-        :total="displayBookList.length"
+        :total="displayBookCount"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
       />
@@ -472,6 +472,9 @@ export default defineComponent({
         let list = val.map(b=>b.hash)
         this.selectCollectionObject.list = list
       }
+    },
+    displayBookCount () {
+      return _.sumBy(this.displayBookList, book=>book.hidden ? 0 : 1)
     }
   },
   mounted () {
@@ -519,6 +522,21 @@ export default defineComponent({
           document.getElementsByClassName('el-drawer__body')[0].scrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollHeight
         }
       }
+    },
+    customChunk (list, size, index) {
+      let result = []
+      let count = 0
+      let countIndex = 0
+      _.forIn(list, element=>{
+        if (countIndex == index) result.push(element)
+        if (!element.hidden) count++
+        if (count >= size) {
+          countIndex++
+          count = 0
+        }
+        if (countIndex > index) return false
+      })
+      return result
     },
     loadBookList (scan) {
       ipcRenderer['load-book-list'](scan)
@@ -572,7 +590,7 @@ export default defineComponent({
     },
     chunkList () {
       this.currentPage = 1
-      this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[0]
+      this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, 0)
       this.scrollMainPageTop()
     },
     openBookDetail (book) {
@@ -817,7 +835,7 @@ export default defineComponent({
       this.scrollMainPageTop()
     },
     handleCurrentChange (currentPage) {
-      this.chunkDisplayBookList = _.chunk(this.displayBookList, this.setting.pageSize)[currentPage - 1]
+      this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, currentPage - 1)
       this.scrollMainPageTop()
     },
     scrollMainPageTop () {

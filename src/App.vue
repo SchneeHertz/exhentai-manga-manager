@@ -458,8 +458,8 @@ export default defineComponent({
     },
     displaySelectCollectionList: {
       get () {
-        let list = this.selectCollectionObject.list.map(hash=>{
-          let findBook = _.find(this.bookList, {hash})
+        let list = this.selectCollectionObject.list.map(id=>{
+          let findBook = _.find(this.bookList, {id})
           if (findBook) {
             return findBook
           } else {
@@ -469,7 +469,7 @@ export default defineComponent({
         return _.compact(list)
       },
       set (val) {
-        let list = val.map(b=>b.hash)
+        let list = val.map(b=>b.id)
         this.selectCollectionObject.list = list
       }
     },
@@ -1052,14 +1052,14 @@ export default defineComponent({
       .then(res=>{
         this.collectionList = res
         _.forIn(this.collectionList, collection=>{
-          let collectBook = _.compact(collection.list.map(hash=>{
-            return _.find(this.bookList, {hash})
+          let collectBook = _.compact(collection.list.map(id=>{
+            return _.find(this.bookList, {id})
           }))
+          collection.list = collectBook.map(book=>book.id)
           collectBook.map(book=>book.hidden = true)
           let date = _.reverse(_.sortBy(collectBook.map(book=>book.date)))[0]
           let posted = _.reverse(_.sortBy(collectBook.map(book=>book.posted)))[0]
           let rating = _.reverse(_.sortBy(collectBook.map(book=>book.rating)))[0]
-          console.log(rating)
           let mark = _.some(collectBook, 'mark')
           let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
             if (_.isArray(obj) && _.isArray(src)) {
@@ -1086,7 +1086,7 @@ export default defineComponent({
       this.selectCollectionObject= _.find(this.collectionList, {id: val})
       _.forIn(this.bookList, book=>{
         if (!book.collection) {
-          if (this.selectCollectionObject.list.includes(book.hash)) {
+          if (this.selectCollectionObject.list.includes(book.id)) {
             book.collected = true
           } else {
             book.collected = false
@@ -1097,16 +1097,16 @@ export default defineComponent({
     handleClickCollectBadge (book) {
       if (book.collected) {
         book.collected = false
-        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, hash=>hash != book.hash)
+        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id != book.id)
       } else {
-        this.selectCollectionObject.list.push(book.hash)
+        this.selectCollectionObject.list.push(book.id)
         book.collected = true
       }
     },
     openCollection(book) {
       this.drawerVisibleCollection = true
-      this.openCollectionBookList = _.compact(book.list.map(hash=>{
-        return _.find(this.bookList, {hash})
+      this.openCollectionBookList = _.compact(book.list.map(id=>{
+        return _.find(this.bookList, {id})
       }))
       this.openCollectionTitle = book.title
     }

@@ -11,6 +11,7 @@ const superagent = require('superagent')
 require('superagent-proxy')(superagent)
 
 const {getZipFilelist, solveBookTypeZip, getImageListFromZip} = require('./fileLoader/zip')
+const {getFolderlist, solveBookTypeFolder, getImageListFromFolder} = require('./fileLoader/folder')
 
 let STORE_PATH = app.getPath('userData')
 if (!fs.existsSync(STORE_PATH)) {
@@ -110,15 +111,26 @@ app.on('ready', async () => {
 
 
 let getBookFilelist = async ()=>{
+  //fileLoader: get fileList
   let zipList = await getZipFilelist(setting.library)
-  return [...zipList.map(filepath=>({filepath, type: 'zip'}))]
+  let folderList = await getFolderlist(setting.library)
+  return [
+    ...zipList.map(filepath=>({filepath, type: 'zip'})),
+    ...folderList.map(filepath=>({filepath, type: 'folder'}))
+  ]
 }
 
 let geneCover = async (filepath, type) => {
   let targetFilePath, coverPath, tempCoverPath
-
+  //fileLoader: get targetFile for hash, get tempCover for cover
   switch (type){
     case 'zip':
+      ;({targetFilePath, coverPath, tempCoverPath} = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
+      break
+    case 'folder':
+      ;({targetFilePath, coverPath, tempCoverPath} = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
+      break
+    default:
       ;({targetFilePath, coverPath, tempCoverPath} = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
       break
   }
@@ -252,9 +264,13 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
   let {filepath, type} = book
 
   let list
+  //fileLoader: get imageList from file
   switch (type) {
     case 'zip':
       list = await getImageListFromZip(filepath, VIEWER_PATH)
+      break
+    case 'folder':
+      list = await getImageListFromFolder(filepath, VIEWER_PATH)
       break
     default:
       list = await getImageListFromZip(filepath, VIEWER_PATH)

@@ -59,7 +59,7 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
 let getImageListFromZip = async (filepath, VIEWER_PATH)=>{
   let zip = new AdmZip(filepath)
   zip.extractAllTo(VIEWER_PATH, true)
-  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp|bmp)', {
+  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp|avif)', {
     cwd: VIEWER_PATH,
     nocase: true
   })

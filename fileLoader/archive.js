@@ -7,6 +7,7 @@ const _ = require('lodash')
 
 
 let getArchivelist = async (libraryPath)=>{
+  return []
   let list = await promisify(glob)('**/*.@(rar|7z)', {
     cwd: libraryPath,
     nocase: true
@@ -35,7 +36,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   }
   targetFilePath = path.join(TEMP_PATH, nanoid() + path.extname(targetFile))
   await fs.promises.copyFile(path.join(tempFolder, targetFile), targetFilePath)
-  
+
   tempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(imageList[0]))
   await fs.promises.copyFile(path.join(tempFolder, imageList[0]), tempCoverPath)
 

@@ -19,6 +19,15 @@
       "index.js",
       "preload.js"
     ],
+    "extraResources": [
+      {
+        "from": "resources/extraResources",
+        "to": "extraResources",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "win": {
       "target": [
         "nsis"
@@ -34,7 +43,6 @@
     "glob": "^7.2.0",
     "lodash": "^4.17.21",
     "nanoid": "^3.3.2",
-    "node-unar": "^1.0.8",
     "sharp": "^0.30.3",
     "superagent": "^7.1.2",
     "superagent-proxy": "^3.0.0"

@@ -315,7 +315,7 @@
       :with-header="false"
       destroy-on-close
     >
-      <el-button type="primary" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
+      <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
       <el-switch
         v-model="imageStyleType"
         size="small"
@@ -1235,12 +1235,12 @@ body
 .el-dialog
   .el-dialog__header
     .el-dialog__headerbtn
-      margin: 0.5em 1em 0 0
+      margin: 8px 16px 0 0
       .el-icon
-        width: 2em
+        width: 32px
         svg
-          height: 2em
-          width: 2em
+          height: 32px
+          width: 32px
   .el-dialog__body
     padding: 5px 20px 16px
 
@@ -1310,14 +1310,16 @@ body
 
 .viewer-close-button
   position: absolute
-  top: 1em
-  right: 2em
+  top: 16px
+  right: 27px
   z-index: 10
   .el-icon
-    width: 2em
+    width: 32px
     svg
-      height: 2em
-      width: 2em
+      height: 32px
+      width: 32px
+.viewer-close-button:hover
+  color: #409EFF !important
 .viewer-switch
   position: absolute
   top: 1em

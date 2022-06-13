@@ -256,8 +256,8 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
       mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed because ${e}`)
     }
   }
-  // await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
-  // await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+  await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+  await fs.promises.mkdir(TEMP_PATH, {recursive: true})
 
   fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(data, null, '  '), {encoding: 'utf-8'})
   return data

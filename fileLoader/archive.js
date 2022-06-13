@@ -5,6 +5,7 @@ const { promisify } = require('util')
 const { nanoid } = require('nanoid')
 const { spawn } = require('child_process')
 const _ = require('lodash')
+const iconv = require('iconv-lite')
 
 const _7z = path.join(process.cwd(), 'resources/extraResources/7z.exe')
 
@@ -20,15 +21,9 @@ let getArchivelist = async (libraryPath)=>{
 let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   let tempFolder = path.join(TEMP_PATH, nanoid())
   let output = await spawnPromise(_7z, ['l', filepath, '-slt'])
-  let pathlist = _.filter(output.join(',').split(/\r\n/), s=>_.startsWith(s, 'Path'))
+  let pathlist = _.filter(output.split(/\r\n/), s=>_.startsWith(s, 'Path'))
   pathlist = pathlist.map(p=>/(?<== ).*$/.exec(p)[0])
   let imageList = _.filter(pathlist, p=>['.jpg','.jpeg','.png','.gif','.webp','.avif'].includes(path.extname(p).toLowerCase()))
-  console.log(imageList)
-  // await spawnPromise(_7z, ['x', filepath, '-o' + tempFolder])
-  // let imageList = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp|avif)', {
-  //   cwd: tempFolder,
-  //   nocase: true
-  // })
   imageList = imageList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
   let targetFile
   let targetFilePath
@@ -36,11 +31,11 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   let coverPath
   if (imageList.length > 8) {
     targetFile = imageList[7]
-    console.log(await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile]))
+    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile])
     await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, imageList[0]])
   } else {
     targetFile = imageList[0]
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, '-r', imageList[0]])
+    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, imageList[0]])
   }
   targetFilePath = path.join(TEMP_PATH, nanoid() + path.extname(targetFile))
   await fs.promises.copyFile(path.join(tempFolder, targetFile), targetFilePath)
@@ -72,12 +67,12 @@ let spawnPromise = (commmand, argument)=>{
     })
     spawned.on('exit', code=>{
       if (code === 0) {
-        return resolve(output)
+        return resolve(output.join('\r\n'))
       }
       return reject('close code is ' + code)
     })
     spawned.stdout.on('data', data=>{
-      output.push(data.toString())
+      output.push(iconv.decode(data, 'gbk'))
     })
   })
 }

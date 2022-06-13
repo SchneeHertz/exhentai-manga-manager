@@ -1,7 +1,7 @@
 {
   "name": "exhentai-manga-manager",
   "private": true,
-  "version": "1.3.5",
+  "version": "1.3.6",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -19,6 +19,15 @@
       "index.js",
       "preload.js"
     ],
+    "extraResources": [
+      {
+        "from": "resources/extraResources",
+        "to": "extraResources",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "win": {
       "target": [
         "nsis"
@@ -32,6 +41,7 @@
   "dependencies": {
     "adm-zip": "^0.5.9",
     "glob": "^7.2.0",
+    "iconv-lite": "^0.6.3",
     "lodash": "^4.17.21",
     "nanoid": "^3.3.2",
     "sharp": "^0.30.3",

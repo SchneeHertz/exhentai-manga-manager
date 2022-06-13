@@ -1,12 +1,12 @@
 # exhentai-manga-manager
 
-![cover.png](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/cover.png)  
-管理从ExHentai下载的短篇漫画  
+![cover.png](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/cover.png)
+管理从ExHentai下载的短篇漫画
 使用说明见 https://github.com/SchneeHertz/exhentai-manga-manager/wiki
 
 ## 功能
 - 从一个文件夹建立漫画库
-- 从漫画的压缩包中提取封面，然后批量从ExHentai获取漫画的标签
+- 从漫画文件中提取封面，然后批量从ExHentai获取漫画的标签
 - 编辑标签
 - 基于标签，漫画名的搜索
 - 关联外部图片浏览器
@@ -19,11 +19,10 @@
 - 按上传时间，添加时间，评分排序
 - 显示exhentai上的评论
 - 漫画内容缩略图，进度定位与选择
-- 支持已解压漫画文件夹
+- 支持已解压漫画文件夹，zip，rar，7z压缩包
 - 多章节漫画的合集管理
 
 ## TODO
-- 支持rar, 7z压缩包
 - 根据规则重命名和移动漫画文件
 
 ## 爱发电

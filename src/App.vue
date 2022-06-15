@@ -607,6 +607,12 @@ export default defineComponent({
       .then(()=>{
         _.remove(this.bookList, {filepath: this.bookDetail.filepath})
         _.remove(this.displayBookList, {filepath: this.bookDetail.filepath})
+        _.forIn(this.collectionList, collection=>{
+          collection.list = _.filter(collection.list, id=>id != this.bookDetail.id)
+        })
+        this.openCollectionBookList = _.filter(this.openCollectionBookList, book=>book.id != this.bookDetail.id)
+        this.saveBookList()
+        this.saveCollection()
         this.dialogVisibleBookDetail = false
         this.chunkList()
       })
@@ -794,6 +800,7 @@ export default defineComponent({
     },
     searchFromTag (tag) {
       this.dialogVisibleBookDetail = false
+      this.drawerVisibleCollection = false
       this.searchString = `"${tag}"`
       this.searchBook()
     },
@@ -885,6 +892,9 @@ export default defineComponent({
         this.viewerImageList = list
         loading.close()
         this.drawerVisibleViewer = true
+      })
+      .finally(()=>{
+        loading.close()
       })
     },
     initResize (id) {

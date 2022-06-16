@@ -787,7 +787,7 @@ export default defineComponent({
     searchBook () {
       let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
       this.displayBookList = _.filter(this.bookList, (book)=>{
-        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category'])).toLowerCase()
+        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category', 'filepath'])).toLowerCase()
         return _.every(searchStringArray, (str)=>{
           if (_.startsWith(str, '-')) {
             return !bookString.includes(str.slice(1).replace(/["']/g, '').toLowerCase())

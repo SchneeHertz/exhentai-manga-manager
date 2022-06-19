@@ -11,6 +11,7 @@
         <el-select placeholder="排序" @change="handleSortChange" clearable v-model="sortValue">
           <el-option label="仅收藏" value="mark"></el-option>
           <el-option label="仅合集" value="collection"></el-option>
+          <el-option label="仅隐藏" value="hidden"></el-option>
           <el-option label="添加时间正序" value="addAscend"></el-option>
           <el-option label="添加时间倒序" value="addDescend"></el-option>
           <el-option label="上传时间正序" value="postAscend"></el-option>
@@ -40,7 +41,8 @@
           :key="book.id"
           class="book-card-frame"
         >
-          <div class="book-card" v-if="!book.collection && !book.hidden">
+          <!-- show book card when book isn't a collection, book isn't hidden because collected, and book isn't hidden by user except sorting by onlyHiddenBook -->
+          <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue == 'hidden' || !book.hiddenBook)">
             <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
@@ -142,6 +144,9 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="primary" plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
+            <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook?'显示':'隐藏'}}漫画</el-button>
+          </el-row>
+          <el-row class="book-detail-function">
             <el-button type="primary" plain @click="triggerShowComment">{{showComment?'隐藏':'显示'}}评论</el-button>
           </el-row>
         </el-col>
@@ -935,6 +940,10 @@ export default defineComponent({
           this.displayBookList = _.filter(this.bookList, 'collection')
           this.chunkList()
           break
+        case 'hidden':
+          this.displayBookList = _.filter(this.bookList, 'hiddenBook')
+          this.chunkList()
+          break
         case 'addAscend':
           this.displayBookList = _.reverse(this.bookList.sort(this.sortList('date')))
           this.chunkList()
@@ -1113,12 +1122,16 @@ export default defineComponent({
         book.collected = true
       }
     },
-    openCollection(book) {
+    openCollection (book) {
       this.drawerVisibleCollection = true
       this.openCollectionBookList = _.compact(book.list.map(id=>{
         return _.find(this.bookList, {id})
       }))
       this.openCollectionTitle = book.title
+    },
+    triggerHiddenBook (book) {
+      book.hiddenBook = !book.hiddenBook
+      this.saveBookList()
     }
   }
 })

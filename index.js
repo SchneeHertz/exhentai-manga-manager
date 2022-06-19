@@ -205,6 +205,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           }
         } else {
           foundData.exist = true
+          foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
         }
         if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
       } catch (e) {

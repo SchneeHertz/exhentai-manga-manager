@@ -24,6 +24,7 @@
 
 ## TODO
 - 根据规则重命名和移动漫画文件
+- 隐藏指定漫画
 
 ## 爱发电
 https://afdian.net/@SeldonHorizon

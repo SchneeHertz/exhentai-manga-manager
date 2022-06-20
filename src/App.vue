@@ -176,7 +176,16 @@
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
                 <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
-                  <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag)">{{tag}}</el-tag>
+                  <el-tooltip
+                    effect="dark"
+                    :content="resolvedTranslation[tag] ? resolvedTranslation[tag].intro : tag"
+                    :disabled="!resolvedTranslation[tag]?.intro"
+                    placement="top"
+                    :show-after="500"
+                    v-for="tag in tagArr" :key="tag"
+                  >
+                    <el-tag type="info" class="book-tag" @click="searchFromTag(tag)">{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
+                  </el-tooltip>
                 </el-descriptions-item>
               </el-descriptions>
             </div>
@@ -451,7 +460,8 @@ export default defineComponent({
       collectionList: [],
       drawerVisibleCollection: false,
       openCollectionTitle: undefined,
-      openCollectionBookList: []
+      openCollectionBookList: [],
+      resolvedTranslation: {}
     }
   },
   computed: {
@@ -495,6 +505,7 @@ export default defineComponent({
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     window.addEventListener('keydown', this.resolveKey)
+    this.loadTranslationFromEhTagTranslation()
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
@@ -1132,6 +1143,19 @@ export default defineComponent({
     triggerHiddenBook (book) {
       book.hiddenBook = !book.hiddenBook
       this.saveBookList()
+    },
+    loadTranslationFromEhTagTranslation () {
+      let resultObject = {}
+      axios.get('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
+      .then(res=>{
+        let sourceTranslationDatabase = res.data.data
+        _.forIn(sourceTranslationDatabase, cat=>{
+          _.forIn(cat.data, (value, key)=>{
+            resultObject[key] = _.pick(value, ['name', 'intro'])
+          })
+        })
+        this.resolvedTranslation = resultObject
+      })
     }
   }
 })

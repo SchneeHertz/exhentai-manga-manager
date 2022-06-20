@@ -25,6 +25,7 @@
 
 ## TODO
 - 根据规则重命名和移动漫画文件
+- 标签翻译
 
 ## 爱发电
 https://afdian.net/@SeldonHorizon

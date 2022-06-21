@@ -657,7 +657,7 @@ export default defineComponent({
             } else {
               book.status = 'tag-failed'
             }
-            this.saveBookList()
+            _.debounce(this.saveBookList, 1000)()
           }
           if (index == this.bookList.length - 1) {
             this.dialogVisibleSetting = false
@@ -705,7 +705,7 @@ export default defineComponent({
             book.tags = tagObject
             book.status = 'tagged'
             // book.hash = hash
-            this.saveBookList()
+            _.throttle(this.saveBookList, 10000)()
           } catch (e) {
             console.log(e)
             if (_.includes(res.data, 'Your IP address has been')) {

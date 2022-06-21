@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, session, dialog, shell } = require('electro
 const path = require('path')
 const fs = require('fs')
 const process = require('process')
+const { brotliCompress, brotliDecompress } = require('zlib')
+const { promisify } = require('util')
 const _ = require('lodash')
 const { nanoid } = require('nanoid')
 const sharp = require('sharp')
@@ -109,6 +111,21 @@ app.on('ready', async () => {
 
 
 
+let loadBookListFromBrFile = async ()=>{
+  try {
+    let buffer = await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json.br'))
+    let decodeBuffer = await promisify(brotliDecompress)(buffer)
+    fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), decodeBuffer.toString(), {encoding: 'utf-8'})
+    return JSON.parse(decodeBuffer.toString())
+  } catch {
+    return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
+  }
+}
+
+let saveBookListToBrFile = async (data)=>{
+  let buffer = await promisify(brotliCompress)(JSON.stringify(data))
+  return await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json.br'), buffer)
+}
 
 
 let getBookFilelist = async ()=>{
@@ -165,7 +182,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
 
     let existData
     try {
-      existData = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
+      existData = await loadBookListFromBrFile()
       _.forIn(existData, book=>{
         if (!book.hash && !book.url) {
           try {
@@ -218,10 +235,10 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
 
     existData = _.filter(existData, {exist: true})
     _.forIn(existData, b=>b.exist = undefined)
-    fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(existData, null, '  '), {encoding: 'utf-8'})
+    await saveBookListToBrFile(existData)
     return existData
   } else {
-    return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
+    return await loadBookListFromBrFile()
   }
 })
 
@@ -260,7 +277,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
   await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
   await fs.promises.mkdir(TEMP_PATH, {recursive: true})
 
-  fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(data, null, '  '), {encoding: 'utf-8'})
+  await saveBookListToBrFile(data)
   return data
 })
 
@@ -344,7 +361,7 @@ ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
 // })
 
 ipcMain.handle('save-book-list', async (event, list)=>{
-  return await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), JSON.stringify(list, null, '  '), {encoding: 'utf-8'})
+  return await saveBookListToBrFile(list)
 })
 
 ipcMain.handle('select-folder', async (event, type)=>{
@@ -385,7 +402,7 @@ ipcMain.handle('save-setting', async (event, receiveSetting)=>{
 })
 
 ipcMain.handle('export-database', async (event, arg)=>{
-  let bookList = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
+  let bookList = await loadBookListFromBrFile()
   let database = bookList.map(book=>{
     try {
       if (!book.hash) {

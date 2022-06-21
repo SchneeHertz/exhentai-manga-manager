@@ -135,19 +135,20 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="success" plain @click="openLocalBook">阅读</el-button>
-            <el-button type="danger" plain @click="deleteLocalBook">删除</el-button>
+            <el-button type="primary" plain @click="triggerShowComment">{{showComment ? '隐藏' : '显示'}}评论</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'e-hentai')">获取元数据</el-button>
-            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
+            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'e-hentai')">获取EH元数据</el-button>
+            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
+          </el-row>
+          <el-row class="book-detail-function">
+            <el-button type="danger" plain @click="deleteLocalBook">删除漫画</el-button>
+            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'exsearch')">通过文件名获取元数据</el-button>
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="primary" plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook?'显示':'隐藏'}}漫画</el-button>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-button type="primary" plain @click="triggerShowComment">{{showComment?'隐藏':'显示'}}评论</el-button>
           </el-row>
         </el-col>
         <el-col :span="showComment?10:15">
@@ -176,16 +177,20 @@
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
                 <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
-                  <el-tooltip
+                  <el-popover
                     effect="dark"
+                    trigger="hover"
                     :content="resolvedTranslation[tag] ? resolvedTranslation[tag].intro : tag"
                     :disabled="!resolvedTranslation[tag]?.intro"
-                    placement="top"
+                    placement="top-start"
                     :show-after="500"
+                    width="300px"
                     v-for="tag in tagArr" :key="tag"
                   >
-                    <el-tag type="info" class="book-tag" @click="searchFromTag(tag)">{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
-                  </el-tooltip>
+                    <template #reference>
+                      <el-tag type="info" class="book-tag" @click="searchFromTag(tag)">{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
+                    </template>
+                  </el-popover>
                 </el-descriptions-item>
               </el-descriptions>
             </div>
@@ -266,22 +271,23 @@
             </el-input>
           </div>
         </el-col>
-        <el-col :span="5">
+        <el-col :span="4">
           <div class="setting-line">
             <el-popover
               placement="top-start"
+              effect="dark"
               trigger="hover"
               content="此操作将重建漫画库并清空元数据"
             >
               <template #reference>
-                <el-button class="function-button" type="danger" plain @click="forceGeneBookList">强制重建漫画库</el-button>
+                <el-button class="function-button" type="danger" plain @click="forceGeneBookList">重建漫画库</el-button>
               </template>
             </el-popover>
           </div>
         </el-col>
-        <el-col :span="5">
+        <el-col :span="6">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">批量获取元数据</el-button>
+            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">批量获取EH元数据</el-button>
           </div>
         </el-col>
         <el-col :span="6">
@@ -744,9 +750,37 @@ export default defineComponent({
               }
             }
           })
-        } else {
+        } else if (server == 'exhentai') {
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`,
+            cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+          })
+          .then(res=>{
+            try {
+              let bookUrl = new DOMParser().parseFromString(res, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
+              getTag(book, bookUrl, book.hash)
+            } catch (e) {
+              console.log(e)
+              if (res.includes('Your IP address has been')) {
+                book.status = 'non-tag'
+                this.printMessage('error', 'Your IP address has been temporarily banned')
+                this.saveBookList()
+                this.serviceAvailable = false
+              } else {
+                book.status = 'tag-failed'
+                this.printMessage('error', 'Get tag failed')
+                this.saveBookList()
+              }
+            }
+          })
+        } else if (server == 'exsearch') {
+          let title = book['title']
+          let reg = /\[[^\[]+?\]([^\[]+)/g
+          if (title.match(reg).length > 0) {
+            title = title.match(reg)[0]
+          }
+          ipcRenderer['get-ex-webpage']({
+            url: `https://exhentai.org/?f_search=${encodeURI(title)}`,
             cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{

@@ -10,7 +10,7 @@ const iconv = require('iconv-lite')
 const _7z = path.join(process.cwd(), 'resources/extraResources/7z.exe')
 
 let getArchivelist = async (libraryPath)=>{
-  let list = await promisify(glob)('**/*.@(rar|7z)', {
+  let list = await promisify(glob)('**/*.@(rar|7z|zip)', {
     cwd: libraryPath,
     nocase: true
   })
@@ -22,7 +22,10 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   let tempFolder = path.join(TEMP_PATH, nanoid())
   let output = await spawnPromise(_7z, ['l', filepath, '-slt'])
   let pathlist = _.filter(output.split(/\r\n/), s=>_.startsWith(s, 'Path'))
-  pathlist = pathlist.map(p=>/(?<== ).*$/.exec(p)[0])
+  pathlist = pathlist.map(p=>{
+    let match = /(?<== ).*$/.exec(p)
+    return match ? match[0] : ''
+  })
   let imageList = _.filter(pathlist, p=>['.jpg','.jpeg','.png','.gif','.webp','.avif'].includes(path.extname(p).toLowerCase()))
   imageList = imageList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
   let targetFile

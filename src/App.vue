@@ -42,9 +42,9 @@
           class="book-card-frame"
         >
           <!-- show book card when book isn't a collection, book isn't hidden because collected, and book isn't hidden by user except sorting by onlyHiddenBook -->
-          <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue == 'hidden' || !book.hiddenBook)">
+          <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook)">
             <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
-            <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
+            <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onContextMenu($event, book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
             <el-button-group class="outer-read-button-group">
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
@@ -52,7 +52,7 @@
             </el-button-group>
             <el-tag
               class="book-status-tag"
-              :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'"
+              :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)"
             >{{book.status}}</el-tag>
             <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
@@ -143,7 +143,7 @@
             <el-button type="warning" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="danger" plain @click="deleteLocalBook">删除漫画</el-button>
+            <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">删除漫画</el-button>
             <el-button type="warning" plain @click="getBookInfo(bookDetail, 'exsearch')">通过文件名获取元数据</el-button>
           </el-row>
           <el-row class="book-detail-function">
@@ -408,7 +408,7 @@
         </el-button-group>
         <el-tag
           class="book-status-tag"
-          :type="book.status == 'non-tag' ? 'info' : book.status == 'tagged' ? 'success' : 'warning'"
+          :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
           @click="searchFromTag(book.status)"
         >{{book.status}}</el-tag>
         <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
@@ -519,7 +519,7 @@ export default defineComponent({
   methods: {
     resolveKey (event) {
       if (this.drawerVisibleViewer) {
-        if (this.imageStyleType == 'click') {
+        if (this.imageStyleType === 'click') {
           if (event.key === 'ArrowRight') {
             document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
           } else if (event.key === 'ArrowLeft') {
@@ -570,7 +570,7 @@ export default defineComponent({
       })
     },
     returnImageStyle(image) {
-      if (this.imageStyleType == 'scroll') {
+      if (this.imageStyleType === 'scroll') {
         return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
       } else {
         // 28是.viewer-image-page的高度
@@ -578,7 +578,7 @@ export default defineComponent({
       }
     },
     returnImageFrameStyle () {
-      if (this.imageStyleType == 'scroll') {
+      if (this.imageStyleType === 'scroll') {
         return {}
       } else {
         return {height: '100vh'}
@@ -624,19 +624,20 @@ export default defineComponent({
     openLocalBook () {
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
     },
-    deleteLocalBook () {
-      ipcRenderer['delete-local-book'](this.bookDetail.filepath)
+    deleteLocalBook (book) {
+      ipcRenderer['delete-local-book'](book.filepath)
       .then(()=>{
-        _.remove(this.bookList, {filepath: this.bookDetail.filepath})
-        _.remove(this.displayBookList, {filepath: this.bookDetail.filepath})
+        this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
+        this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
         _.forIn(this.collectionList, collection=>{
-          collection.list = _.filter(collection.list, id=>id != this.bookDetail.id)
+          collection.list = _.filter(collection.list, id=>id !== book.id)
         })
-        this.openCollectionBookList = _.filter(this.openCollectionBookList, book=>book.id != this.bookDetail.id)
+        this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
         this.saveBookList()
-        this.saveCollection()
-        this.dialogVisibleBookDetail = false
-        this.chunkList()
+        .then(()=>{
+          this.saveCollection()
+          this.dialogVisibleBookDetail = false
+        })
       })
     },
     exportDatabase () {
@@ -730,7 +731,7 @@ export default defineComponent({
       if (book.url) {
         getTag(book, book.url)
       } else {
-        if (server == 'e-hentai') {
+        if (server === 'e-hentai') {
           axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`)
           .then(res=>{
             try {
@@ -750,7 +751,7 @@ export default defineComponent({
               }
             }
           })
-        } else if (server == 'exhentai') {
+        } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`,
             cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
@@ -773,14 +774,15 @@ export default defineComponent({
               }
             }
           })
-        } else if (server == 'exsearch') {
-          let title = book['title']
-          let reg = /\[[^\[]+?\]([^\[]+)/g
-          if (title.match(reg).length > 0) {
-            title = title.match(reg)[0]
+        } else if (server === 'exsearch') {
+          let matchTitle = /\[[^[]+?]([^[]+)/.exec(book.title)
+          if (matchTitle) {
+            matchTitle = matchTitle[1]
+          } else {
+            matchTitle = book.title
           }
           ipcRenderer['get-ex-webpage']({
-            url: `https://exhentai.org/?f_search=${encodeURI(title)}`,
+            url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}`,
             cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
@@ -810,7 +812,7 @@ export default defineComponent({
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let load = async (gap) => {
         for (let i = 0; i < this.bookList.length; i++) {
-          if (this.bookList[i].status == 'non-tag' && this.serviceAvailable) {
+          if (this.bookList[i].status === 'non-tag' && this.serviceAvailable) {
             this.getBookInfo(this.bookList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
@@ -826,7 +828,7 @@ export default defineComponent({
         delete book.collected
         delete book.hidden
       })
-      ipcRenderer['save-book-list'](bookList)
+      return ipcRenderer['save-book-list'](bookList)
     },
     handleSearchStringChange (val) {
       if (!val) {
@@ -948,7 +950,7 @@ export default defineComponent({
       })
     },
     initResize (id) {
-      if (this.imageStyleType == 'scroll') {
+      if (this.imageStyleType === 'scroll') {
         let element = document.getElementById(id)
         let Resize = (e)=>{
           this.viewerImageWidth = e.clientX - element.offsetLeft
@@ -963,7 +965,7 @@ export default defineComponent({
       }
     },
     scrollPage (event) {
-      if (this.imageStyleType == 'click') {
+      if (this.imageStyleType === 'click') {
         if(event.clientX > window.innerWidth / 2) {
           document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
         } else {
@@ -1069,7 +1071,7 @@ export default defineComponent({
     handleClickThumbnail(chunkIndex, index) {
       this.showThumbnail = false
       let scrollTopValue = 0
-      if (this.imageStyleType == 'scroll') {
+      if (this.imageStyleType === 'scroll') {
         _.forIn(this.viewerImageList, (image, i)=>{
           if (i == (chunkIndex * this.thumbnailColumn + index)) return false
           // 28.3是.viewer-image-page的高度的平均值
@@ -1161,7 +1163,7 @@ export default defineComponent({
     handleClickCollectBadge (book) {
       if (book.collected) {
         book.collected = false
-        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id != book.id)
+        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id !== book.id)
       } else {
         this.selectCollectionObject.list.push(book.id)
         book.collected = true
@@ -1189,6 +1191,51 @@ export default defineComponent({
           })
         })
         this.resolvedTranslation = resultObject
+      })
+    },
+    onContextMenu (e, book) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: '获取EH元数据',
+            onClick: () => {
+              this.getBookInfo(book, 'e-hentai')
+            }
+          },
+          {
+            label: '获取EX元数据',
+            onClick: () => {
+              this.getBookInfo(book, 'exhentai')
+            }
+          },
+          {
+            label: '通过文件名获取元数据',
+            onClick: () => {
+              this.getBookInfo(book, 'exsearch')
+            }
+          },
+          {
+            label: '打开漫画文件所在目录',
+            onClick: () => {
+              this.showFile(book.filepath)
+            }
+          },
+          {
+            label: '删除漫画',
+            onClick: () => {
+              this.deleteLocalBook(book)
+            }
+          },
+          {
+            label: '隐藏/显示漫画',
+            onClick: () => {
+              this.triggerHiddenBook(book)
+            }
+          },
+        ]
       })
     }
   }
@@ -1440,4 +1487,14 @@ body
 
 .open-collection-title
   margin: 0 10px
+
+.mx-context-menu
+  background-color: #191919!important
+  .mx-context-menu-item:hover
+    background-color: #39393A
+  .mx-context-menu-item
+    padding: 6px
+    .text
+      color: #CFD3DC
+
 </style>

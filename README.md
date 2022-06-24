@@ -1,9 +1,9 @@
 # exhentai-manga-manager
 
-管理从ExHentai下载的短篇漫画  
+管理从ExHentai下载的短篇漫画
 
 ![cover.png](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/cover.png)
- 
+
 使用说明见 [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki)
 
 ## 功能
@@ -28,6 +28,7 @@
 
 ## TODO
 - 根据规则重命名和移动漫画文件
+- 库扫描优化，支持排除列表
 
 ## Thanks
 本项目受到了诸多开源项目的帮助
@@ -36,7 +37,7 @@
 
 
 ## 爱发电
-https://afdian.net/@SeldonHorizon  
+https://afdian.net/@SeldonHorizon
 如果这个软件帮到了你，可以请我喝杯奶茶
 
 ## Recommended IDE Setup

@@ -1487,4 +1487,14 @@ body
 
 .open-collection-title
   margin: 0 10px
+
+.mx-context-menu
+  background-color: #191919!important
+  .mx-context-menu-item:hover
+    background-color: #39393A
+  .mx-context-menu-item
+    padding: 6px
+    .text
+      color: #CFD3DC
+
 </style>

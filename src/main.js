@@ -6,6 +6,8 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import App from './App.vue'
 import _ from 'lodash'
+import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
+import ContextMenu from '@imengyu/vue3-context-menu'
 
 const app = createApp(App)
 
@@ -17,4 +19,5 @@ app.use(ElementPlus, {
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+app.use(ContextMenu)
 app.mount('#app')

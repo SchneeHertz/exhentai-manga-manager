@@ -39,7 +39,6 @@
     }
   },
   "dependencies": {
-    "adm-zip": "^0.5.9",
     "glob": "^7.2.0",
     "iconv-lite": "^0.6.3",
     "lodash": "^4.17.21",

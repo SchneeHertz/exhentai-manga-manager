@@ -21,7 +21,7 @@ let getArchivelist = async (libraryPath)=>{
 let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   let tempFolder = path.join(TEMP_PATH, nanoid())
   let output = await spawnPromise(_7z, ['l', filepath, '-slt'])
-  let pathlist = _.filter(output.split(/\r\n/), s=>_.startsWith(s, 'Path'))
+  let pathlist = _.filter(output.split(/\r\n/), s=>_.startsWith(s, 'Path') && !_.includes(s, '__MACOSX'))
   pathlist = pathlist.map(p=>{
     let match = /(?<== ).*$/.exec(p)
     return match ? match[0] : ''
@@ -57,6 +57,7 @@ let getImageListFromArchive = async (filepath, VIEWER_PATH)=>{
     cwd: VIEWER_PATH,
     nocase: true
   })
+  list = _.filter(list, s=>!_.includes(s, '__MACOSX'))
   list = list.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f=>path.join(VIEWER_PATH, f))
   return list
 }

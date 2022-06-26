@@ -1191,6 +1191,12 @@ export default defineComponent({
           })
         })
         this.resolvedTranslation = resultObject
+        localStorage.setItem('translationCache', JSON.stringify(resultObject))
+      })
+      .catch((error)=>{
+        console.log(error)
+        this.printMessage('warning', 'load translation from cache')
+        this.resolvedTranslation = JSON.parse(localStorage.getItem('translationCache'))
       })
     },
     onContextMenu (e, book) {

@@ -2,7 +2,14 @@
   <div>
     <el-row :gutter="20">
       <el-col :span="9" :offset="3">
-        <el-input v-model="searchString" @keyup.enter="searchBook"  @change="handleSearchStringChange" clearable></el-input>
+        <el-autocomplete
+          v-model="searchString"
+          :fetch-suggestions="querySearch"
+          @keyup.enter="searchBook"
+          @change="handleSearchStringChange"
+          clearable
+          class="search-input"
+        ></el-autocomplete>
       </el-col>
       <el-col :span="1"><el-button type="primary" :icon="Search" plain class="function-button" @click="searchBook"></el-button></el-col>
       <el-col :span="1"><el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button></el-col>
@@ -305,6 +312,11 @@
             <el-button class="function-button" type="primary" plain @click="importDatabase">导入元数据</el-button>
           </div>
         </el-col>
+        <el-col :span="4">
+          <div class="setting-line">
+            <el-button class="function-button" type="success" plain @click="loadBookList(true)">手动扫描</el-button>
+          </div>
+        </el-col>
         <el-col :span="6">
           <el-switch
             v-model="setting.loadOnStart"
@@ -314,15 +326,18 @@
           />
         </el-col>
         <el-col :span="4">
-          <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="loadBookList(true)">手动扫描</el-button>
-          </div>
-        </el-col>
-        <el-col :span="6">
           <el-switch
             v-model="setting.showComment"
-            inactive-text="显示评论"
+            inactive-text="评论"
             @change="saveSetting"
+            class="setting-switch"
+          />
+        </el-col>
+        <el-col :span="5">
+          <el-switch
+            v-model="setting.showTranslation"
+            inactive-text="标签翻译"
+            @change="handleTranslationSettingChange"
             class="setting-switch"
           />
         </el-col>
@@ -467,7 +482,8 @@ export default defineComponent({
       drawerVisibleCollection: false,
       openCollectionTitle: undefined,
       openCollectionBookList: [],
-      resolvedTranslation: {}
+      resolvedTranslation: {},
+      searchHistory: []
     }
   },
   computed: {
@@ -511,7 +527,8 @@ export default defineComponent({
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     window.addEventListener('keydown', this.resolveKey)
-    this.loadTranslationFromEhTagTranslation()
+    if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
+    this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
@@ -838,6 +855,8 @@ export default defineComponent({
     },
     searchBook () {
       let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
+      this.searchHistory = _.take(_.uniq([this.searchString, ...this.searchHistory]), 8)
+      localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory))
       this.displayBookList = _.filter(this.bookList, (book)=>{
         let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category', 'filepath'])).toLowerCase()
         return _.every(searchStringArray, (str)=>{
@@ -855,6 +874,10 @@ export default defineComponent({
       this.drawerVisibleCollection = false
       this.searchString = `"${tag}"`
       this.searchBook()
+    },
+    querySearch (queryString, callback) {
+      let result = queryString ? _.filter(this.searchHistory, str=>_.includes(str.toLowerCase(), queryString.toLowerCase())) : this.searchHistory
+      callback(result.map(s=>({value:s})))
     },
     shuffleBook () {
       this.displayBookList = _.shuffle(this.displayBookList)
@@ -1199,6 +1222,14 @@ export default defineComponent({
         this.resolvedTranslation = JSON.parse(localStorage.getItem('translationCache'))
       })
     },
+    handleTranslationSettingChange (val) {
+      if (val) {
+        this.loadTranslationFromEhTagTranslation()
+      } else {
+        this.resolvedTranslation = {}
+      }
+      this.saveSetting()
+    },
     onContextMenu (e, book) {
       e.preventDefault()
       this.$contextmenu({
@@ -1256,6 +1287,7 @@ body
   text-align: center
   margin-top: 20px
 
+.search-input,
 .function-button
   width: 100%
 

@@ -52,7 +52,8 @@ try {
     pageSize: 10,
     loadOnStart: false,
     requireGap: 10000,
-    thumbnailColumn: 10
+    thumbnailColumn: 10,
+    showTranslation: true
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }

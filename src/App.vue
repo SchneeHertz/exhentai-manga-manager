@@ -523,11 +523,11 @@ export default defineComponent({
     .then(res=>{
       this.setting = res
       this.loadBookList(this.setting.loadOnStart)
+      if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     window.addEventListener('keydown', this.resolveKey)
-    if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
     this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
   },
   beforeUnmount () {

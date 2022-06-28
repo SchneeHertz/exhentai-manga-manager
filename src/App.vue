@@ -51,7 +51,7 @@
           <!-- show book card when book isn't a collection, book isn't hidden because collected, and book isn't hidden by user except sorting by onlyHiddenBook -->
           <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook)">
             <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
-            <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onContextMenu($event, book)"/>
+            <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
             <el-button-group class="outer-read-button-group">
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
@@ -130,7 +130,11 @@
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
         <el-col :span="showComment?6:9">
           <el-row class="book-detail-function book-detail-cover-frame">
-            <img class="book-detail-cover" :src="bookDetail.coverPath" @click="viewManga"/>
+            <img
+              class="book-detail-cover"
+              :src="bookDetail.coverPath" @click="viewManga"
+              @contextmenu="onMangaImageContextMenu($event, bookDetail.coverPath)"
+            />
             <el-icon :size="30" :color="bookDetail.mark ? '#E6A23C' : '#666666'" class="book-detail-star" @click="switchMark(bookDetail)"><StarFilled /></el-icon>
           </el-row>
           <el-row class="book-detail-function">
@@ -385,7 +389,12 @@
             :id="image.id"
             :style="returnImageStyle(image)"
           >
-            <img :src="image.filepath + '?a=' + Math.random()" class="viewer-image" :style="{height: returnImageStyle(image).height}"/>
+            <img 
+              :src="image.filepath + '?a=' + Math.random()"
+              class="viewer-image"
+              :style="{height: returnImageStyle(image).height}"
+              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+            />
             <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
           </div>
           <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
@@ -1230,7 +1239,7 @@ export default defineComponent({
       }
       this.saveSetting()
     },
-    onContextMenu (e, book) {
+    onBookContextMenu (e, book) {
       e.preventDefault()
       this.$contextmenu({
         x: e.x,
@@ -1271,6 +1280,25 @@ export default defineComponent({
             onClick: () => {
               this.triggerHiddenBook(book)
             }
+          },
+        ]
+      })
+    },
+    onMangaImageContextMenu (e, filepath) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: '复制图片到剪贴板',
+            onClick: () => {
+              electronFunction['copy-image-to-clipboard'](filepath)
+            }
+          },
+          {
+            label: '取消',
+            onClick: () => {}
           },
         ]
       })
@@ -1528,6 +1556,7 @@ body
 
 .mx-context-menu
   background-color: #191919!important
+  z-index: 3000!important
   .mx-context-menu-item:hover
     background-color: #39393A
   .mx-context-menu-item

@@ -50,7 +50,10 @@
         >
           <!-- show book card when book isn't a collection, book isn't hidden because collected, and book isn't hidden by user except sorting by onlyHiddenBook -->
           <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook)">
-            <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+            <p class="book-title"
+              @contextmenu="onMangaTitleContextMenu($event, book)"
+              :title="book.title_jpn || book.title"
+            >{{book.title_jpn || book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
             <el-button-group class="outer-read-button-group">
@@ -83,7 +86,7 @@
           v-show="!book.collection"
         >
           <div class="book-collect-card">
-            <p class="book-collect-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+            <p class="book-collect-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
             <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
         </el-badge>
@@ -101,7 +104,7 @@
             <template #item="{element}">
               <div class="book-collection-line">
                 <img class="book-collection-cover" :src="element.coverPath" />
-                <p class="book-collection-title" :title="element.title_jpn ? element.title_jpn : element.title">{{element.title_jpn ? element.title_jpn : element.title}}</p>
+                <p class="book-collection-title" :title="element.title_jpn || element.title">{{element.title_jpn || element.title}}</p>
               </div>
             </template>
           </draggable>
@@ -125,7 +128,10 @@
       fullscreen
     >
       <template #header>
-        <p class="detail-book-title"><span class="url-link" @click="openUrl(bookDetail.url)">{{bookDetail.title_jpn ? bookDetail.title_jpn : bookDetail.title}}</span></p>
+        <p class="detail-book-title">
+          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">
+            {{bookDetail.title_jpn || bookDetail.title}}</span>
+        </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
         <el-col :span="showComment?6:9">
@@ -211,7 +217,7 @@
           <el-scrollbar class="book-comment-frame">
             <div class="book-comment" v-for="comment in comments" :key="comment.id">
               <div class="book-comment-postby">{{comment.author}}<span class="book-comment-score">{{comment.score}}</span></div>
-              <p class="book-comment-content">{{comment.content}}</p>
+              <p class="book-comment-content" @contextmenu="onMangaCommentContextMenu ($event, comment.content)">{{comment.content}}</p>
             </div>
           </el-scrollbar>
         </el-col>
@@ -423,7 +429,7 @@
     >
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
       <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
-        <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+        <p class="book-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
         <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
@@ -450,6 +456,7 @@ import { MdShuffle } from '@vicons/ionicons4'
 import he from 'he'
 import {nanoid} from 'nanoid'
 import draggable from 'vuedraggable'
+import * as linkify from 'linkifyjs'
 
 export default defineComponent({
   components: {
@@ -1289,6 +1296,12 @@ export default defineComponent({
               this.triggerHiddenBook(book)
             }
           },
+          {
+            label: '复制图片到剪贴板',
+            onClick: () => {
+              electronFunction['copy-image-to-clipboard'](book.coverPath)
+            }
+          },
         ]
       })
     },
@@ -1310,6 +1323,52 @@ export default defineComponent({
           },
         ]
       })
+    },
+    onMangaTitleContextMenu (e, book) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: '复制漫画名到剪贴板',
+            onClick: () => {
+              electronFunction['copy-text-to-clipboard'](book.title_jpn || book.title)
+            }
+          },
+          {
+            label: '复制链接到剪贴板',
+            onClick: () => {
+              electronFunction['copy-text-to-clipboard'](book.url)
+            }
+          },
+          {
+            label: '取消',
+            onClick: () => {}
+          },
+        ]
+      })
+    },
+    onMangaCommentContextMenu (e, comment) {
+      e.preventDefault()
+      let foundLink = linkify.find(comment, 'url')
+      if (!_.isEmpty(foundLink)) {
+        let items = foundLink.map(l=>({
+          label: `转到 ${l.href}`,
+          onClick: ()=>{
+            ipcRenderer['open-url'](l.href)
+          }
+        }))
+        items.push({
+          label: '取消',
+          onClick: () => {}
+        })
+        this.$contextmenu({
+          x: e.x,
+          y: e.y,
+          items
+        })
+      }
     }
   }
 })

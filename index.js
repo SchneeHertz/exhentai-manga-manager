@@ -52,7 +52,8 @@ try {
     pageSize: 10,
     loadOnStart: false,
     requireGap: 10000,
-    thumbnailColumn: 10
+    thumbnailColumn: 10,
+    showTranslation: true
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }
@@ -187,7 +188,9 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
       existData = []
     }
 
+    mainWindow.webContents.send('send-message', 'start loading library')
     let list = await getBookFilelist()
+    mainWindow.webContents.send('send-message', `load ${list.length} book from library`)
 
     for (let i = 0; i < list.length; i++) {
       try {
@@ -221,8 +224,12 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
         mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed because ${e}`)
       }
     }
-    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
-    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+    try {
+      await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+      await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+    } catch (err) {
+      console.log(err)
+    }
 
     existData = _.filter(existData, {exist: true})
     _.forIn(existData, b=>b.exist = undefined)
@@ -235,11 +242,17 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
 
 
 ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
-  await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
-  await fs.promises.mkdir(TEMP_PATH, {recursive: true})
-  await fs.promises.rm(COVER_PATH, {recursive: true, force: true})
-  await fs.promises.mkdir(COVER_PATH, {recursive: true})
+  try {
+    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+    await fs.promises.rm(COVER_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(COVER_PATH, {recursive: true})
+  } catch (err) {
+    console.log(err)
+  }
+  mainWindow.webContents.send('send-message', 'start loading library')
   let list = await getBookFilelist()
+  mainWindow.webContents.send('send-message', `load ${list.length} book from library`)
   let data = []
   for (let i = 0; i < list.length; i++) {
     try {
@@ -265,8 +278,12 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
       mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed because ${e}`)
     }
   }
-  await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
-  await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+  try {
+    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+  } catch (err) {
+    console.log(err)
+  }
 
   await saveBookListToBrFile(data)
   return data

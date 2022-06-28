@@ -2,7 +2,14 @@
   <div>
     <el-row :gutter="20">
       <el-col :span="9" :offset="3">
-        <el-input v-model="searchString" @keyup.enter="searchBook"  @change="handleSearchStringChange" clearable></el-input>
+        <el-autocomplete
+          v-model="searchString"
+          :fetch-suggestions="querySearch"
+          @keyup.enter="searchBook"
+          @change="handleSearchStringChange"
+          clearable
+          class="search-input"
+        ></el-autocomplete>
       </el-col>
       <el-col :span="1"><el-button type="primary" :icon="Search" plain class="function-button" @click="searchBook"></el-button></el-col>
       <el-col :span="1"><el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button></el-col>
@@ -43,8 +50,11 @@
         >
           <!-- show book card when book isn't a collection, book isn't hidden because collected, and book isn't hidden by user except sorting by onlyHiddenBook -->
           <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook)">
-            <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
-            <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onContextMenu($event, book)"/>
+            <p class="book-title"
+              @contextmenu="onMangaTitleContextMenu($event, book)"
+              :title="book.title_jpn || book.title"
+            >{{book.title_jpn || book.title}}</p>
+            <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
             <el-button-group class="outer-read-button-group">
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
@@ -76,7 +86,7 @@
           v-show="!book.collection"
         >
           <div class="book-collect-card">
-            <p class="book-collect-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+            <p class="book-collect-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
             <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
         </el-badge>
@@ -94,7 +104,7 @@
             <template #item="{element}">
               <div class="book-collection-line">
                 <img class="book-collection-cover" :src="element.coverPath" />
-                <p class="book-collection-title" :title="element.title_jpn ? element.title_jpn : element.title">{{element.title_jpn ? element.title_jpn : element.title}}</p>
+                <p class="book-collection-title" :title="element.title_jpn || element.title">{{element.title_jpn || element.title}}</p>
               </div>
             </template>
           </draggable>
@@ -118,12 +128,19 @@
       fullscreen
     >
       <template #header>
-        <p class="detail-book-title"><span class="url-link" @click="openUrl(bookDetail.url)">{{bookDetail.title_jpn ? bookDetail.title_jpn : bookDetail.title}}</span></p>
+        <p class="detail-book-title">
+          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">
+            {{bookDetail.title_jpn || bookDetail.title}}</span>
+        </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
         <el-col :span="showComment?6:9">
           <el-row class="book-detail-function book-detail-cover-frame">
-            <img class="book-detail-cover" :src="bookDetail.coverPath" @click="viewManga"/>
+            <img
+              class="book-detail-cover"
+              :src="bookDetail.coverPath" @click="viewManga"
+              @contextmenu="onMangaImageContextMenu($event, bookDetail.coverPath)"
+            />
             <el-icon :size="30" :color="bookDetail.mark ? '#E6A23C' : '#666666'" class="book-detail-star" @click="switchMark(bookDetail)"><StarFilled /></el-icon>
           </el-row>
           <el-row class="book-detail-function">
@@ -200,7 +217,7 @@
           <el-scrollbar class="book-comment-frame">
             <div class="book-comment" v-for="comment in comments" :key="comment.id">
               <div class="book-comment-postby">{{comment.author}}<span class="book-comment-score">{{comment.score}}</span></div>
-              <p class="book-comment-content">{{comment.content}}</p>
+              <p class="book-comment-content" @contextmenu="onMangaCommentContextMenu ($event, comment.content)">{{comment.content}}</p>
             </div>
           </el-scrollbar>
         </el-col>
@@ -305,6 +322,11 @@
             <el-button class="function-button" type="primary" plain @click="importDatabase">导入元数据</el-button>
           </div>
         </el-col>
+        <el-col :span="4">
+          <div class="setting-line">
+            <el-button class="function-button" type="success" plain @click="loadBookList(true)">手动扫描</el-button>
+          </div>
+        </el-col>
         <el-col :span="6">
           <el-switch
             v-model="setting.loadOnStart"
@@ -314,15 +336,18 @@
           />
         </el-col>
         <el-col :span="4">
-          <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="loadBookList(true)">手动扫描</el-button>
-          </div>
-        </el-col>
-        <el-col :span="6">
           <el-switch
             v-model="setting.showComment"
-            inactive-text="显示评论"
+            inactive-text="评论"
             @change="saveSetting"
+            class="setting-switch"
+          />
+        </el-col>
+        <el-col :span="5">
+          <el-switch
+            v-model="setting.showTranslation"
+            inactive-text="标签翻译"
+            @change="handleTranslationSettingChange"
             class="setting-switch"
           />
         </el-col>
@@ -370,7 +395,12 @@
             :id="image.id"
             :style="returnImageStyle(image)"
           >
-            <img :src="image.filepath + '?a=' + Math.random()" class="viewer-image" :style="{height: returnImageStyle(image).height}"/>
+            <img
+              :src="image.filepath + '?a=' + Math.random()"
+              class="viewer-image"
+              :style="{height: returnImageStyle(image).height}"
+              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+            />
             <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
           </div>
           <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
@@ -399,7 +429,7 @@
     >
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
       <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
-        <p class="book-title" :title="book.title_jpn ? book.title_jpn : book.title">{{book.title_jpn ? book.title_jpn : book.title}}</p>
+        <p class="book-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
         <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
@@ -426,6 +456,7 @@ import { MdShuffle } from '@vicons/ionicons4'
 import he from 'he'
 import {nanoid} from 'nanoid'
 import draggable from 'vuedraggable'
+import * as linkify from 'linkifyjs'
 
 export default defineComponent({
   components: {
@@ -467,7 +498,8 @@ export default defineComponent({
       drawerVisibleCollection: false,
       openCollectionTitle: undefined,
       openCollectionBookList: [],
-      resolvedTranslation: {}
+      resolvedTranslation: {},
+      searchHistory: []
     }
   },
   computed: {
@@ -507,11 +539,12 @@ export default defineComponent({
     .then(res=>{
       this.setting = res
       this.loadBookList(this.setting.loadOnStart)
+      if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     window.addEventListener('keydown', this.resolveKey)
-    this.loadTranslationFromEhTagTranslation()
+    this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
@@ -838,6 +871,8 @@ export default defineComponent({
     },
     searchBook () {
       let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
+      this.searchHistory = _.take(_.uniq([this.searchString, ...this.searchHistory]), 8)
+      localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory))
       this.displayBookList = _.filter(this.bookList, (book)=>{
         let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category', 'filepath'])).toLowerCase()
         return _.every(searchStringArray, (str)=>{
@@ -855,6 +890,10 @@ export default defineComponent({
       this.drawerVisibleCollection = false
       this.searchString = `"${tag}"`
       this.searchBook()
+    },
+    querySearch (queryString, callback) {
+      let result = queryString ? _.filter(this.searchHistory, str=>_.includes(str.toLowerCase(), queryString.toLowerCase())) : this.searchHistory
+      callback(result.map(s=>({value:s})))
     },
     shuffleBook () {
       this.displayBookList = _.shuffle(this.displayBookList)
@@ -1191,9 +1230,31 @@ export default defineComponent({
           })
         })
         this.resolvedTranslation = resultObject
+        localStorage.setItem('translationCache', JSON.stringify(resultObject))
+      })
+      .catch((error)=>{
+        console.log(error)
+        this.printMessage('warning', 'load translation from cache')
+        this.resolvedTranslation = JSON.parse(localStorage.getItem('translationCache'))
       })
     },
-    onContextMenu (e, book) {
+    handleTranslationSettingChange (val) {
+      if (val) {
+        this.loadTranslationFromEhTagTranslation()
+      } else {
+        this.resolvedTranslation = {}
+      }
+      this.saveSetting()
+    },
+    handleTranslationSettingChange (val) {
+      if (val) {
+        this.loadTranslationFromEhTagTranslation()
+      } else {
+        this.resolvedTranslation = {}
+      }
+      this.saveSetting()
+    },
+    onBookContextMenu (e, book) {
       e.preventDefault()
       this.$contextmenu({
         x: e.x,
@@ -1235,8 +1296,79 @@ export default defineComponent({
               this.triggerHiddenBook(book)
             }
           },
+          {
+            label: '复制图片到剪贴板',
+            onClick: () => {
+              electronFunction['copy-image-to-clipboard'](book.coverPath)
+            }
+          },
         ]
       })
+    },
+    onMangaImageContextMenu (e, filepath) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: '复制图片到剪贴板',
+            onClick: () => {
+              electronFunction['copy-image-to-clipboard'](filepath)
+            }
+          },
+          {
+            label: '取消',
+            onClick: () => {}
+          },
+        ]
+      })
+    },
+    onMangaTitleContextMenu (e, book) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: '复制漫画名到剪贴板',
+            onClick: () => {
+              electronFunction['copy-text-to-clipboard'](book.title_jpn || book.title)
+            }
+          },
+          {
+            label: '复制链接到剪贴板',
+            onClick: () => {
+              electronFunction['copy-text-to-clipboard'](book.url)
+            }
+          },
+          {
+            label: '取消',
+            onClick: () => {}
+          },
+        ]
+      })
+    },
+    onMangaCommentContextMenu (e, comment) {
+      e.preventDefault()
+      let foundLink = linkify.find(comment, 'url')
+      if (!_.isEmpty(foundLink)) {
+        let items = foundLink.map(l=>({
+          label: `转到 ${l.href}`,
+          onClick: ()=>{
+            ipcRenderer['open-url'](l.href)
+          }
+        }))
+        items.push({
+          label: '取消',
+          onClick: () => {}
+        })
+        this.$contextmenu({
+          x: e.x,
+          y: e.y,
+          items
+        })
+      }
     }
   }
 })
@@ -1250,6 +1382,7 @@ body
   text-align: center
   margin-top: 20px
 
+.search-input,
 .function-button
   width: 100%
 
@@ -1490,6 +1623,7 @@ body
 
 .mx-context-menu
   background-color: #191919!important
+  z-index: 3000!important
   .mx-context-menu-item:hover
     background-color: #39393A
   .mx-context-menu-item

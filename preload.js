@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer, clipboard, nativeImage } = require('electron')
 
 contextBridge.exposeInMainWorld('ipcRenderer', {
   'load-book-list': (scan)=>ipcRenderer.invoke('load-book-list', scan),
@@ -20,4 +20,9 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'get-ex-webpage': (obj)=>ipcRenderer.invoke('get-ex-webpage', obj),
   'load-collection-list': ()=>ipcRenderer.invoke('load-collection-list'),
   'save-collection-list': (list)=>ipcRenderer.invoke('save-collection-list', list),
+})
+
+contextBridge.exposeInMainWorld('electronFunction', {
+  'copy-image-to-clipboard': (filepath)=>clipboard.writeImage(nativeImage.createFromPath(filepath)),
+  'copy-text-to-clipboard': (text)=>clipboard.writeText(text)
 })

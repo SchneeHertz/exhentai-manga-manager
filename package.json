@@ -1,7 +1,7 @@
 {
   "name": "exhentai-manga-manager",
   "private": true,
-  "version": "1.3.9",
+  "version": "1.3.10",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -56,6 +56,7 @@
     "electron-builder": "^22.5.1",
     "element-plus": "^2.1.8",
     "he": "^1.2.0",
+    "linkifyjs": "^3.0.5",
     "stylus": "^0.57.0",
     "vite": "^2.9.0",
     "vue": "^3.2.25",

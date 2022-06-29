@@ -1416,7 +1416,7 @@ body
   display: inline-block
   width: 240px
   height: 372px
-  border: solid 1px
+  border: solid 1px var(--el-border-color)
   border-radius: 8px
   margin: 6px 10px
   position: relative
@@ -1456,7 +1456,7 @@ body
 .book-collect-card
   width: 155px
   height: 232px
-  border: solid 1px
+  border: solid 1px var(--el-border-color)
   border-radius: 4px
   margin: 4px 8px
   position: relative
@@ -1476,7 +1476,7 @@ body
     text-align:left
     width: 100%
     height: 80px
-    border: solid 1px
+    border: solid 1px var(--el-border-color)
     border-radius: 4px
     margin: 2px 4px
     position: relative
@@ -1631,4 +1631,16 @@ body
     .text
       color: #CFD3DC
 
+html.light
+  color-scheme: light
+html.exhentai
+  background-color: #2b2c37
+  --el-bg-color: #2b2c37
+  --el-bg-color-overlay: #2b2c37
+  --el-color-primary-light-9: #2f3d4a
+  --el-color-warning-light-9: #433827
+  --el-color-danger-light-9: #493333
+  --el-color-success-light-9: #303927
+  --el-color-info-light-9: #383838
+  --el-fill-color-light: #363847
 </style>

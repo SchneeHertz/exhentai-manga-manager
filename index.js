@@ -371,7 +371,7 @@ ipcMain.handle('save-book-list', async (event, list)=>{
 })
 
 ipcMain.handle('select-folder', async (event, type)=>{
-  let result = await dialog.showOpenDialog({
+  let result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory']
   })
   if (!result.canceled) {
@@ -382,7 +382,7 @@ ipcMain.handle('select-folder', async (event, type)=>{
 })
 
 ipcMain.handle('select-file', async (event, type)=>{
-  let result = await dialog.showOpenDialog({
+  let result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile']
   })
   if (!result.canceled) {
@@ -423,7 +423,7 @@ ipcMain.handle('export-database', async (event, arg)=>{
 })
 
 ipcMain.handle('load-import-database', async (event, arg)=>{
-  let result = await dialog.showOpenDialog({
+  let result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile']
   })
   if (!result.canceled) {

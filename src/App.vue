@@ -11,9 +11,15 @@
           class="search-input"
         ></el-autocomplete>
       </el-col>
-      <el-col :span="1"><el-button type="primary" :icon="Search" plain class="function-button" @click="searchBook"></el-button></el-col>
-      <el-col :span="1"><el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button></el-col>
-      <el-col :span="1"><el-button type="warning" :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button></el-col>
+      <el-col :span="1">
+        <el-button type="primary" :icon="Search" plain class="function-button" @click="searchBook"></el-button>
+      </el-col>
+      <el-col :span="1">
+        <el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button>
+      </el-col>
+      <el-col :span="1">
+        <el-button type="warning" :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button>
+      </el-col>
       <el-col :span="3">
         <el-select placeholder="排序" @change="handleSortChange" clearable v-model="sortValue">
           <el-option label="仅收藏" value="mark"></el-option>
@@ -48,14 +54,19 @@
           :key="book.id"
           class="book-card-frame"
         >
-          <!-- show book card when book isn't a collection, book isn't hidden because collected, and book isn't hidden by user except sorting by onlyHiddenBook -->
+          <!-- show book card when book isn't a collection, book isn't hidden because collected,
+            and book isn't hidden by user except sorting by onlyHiddenBook -->
           <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook)">
             <p class="book-title"
               @contextmenu="onMangaTitleContextMenu($event, book)"
               :title="book.title_jpn || book.title"
             >{{book.title_jpn || book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
-            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
+            <el-icon
+              :size="30"
+              :color="book.mark ? '#E6A23C' : '#666666'"
+              class="book-card-star" @click="switchMark(book)"
+            ><StarFilled /></el-icon>
             <el-button-group class="outer-read-button-group">
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
@@ -141,7 +152,11 @@
               :src="bookDetail.coverPath" @click="viewManga"
               @contextmenu="onMangaImageContextMenu($event, bookDetail.coverPath)"
             />
-            <el-icon :size="30" :color="bookDetail.mark ? '#E6A23C' : '#666666'" class="book-detail-star" @click="switchMark(bookDetail)"><StarFilled /></el-icon>
+            <el-icon
+              :size="30"
+              :color="bookDetail.mark ? '#E6A23C' : '#666666'"
+              class="book-detail-star" @click="switchMark(bookDetail)"
+            ><StarFilled /></el-icon>
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
@@ -205,7 +220,11 @@
                     v-for="tag in tagArr" :key="tag"
                   >
                     <template #reference>
-                      <el-tag type="info" class="book-tag" @click="searchFromTag(tag)">{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
+                      <el-tag
+                        type="info"
+                        class="book-tag"
+                        @click="searchFromTag(tag)"
+                      >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
                     </template>
                   </el-popover>
                 </el-descriptions-item>
@@ -445,7 +464,12 @@
       <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
         <p class="book-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
-        <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
+        <el-icon
+          :size="30"
+          :color="book.mark ? '#E6A23C' : '#666666'"
+          class="book-card-star"
+          @click="switchMark(book)"
+        ><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
           <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
           <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
@@ -733,7 +757,11 @@ export default defineComponent({
         })
         .then(res=>{
           try {
-            _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']), {url: url})
+            _.assign(
+              book,
+              _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+              {url: url}
+            )
             book.posted = +book.posted
             book.filecount = +book.filecount
             book.rating = +book.rating
@@ -802,7 +830,7 @@ export default defineComponent({
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`,
-            cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+            cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
             try {
@@ -831,7 +859,7 @@ export default defineComponent({
           }
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}`,
-            cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+            cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
             try {
@@ -907,7 +935,8 @@ export default defineComponent({
       this.searchBook()
     },
     querySearch (queryString, callback) {
-      let result = queryString ? _.filter(this.searchHistory, str=>_.includes(str.toLowerCase(), queryString.toLowerCase())) : this.searchHistory
+      let result = queryString ? _.filter(this.searchHistory, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+        : this.searchHistory
       callback(result.map(s=>({value:s})))
     },
     shuffleBook () {
@@ -1085,7 +1114,7 @@ export default defineComponent({
       if (url) {
         ipcRenderer['get-ex-webpage']({
           url,
-          cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
         })
         .then(res=>{
           let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')

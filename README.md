@@ -1,6 +1,6 @@
 # exhentai-manga-manager
 
-<img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/development/public/icon.png" alt="icon.png" width="256"/>
+<img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="256"/>
 
 管理从ExHentai下载的短篇漫画
 

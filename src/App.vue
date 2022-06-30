@@ -11,9 +11,15 @@
           class="search-input"
         ></el-autocomplete>
       </el-col>
-      <el-col :span="1"><el-button type="primary" :icon="Search" plain class="function-button" @click="searchBook"></el-button></el-col>
-      <el-col :span="1"><el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button></el-col>
-      <el-col :span="1"><el-button type="warning" :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button></el-col>
+      <el-col :span="1">
+        <el-button type="primary" :icon="Search" plain class="function-button" @click="searchBook"></el-button>
+      </el-col>
+      <el-col :span="1">
+        <el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button>
+      </el-col>
+      <el-col :span="1">
+        <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button>
+      </el-col>
       <el-col :span="3">
         <el-select placeholder="排序" @change="handleSortChange" clearable v-model="sortValue">
           <el-option label="仅收藏" value="mark"></el-option>
@@ -48,14 +54,19 @@
           :key="book.id"
           class="book-card-frame"
         >
-          <!-- show book card when book isn't a collection, book isn't hidden because collected, and book isn't hidden by user except sorting by onlyHiddenBook -->
+          <!-- show book card when book isn't a collection, book isn't hidden because collected,
+            and book isn't hidden by user except sorting by onlyHiddenBook -->
           <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook)">
             <p class="book-title"
               @contextmenu="onMangaTitleContextMenu($event, book)"
               :title="book.title_jpn || book.title"
             >{{book.title_jpn || book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
-            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
+            <el-icon
+              :size="30"
+              :color="book.mark ? '#E6A23C' : '#666666'"
+              class="book-card-star" @click="switchMark(book)"
+            ><StarFilled /></el-icon>
             <el-button-group class="outer-read-button-group">
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
               <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
@@ -141,7 +152,11 @@
               :src="bookDetail.coverPath" @click="viewManga"
               @contextmenu="onMangaImageContextMenu($event, bookDetail.coverPath)"
             />
-            <el-icon :size="30" :color="bookDetail.mark ? '#E6A23C' : '#666666'" class="book-detail-star" @click="switchMark(bookDetail)"><StarFilled /></el-icon>
+            <el-icon
+              :size="30"
+              :color="bookDetail.mark ? '#E6A23C' : '#666666'"
+              class="book-detail-star" @click="switchMark(bookDetail)"
+            ><StarFilled /></el-icon>
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
@@ -152,19 +167,19 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="success" plain @click="openLocalBook">阅读</el-button>
-            <el-button type="primary" plain @click="triggerShowComment">{{showComment ? '隐藏' : '显示'}}评论</el-button>
+            <el-button plain @click="triggerShowComment">{{showComment ? '隐藏' : '显示'}}评论</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'e-hentai')">获取EH元数据</el-button>
-            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
+            <el-button plain @click="getBookInfo(bookDetail, 'e-hentai')">获取EH元数据</el-button>
+            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">删除漫画</el-button>
-            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'exsearch')">通过文件名获取元数据</el-button>
+            <el-button plain @click="deleteLocalBook(bookDetail)">删除漫画</el-button>
+            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exsearch')">通过文件名获取元数据</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="primary" plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
+            <el-button plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook?'显示':'隐藏'}}漫画</el-button>
           </el-row>
         </el-col>
@@ -205,7 +220,11 @@
                     v-for="tag in tagArr" :key="tag"
                   >
                     <template #reference>
-                      <el-tag type="info" class="book-tag" @click="searchFromTag(tag)">{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
+                      <el-tag
+                        type="info"
+                        class="book-tag"
+                        @click="searchFromTag(tag)"
+                      >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
                     </template>
                   </el-popover>
                 </el-descriptions-item>
@@ -262,6 +281,22 @@
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
+            <el-input class="label-input">
+              <template #prepend><span class="setting-label">主题</span></template>
+              <template #append>
+                <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
+                  <el-option label="Default Dark" value="dark"></el-option>
+                  <el-option label="Default Light" value="light"></el-option>
+                  <el-option label="ExHentai" value="dark exhentai"></el-option>
+                  <el-option label="E-Hentai" value="light e-hentai"></el-option>
+                  <el-option label="nHentai" value="dark nhentai"></el-option>
+                </el-select>
+              </template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
             <el-input v-model="setting.igneous" @change="saveSetting">
               <template #prepend><span class="setting-label">igneous</span></template>
             </el-input>
@@ -297,7 +332,7 @@
               content="此操作将重建漫画库并清空元数据"
             >
               <template #reference>
-                <el-button class="function-button" type="danger" plain @click="forceGeneBookList">重建漫画库</el-button>
+                <el-button class="function-button" plain @click="forceGeneBookList">重建漫画库</el-button>
               </template>
             </el-popover>
           </div>
@@ -431,10 +466,15 @@
       <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
         <p class="book-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
-        <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star" @click="switchMark(book)"><StarFilled /></el-icon>
+        <el-icon
+          :size="30"
+          :color="book.mark ? '#E6A23C' : '#666666'"
+          class="book-card-star"
+          @click="switchMark(book)"
+        ><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+          <el-button size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
+          <el-button size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
         </el-button-group>
         <el-tag
           class="book-status-tag"
@@ -540,6 +580,7 @@ export default defineComponent({
       this.setting = res
       this.loadBookList(this.setting.loadOnStart)
       if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
+      if (this.setting.theme) this.changeTheme(this.setting.theme)
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
@@ -718,7 +759,11 @@ export default defineComponent({
         })
         .then(res=>{
           try {
-            _.assign(book, _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']), {url: url})
+            _.assign(
+              book,
+              _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+              {url: url}
+            )
             book.posted = +book.posted
             book.filecount = +book.filecount
             book.rating = +book.rating
@@ -787,7 +832,7 @@ export default defineComponent({
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`,
-            cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+            cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
             try {
@@ -816,7 +861,7 @@ export default defineComponent({
           }
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}`,
-            cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+            cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
             try {
@@ -892,7 +937,8 @@ export default defineComponent({
       this.searchBook()
     },
     querySearch (queryString, callback) {
-      let result = queryString ? _.filter(this.searchHistory, str=>_.includes(str.toLowerCase(), queryString.toLowerCase())) : this.searchHistory
+      let result = queryString ? _.filter(this.searchHistory, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+        : this.searchHistory
       callback(result.map(s=>({value:s})))
     },
     shuffleBook () {
@@ -976,13 +1022,15 @@ export default defineComponent({
       const loading = ElLoading.service({
         lock: true,
         text: 'Loading',
-        background: 'rgba(0, 0, 0, 0.7)',
+        background: _.includes(this.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
       })
       ipcRenderer['load-manga-image-list'](_.cloneDeep(this.bookDetail))
       .then(list=>{
         this.viewerImageList = list
-        loading.close()
         this.drawerVisibleViewer = true
+      })
+      .catch(err=>{
+        console.log(err)
       })
       .finally(()=>{
         loading.close()
@@ -1068,7 +1116,7 @@ export default defineComponent({
       if (url) {
         ipcRenderer['get-ex-webpage']({
           url,
-          cookie: `igneous=${this.setting.igneous}; ipb_pass_hash=${this.setting.ipb_pass_hash}; ipb_member_id=${this.setting.ipb_member_id}`
+          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
         })
         .then(res=>{
           let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
@@ -1246,13 +1294,12 @@ export default defineComponent({
       }
       this.saveSetting()
     },
-    handleTranslationSettingChange (val) {
-      if (val) {
-        this.loadTranslationFromEhTagTranslation()
-      } else {
-        this.resolvedTranslation = {}
-      }
+    handleThemeChange (val) {
+      this.changeTheme(val)
       this.saveSetting()
+    },
+    changeTheme (classValue) {
+      document.documentElement.setAttribute('class', classValue)
     },
     onBookContextMenu (e, book) {
       e.preventDefault()
@@ -1416,7 +1463,7 @@ body
   display: inline-block
   width: 240px
   height: 372px
-  border: solid 1px
+  border: solid 1px var(--el-border-color)
   border-radius: 8px
   margin: 6px 10px
   position: relative
@@ -1456,7 +1503,7 @@ body
 .book-collect-card
   width: 155px
   height: 232px
-  border: solid 1px
+  border: solid 1px var(--el-border-color)
   border-radius: 4px
   margin: 4px 8px
   position: relative
@@ -1476,7 +1523,7 @@ body
     text-align:left
     width: 100%
     height: 80px
-    border: solid 1px
+    border: solid 1px var(--el-border-color)
     border-radius: 4px
     margin: 2px 4px
     position: relative
@@ -1546,9 +1593,9 @@ body
   .book-comment
     .book-comment-postby
       font-size: 12px
-      background-color: #333333
+      background-color: var(--el-fill-color-dark)
       padding-left: 4px
-      color: #A8ABB2
+      color: var(--el-text-color-regular)
     .book-comment-score
       float: right
       margin-right: 4px
@@ -1556,7 +1603,7 @@ body
       font-size: 14px
       white-space: pre-wrap
       padding-left: 4px
-      color: #909399
+      color: var(--el-text-color-regular)
 
 .setting-line
   margin: 6px 0
@@ -1564,6 +1611,16 @@ body
     width: 100px
 .setting-switch
   margin-top: 6px
+.label-input>.el-input__wrapper
+  display: none
+.label-input
+  .el-input-group__append
+    width: calc(100% - 140px)
+    padding: 0
+    background-color: transparent
+    border-left: solid 1px var(--el-border-color)
+    .el-select
+      width: 100%
 
 .el-drawer__body
   padding-top: 0
@@ -1580,7 +1637,7 @@ body
       height: 32px
       width: 32px
 .viewer-close-button:hover
-  color: #409EFF !important
+  color: var(--el-color-primary) !important
 .viewer-switch
   position: absolute
   top: 1em
@@ -1602,7 +1659,7 @@ body
       right: -3px
       cursor: ew-resize
     .viewer-image-bar:hover
-      background-color: #409EFF
+      background-color: var(--el-color-primary)
   .viewer-image-page
     margin-bottom: 10px
 .viewer-thumbnail-switch
@@ -1622,13 +1679,72 @@ body
   margin: 0 10px
 
 .mx-context-menu
-  background-color: #191919!important
+  background-color: var(--el-fill-color-extra-light)!important
   z-index: 3000!important
   .mx-context-menu-item:hover
-    background-color: #39393A
+    background-color: var(--el-fill-color-dark)
   .mx-context-menu-item
     padding: 6px
     .text
-      color: #CFD3DC
+      color: var(--el-text-color-regular)
 
+html.light
+  color-scheme: light
+
+html.exhentai
+  background-color: #34353b
+  --el-bg-color: #34353b
+  --el-bg-color-overlay: #34353b
+  --el-color-primary: #909399
+  --el-color-primary-light-3: #6b6d71
+  --el-color-primary-light-5: #525457
+  --el-color-primary-light-7: #393a3c
+  --el-color-primary-light-8: #2d2d2f
+  --el-color-primary-light-9: #383838
+  --el-color-primary-dark-2: #a6a9ad
+  --el-color-warning-light-9: #433827
+  --el-color-danger-light-9: #493333
+  --el-color-success-light-9: #303927
+  --el-color-info-light-9: #383838
+  --el-fill-color-light: #3d414b
+  --el-fill-color-extra-light: #3d414b
+  --el-fill-color-dark: #50535b
+  --el-border-color: #6e6e6e
+
+html.e-hentai
+  background-color: #e2e0d2
+  --el-bg-color: #e2e0d2
+  --el-bg-color-overlay: #e2e0d2
+  --el-color-primary: #521613
+  --el-color-primary-light-3: #eebe77
+  --el-color-primary-light-5: #9d702e
+  --el-color-primary-light-7: #f8e3c5
+  --el-color-primary-light-8: #faecd8
+  --el-color-primary-light-9: #fdf6ec
+  --el-color-primary-dark-2: #b88230
+  --el-fill-color-light: #edebe0
+  --el-fill-color-extra-light: #edebe0
+  --el-fill-color-dark: #fefcf4
+  --el-fill-color-blank: #e2e0d2
+  --el-border-color: #919191
+
+html.nhentai
+  background-color: #0d0d0d
+  --el-bg-color: #0d0d0d
+  --el-bg-color-overlay: #0d0d0d
+  --el-color-primary: #d54255
+  --el-color-primary-light-3: #b25252
+  --el-color-primary-light-5: #854040
+  --el-color-primary-light-7: #582e2e
+  --el-color-primary-light-8: #412626
+  --el-color-primary-light-9: #493333
+  --el-color-primary-dark-2: #f78989
+  --el-color-warning-light-9: #433827
+  --el-color-danger-light-9: #493333
+  --el-color-success-light-9: #303927
+  --el-color-info-light-9: #383838
+  --el-fill-color-light: #1f1f1f
+  --el-fill-color-extra-light: #1f1f1f
+  --el-fill-color-dark: #666666
+  --el-border-color: #6e6e6e
 </style>

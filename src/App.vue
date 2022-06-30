@@ -18,7 +18,7 @@
         <el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="warning" :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button>
+        <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button>
       </el-col>
       <el-col :span="3">
         <el-select placeholder="排序" @change="handleSortChange" clearable v-model="sortValue">
@@ -167,19 +167,19 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="success" plain @click="openLocalBook">阅读</el-button>
-            <el-button type="primary" plain @click="triggerShowComment">{{showComment ? '隐藏' : '显示'}}评论</el-button>
+            <el-button plain @click="triggerShowComment">{{showComment ? '隐藏' : '显示'}}评论</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'e-hentai')">获取EH元数据</el-button>
-            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
+            <el-button plain @click="getBookInfo(bookDetail, 'e-hentai')">获取EH元数据</el-button>
+            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">删除漫画</el-button>
-            <el-button type="warning" plain @click="getBookInfo(bookDetail, 'exsearch')">通过文件名获取元数据</el-button>
+            <el-button plain @click="deleteLocalBook(bookDetail)">删除漫画</el-button>
+            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exsearch')">通过文件名获取元数据</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="primary" plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
+            <el-button plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook?'显示':'隐藏'}}漫画</el-button>
           </el-row>
         </el-col>
@@ -287,7 +287,9 @@
                 <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
                   <el-option label="Default Dark" value="dark"></el-option>
                   <el-option label="Default Light" value="light"></el-option>
-                  <el-option label="ExHentai" value="dark exhentai"></el-option>                  
+                  <el-option label="ExHentai" value="dark exhentai"></el-option>
+                  <el-option label="E-Hentai" value="light e-hentai"></el-option>
+                  <el-option label="nHentai" value="dark nhentai"></el-option>
                 </el-select>
               </template>
             </el-input>
@@ -330,7 +332,7 @@
               content="此操作将重建漫画库并清空元数据"
             >
               <template #reference>
-                <el-button class="function-button" type="danger" plain @click="forceGeneBookList">重建漫画库</el-button>
+                <el-button class="function-button" plain @click="forceGeneBookList">重建漫画库</el-button>
               </template>
             </el-popover>
           </div>
@@ -471,8 +473,8 @@
           @click="switchMark(book)"
         ><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+          <el-button size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
+          <el-button size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
         </el-button-group>
         <el-tag
           class="book-status-tag"
@@ -1591,9 +1593,9 @@ body
   .book-comment
     .book-comment-postby
       font-size: 12px
-      background-color: var(--el-fill-color)
+      background-color: var(--el-fill-color-dark)
       padding-left: 4px
-      color: var(--el-text-color-secondary)
+      color: var(--el-text-color-regular)
     .book-comment-score
       float: right
       margin-right: 4px
@@ -1601,7 +1603,7 @@ body
       font-size: 14px
       white-space: pre-wrap
       padding-left: 4px
-      color: var(--el-text-color-secondary)
+      color: var(--el-text-color-regular)
 
 .setting-line
   margin: 6px 0
@@ -1635,7 +1637,7 @@ body
       height: 32px
       width: 32px
 .viewer-close-button:hover
-  color: #409EFF !important
+  color: var(--el-color-primary) !important
 .viewer-switch
   position: absolute
   top: 1em
@@ -1657,7 +1659,7 @@ body
       right: -3px
       cursor: ew-resize
     .viewer-image-bar:hover
-      background-color: #409EFF
+      background-color: var(--el-color-primary)
   .viewer-image-page
     margin-bottom: 10px
 .viewer-thumbnail-switch
@@ -1688,16 +1690,61 @@ body
 
 html.light
   color-scheme: light
+
 html.exhentai
-  background-color: #2b2c37
-  --el-bg-color: #2b2c37
-  --el-bg-color-overlay: #2b2c37
-  --el-color-primary-light-9: #2f3d4a
+  background-color: #34353b
+  --el-bg-color: #34353b
+  --el-bg-color-overlay: #34353b
+  --el-color-primary: #909399
+  --el-color-primary-light-3: #6b6d71
+  --el-color-primary-light-5: #525457
+  --el-color-primary-light-7: #393a3c
+  --el-color-primary-light-8: #2d2d2f
+  --el-color-primary-light-9: #383838
+  --el-color-primary-dark-2: #a6a9ad
   --el-color-warning-light-9: #433827
   --el-color-danger-light-9: #493333
   --el-color-success-light-9: #303927
   --el-color-info-light-9: #383838
-  --el-fill-color-light: #363847
-  --el-fill-color-extra-light: #363847
-  --el-fill-color-dark: #4b4e61
+  --el-fill-color-light: #3d414b
+  --el-fill-color-extra-light: #3d414b
+  --el-fill-color-dark: #50535b
+  --el-border-color: #6e6e6e
+
+html.e-hentai
+  background-color: #e2e0d2
+  --el-bg-color: #e2e0d2
+  --el-bg-color-overlay: #e2e0d2
+  --el-color-primary: #521613
+  --el-color-primary-light-3: #eebe77
+  --el-color-primary-light-5: #9d702e
+  --el-color-primary-light-7: #f8e3c5
+  --el-color-primary-light-8: #faecd8
+  --el-color-primary-light-9: #fdf6ec
+  --el-color-primary-dark-2: #b88230
+  --el-fill-color-light: #edebe0
+  --el-fill-color-extra-light: #edebe0
+  --el-fill-color-dark: #fefcf4
+  --el-fill-color-blank: #e2e0d2
+  --el-border-color: #919191
+
+html.nhentai
+  background-color: #0d0d0d
+  --el-bg-color: #0d0d0d
+  --el-bg-color-overlay: #0d0d0d
+  --el-color-primary: #d54255
+  --el-color-primary-light-3: #b25252
+  --el-color-primary-light-5: #854040
+  --el-color-primary-light-7: #582e2e
+  --el-color-primary-light-8: #412626
+  --el-color-primary-light-9: #493333
+  --el-color-primary-dark-2: #f78989
+  --el-color-warning-light-9: #433827
+  --el-color-danger-light-9: #493333
+  --el-color-success-light-9: #303927
+  --el-color-info-light-9: #383838
+  --el-fill-color-light: #1f1f1f
+  --el-fill-color-extra-light: #1f1f1f
+  --el-fill-color-dark: #666666
+  --el-border-color: #6e6e6e
 </style>

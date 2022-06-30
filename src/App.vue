@@ -262,6 +262,20 @@
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
+            <el-input class="label-input">
+              <template #prepend><span class="setting-label">主题</span></template>
+              <template #append>
+                <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
+                  <el-option label="Default Dark" value="dark"></el-option>
+                  <el-option label="Default Light" value="light"></el-option>
+                  <el-option label="ExHentai" value="dark exhentai"></el-option>                  
+                </el-select>
+              </template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
             <el-input v-model="setting.igneous" @change="saveSetting">
               <template #prepend><span class="setting-label">igneous</span></template>
             </el-input>
@@ -540,6 +554,7 @@ export default defineComponent({
       this.setting = res
       this.loadBookList(this.setting.loadOnStart)
       if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
+      if (this.setting.theme) this.changeTheme(this.setting.theme)
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
@@ -976,13 +991,15 @@ export default defineComponent({
       const loading = ElLoading.service({
         lock: true,
         text: 'Loading',
-        background: 'rgba(0, 0, 0, 0.7)',
+        background: _.includes(this.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
       })
       ipcRenderer['load-manga-image-list'](_.cloneDeep(this.bookDetail))
       .then(list=>{
         this.viewerImageList = list
-        loading.close()
         this.drawerVisibleViewer = true
+      })
+      .catch(err=>{
+        console.log(err)
       })
       .finally(()=>{
         loading.close()
@@ -1246,13 +1263,12 @@ export default defineComponent({
       }
       this.saveSetting()
     },
-    handleTranslationSettingChange (val) {
-      if (val) {
-        this.loadTranslationFromEhTagTranslation()
-      } else {
-        this.resolvedTranslation = {}
-      }
+    handleThemeChange (val) {
+      this.changeTheme(val)
       this.saveSetting()
+    },
+    changeTheme (classValue) {
+      document.documentElement.setAttribute('class', classValue)
     },
     onBookContextMenu (e, book) {
       e.preventDefault()
@@ -1546,9 +1562,9 @@ body
   .book-comment
     .book-comment-postby
       font-size: 12px
-      background-color: #333333
+      background-color: var(--el-fill-color)
       padding-left: 4px
-      color: #A8ABB2
+      color: var(--el-text-color-secondary)
     .book-comment-score
       float: right
       margin-right: 4px
@@ -1556,7 +1572,7 @@ body
       font-size: 14px
       white-space: pre-wrap
       padding-left: 4px
-      color: #909399
+      color: var(--el-text-color-secondary)
 
 .setting-line
   margin: 6px 0
@@ -1564,6 +1580,16 @@ body
     width: 100px
 .setting-switch
   margin-top: 6px
+.label-input>.el-input__wrapper
+  display: none
+.label-input
+  .el-input-group__append
+    width: calc(100% - 140px)
+    padding: 0
+    background-color: transparent
+    border-left: solid 1px var(--el-border-color)
+    .el-select
+      width: 100%
 
 .el-drawer__body
   padding-top: 0
@@ -1622,14 +1648,14 @@ body
   margin: 0 10px
 
 .mx-context-menu
-  background-color: #191919!important
+  background-color: var(--el-fill-color-extra-light)!important
   z-index: 3000!important
   .mx-context-menu-item:hover
-    background-color: #39393A
+    background-color: var(--el-fill-color-dark)
   .mx-context-menu-item
     padding: 6px
     .text
-      color: #CFD3DC
+      color: var(--el-text-color-regular)
 
 html.light
   color-scheme: light
@@ -1643,4 +1669,6 @@ html.exhentai
   --el-color-success-light-9: #303927
   --el-color-info-light-9: #383838
   --el-fill-color-light: #363847
+  --el-fill-color-extra-light: #363847
+  --el-fill-color-dark: #4b4e61
 </style>

@@ -468,6 +468,7 @@
       <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
         <p class="book-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
         <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
+        <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
         <el-icon
           :size="30"
           :color="book.mark ? '#E6A23C' : '#666666'"

@@ -62,6 +62,7 @@
               :title="book.title_jpn || book.title"
             >{{book.title_jpn || book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
+            <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
             <el-icon
               :size="30"
               :color="book.mark ? '#E6A23C' : '#666666'"
@@ -634,6 +635,9 @@ export default defineComponent({
         if (countIndex > index) return false
       })
       return result
+    },
+    isChineseTranslatedManga (book) {
+      return _.includes(book?.tags?.language, 'chinese') ? true : false
     },
     returnFileName (filepath) {
       let matched = /[^\\]+$/.exec(filepath)
@@ -1483,8 +1487,11 @@ body
   overflow-y: hidden
   margin: 8px 2px
   font-size: 14px
-.book-card-star, .book-detail-star
+.book-card-star, .book-detail-star, .book-card-language
   position: absolute
+.book-card-language
+  left: 19px
+  top: 52px
 .book-card-star
   right: 16px
   top: 40px

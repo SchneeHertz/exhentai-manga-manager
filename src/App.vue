@@ -205,6 +205,7 @@
             <div v-else>
               <el-descriptions :column="1">
                 <el-descriptions-item label="英文标题:">{{bookDetail.title}}</el-descriptions-item>
+                <el-descriptions-item label="文件名:">{{returnFileName(bookDetail.filepath)}}</el-descriptions-item>
                 <el-descriptions-item label="类别:">
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
@@ -633,6 +634,12 @@ export default defineComponent({
         if (countIndex > index) return false
       })
       return result
+    },
+    returnFileName (filepath) {
+      let matched = /[^\\]+$/.exec(filepath)
+      if (matched) {
+        return matched[0]
+      }
     },
     loadBookList (scan) {
       ipcRenderer['load-book-list'](scan)

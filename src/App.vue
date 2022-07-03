@@ -320,7 +320,7 @@
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
-            <el-input v-model="setting.proxy" @change="saveSetting">
+            <el-input v-model="setting.proxy" @change="saveSetting" placeholder="格式为 http://127.0.0.1:7890">
               <template #prepend><span class="setting-label">代理服务器</span></template>
             </el-input>
           </div>

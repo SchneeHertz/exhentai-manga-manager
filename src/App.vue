@@ -18,6 +18,9 @@
         <el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button>
       </el-col>
       <el-col :span="1">
+        <el-button type="primary" :icon="MdBulb" plain class="function-button" @click="displayTagGraph"></el-button>
+      </el-col>
+      <el-col :span="1">
         <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button>
       </el-col>
       <el-col :span="3">
@@ -33,7 +36,7 @@
           <el-option label="评分倒序" value="scoreDescend"></el-option>
         </el-select>
       </el-col>
-      <el-col :span="4" :offset="2">
+      <el-col :span="4" :offset="1">
         <el-row :gutter="4">
           <el-col :span="10" :offset="7"  v-if="!editCollectionView">
             <el-button type="primary" plain class="function-button" @click="createCollection">编辑合集</el-button>
@@ -487,6 +490,16 @@
         <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
       </div>
     </el-drawer>
+    <el-dialog
+      v-model="dialogVisibleGraph"
+      width="80%"
+      top="5vh"
+      destroy-on-close
+    >
+      <template #header><p>标签分析</p></template>
+      <div id="tag-graph"></div>
+      <template #footer><el-button type="primary" @click="geneRecommend">生成随机推荐</el-button></template>
+    </el-dialog>
   </div>
 </template>
 
@@ -495,11 +508,12 @@ import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Close, Search, Setting } from '@element-plus/icons-vue'
-import { MdShuffle } from '@vicons/ionicons4'
+import { MdShuffle, MdBulb } from '@vicons/ionicons4'
 import he from 'he'
 import {nanoid} from 'nanoid'
 import draggable from 'vuedraggable'
 import * as linkify from 'linkifyjs'
+import G6 from '@antv/g6'
 
 export default defineComponent({
   components: {
@@ -507,7 +521,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      Close, Search, Setting, MdShuffle
+      Close, Search, Setting, MdShuffle, MdBulb
     }
   },
   data () {
@@ -542,7 +556,9 @@ export default defineComponent({
       openCollectionTitle: undefined,
       openCollectionBookList: [],
       resolvedTranslation: {},
-      searchHistory: []
+      searchHistory: [],
+      tagNodeData: [],
+      dialogVisibleGraph: false
     }
   },
   computed: {
@@ -1441,6 +1457,65 @@ export default defineComponent({
           items
         })
       }
+    },
+    displayTagGraph () {
+      let nodes = []
+      _.forIn(this.bookList, book=>{
+        let tags = _.pick(book?.tags, ['male', 'female'])
+        let tempNodes = []
+        _.forIn(tags, (list, cat)=>{
+          list.map(tag=>{
+            tempNodes.push(`${cat}:${tag}`)
+          })
+        })
+        nodes = nodes.concat(tempNodes)
+      })
+      let nodesObject = _.countBy(nodes)
+      const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
+      this.tagNodeData = []
+      _.forIn(nodesObject, (size,label)=>{
+        if (size > 0) this.tagNodeData.push({id: nanoid(), size: Math.ceil((Math.log(size)+1)*60), label, style:{fill: _.sample(colors)}})
+      })
+      this.dialogVisibleGraph = true
+      this.$nextTick(()=>{
+        let graph = new G6.Graph({
+          container: 'tag-graph',
+          layout: {
+            type: 'force',
+            nodeStrength: 60,
+            collideStrength: 0.7,
+            alphaDecay: 0.01,
+            nodeSpacing: 4,
+            preventOverlap: true,
+          },
+          modes: {
+            default: ['drag-canvas', 'zoom-canvas', 'drag-node']
+          }
+        })
+        graph.data({nodes: this.tagNodeData, edges:[]})
+        function refreshDragedNodePosition(e) {
+          const model = e.item.get('model')
+          model.fx = e.x
+          model.fy = e.y
+        }
+        graph.on('node:dragstart', function (e) {
+          graph.layout()
+          refreshDragedNodePosition(e)
+        });
+        graph.on('node:drag', function (e) {
+          refreshDragedNodePosition(e)
+        })
+        graph.on('node:dragend', function (e) {
+          e.item.get('model').fx = null
+          e.item.get('model').fy = null
+        })
+        graph.render()
+      })
+    },
+    geneRecommend () {
+      let tagGroup1 = _.sampleSize(this.tagNodeData, 8)
+      let tagGroup2 = _.take(_.sortBy(tagGroup1, 'size'), 3)
+      ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup2.map(n=>n.label).join(' ')}`)
     }
   }
 })
@@ -1705,6 +1780,10 @@ body
 
 .open-collection-title
   margin: 0 10px
+
+#tag-graph
+  width: 100%
+  height: calc(95vh - 220px)
 
 .mx-context-menu
   background-color: var(--el-fill-color-extra-light)!important

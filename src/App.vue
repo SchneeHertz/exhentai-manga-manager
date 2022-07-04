@@ -495,10 +495,15 @@
       width="80%"
       top="5vh"
       destroy-on-close
+      @close="destroyCanvas"
     >
       <template #header><p>标签分析</p></template>
       <div id="tag-graph"></div>
-      <template #footer><el-button type="primary" @click="geneRecommend">生成随机推荐</el-button></template>
+      <template #footer>
+        <el-button type="primary" @click="geneRecommend(false, 'local')">搜索本地</el-button>
+        <el-button type="primary" @click="geneRecommend">获取EX推荐</el-button>
+        <el-button type="primary" @click="geneRecommend(true)">获取EX推荐(ZH)</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -558,6 +563,7 @@ export default defineComponent({
       resolvedTranslation: {},
       searchHistory: [],
       tagNodeData: [],
+      displayNodeData: [],
       dialogVisibleGraph: false
     }
   },
@@ -1461,31 +1467,47 @@ export default defineComponent({
     displayTagGraph () {
       let nodes = []
       _.forIn(this.bookList, book=>{
-        let tags = _.pick(book?.tags, ['male', 'female'])
+        let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
         let tempNodes = []
         _.forIn(tags, (list, cat)=>{
           list.map(tag=>{
-            tempNodes.push(`${cat}:${tag}`)
+            tempNodes.push(`${cat}##${tag}`)
           })
         })
         nodes = nodes.concat(tempNodes)
       })
       let nodesObject = _.countBy(nodes)
       const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
-      this.tagNodeData = []
-      _.forIn(nodesObject, (size,label)=>{
-        if (size > 0) this.tagNodeData.push({id: nanoid(), size: Math.ceil((Math.log(size)+1)*60), label, style:{fill: _.sample(colors)}})
+      let tempNodeData = []
+      _.forIn(nodesObject, (count, label)=>{
+        let labelArray = _.split(label, '##')
+        try {
+          tempNodeData.push({
+            id: nanoid(),
+            count,
+            size: Math.ceil((Math.log(count)+1)*10),
+            oriSize: Math.ceil((Math.log(count)+1)*10),
+            name: `${labelArray[0]}:"${labelArray[1]}$"`,
+            shortName: labelArray[1],
+            label: count,
+            oriLabel: count,
+            style:{fill: _.sample(colors)}
+          })
+        } catch {}
       })
+      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 128)
+      this.tagNodeData = _.shuffle(this.tagNodeData)
+      this.displayNodeData = this.tagNodeData
       this.dialogVisibleGraph = true
       this.$nextTick(()=>{
         let graph = new G6.Graph({
           container: 'tag-graph',
           layout: {
             type: 'force',
-            nodeStrength: 60,
-            collideStrength: 0.7,
+            nodeStrength: 30,
+            collideStrength: 0.8,
             alphaDecay: 0.01,
-            nodeSpacing: 4,
+            nodeSpacing: 8,
             preventOverlap: true,
           },
           modes: {
@@ -1493,29 +1515,67 @@ export default defineComponent({
           }
         })
         graph.data({nodes: this.tagNodeData, edges:[]})
-        function refreshDragedNodePosition(e) {
+        const refreshDragedNodePosition = (e)=>{
           const model = e.item.get('model')
           model.fx = e.x
           model.fy = e.y
         }
-        graph.on('node:dragstart', function (e) {
+        graph.on('node:dragstart', (e)=>{
           graph.layout()
           refreshDragedNodePosition(e)
-        });
-        graph.on('node:drag', function (e) {
+        })
+        graph.on('node:drag', (e)=>{
           refreshDragedNodePosition(e)
         })
-        graph.on('node:dragend', function (e) {
+        graph.on('node:dragend', (e)=>{
           e.item.get('model').fx = null
           e.item.get('model').fy = null
+        })
+        graph.on('node:click', (e)=>{
+          const node = e.item
+          const states = node.getStates()
+          let clicked = false
+          const model = node.getModel()
+          _.find(this.displayNodeData, {id: model.id}).size = 200
+          let size = 200
+          let labelText = model.name
+          states.forEach((state)=>{
+            if (state === 'click') {
+              clicked = true
+              size = model.oriSize
+              _.find(this.displayNodeData, {id: model.id}).size = model.oriSize
+              labelText = model.oriLabel
+            }
+          })
+          graph.setItemState(node, 'click', !clicked)
+          graph.updateItem(node, {
+            size,
+            label: labelText,
+          })
+          graph.layout()
         })
         graph.render()
       })
     },
-    geneRecommend () {
-      let tagGroup1 = _.sampleSize(this.tagNodeData, 8)
-      let tagGroup2 = _.take(_.sortBy(tagGroup1, 'size'), 3)
-      ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup2.map(n=>n.label).join(' ')}`)
+    geneRecommend (chinese = false, type = 'exhentai') {
+      let tagGroup1 = _.sampleSize(this.displayNodeData, 20)
+      let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
+      let tagGroup3 = []
+      if (tagGroup2.length >= 3) {
+        tagGroup3 = tagGroup2
+      } else {
+        tagGroup3 = _.takeRight(_.sortBy(_.uniq([...tagGroup1, ...tagGroup2]), 'size'), 3)
+      }
+      if (type === 'exhentai') {
+        ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' chinese':''}`)
+      } else {
+        this.dialogVisibleGraph = false
+        this.searchString = `${tagGroup3.map(n=>`"${n.shortName}"`).join(' ')}`
+        this.searchBook()
+      }
+    },
+    destroyCanvas () {
+      document.querySelector('#tag-graph canvas').remove()
     }
   }
 })

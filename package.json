@@ -49,6 +49,7 @@
     "superagent-proxy": "^3.0.0"
   },
   "devDependencies": {
+    "@antv/g6": "^4.6.15",
     "@imengyu/vue3-context-menu": "^1.0.9",
     "@vicons/ionicons4": "^0.12.0",
     "@vitejs/plugin-vue": "^2.3.0",

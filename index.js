@@ -409,12 +409,29 @@ ipcMain.handle('save-setting', async (event, receiveSetting)=>{
 
 ipcMain.handle('export-database', async (event, arg)=>{
   let bookList = await loadBookListFromBrFile()
+  let collectionList = []
+  try {
+    collectionList = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'collectionList.json'), {encoding: 'utf-8'}))
+  } catch (err) {
+    console.log(err)
+  }
+  _.forIn(collectionList, collection=>{
+    _.forIn(collection.list, id=>{
+      let foundBook = _.find(bookList, {id})
+      if (foundBook) {
+        foundBook.collectionInfo = {
+          id: collection.id,
+          title: collection.title
+        }
+      }
+    })
+  })
   let database = bookList.map(book=>{
     try {
       if (!book.hash) {
         book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
       }
-      return _.pick(book, ['hash', 'tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url'])
+      return _.pick(book, ['hash', 'tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url', 'collectionInfo'])
     } catch {
       return {}
     }

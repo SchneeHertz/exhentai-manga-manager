@@ -10,7 +10,7 @@ const iconv = require('iconv-lite')
 const _7z = path.join(process.cwd(), 'resources/extraResources/7z.exe')
 
 let getArchivelist = async (libraryPath)=>{
-  let list = await promisify(glob)('**/*.@(rar|7z|zip)', {
+  let list = await promisify(glob)('**/*.@(rar|7z|zip|cbz|cb7|cbr)', {
     cwd: libraryPath,
     nocase: true
   })

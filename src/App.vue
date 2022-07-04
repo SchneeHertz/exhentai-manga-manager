@@ -750,11 +750,24 @@ export default defineComponent({
             } else {
               book.status = 'tag-failed'
             }
+            if (book.collectionInfo) {
+              let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
+              if (foundCollection) {
+                foundCollection.list = _.uniq([...foundCollection.list, book.id])
+              } else {
+                this.collectionList.push({
+                  id: book.collectionInfo.id,
+                  title: book.collectionInfo.title,
+                  list: [book.id]
+                })
+              }
+              delete book.collectionInfo
+            }
             _.debounce(this.saveBookList, 1000)()
           }
           if (index == this.bookList.length - 1) {
             this.dialogVisibleSetting = false
-            this.printMessage('success', '导入完成')
+            this.printMessage('success', '导入完成，如导入数据有合集，需打开编辑合集后手动保存')
           }
         })
       })

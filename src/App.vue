@@ -1558,13 +1558,13 @@ export default defineComponent({
       })
     },
     geneRecommend (chinese = false, type = 'exhentai') {
-      let tagGroup1 = _.sampleSize(this.displayNodeData, 20)
+      let tagGroup1 = _.filter(this.displayNodeData, n=>n.size < 200)
       let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
       let tagGroup3 = []
       if (tagGroup2.length >= 3) {
         tagGroup3 = tagGroup2
       } else {
-        tagGroup3 = _.takeRight(_.sortBy(_.uniq([...tagGroup1, ...tagGroup2]), 'size'), 3)
+        tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
       }
       if (type === 'exhentai') {
         ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' chinese':''}`)

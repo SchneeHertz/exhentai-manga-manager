@@ -28,7 +28,7 @@ let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
   }
   let tempCoverPath = list[0]
   let coverPath = path.join(COVER_PATH, nanoid() + path.extname(list[0]))
-  return {targetFilePath, tempCoverPath, coverPath}
+  return {targetFilePath, tempCoverPath, coverPath, pageCount: list.length}
 }
 
 let getImageListFromFolder = async (folderpath, VIEWER_PATH)=>{

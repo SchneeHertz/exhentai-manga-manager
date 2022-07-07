@@ -164,8 +164,12 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
-              <el-descriptions-item label="页数:">{{bookDetail.filecount}}</el-descriptions-item>
-              <el-descriptions-item label="文件大小:">{{Math.floor(bookDetail.filesize / 1048576)}} MB</el-descriptions-item>
+              <el-descriptions-item label="页数:">
+                {{bookDetail.pageCount}} | {{bookDetail.filecount}}
+              </el-descriptions-item>
+              <el-descriptions-item label="文件大小:">
+                {{Math.floor(bookDetail.bundleSize / 1048576)}} | {{Math.floor(bookDetail.filesize / 1048576)}} MB
+              </el-descriptions-item>
               <el-descriptions-item label="上传时间:">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
             </el-descriptions>
           </el-row>

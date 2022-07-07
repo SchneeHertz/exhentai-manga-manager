@@ -459,6 +459,7 @@
               class="viewer-thumbnail"
               :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
               @click="handleClickThumbnail(chunkIndex, index)"
+              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
             />
             <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
           </div>
@@ -1413,6 +1414,16 @@ export default defineComponent({
             label: '复制图片到剪贴板',
             onClick: () => {
               electronFunction['copy-image-to-clipboard'](filepath)
+            }
+          },
+          {
+            label: '指定为封面',
+            onClick: () => {
+              ipcRenderer['use-new-cover'](filepath)
+              .then((coverPath)=>{
+                this.bookDetail.coverPath = coverPath
+                this.saveBookList()
+              })
             }
           },
           {

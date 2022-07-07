@@ -477,6 +477,22 @@ ipcMain.handle('save-collection-list', async (event, list)=>{
   return await fs.promises.writeFile(path.join(STORE_PATH, 'collectionList.json'), JSON.stringify(list, null, '  '), {encoding: 'utf-8'})
 })
 
+ipcMain.handle('use-new-cover', async(event, filepath)=>{
+  let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
+  let imageResizeResult = await sharp(filepath)
+  .resize(500, 720, {
+    fit: 'contain'
+  })
+  .toFile(coverPath)
+  .catch((e)=>{
+    console.log(filepath, e)
+    mainWindow.webContents.send('send-message', `generate cover failed because ${e}`)
+    return false
+  })
+  if (imageResizeResult) {
+    return coverPath
+  }
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

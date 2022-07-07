@@ -293,6 +293,44 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
   return data
 })
 
+ipcMain.handle('patch-local-metadata', async(event, arg)=>{
+  let bookList = await loadBookListFromBrFile()
+  try {
+    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+    await fs.promises.rm(COVER_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(COVER_PATH, {recursive: true})
+  } catch (err) {
+    console.log(err)
+  }
+
+  for (let book of bookList) {
+    try {
+      let {filepath, type} = book
+      if (!type || type === 'zip') type = 'archive'
+      let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
+      if (targetFilePath && coverPath){
+        let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+        _.assign(book, {type, coverPath, hash, pageCount, bundleSize})
+        mainWindow.webContents.send('send-message', `patch ${book.filepath}`)
+      }
+    } catch (e) {
+      console.log(e)
+      mainWindow.webContents.send('send-message', `patch ${book.filepath} failed because ${e}`)
+    }
+  }
+
+  try {
+    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+  } catch (err) {
+    console.log(err)
+  }
+
+  await saveBookListToBrFile(bookList)
+  return bookList
+})
+
 
 ipcMain.handle('load-manga-image-list', async(event, book)=>{
   await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})

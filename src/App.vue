@@ -341,7 +341,7 @@
               content="此操作将重建漫画库并清空元数据"
             >
               <template #reference>
-                <el-button class="function-button" plain @click="forceGeneBookList">重建漫画库</el-button>
+                <el-button class="function-button" plain @click="forceGeneBookList" @contextmenu="onForceLoadBookButtonContextMenu($event)">重建漫画库</el-button>
               </template>
             </el-popover>
           </div>
@@ -1478,6 +1478,22 @@ export default defineComponent({
           items
         })
       }
+    },
+    onForceLoadBookButtonContextMenu (e) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: '修补本地元数据',
+            onClick: () => {
+              ipcRenderer['patch-local-metadata']()
+              .then(()=>this.loadBookList())
+            }
+          }
+        ]
+      })
     },
     displayTagGraph () {
       let nodes = []

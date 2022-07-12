@@ -1525,7 +1525,7 @@ export default defineComponent({
           })
         } catch {}
       })
-      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 128)
+      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 72)
       this.tagNodeData = _.shuffle(this.tagNodeData)
       this.displayNodeData = this.tagNodeData
       this.dialogVisibleGraph = true
@@ -1534,10 +1534,10 @@ export default defineComponent({
           container: 'tag-graph',
           layout: {
             type: 'force',
-            nodeStrength: 30,
+            nodeStrength: 40,
             collideStrength: 0.8,
             alphaDecay: 0.01,
-            nodeSpacing: 8,
+            nodeSpacing: 2,
             preventOverlap: true,
           },
           modes: {

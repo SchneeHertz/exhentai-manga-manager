@@ -475,7 +475,7 @@
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
       <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
         <p class="book-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
-        <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
+        <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
         <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
         <el-icon
           :size="30"
@@ -484,8 +484,8 @@
           @click="switchMark(book)"
         ><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
-          <el-button size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
-          <el-button size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
         </el-button-group>
         <el-tag
           class="book-status-tag"
@@ -1516,12 +1516,11 @@ export default defineComponent({
           tempNodeData.push({
             id: nanoid(),
             count,
-            size: Math.ceil((Math.log(count)+1)*10),
-            oriSize: Math.ceil((Math.log(count)+1)*10),
+            size: Math.ceil(Math.log(count)*10+50),
+            oriSize: Math.ceil(Math.log(count)*10+50),
             name: `${labelArray[0]}:"${labelArray[1]}$"`,
             shortName: labelArray[1],
-            label: count,
-            oriLabel: count,
+            label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
             style:{fill: _.sample(colors)}
           })
         } catch {}
@@ -1569,19 +1568,16 @@ export default defineComponent({
           const model = node.getModel()
           _.find(this.displayNodeData, {id: model.id}).size = 200
           let size = 200
-          let labelText = model.name
           states.forEach((state)=>{
             if (state === 'click') {
               clicked = true
               size = model.oriSize
               _.find(this.displayNodeData, {id: model.id}).size = model.oriSize
-              labelText = model.oriLabel
             }
           })
           graph.setItemState(node, 'click', !clicked)
           graph.updateItem(node, {
-            size,
-            label: labelText,
+            size
           })
           graph.layout()
         })

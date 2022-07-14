@@ -139,14 +139,14 @@ let getBookFilelist = async ()=>{
 }
 
 let geneCover = async (filepath, type) => {
-  let targetFilePath, coverPath, tempCoverPath
+  let targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize
   //fileLoader: get targetFile for hash, get tempCover for cover
   switch (type){
     case 'folder':
-      ;({targetFilePath, coverPath, tempCoverPath} = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
+      ;({targetFilePath, coverPath, tempCoverPath, pageCount} = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
       break
     case 'archive':
-      ;({targetFilePath, coverPath, tempCoverPath} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
+      ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
       break
   }
 
@@ -162,7 +162,7 @@ let geneCover = async (filepath, type) => {
     return false
   })
   if (imageResizeResult){
-    return {targetFilePath, coverPath}
+    return {targetFilePath, coverPath, pageCount, bundleSize}
   } else {
     return {targetFilePath:undefined, coverPath:undefined}
   }
@@ -198,7 +198,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
         let foundData = _.find(existData, {filepath: filepath})
         if (!foundData) {
           let id = nanoid()
-          let {targetFilePath, coverPath} = await geneCover(filepath, type)
+          let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
           if (targetFilePath && coverPath){
             let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
             existData.push({
@@ -208,6 +208,8 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
               filepath,
               type,
               id,
+              pageCount,
+              bundleSize,
               status: 'non-tag',
               exist: true,
               date: Date.now()
@@ -258,7 +260,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
     try {
       let {filepath, type} = list[i]
       let id = nanoid()
-      let {targetFilePath, coverPath} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         data.push({
@@ -268,6 +270,8 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
           filepath,
           type,
           id,
+          pageCount,
+          bundleSize,
           status: 'non-tag',
           date: Date.now()
         })
@@ -287,6 +291,44 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
 
   await saveBookListToBrFile(data)
   return data
+})
+
+ipcMain.handle('patch-local-metadata', async(event, arg)=>{
+  let bookList = await loadBookListFromBrFile()
+  try {
+    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+    await fs.promises.rm(COVER_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(COVER_PATH, {recursive: true})
+  } catch (err) {
+    console.log(err)
+  }
+
+  for (let book of bookList) {
+    try {
+      let {filepath, type} = book
+      if (!type || type === 'zip') type = 'archive'
+      let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
+      if (targetFilePath && coverPath){
+        let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+        _.assign(book, {type, coverPath, hash, pageCount, bundleSize})
+        mainWindow.webContents.send('send-message', `patch ${book.filepath}`)
+      }
+    } catch (e) {
+      console.log(e)
+      mainWindow.webContents.send('send-message', `patch ${book.filepath} failed because ${e}`)
+    }
+  }
+
+  try {
+    await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+  } catch (err) {
+    console.log(err)
+  }
+
+  await saveBookListToBrFile(bookList)
+  return bookList
 })
 
 
@@ -473,6 +515,22 @@ ipcMain.handle('save-collection-list', async (event, list)=>{
   return await fs.promises.writeFile(path.join(STORE_PATH, 'collectionList.json'), JSON.stringify(list, null, '  '), {encoding: 'utf-8'})
 })
 
+ipcMain.handle('use-new-cover', async(event, filepath)=>{
+  let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
+  let imageResizeResult = await sharp(filepath)
+  .resize(500, 720, {
+    fit: 'contain'
+  })
+  .toFile(coverPath)
+  .catch((e)=>{
+    console.log(filepath, e)
+    mainWindow.webContents.send('send-message', `generate cover failed because ${e}`)
+    return false
+  })
+  if (imageResizeResult) {
+    return coverPath
+  }
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

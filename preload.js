@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'get-ex-webpage': (obj)=>ipcRenderer.invoke('get-ex-webpage', obj),
   'load-collection-list': ()=>ipcRenderer.invoke('load-collection-list'),
   'save-collection-list': (list)=>ipcRenderer.invoke('save-collection-list', list),
+  'use-new-cover': (filepath)=>ipcRenderer.invoke('use-new-cover', filepath),
+  'patch-local-metadata': ()=>ipcRenderer.invoke('patch-local-metadata'),
 })
 
 contextBridge.exposeInMainWorld('electronFunction', {

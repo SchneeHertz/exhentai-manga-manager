@@ -164,8 +164,12 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
-              <el-descriptions-item label="页数:">{{bookDetail.filecount}}</el-descriptions-item>
-              <el-descriptions-item label="文件大小:">{{Math.floor(bookDetail.filesize / 1048576)}} MB</el-descriptions-item>
+              <el-descriptions-item label="页数:">
+                {{bookDetail.pageCount}} | {{bookDetail.filecount}}
+              </el-descriptions-item>
+              <el-descriptions-item label="文件大小:">
+                {{Math.floor(bookDetail.bundleSize / 1048576)}} | {{Math.floor(bookDetail.filesize / 1048576)}} MB
+              </el-descriptions-item>
               <el-descriptions-item label="上传时间:">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
             </el-descriptions>
           </el-row>
@@ -337,7 +341,7 @@
               content="此操作将重建漫画库并清空元数据"
             >
               <template #reference>
-                <el-button class="function-button" plain @click="forceGeneBookList">重建漫画库</el-button>
+                <el-button class="function-button" plain @click="forceGeneBookList" @contextmenu="onForceLoadBookButtonContextMenu($event)">重建漫画库</el-button>
               </template>
             </el-popover>
           </div>
@@ -455,6 +459,7 @@
               class="viewer-thumbnail"
               :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
               @click="handleClickThumbnail(chunkIndex, index)"
+              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
             />
             <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
           </div>
@@ -470,7 +475,7 @@
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
       <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
         <p class="book-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
-        <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)"/>
+        <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
         <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
         <el-icon
           :size="30"
@@ -479,8 +484,8 @@
           @click="switchMark(book)"
         ><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
-          <el-button size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
-          <el-button size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
         </el-button-group>
         <el-tag
           class="book-status-tag"
@@ -1412,6 +1417,16 @@ export default defineComponent({
             }
           },
           {
+            label: '指定为封面',
+            onClick: () => {
+              ipcRenderer['use-new-cover'](filepath)
+              .then((coverPath)=>{
+                this.bookDetail.coverPath = coverPath
+                this.saveBookList()
+              })
+            }
+          },
+          {
             label: '取消',
             onClick: () => {}
           },
@@ -1464,6 +1479,22 @@ export default defineComponent({
         })
       }
     },
+    onForceLoadBookButtonContextMenu (e) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: '修补本地元数据',
+            onClick: () => {
+              ipcRenderer['patch-local-metadata']()
+              .then(()=>this.loadBookList())
+            }
+          }
+        ]
+      })
+    },
     displayTagGraph () {
       let nodes = []
       _.forIn(this.bookList, book=>{
@@ -1485,17 +1516,16 @@ export default defineComponent({
           tempNodeData.push({
             id: nanoid(),
             count,
-            size: Math.ceil((Math.log(count)+1)*10),
-            oriSize: Math.ceil((Math.log(count)+1)*10),
+            size: Math.ceil(Math.log(count)*10+50),
+            oriSize: Math.ceil(Math.log(count)*10+50),
             name: `${labelArray[0]}:"${labelArray[1]}$"`,
             shortName: labelArray[1],
-            label: count,
-            oriLabel: count,
+            label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
             style:{fill: _.sample(colors)}
           })
         } catch {}
       })
-      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 128)
+      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 72)
       this.tagNodeData = _.shuffle(this.tagNodeData)
       this.displayNodeData = this.tagNodeData
       this.dialogVisibleGraph = true
@@ -1504,10 +1534,10 @@ export default defineComponent({
           container: 'tag-graph',
           layout: {
             type: 'force',
-            nodeStrength: 30,
+            nodeStrength: 40,
             collideStrength: 0.8,
             alphaDecay: 0.01,
-            nodeSpacing: 8,
+            nodeSpacing: 2,
             preventOverlap: true,
           },
           modes: {
@@ -1538,19 +1568,16 @@ export default defineComponent({
           const model = node.getModel()
           _.find(this.displayNodeData, {id: model.id}).size = 200
           let size = 200
-          let labelText = model.name
           states.forEach((state)=>{
             if (state === 'click') {
               clicked = true
               size = model.oriSize
               _.find(this.displayNodeData, {id: model.id}).size = model.oriSize
-              labelText = model.oriLabel
             }
           })
           graph.setItemState(node, 'click', !clicked)
           graph.updateItem(node, {
-            size,
-            label: labelText,
+            size
           })
           graph.layout()
         })
@@ -1558,13 +1585,13 @@ export default defineComponent({
       })
     },
     geneRecommend (chinese = false, type = 'exhentai') {
-      let tagGroup1 = _.sampleSize(this.displayNodeData, 20)
+      let tagGroup1 = _.filter(this.displayNodeData, n=>n.size < 200)
       let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
       let tagGroup3 = []
       if (tagGroup2.length >= 3) {
         tagGroup3 = tagGroup2
       } else {
-        tagGroup3 = _.takeRight(_.sortBy(_.uniq([...tagGroup1, ...tagGroup2]), 'size'), 3)
+        tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
       }
       if (type === 'exhentai') {
         ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' chinese':''}`)

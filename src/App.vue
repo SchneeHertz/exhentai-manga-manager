@@ -1649,7 +1649,7 @@ body
 .book-card
   display: inline-block
   width: 240px
-  height: 372px
+  height: 367px
   border: solid 1px var(--el-border-color)
   border-radius: 8px
   margin: 6px 10px
@@ -1677,8 +1677,9 @@ body
 .book-cover
   border-radius: 8px
   width: 200px
-  height: 288px
+  height: 283px
   margin: 0 20px
+  object-fit: cover
 .outer-read-button-group
   margin: 0 8px
 .outer-read-button
@@ -1692,7 +1693,7 @@ body
 
 .book-collect-card
   width: 155px
-  height: 232px
+  height: 229px
   border: solid 1px var(--el-border-color)
   border-radius: 4px
   margin: 4px 8px
@@ -1705,14 +1706,15 @@ body
 .book-collect-cover
   border-radius: 4px
   width: 125px
-  height: 180px
+  height: 177px
+  object-fit: cover
 .book-collection
   .book-collection-select
     width: 100%
   .book-collection-line
     text-align:left
     width: 100%
-    height: 80px
+    height: 79px
     border: solid 1px var(--el-border-color)
     border-radius: 4px
     margin: 2px 4px
@@ -1720,10 +1722,11 @@ body
     .book-collection-cover
       border-radius: 2px
       width: 50px
-      height: 72px
+      height: 71px
       position: absolute
       top: 4px
       left: 2px
+      object-fit: cover
     .book-collection-title
       height: 72px
       overflow-y: hidden
@@ -1760,7 +1763,8 @@ body
     margin-bottom: 10px
     .book-detail-cover
       width: 250px
-      height: 360px
+      height: 354px
+      object-fit: cover
   .edit-line
     margin: 4px 0
     .el-select

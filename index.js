@@ -78,9 +78,9 @@ function createWindow () {
   }
   win.setMenuBarVisibility(false)
   win.webContents.on('did-finish-load', ()=>{
-    let name = "EH漫画管理"
+    let name = require('./package.json').name
     let version = require('./package.json').version
-    win.setTitle(name + " " + version)
+    win.setTitle(name + ' ' + version)
   })
   win.once('ready-to-show', () => {
     win.show()
@@ -151,7 +151,7 @@ let geneCover = async (filepath, type) => {
   }
 
   let imageResizeResult = await sharp(tempCoverPath)
-  .resize(500, 720, {
+  .resize(500, 707, {
     fit: 'contain'
   })
   .toFile(coverPath)
@@ -518,8 +518,9 @@ ipcMain.handle('save-collection-list', async (event, list)=>{
 ipcMain.handle('use-new-cover', async(event, filepath)=>{
   let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
   let imageResizeResult = await sharp(filepath)
-  .resize(500, 720, {
-    fit: 'contain'
+  .resize(500, 707, {
+    fit: 'contain',
+    background: 'transparent'
   })
   .toFile(coverPath)
   .catch((e)=>{

@@ -519,8 +519,7 @@ ipcMain.handle('use-new-cover', async(event, filepath)=>{
   let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
   let imageResizeResult = await sharp(filepath)
   .resize(500, 707, {
-    fit: 'contain',
-    background: 'transparent'
+    fit: 'contain'
   })
   .toFile(coverPath)
   .catch((e)=>{

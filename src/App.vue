@@ -800,7 +800,7 @@ export default defineComponent({
       })
     },
     getBookInfo (book, server = 'e-hentai') {
-      let getTag = (book, url, hash) => {
+      let getTag = (book, url) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
         axios.post('https://api.e-hentai.org/api.php', {
           'method': 'gdata',
@@ -841,7 +841,6 @@ export default defineComponent({
             })
             book.tags = tagObject
             book.status = 'tagged'
-            // book.hash = hash
             _.throttle(this.saveBookList, 10000)()
           } catch (e) {
             console.log(e)
@@ -858,28 +857,31 @@ export default defineComponent({
           }
         })
       }
+      let resolveWebPage = (book, res)=>{
+        try {
+          let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
+          getTag(book, bookUrl)
+        } catch (e) {
+          console.log(e)
+          if (res.data.includes('Your IP address has been')) {
+            book.status = 'non-tag'
+            this.printMessage('error', 'Your IP address has been temporarily banned')
+            this.saveBookList()
+            this.serviceAvailable = false
+          } else {
+            book.status = 'tag-failed'
+            this.printMessage('error', 'Get tag failed')
+            this.saveBookList()
+          }
+        }
+      }
       if (book.url) {
         getTag(book, book.url)
       } else {
         if (server === 'e-hentai') {
           axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`)
           .then(res=>{
-            try {
-              let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-              getTag(book, bookUrl, book.hash)
-            } catch (e) {
-              console.log(e)
-              if (res.data.includes('Your IP address has been')) {
-                book.status = 'non-tag'
-                this.printMessage('error', 'Your IP address has been temporarily banned')
-                this.saveBookList()
-                this.serviceAvailable = false
-              } else {
-                book.status = 'tag-failed'
-                this.printMessage('error', 'Get tag failed')
-                this.saveBookList()
-              }
-            }
+            resolveWebPage(book, res)
           })
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
@@ -887,22 +889,7 @@ export default defineComponent({
             cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
-            try {
-              let bookUrl = new DOMParser().parseFromString(res, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-              getTag(book, bookUrl, book.hash)
-            } catch (e) {
-              console.log(e)
-              if (res.includes('Your IP address has been')) {
-                book.status = 'non-tag'
-                this.printMessage('error', 'Your IP address has been temporarily banned')
-                this.saveBookList()
-                this.serviceAvailable = false
-              } else {
-                book.status = 'tag-failed'
-                this.printMessage('error', 'Get tag failed')
-                this.saveBookList()
-              }
-            }
+            resolveWebPage(book, res)
           })
         } else if (server === 'exsearch') {
           let matchTitle = /\[[^[]+?]([^[]+)/.exec(book.title)
@@ -916,22 +903,7 @@ export default defineComponent({
             cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
-            try {
-              let bookUrl = new DOMParser().parseFromString(res, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-              getTag(book, bookUrl, book.hash)
-            } catch (e) {
-              console.log(e)
-              if (res.includes('Your IP address has been')) {
-                book.status = 'non-tag'
-                this.printMessage('error', 'Your IP address has been temporarily banned')
-                this.saveBookList()
-                this.serviceAvailable = false
-              } else {
-                book.status = 'tag-failed'
-                this.printMessage('error', 'Get tag failed')
-                this.saveBookList()
-              }
-            }
+            resolveWebPage(book, res)
           })
         }
       }

@@ -215,6 +215,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
               date: Date.now()
             })
             mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+            mainWindow.setProgressBar(i/list.length)
           }
         } else {
           foundData.exist = true
@@ -236,6 +237,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
     existData = _.filter(existData, {exist: true})
     _.forIn(existData, b=>b.exist = undefined)
     await saveBookListToBrFile(existData)
+    mainWindow.setProgressBar(-1)
     return existData
   } else {
     return await loadBookListFromBrFile()
@@ -277,6 +279,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
         })
       }
       mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+      mainWindow.setProgressBar(i/list.length)
     } catch (e) {
       console.log(e)
       mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed because ${e}`)
@@ -289,7 +292,8 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
     console.log(err)
   }
 
-  await saveBookListToBrFile(data)
+  await saveBookListToBrFile(data)  
+  mainWindow.setProgressBar(-1)
   return data
 })
 
@@ -304,8 +308,9 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
     console.log(err)
   }
 
-  for (let book of bookList) {
+  for (let i = 0; i < bookList.length; i++) {
     try {
+      let book = bookList[i]
       let {filepath, type} = book
       if (!type || type === 'zip') type = 'archive'
       let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
@@ -313,6 +318,7 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         _.assign(book, {type, coverPath, hash, pageCount, bundleSize})
         mainWindow.webContents.send('send-message', `patch ${book.filepath}`)
+        mainWindow.setProgressBar(i/bookList.length)
       }
     } catch (e) {
       console.log(e)
@@ -328,6 +334,7 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
   }
 
   await saveBookListToBrFile(bookList)
+  mainWindow.setProgressBar(-1)
   return bookList
 })
 
@@ -530,6 +537,10 @@ ipcMain.handle('use-new-cover', async(event, filepath)=>{
   if (imageResizeResult) {
     return coverPath
   }
+})
+
+ipcMain.handle('set-progress-bar', async(event, progress)=>{
+  mainWindow.setProgressBar(progress)
 })
 
 app.on('window-all-closed', () => {

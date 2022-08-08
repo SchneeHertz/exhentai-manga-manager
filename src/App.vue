@@ -914,12 +914,14 @@ export default defineComponent({
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let load = async (gap) => {
         for (let i = 0; i < this.bookList.length; i++) {
+          ipcRenderer['set-progress-bar'](i/this.bookList.length)
           if (this.bookList[i].status === 'non-tag' && this.serviceAvailable) {
             this.getBookInfo(this.bookList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
           }
         }
+        ipcRenderer['set-progress-bar'](-1)
       }
       load(this.setting.requireGap || 10000)
     },

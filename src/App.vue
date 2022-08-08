@@ -857,13 +857,13 @@ export default defineComponent({
           }
         })
       }
-      let resolveWebPage = (book, res)=>{
+      let resolveWebPage = (book, htmlString)=>{
         try {
-          let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
+          let bookUrl = new DOMParser().parseFromString(htmlString, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
           getTag(book, bookUrl)
         } catch (e) {
           console.log(e)
-          if (res.data.includes('Your IP address has been')) {
+          if (htmlString.includes('Your IP address has been')) {
             book.status = 'non-tag'
             this.printMessage('error', 'Your IP address has been temporarily banned')
             this.saveBookList()
@@ -881,7 +881,7 @@ export default defineComponent({
         if (server === 'e-hentai') {
           axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`)
           .then(res=>{
-            resolveWebPage(book, res)
+            resolveWebPage(book, res.data)
           })
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({

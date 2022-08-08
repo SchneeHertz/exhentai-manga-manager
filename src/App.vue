@@ -800,7 +800,7 @@ export default defineComponent({
       })
     },
     getBookInfo (book, server = 'e-hentai') {
-      let getTag = (book, url, hash) => {
+      let getTag = (book, url) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
         axios.post('https://api.e-hentai.org/api.php', {
           'method': 'gdata',
@@ -841,7 +841,6 @@ export default defineComponent({
             })
             book.tags = tagObject
             book.status = 'tagged'
-            // book.hash = hash
             _.throttle(this.saveBookList, 10000)()
           } catch (e) {
             console.log(e)
@@ -858,28 +857,31 @@ export default defineComponent({
           }
         })
       }
+      let resolveWebPage = (book, res)=>{
+        try {
+          let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
+          getTag(book, bookUrl)
+        } catch (e) {
+          console.log(e)
+          if (res.data.includes('Your IP address has been')) {
+            book.status = 'non-tag'
+            this.printMessage('error', 'Your IP address has been temporarily banned')
+            this.saveBookList()
+            this.serviceAvailable = false
+          } else {
+            book.status = 'tag-failed'
+            this.printMessage('error', 'Get tag failed')
+            this.saveBookList()
+          }
+        }
+      }
       if (book.url) {
         getTag(book, book.url)
       } else {
         if (server === 'e-hentai') {
           axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`)
           .then(res=>{
-            try {
-              let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-              getTag(book, bookUrl, book.hash)
-            } catch (e) {
-              console.log(e)
-              if (res.data.includes('Your IP address has been')) {
-                book.status = 'non-tag'
-                this.printMessage('error', 'Your IP address has been temporarily banned')
-                this.saveBookList()
-                this.serviceAvailable = false
-              } else {
-                book.status = 'tag-failed'
-                this.printMessage('error', 'Get tag failed')
-                this.saveBookList()
-              }
-            }
+            resolveWebPage(book, res)
           })
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
@@ -887,22 +889,7 @@ export default defineComponent({
             cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
-            try {
-              let bookUrl = new DOMParser().parseFromString(res, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-              getTag(book, bookUrl, book.hash)
-            } catch (e) {
-              console.log(e)
-              if (res.includes('Your IP address has been')) {
-                book.status = 'non-tag'
-                this.printMessage('error', 'Your IP address has been temporarily banned')
-                this.saveBookList()
-                this.serviceAvailable = false
-              } else {
-                book.status = 'tag-failed'
-                this.printMessage('error', 'Get tag failed')
-                this.saveBookList()
-              }
-            }
+            resolveWebPage(book, res)
           })
         } else if (server === 'exsearch') {
           let matchTitle = /\[[^[]+?]([^[]+)/.exec(book.title)
@@ -916,22 +903,7 @@ export default defineComponent({
             cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
-            try {
-              let bookUrl = new DOMParser().parseFromString(res, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-              getTag(book, bookUrl, book.hash)
-            } catch (e) {
-              console.log(e)
-              if (res.includes('Your IP address has been')) {
-                book.status = 'non-tag'
-                this.printMessage('error', 'Your IP address has been temporarily banned')
-                this.saveBookList()
-                this.serviceAvailable = false
-              } else {
-                book.status = 'tag-failed'
-                this.printMessage('error', 'Get tag failed')
-                this.saveBookList()
-              }
-            }
+            resolveWebPage(book, res)
           })
         }
       }
@@ -942,12 +914,14 @@ export default defineComponent({
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let load = async (gap) => {
         for (let i = 0; i < this.bookList.length; i++) {
+          ipcRenderer['set-progress-bar'](i/this.bookList.length)
           if (this.bookList[i].status === 'non-tag' && this.serviceAvailable) {
             this.getBookInfo(this.bookList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
           }
         }
+        ipcRenderer['set-progress-bar'](-1)
       }
       load(this.setting.requireGap || 10000)
     },
@@ -1649,7 +1623,7 @@ body
 .book-card
   display: inline-block
   width: 240px
-  height: 372px
+  height: 367px
   border: solid 1px var(--el-border-color)
   border-radius: 8px
   margin: 6px 10px
@@ -1677,8 +1651,9 @@ body
 .book-cover
   border-radius: 8px
   width: 200px
-  height: 288px
+  height: 283px
   margin: 0 20px
+  object-fit: cover
 .outer-read-button-group
   margin: 0 8px
 .outer-read-button
@@ -1692,7 +1667,7 @@ body
 
 .book-collect-card
   width: 155px
-  height: 232px
+  height: 229px
   border: solid 1px var(--el-border-color)
   border-radius: 4px
   margin: 4px 8px
@@ -1705,14 +1680,15 @@ body
 .book-collect-cover
   border-radius: 4px
   width: 125px
-  height: 180px
+  height: 177px
+  object-fit: cover
 .book-collection
   .book-collection-select
     width: 100%
   .book-collection-line
     text-align:left
     width: 100%
-    height: 80px
+    height: 79px
     border: solid 1px var(--el-border-color)
     border-radius: 4px
     margin: 2px 4px
@@ -1720,10 +1696,11 @@ body
     .book-collection-cover
       border-radius: 2px
       width: 50px
-      height: 72px
+      height: 71px
       position: absolute
       top: 4px
       left: 2px
+      object-fit: cover
     .book-collection-title
       height: 72px
       overflow-y: hidden
@@ -1760,7 +1737,8 @@ body
     margin-bottom: 10px
     .book-detail-cover
       width: 250px
-      height: 360px
+      height: 354px
+      object-fit: cover
   .edit-line
     margin: 4px 0
     .el-select

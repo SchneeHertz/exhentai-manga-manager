@@ -292,7 +292,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
     console.log(err)
   }
 
-  await saveBookListToBrFile(data)  
+  await saveBookListToBrFile(data)
   mainWindow.setProgressBar(-1)
   return data
 })
@@ -545,6 +545,7 @@ ipcMain.handle('set-progress-bar', async(event, progress)=>{
 
 ipcMain.handle('get-folder-tree', async(event, bookList)=>{
   let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
+  folderList.sort()
   let librarySplitPaths = setting.library.split(path.sep)
   librarySplitPaths.pop()
   let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).filter(p=>!librarySplitPaths.includes(p)))

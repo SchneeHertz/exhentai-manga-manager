@@ -501,7 +501,7 @@
     <el-drawer
       v-model="sideVisibleFolderTree"
       direction="ltr"
-      size="20%"
+      size="25%"
       destroy-on-close
     >
       <el-tree
@@ -1272,6 +1272,7 @@ export default defineComponent({
             coverPath: collectBook[0].coverPath,
             date, posted, rating, mark, tags, title_jpn,
             list: collection.list,
+            filepath: collectBook[0].filepath,
             collection: true
           })
         })
@@ -1599,22 +1600,25 @@ export default defineComponent({
     geneFolderTree () {
       this.sideVisibleFolderTree = !this.sideVisibleFolderTree
       if (this.sideVisibleFolderTree) {
-        ipcRenderer['get-folder-tree'](_.cloneDeep(this.bookList))
+        let bookList = _.isEmpty(this.storeBookList) ? _.cloneDeep(this.bookList) : _.cloneDeep(this.storeBookList)
+        ipcRenderer['get-folder-tree'](bookList)
         .then(data=>{
           this.folderTreeData = data
-          console.log(data)
         })
       }
     },
     selectFolderTreeNode (selectNode) {
+      if (_.isEmpty(this.storeBookList)) {
+        this.storeBookList = _.cloneDeep(this.bookList)
+      }
       if (selectNode.folderPath === '.') {
         this.bookList = _.cloneDeep(this.storeBookList)
       } else {
-        if (_.isEmpty(this.storeBookList.value)) {
-          this.storeBookList = _.cloneDeep(this.bookList)
-        }
+        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath
+        this.bookList = _.filter(this.storeBookList, book=>book.filepath.startsWith(clickLibraryPath))
       }
-      console.log(this.setting.library + '\\' + selectNode.folderPath)
+      this.displayBookList = this.bookList
+      this.chunkList()
     }
   }
 })

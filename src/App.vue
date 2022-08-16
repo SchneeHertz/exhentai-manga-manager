@@ -1,7 +1,10 @@
 <template>
   <div>
     <el-row :gutter="20">
-      <el-col :span="9" :offset="3">
+      <el-col :span="1" :offset="2">
+        <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree"></el-button>
+      </el-col>
+      <el-col :span="9">
         <el-autocomplete
           v-model="searchString"
           :fetch-suggestions="querySearch"
@@ -495,6 +498,17 @@
         <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
       </div>
     </el-drawer>
+    <el-drawer
+      v-model="sideVisibleFolderTree"
+      direction="ltr"
+      size="20%"
+      destroy-on-close
+    >
+      <el-tree
+        :data="folderTreeData"
+        @current-change="selectFolderTreeNode"
+      ></el-tree>
+    </el-drawer>
     <el-dialog
       v-model="dialogVisibleGraph"
       width="80%"
@@ -519,6 +533,7 @@ import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Close, Search, Setting } from '@element-plus/icons-vue'
 import { MdShuffle, MdBulb } from '@vicons/ionicons4'
+import { TreeViewAlt } from '@vicons/carbon'
 import he from 'he'
 import {nanoid} from 'nanoid'
 import draggable from 'vuedraggable'
@@ -531,7 +546,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      Close, Search, Setting, MdShuffle, MdBulb
+      Close, Search, Setting, MdShuffle, MdBulb, TreeViewAlt
     }
   },
   data () {
@@ -569,7 +584,10 @@ export default defineComponent({
       searchHistory: [],
       tagNodeData: [],
       displayNodeData: [],
-      dialogVisibleGraph: false
+      dialogVisibleGraph: false,
+      sideVisibleFolderTree: false,
+      folderTreeData: [],
+      storeBookList: [],
     }
   },
   computed: {
@@ -1577,6 +1595,26 @@ export default defineComponent({
     },
     destroyCanvas () {
       document.querySelector('#tag-graph canvas').remove()
+    },
+    geneFolderTree () {
+      this.sideVisibleFolderTree = !this.sideVisibleFolderTree
+      if (this.sideVisibleFolderTree) {
+        ipcRenderer['get-folder-tree'](_.cloneDeep(this.bookList))
+        .then(data=>{
+          this.folderTreeData = data
+          console.log(data)
+        })
+      }
+    },
+    selectFolderTreeNode (selectNode) {
+      if (selectNode.folderPath === '.') {
+        this.bookList = _.cloneDeep(this.storeBookList)
+      } else {
+        if (_.isEmpty(this.storeBookList.value)) {
+          this.storeBookList = _.cloneDeep(this.bookList)
+        }
+      }
+      console.log(this.setting.library + '\\' + selectNode.folderPath)
     }
   }
 })

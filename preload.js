@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'use-new-cover': (filepath)=>ipcRenderer.invoke('use-new-cover', filepath),
   'patch-local-metadata': ()=>ipcRenderer.invoke('patch-local-metadata'),
   'set-progress-bar': (progress)=>ipcRenderer.invoke('set-progress-bar', progress),
+  'get-folder-tree': (bookList)=>ipcRenderer.invoke('get-folder-tree', bookList),
 })
 
 contextBridge.exposeInMainWorld('electronFunction', {

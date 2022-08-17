@@ -292,7 +292,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
     console.log(err)
   }
 
-  await saveBookListToBrFile(data)  
+  await saveBookListToBrFile(data)
   mainWindow.setProgressBar(-1)
   return data
 })
@@ -541,6 +541,49 @@ ipcMain.handle('use-new-cover', async(event, filepath)=>{
 
 ipcMain.handle('set-progress-bar', async(event, progress)=>{
   mainWindow.setProgressBar(progress)
+})
+
+ipcMain.handle('get-folder-tree', async(event, bookList)=>{
+  let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
+  folderList.sort()
+  let librarySplitPaths = setting.library.split(path.sep)
+  librarySplitPaths.pop()
+  let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).filter(p=>!librarySplitPaths.includes(p)))
+  let treeData = []
+  let addToTree = (treeLevel, parent, parentPath, child, childPath, rootLevel)=>{
+    rootLevel ??= treeLevel
+    if (_.isEmpty(rootLevel)) {
+      rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
+      return true
+    }
+    let foundParent = _.find(treeLevel, {label: parent})
+    if (foundParent) {
+      let foundChild = _.find(foundParent.children, {label: child})
+      if (!foundChild) {
+        foundParent.children.push({label: child, folderPath: childPath, children: []})
+      }
+      return true
+    } else {
+      if (!_.isEmpty(treeLevel)) {
+        let results = treeLevel.map(node=>addToTree(node.children, parent, parentPath, child, childPath, rootLevel))
+        if (_.isEmpty(_.compact(results)) && treeLevel == rootLevel) {
+          rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
+          return true
+        } else {
+          return !_.isEmpty(_.compact(results))
+        }
+      } else {
+        return false
+      }
+    }
+  }
+  _.forIn(bookPathSplitList, bookPath=>{
+    let length = bookPath.length
+    for (let i = 0; i < length-1; i++) {
+      addToTree(treeData, bookPath[i], path.join(...bookPath.slice(1, i+1)), bookPath[i+1], path.join(...bookPath.slice(1, i+2)))
+    }
+  })
+  return treeData
 })
 
 app.on('window-all-closed', () => {

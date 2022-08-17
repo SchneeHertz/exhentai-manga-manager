@@ -1,7 +1,10 @@
 <template>
   <div>
     <el-row :gutter="20">
-      <el-col :span="9" :offset="3">
+      <el-col :span="1" :offset="2">
+        <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree"></el-button>
+      </el-col>
+      <el-col :span="9">
         <el-autocomplete
           v-model="searchString"
           :fetch-suggestions="querySearch"
@@ -58,8 +61,9 @@
           class="book-card-frame"
         >
           <!-- show book card when book isn't a collection, book isn't hidden because collected,
-            and book isn't hidden by user except sorting by onlyHiddenBook -->
-          <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook)">
+            and book isn't hidden by user except sorting by onlyHiddenBook
+            and book isn't hidden by folder select -->
+          <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide">
             <p class="book-title"
               @contextmenu="onMangaTitleContextMenu($event, book)"
               :title="book.title_jpn || book.title"
@@ -82,7 +86,7 @@
             >{{book.status}}</el-tag>
             <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
           </div>
-          <div class="book-card" v-if="book.collection">
+          <div class="book-card" v-if="book.collection && !book.folderHide">
             <el-tag effect="dark" type="warning" class="book-collection-tag">合集</el-tag>
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
@@ -98,7 +102,7 @@
           v-for="book in chunkDisplayBookList" :key="book.id"
           class="book-add-badge"
           @click="handleClickCollectBadge(book)"
-          v-show="!book.collection"
+          v-show="!book.collection && !book.folderHide"
         >
           <div class="book-collect-card">
             <p class="book-collect-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
@@ -495,6 +499,17 @@
         <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
       </div>
     </el-drawer>
+    <el-drawer
+      v-model="sideVisibleFolderTree"
+      direction="ltr"
+      size="25%"
+      destroy-on-close
+    >
+      <el-tree
+        :data="folderTreeData"
+        @current-change="selectFolderTreeNode"
+      ></el-tree>
+    </el-drawer>
     <el-dialog
       v-model="dialogVisibleGraph"
       width="80%"
@@ -519,6 +534,7 @@ import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Close, Search, Setting } from '@element-plus/icons-vue'
 import { MdShuffle, MdBulb } from '@vicons/ionicons4'
+import { TreeViewAlt } from '@vicons/carbon'
 import he from 'he'
 import {nanoid} from 'nanoid'
 import draggable from 'vuedraggable'
@@ -531,7 +547,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      Close, Search, Setting, MdShuffle, MdBulb
+      Close, Search, Setting, MdShuffle, MdBulb, TreeViewAlt
     }
   },
   data () {
@@ -569,7 +585,10 @@ export default defineComponent({
       searchHistory: [],
       tagNodeData: [],
       displayNodeData: [],
-      dialogVisibleGraph: false
+      dialogVisibleGraph: false,
+      sideVisibleFolderTree: false,
+      folderTreeData: [],
+      storeBookList: [],
     }
   },
   computed: {
@@ -597,7 +616,7 @@ export default defineComponent({
       }
     },
     displayBookCount () {
-      return _.sumBy(this.displayBookList, book=>book.hidden ? 0 : 1)
+      return _.sumBy(this.displayBookList, book=>(book.hidden || book.folderHide) ? 0 : 1)
     }
   },
   mounted () {
@@ -655,7 +674,7 @@ export default defineComponent({
       let countIndex = 0
       _.forIn(list, element=>{
         if (countIndex == index) result.push(element)
-        if (!element.hidden) count++
+        if (!element.hidden && !element.folderHide) count++
         if (count >= size) {
           countIndex++
           count = 0
@@ -790,13 +809,13 @@ export default defineComponent({
               }
               delete book.collectionInfo
             }
-            _.debounce(this.saveBookList, 1000)()
           }
           if (index == this.bookList.length - 1) {
             this.dialogVisibleSetting = false
             this.printMessage('success', '导入完成，如导入数据有合集，需打开编辑合集后手动保存')
           }
         })
+        this.saveBookList()
       })
     },
     getBookInfo (book, server = 'e-hentai') {
@@ -857,13 +876,13 @@ export default defineComponent({
           }
         })
       }
-      let resolveWebPage = (book, res)=>{
+      let resolveWebPage = (book, htmlString)=>{
         try {
-          let bookUrl = new DOMParser().parseFromString(res.data, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
+          let bookUrl = new DOMParser().parseFromString(htmlString, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
           getTag(book, bookUrl)
         } catch (e) {
           console.log(e)
-          if (res.data.includes('Your IP address has been')) {
+          if (htmlString.includes('Your IP address has been')) {
             book.status = 'non-tag'
             this.printMessage('error', 'Your IP address has been temporarily banned')
             this.saveBookList()
@@ -881,7 +900,7 @@ export default defineComponent({
         if (server === 'e-hentai') {
           axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`)
           .then(res=>{
-            resolveWebPage(book, res)
+            resolveWebPage(book, res.data)
           })
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
@@ -931,6 +950,7 @@ export default defineComponent({
       _.forIn(bookList, book=>{
         delete book.collected
         delete book.hidden
+        delete book.folderHide
       })
       return ipcRenderer['save-book-list'](bookList)
     },
@@ -1254,6 +1274,7 @@ export default defineComponent({
             coverPath: collectBook[0].coverPath,
             date, posted, rating, mark, tags, title_jpn,
             list: collection.list,
+            filepath: collectBook[0].filepath,
             collection: true
           })
         })
@@ -1577,6 +1598,26 @@ export default defineComponent({
     },
     destroyCanvas () {
       document.querySelector('#tag-graph canvas').remove()
+    },
+    geneFolderTree () {
+      this.sideVisibleFolderTree = !this.sideVisibleFolderTree
+      if (this.sideVisibleFolderTree) {
+        let bookList = _.isEmpty(this.storeBookList) ? _.cloneDeep(this.bookList) : _.cloneDeep(this.storeBookList)
+        ipcRenderer['get-folder-tree'](bookList)
+        .then(data=>{
+          this.folderTreeData = data
+        })
+      }
+    },
+    selectFolderTreeNode (selectNode) {
+      if (selectNode.folderPath === '.') {
+        this.bookList.map(book=>book.folderHide = false)
+      } else {
+        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath
+        this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+      }
+      this.displayBookList = this.bookList
+      this.chunkList()
     }
   }
 })

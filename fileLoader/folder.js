@@ -5,7 +5,7 @@ const { nanoid } = require('nanoid')
 const _ = require('lodash')
 
 let getFolderlist = async (libraryPath)=>{
-  let imageList = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp|avif)', {
+  let imageList = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif)', {
     cwd: libraryPath,
     nocase: true
   })
@@ -15,7 +15,7 @@ let getFolderlist = async (libraryPath)=>{
 }
 
 let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
-  let list = await promisify(glob)('*.@(jpg|jpeg|png|gif|webp|avif)', {
+  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif)', {
     cwd: folderpath,
     nocase: true
   })
@@ -32,7 +32,7 @@ let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
 }
 
 let getImageListFromFolder = async (folderpath, VIEWER_PATH)=>{
-  let list = await promisify(glob)('*.@(jpg|jpeg|png|gif|webp|avif)', {
+  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif)', {
     cwd: folderpath,
     nocase: true
   })

@@ -431,7 +431,7 @@
         class="viewer-thumbnail-switch"
         width="60px"
       />
-      <div class="drawer-image-content" @click="scrollPage" v-show="!showThumbnail">
+      <div class="drawer-image-content" @click="scrollPage" v-if="!showThumbnail">
         <div
           v-for="(image, index) in viewerImageList"
           :key="image.id"
@@ -454,7 +454,7 @@
           <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </div>
-      <div class="drawer-thumbnail-content"  v-show="showThumbnail">
+      <div class="drawer-thumbnail-content"  v-if="showThumbnail">
         <!-- eslint-disable-next-line vue/valid-v-for -->
         <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
           <div v-for="(image, index) in chunk" :key="image.id">

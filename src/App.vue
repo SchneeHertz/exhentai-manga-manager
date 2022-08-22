@@ -618,6 +618,9 @@ export default defineComponent({
     },
     displayBookCount () {
       return _.sumBy(this.displayBookList, book=>(book.hidden || book.folderHide) ? 0 : 1)
+    },
+    tagList () {
+      return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().uniq().map(t=>`"${t}"`).value()
     }
   },
   mounted () {
@@ -984,7 +987,7 @@ export default defineComponent({
       this.searchBook()
     },
     querySearch (queryString, callback) {
-      let result = queryString ? _.filter(this.searchHistory, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+      let result = queryString ? _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
         : this.searchHistory
       callback(result.map(s=>({value:s})))
     },

@@ -213,6 +213,7 @@
                   <el-option v-for="tag in arr" :key="tag" :value="tag">{{tag}}</el-option>
                 </el-select>
               </div>
+              <el-button class="add-tag-cats-button" @click="addTagCat">增加类别</el-button>
             </div>
             <div v-else>
               <el-descriptions :column="1">
@@ -1618,6 +1619,16 @@ export default defineComponent({
       }
       this.displayBookList = this.bookList
       this.chunkList()
+    },
+    addTagCat () {
+      ElMessageBox.prompt('请输入类别名', '增加类别', {
+      })
+      .then(({ value }) => {
+        this.tagGroup[value] = []
+      })
+      .catch(() => {
+        this.printMessage('info', '已取消')
+      })
     }
   }
 })
@@ -1791,6 +1802,7 @@ body
   height: calc(100vh - 100px)
   overflow-y: auto
   padding-right: 10px
+  text-align: left
 .book-tag
   margin: 4px 6px
   cursor: pointer

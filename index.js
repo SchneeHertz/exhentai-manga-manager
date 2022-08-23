@@ -53,7 +53,7 @@ try {
     loadOnStart: false,
     requireGap: 10000,
     thumbnailColumn: 10,
-    showTranslation: true
+    showTranslation: false
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }
@@ -584,6 +584,10 @@ ipcMain.handle('get-folder-tree', async(event, bookList)=>{
     }
   })
   return treeData
+})
+
+ipcMain.handle('get-locale', async(event, arg)=>{
+  return app.getLocale()
 })
 
 app.on('window-all-closed', () => {

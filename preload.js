@@ -24,9 +24,10 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'patch-local-metadata': ()=>ipcRenderer.invoke('patch-local-metadata'),
   'set-progress-bar': (progress)=>ipcRenderer.invoke('set-progress-bar', progress),
   'get-folder-tree': (bookList)=>ipcRenderer.invoke('get-folder-tree', bookList),
+  'get-locale': ()=>ipcRenderer.invoke('get-locale')
 })
 
 contextBridge.exposeInMainWorld('electronFunction', {
   'copy-image-to-clipboard': (filepath)=>clipboard.writeImage(nativeImage.createFromPath(filepath)),
-  'copy-text-to-clipboard': (text)=>clipboard.writeText(text)
+  'copy-text-to-clipboard': (text)=>clipboard.writeText(text),
 })

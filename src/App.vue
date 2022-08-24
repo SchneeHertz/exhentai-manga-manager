@@ -639,7 +639,11 @@ export default defineComponent({
     })
     ipcRenderer['send-message']((event, arg)=>{
       this.printMessage('info', arg)
-      if (arg.includes('failed')) console.log(arg)
+      if (arg.includes('failed')) {
+        console.error(arg)
+      } else {
+        console.log(arg)
+      }
     })
     ipcRenderer['load-setting']()
     .then(res=>{
@@ -722,7 +726,7 @@ export default defineComponent({
       if (this.imageStyleType === 'scroll') {
         return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
       } else {
-        // 28是.viewer-image-page的高度
+        // 28 is the heught of .viewer-image-page
         return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
       }
     },

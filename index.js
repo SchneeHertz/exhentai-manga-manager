@@ -3,7 +3,7 @@ const path = require('path')
 const fs = require('fs')
 const process = require('process')
 const { brotliCompress, brotliDecompress } = require('zlib')
-const { promisify } = require('util')
+const { promisify, format } = require('util')
 const _ = require('lodash')
 const { nanoid } = require('nanoid')
 const sharp = require('sharp')
@@ -58,6 +58,18 @@ try {
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }
 
+let logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), {flags: 'w'})
+let logStdout = process.stdout
+
+console.log = (message)=>{
+  logFile.write(format(message) + '\n')
+  logStdout.write(format(message) + '\n')
+}
+
+let sendMessageToWebContents = (message)=>{
+  console.log(message)
+  mainWindow.webContents.send('send-message', message)
+}
 
 let mainWindow
 function createWindow () {
@@ -156,8 +168,7 @@ let geneCover = async (filepath, type) => {
   })
   .toFile(coverPath)
   .catch((e)=>{
-    console.log(filepath, e)
-    mainWindow.webContents.send('send-message', `get ${filepath} failed because ${e}`)
+    sendMessageToWebContents(`get ${filepath} failed because ${e}`)
     fs.promises.rm(tempCoverPath, {recursive: true})
     return false
   })
@@ -188,15 +199,16 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
       existData = []
     }
 
-    mainWindow.webContents.send('send-message', 'start loading library')
+    sendMessageToWebContents('start loading library')
     let list = await getBookFilelist()
-    mainWindow.webContents.send('send-message', `load ${list.length} book from library`)
+    sendMessageToWebContents(`load ${list.length} book from library`)
 
     for (let i = 0; i < list.length; i++) {
       try {
         let {filepath, type} = list[i]
         let foundData = _.find(existData, {filepath: filepath})
         if (!foundData) {
+          sendMessageToWebContents(`load ${filepath}, ${i+1} of ${list.length}`)
           let id = nanoid()
           let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
           if (targetFilePath && coverPath){
@@ -214,17 +226,20 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
               exist: true,
               date: Date.now()
             })
-            mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
             mainWindow.setProgressBar(i/list.length)
           }
         } else {
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
         }
-        if ((i+1) % 100 == 0) mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
+        if ((i+1) % 100 == 0) {
+          sendMessageToWebContents(`load ${i+1} of ${list.length}`)
+          let tempExistData = _.cloneDeep(_.filter(existData, {exist: true}))
+          _.forIn(tempExistData, b=>b.exist = undefined)
+          await saveBookListToBrFile(tempExistData)
+        }
       } catch (e) {
-        console.log(e)
-        mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed because ${e}`)
+        sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${list.length}`)
       }
     }
     try {
@@ -254,13 +269,14 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
   } catch (err) {
     console.log(err)
   }
-  mainWindow.webContents.send('send-message', 'start loading library')
+  sendMessageToWebContents('start loading library')
   let list = await getBookFilelist()
-  mainWindow.webContents.send('send-message', `load ${list.length} book from library`)
+  sendMessageToWebContents(`load ${list.length} book from library`)
   let data = []
   for (let i = 0; i < list.length; i++) {
     try {
       let {filepath, type} = list[i]
+      sendMessageToWebContents(`load ${filepath}, ${i+1} of ${list.length}`)
       let id = nanoid()
       let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
@@ -278,11 +294,12 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
           date: Date.now()
         })
       }
-      mainWindow.webContents.send('send-message', `load ${i+1} of ${list.length}`)
       mainWindow.setProgressBar(i/list.length)
+      if ((i+1) % 100 == 0) {
+        await saveBookListToBrFile(data)
+      }
     } catch (e) {
-      console.log(e)
-      mainWindow.webContents.send('send-message', `load ${list[i].filepath} failed because ${e}`)
+      sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${list.length}`)
     }
   }
   try {
@@ -317,12 +334,11 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         _.assign(book, {type, coverPath, hash, pageCount, bundleSize})
-        mainWindow.webContents.send('send-message', `patch ${book.filepath}`)
+        sendMessageToWebContents(`patch ${filepath}`)
         mainWindow.setProgressBar(i/bookList.length)
       }
     } catch (e) {
-      console.log(e)
-      mainWindow.webContents.send('send-message', `patch ${book.filepath} failed because ${e}`)
+      sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
     }
   }
 
@@ -394,8 +410,7 @@ ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
       return res.text
     })
     .catch(e=>{
-      console.log(e)
-      mainWindow.webContents.send('send-message', `get ex comments failed because ${e}`)
+      sendMessageToWebContents(`get ex comments failed because ${e}`)
     })
   } else {
     return await superagent
@@ -405,8 +420,7 @@ ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
       return res.text
     })
     .catch(e=>{
-      console.log(e)
-      mainWindow.webContents.send('send-message', `get ex comments failed because ${e}`)
+      sendMessageToWebContents(`get ex comments failed because ${e}`)
     })
   }
 })
@@ -511,8 +525,8 @@ ipcMain.handle('load-collection-list', async (event, arg)=>{
   let list
   try {
     list = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'collectionList.json'), {encoding: 'utf-8'}))
-  } catch (e) {
-    console.log(e)
+  } catch (err) {
+    console.log(err)
     list = []
   }
   return list
@@ -530,8 +544,7 @@ ipcMain.handle('use-new-cover', async(event, filepath)=>{
   })
   .toFile(coverPath)
   .catch((e)=>{
-    console.log(filepath, e)
-    mainWindow.webContents.send('send-message', `generate cover failed because ${e}`)
+    sendMessageToWebContents(`generate cover from ${filepath} failed because ${e}`)
     return false
   })
   if (imageResizeResult) {

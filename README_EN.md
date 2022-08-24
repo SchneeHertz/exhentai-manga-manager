@@ -8,7 +8,7 @@ Manage manga downloaded from ExHentai
 
 ![cover.png](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/cover.png)
 
-Instrction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)
+Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)
 
 ## Features
 - Create a manga library from a folder

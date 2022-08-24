@@ -63,5 +63,19 @@
     "tagAnalysis": "Tag Analysis",
     "searchLocal": "Search Local",
     "getEXRecommand": "Get Ex Recommand"
+  },
+  "c": {
+    "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
+    "rebuildMessage": "Forced rebuild library completed",
+    "inputCollectionName": "Please input collection name",
+    "canceled": "Canceled",
+    "copyImageToClipboard": "Copy image to clipboard",
+    "designateAsCover": "Designate as cover",
+    "cancel": "Cancel",
+    "copyTitleToClipboard": "Copy title to clipboard",
+    "copyLinkToClipboard": "Copy link to clipboard",
+    "redirect": "Redirect",
+    "patchLocalMetadata": "Patch local metadata",
+    "inputCategoryName": "Please input category name"
   }
 }

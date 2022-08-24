@@ -630,9 +630,9 @@ export default defineComponent({
   mounted () {
     ipcRenderer['get-locale']().then(localeString=>{
       if (localeString === 'zh-CN') {
-      //   this.locale = zhCn
-      //   this.$i18n.locale = 'zh-CN'
-      // } else {
+        this.locale = zhCn
+        this.$i18n.locale = 'zh-CN'
+      } else {
         this.locale = en
         this.$i18n.locale = 'en-US'
       }
@@ -833,7 +833,7 @@ export default defineComponent({
           }
           if (index == this.bookList.length - 1) {
             this.dialogVisibleSetting = false
-            this.printMessage('success', '导入完成，如导入数据有合集，需打开编辑合集后手动保存')
+            this.printMessage('success', this.$t('c.importMessage'))
           }
         })
         this.saveBookList()
@@ -1037,7 +1037,7 @@ export default defineComponent({
         this.displayBookList = this.bookList
         this.chunkList()
         this.loadCollectionList()
-        this.printMessage('success', '强制重建漫画库完成')
+        this.printMessage('success', this.$t('c.rebuildMessage'))
       })
     },
     handleSizeChange () {
@@ -1228,7 +1228,7 @@ export default defineComponent({
       if (this.imageStyleType === 'scroll') {
         _.forIn(this.viewerImageList, (image, i)=>{
           if (i == (chunkIndex * this.thumbnailColumn + index)) return false
-          // 28.3是.viewer-image-page的高度的平均值
+          // 28.3 is the height of .viewer-image-page
           scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28.3
         })
       } else {
@@ -1241,7 +1241,7 @@ export default defineComponent({
       if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
     },
     addCollection () {
-      ElMessageBox.prompt('请输入合集名', '新增合集', {
+      ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {
       })
       .then(({ value }) => {
         let id = nanoid()
@@ -1254,7 +1254,7 @@ export default defineComponent({
         this.handleSelectCollectionChange(this.selectCollection)
       })
       .catch(() => {
-        this.printMessage('info', '已取消')
+        this.printMessage('info', this.$t('c.canceled'))
       })
     },
     saveCollection () {
@@ -1376,43 +1376,43 @@ export default defineComponent({
         y: e.y,
         items: [
           {
-            label: '获取EH元数据',
+            label: this.$t('m.getMetadata'),
             onClick: () => {
               this.getBookInfo(book, 'e-hentai')
             }
           },
           {
-            label: '获取EX元数据',
+            label: this.$t('m.getExMetadata'),
             onClick: () => {
               this.getBookInfo(book, 'exhentai')
             }
           },
           {
-            label: '通过文件名获取元数据',
+            label: this.$t('m.getMetadataByFilename'),
             onClick: () => {
               this.getBookInfo(book, 'exsearch')
             }
           },
           {
-            label: '打开漫画文件所在目录',
+            label: this.$t('m.openMangaFileLocation'),
             onClick: () => {
               this.showFile(book.filepath)
             }
           },
           {
-            label: '删除漫画',
+            label: this.$t('m.deleteManga'),
             onClick: () => {
               this.deleteLocalBook(book)
             }
           },
           {
-            label: '隐藏/显示漫画',
+            label: this.$t('m.hideManga') + "/" + this.$t('m.showManga'),
             onClick: () => {
               this.triggerHiddenBook(book)
             }
           },
           {
-            label: '复制图片到剪贴板',
+            label: this.$t('c.copyImageToClipboard'),
             onClick: () => {
               electronFunction['copy-image-to-clipboard'](book.coverPath)
             }
@@ -1427,13 +1427,13 @@ export default defineComponent({
         y: e.y,
         items: [
           {
-            label: '复制图片到剪贴板',
+            label: this.$t('c.copyImageToClipboard'),
             onClick: () => {
               electronFunction['copy-image-to-clipboard'](filepath)
             }
           },
           {
-            label: '指定为封面',
+            label: this.$t('c.designateAsCover'),
             onClick: () => {
               ipcRenderer['use-new-cover'](filepath)
               .then((coverPath)=>{
@@ -1443,7 +1443,7 @@ export default defineComponent({
             }
           },
           {
-            label: '取消',
+            label: this.$t('c.cancel'),
             onClick: () => {}
           },
         ]
@@ -1456,19 +1456,19 @@ export default defineComponent({
         y: e.y,
         items: [
           {
-            label: '复制漫画名到剪贴板',
+            label: this.$t('c.copyTitleToClipboard'),
             onClick: () => {
               electronFunction['copy-text-to-clipboard'](book.title_jpn || book.title)
             }
           },
           {
-            label: '复制链接到剪贴板',
+            label: this.$t('c.copyLinkToClipboard'),
             onClick: () => {
               electronFunction['copy-text-to-clipboard'](book.url)
             }
           },
           {
-            label: '取消',
+            label: this.$t('c.cancel'),
             onClick: () => {}
           },
         ]
@@ -1479,13 +1479,13 @@ export default defineComponent({
       let foundLink = linkify.find(comment, 'url')
       if (!_.isEmpty(foundLink)) {
         let items = foundLink.map(l=>({
-          label: `转到 ${l.href}`,
+          label: `${this.$t('c.redirect')} ${l.href}`,
           onClick: ()=>{
             ipcRenderer['open-url'](l.href)
           }
         }))
         items.push({
-          label: '取消',
+          label: this.$t('c.cancel'),
           onClick: () => {}
         })
         this.$contextmenu({
@@ -1502,7 +1502,7 @@ export default defineComponent({
         y: e.y,
         items: [
           {
-            label: '修补本地元数据',
+            label: this.$t('c.patchLocalMetadata'),
             onClick: () => {
               ipcRenderer['patch-local-metadata']()
               .then(()=>this.loadBookList())
@@ -1641,13 +1641,13 @@ export default defineComponent({
       this.chunkList()
     },
     addTagCat () {
-      ElMessageBox.prompt('请输入类别名', '增加类别', {
+      ElMessageBox.prompt(this.$t('c.inputCategoryName'), this.$t('m.addCategory'), {
       })
       .then(({ value }) => {
         this.tagGroup[value] = []
       })
       .catch(() => {
-        this.printMessage('info', '已取消')
+        this.printMessage('info', this.$t('c.canceled'))
       })
     }
   }

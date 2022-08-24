@@ -334,7 +334,7 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         _.assign(book, {type, coverPath, hash, pageCount, bundleSize})
-        sendMessageToWebContents(`patch ${filepath}`)
+        sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookList.length}`)
         mainWindow.setProgressBar(i/bookList.length)
       }
     } catch (e) {

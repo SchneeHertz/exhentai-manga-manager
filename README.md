@@ -1,12 +1,14 @@
 # exhentai-manga-manager
 
+中文介绍 | [English Readme](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README_EN.md)
+
 <img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="256"/>
 
 管理从ExHentai下载的短篇漫画
 
 ![cover.png](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/cover.png)
 
-使用说明见 [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki)
+使用说明见 [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明)
 
 ## 功能
 - 从一个文件夹建立漫画库

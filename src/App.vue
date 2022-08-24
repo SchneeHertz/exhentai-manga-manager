@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <el-config-provider :locale="locale">
     <el-row :gutter="20">
       <el-col :span="1" :offset="2">
         <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree"></el-button>
@@ -27,28 +27,28 @@
         <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button>
       </el-col>
       <el-col :span="3">
-        <el-select placeholder="排序" @change="handleSortChange" clearable v-model="sortValue">
-          <el-option label="仅收藏" value="mark"></el-option>
-          <el-option label="仅合集" value="collection"></el-option>
-          <el-option label="仅隐藏" value="hidden"></el-option>
-          <el-option label="添加时间正序" value="addAscend"></el-option>
-          <el-option label="添加时间倒序" value="addDescend"></el-option>
-          <el-option label="上传时间正序" value="postAscend"></el-option>
-          <el-option label="上传时间倒序" value="postDescend"></el-option>
-          <el-option label="评分正序" value="scoreAscend"></el-option>
-          <el-option label="评分倒序" value="scoreDescend"></el-option>
+        <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
+          <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
+          <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
+          <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
+          <el-option :label="$t('m.addTimeAscend')" value="addAscend"></el-option>
+          <el-option :label="$t('m.addTimeDescend')" value="addDescend"></el-option>
+          <el-option :label="$t('m.postTimeAscend')" value="postAscend"></el-option>
+          <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
+          <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
+          <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
         </el-select>
       </el-col>
       <el-col :span="4" :offset="1">
         <el-row :gutter="4">
           <el-col :span="10" :offset="7"  v-if="!editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="createCollection">编辑合集</el-button>
+            <el-button type="primary" plain class="function-button" @click="createCollection">{{$t('m.manageCollection')}}</el-button>
           </el-col>
           <el-col :span="10" :offset="2" v-if="editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="addCollection">新增合集</el-button>
+            <el-button type="primary" plain class="function-button" @click="addCollection">{{$t('m.addCollection')}}</el-button>
           </el-col>
           <el-col :span="10" v-if="editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="saveCollection">保存</el-button>
+            <el-button type="primary" plain class="function-button" @click="saveCollection">{{$t('m.save')}}</el-button>
           </el-col>
         </el-row>
       </el-col>
@@ -76,8 +76,8 @@
               class="book-card-star" @click="switchMark(book)"
             ><StarFilled /></el-icon>
             <el-button-group class="outer-read-button-group">
-              <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
-              <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+              <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">{{$t('m.re')}}</el-button>
+              <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">{{$t('m.ad')}}</el-button>
             </el-button-group>
             <el-tag
               class="book-status-tag"
@@ -87,7 +87,7 @@
             <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
           </div>
           <div class="book-card" v-if="book.collection && !book.folderHide">
-            <el-tag effect="dark" type="warning" class="book-collection-tag">合集</el-tag>
+            <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><StarFilled /></el-icon>
@@ -168,57 +168,58 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
-              <el-descriptions-item label="页数:">
+              <el-descriptions-item :label="$t('m.pageCount')+':'">
                 {{bookDetail.pageCount}} | {{bookDetail.filecount}}
               </el-descriptions-item>
-              <el-descriptions-item label="文件大小:">
+              <el-descriptions-item :label="$t('m.fileSize')+':'">
                 {{Math.floor(bookDetail.bundleSize / 1048576)}} | {{Math.floor(bookDetail.filesize / 1048576)}} MB
               </el-descriptions-item>
-              <el-descriptions-item label="上传时间:">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
+              <el-descriptions-item :label="$t('m.postTime')+':'">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
             </el-descriptions>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="success" plain @click="openLocalBook">阅读</el-button>
-            <el-button plain @click="triggerShowComment">{{showComment ? '隐藏' : '显示'}}评论</el-button>
-            <el-button type="primary" plain @click="editTags">{{editingTag ? '显示标签' : '编辑标签'}}</el-button>
+            <el-button type="success" plain @click="openLocalBook">{{$t('m.read')}}</el-button>
+            <el-button plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
+            <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="getBookInfo(bookDetail, 'e-hentai')">获取EH元数据</el-button>
-            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exhentai')">获取EX元数据</el-button>
+            <el-button plain @click="getBookInfo(bookDetail, 'e-hentai')">{{$t('m.getMetadata')}}</el-button>
+            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exhentai')">{{$t('m.getExMetadata')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="deleteLocalBook(bookDetail)">删除漫画</el-button>
-            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exsearch')">通过文件名获取元数据</el-button>
+            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
+            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exsearch')">{{$t('m.getMetadataByFilename')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="showFile(bookDetail.filepath)">打开漫画文件所在目录</el-button>
-            <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook?'显示':'隐藏'}}漫画</el-button>
+            <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
+            <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
         </el-col>
         <el-col :span="showComment?10:15">
           <el-scrollbar class="book-tag-frame">
             <div v-if="editingTag">
               <div class="edit-line">
-                <el-select v-model="bookDetail.status" placeholder="元数据状态">
+                <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')">
                   <el-option value="non-tag">non-tag</el-option>
                   <el-option value="tagged">tagged</el-option>
                   <el-option value="tag-failed">tag-failed</el-option>
                 </el-select>
               </div>
               <div class="edit-line">
-                <el-input v-model="bookDetail.url" placeholder="eh/ex地址"></el-input>
+                <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')"></el-input>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
                 <el-select v-model="bookDetail.tags[key]" :placeholder="key" filterable allow-create multiple>
                   <el-option v-for="tag in arr" :key="tag" :value="tag">{{tag}}</el-option>
                 </el-select>
               </div>
+              <el-button class="add-tag-cats-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
             </div>
             <div v-else>
               <el-descriptions :column="1">
-                <el-descriptions-item label="英文标题:">{{bookDetail.title}}</el-descriptions-item>
-                <el-descriptions-item label="文件名:">{{returnFileName(bookDetail.filepath)}}</el-descriptions-item>
-                <el-descriptions-item label="类别:">
+                <el-descriptions-item :label="$t('m.englishTitle')+':'">{{bookDetail.title}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileName(bookDetail.filepath)}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.category')+':'">
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
                 <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
@@ -260,42 +261,42 @@
       width="40%"
       :modal="false"
     >
-      <template #header><p class="detail-book-title">设置</p></template>
+      <template #header><p class="detail-book-title">{{$t('m.setting')}}</p></template>
       <el-row :gutter="8">
         <el-col :span="24">
           <div class="setting-line">
             <el-input v-model="setting.library">
-              <template #prepend><span class="setting-label">库文件夹</span></template>
-              <template #append><el-button @click="selectLibraryPath">选择</el-button></template>
+              <template #prepend><span class="setting-label">{{$t('m.library')}}</span></template>
+              <template #append><el-button @click="selectLibraryPath">{{$t('m.select')}}</el-button></template>
             </el-input>
           </div>
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
             <el-input v-model="setting.imageExplorer">
-              <template #prepend><span class="setting-label">默认程序</span></template>
-              <template #append><el-button @click="selectImageExplorerPath">选择</el-button></template>
+              <template #prepend><span class="setting-label">{{$t('m.imageViewer')}}</span></template>
+              <template #append><el-button @click="selectImageExplorerPath">{{$t('m.select')}}</el-button></template>
             </el-input>
           </div>
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
             <el-input v-model.number="setting.requireGap" @change="saveSetting">
-              <template #prepend><span class="setting-label">请求间隔(毫秒)</span></template>
+              <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
             </el-input>
           </div>
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
             <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
-              <template #prepend><span class="setting-label">缩略图列数</span></template>
+              <template #prepend><span class="setting-label">{{$t('m.thumbnailColumn')}}</span></template>
             </el-input>
           </div>
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
             <el-input class="label-input">
-              <template #prepend><span class="setting-label">主题</span></template>
+              <template #prepend><span class="setting-label">{{$t('m.theme')}}</span></template>
               <template #append>
                 <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
                   <el-option label="Default Dark" value="dark"></el-option>
@@ -331,8 +332,8 @@
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
-            <el-input v-model="setting.proxy" @change="saveSetting" placeholder="格式为 http://127.0.0.1:7890">
-              <template #prepend><span class="setting-label">代理服务器</span></template>
+            <el-input v-model="setting.proxy" @change="saveSetting" :placeholder="$t('m.like') + ' http://127.0.0.1:7890'">
+              <template #prepend><span class="setting-label">{{$t('m.proxy')}}</span></template>
             </el-input>
           </div>
         </el-col>
@@ -342,59 +343,59 @@
               placement="top-start"
               effect="dark"
               trigger="hover"
-              content="此操作将重建漫画库并清空元数据"
+              :content="$t('m.rebuildWarning')"
             >
               <template #reference>
-                <el-button class="function-button" plain @click="forceGeneBookList" @contextmenu="onForceLoadBookButtonContextMenu($event)">重建漫画库</el-button>
+                <el-button class="function-button" plain @click="forceGeneBookList" @contextmenu="onForceLoadBookButtonContextMenu($event)">{{$t('m.rebuildLibrary')}}</el-button>
               </template>
             </el-popover>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">批量获取EH元数据</el-button>
+            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">{{$t('m.batchGetMetadata')}}</el-button>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">批量获取EX元数据</el-button>
+            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
           </div>
         </el-col>
         <el-col :span="4">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="exportDatabase">导出元数据</el-button>
+            <el-button class="function-button" type="primary" plain @click="exportDatabase">{{$t('m.exportMetadata')}}</el-button>
           </div>
         </el-col>
         <el-col :span="4">
           <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="importDatabase">导入元数据</el-button>
+            <el-button class="function-button" type="primary" plain @click="importDatabase">{{$t('m.importMetadata')}}</el-button>
           </div>
         </el-col>
         <el-col :span="4">
           <div class="setting-line">
-            <el-button class="function-button" type="success" plain @click="loadBookList(true)">手动扫描</el-button>
+            <el-button class="function-button" type="success" plain @click="loadBookList(true)">{{$t('m.manualScan')}}</el-button>
           </div>
         </el-col>
         <el-col :span="6">
           <el-switch
             v-model="setting.loadOnStart"
-            inactive-text="启动时扫描"
-            @change="saveSetting"
-            class="setting-switch"
-          />
-        </el-col>
-        <el-col :span="4">
-          <el-switch
-            v-model="setting.showComment"
-            inactive-text="评论"
+            :inactive-text="$t('m.onStartScan')"
             @change="saveSetting"
             class="setting-switch"
           />
         </el-col>
         <el-col :span="5">
           <el-switch
+            v-model="setting.showComment"
+            :inactive-text="$t('m.comment')"
+            @change="saveSetting"
+            class="setting-switch"
+          />
+        </el-col>
+        <el-col :span="6">
+          <el-switch
             v-model="setting.showTranslation"
-            inactive-text="标签翻译"
+            :inactive-text="$t('m.tagTranslate')"
             @change="handleTranslationSettingChange"
             class="setting-switch"
           />
@@ -413,8 +414,8 @@
         v-model="imageStyleType"
         size="small"
         inline-prompt
-        active-text="卷轴"
-        inactive-text="单页"
+        :active-text="$t('m.scrolling')"
+        :inactive-text="$t('m.singlePage')"
         active-value="scroll"
         inactive-value="click"
         @change="saveImageStyleType"
@@ -425,13 +426,13 @@
         v-model="showThumbnail"
         size="small"
         inline-prompt
-        active-text="缩略图"
-        inactive-text="内容"
+        :active-text="$t('m.thumbnail')"
+        :inactive-text="$t('m.content')"
         @change="switchThumbnail"
         class="viewer-thumbnail-switch"
         width="60px"
       />
-      <div class="drawer-image-content" @click="scrollPage" v-show="!showThumbnail">
+      <div class="drawer-image-content" @click="scrollPage" v-if="!showThumbnail">
         <div
           v-for="(image, index) in viewerImageList"
           :key="image.id"
@@ -454,7 +455,7 @@
           <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </div>
-      <div class="drawer-thumbnail-content"  v-show="showThumbnail">
+      <div class="drawer-thumbnail-content"  v-if="showThumbnail">
         <!-- eslint-disable-next-line vue/valid-v-for -->
         <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
           <div v-for="(image, index) in chunk" :key="image.id">
@@ -488,8 +489,8 @@
           @click="switchMark(book)"
         ><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">阅</el-button>
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">读</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">{{$t('m.re')}}</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">{{$t('m.ad')}}</el-button>
         </el-button-group>
         <el-tag
           class="book-status-tag"
@@ -517,15 +518,15 @@
       destroy-on-close
       @close="destroyCanvas"
     >
-      <template #header><p>标签分析</p></template>
+      <template #header><p>{{$t('m.tagAnalysis')}}</p></template>
       <div id="tag-graph"></div>
       <template #footer>
-        <el-button type="primary" @click="geneRecommend(false, 'local')">搜索本地</el-button>
-        <el-button type="primary" @click="geneRecommend">获取EX推荐</el-button>
-        <el-button type="primary" @click="geneRecommend(true)">获取EX推荐(ZH)</el-button>
+        <el-button type="primary" @click="geneRecommend(false, 'local')">{{$t('m.searchLocal')}}</el-button>
+        <el-button type="primary" @click="geneRecommend">{{$t('m.getEXRecommand')}}</el-button>
+        <el-button type="primary" @click="geneRecommend(true)">{{$t('m.getEXRecommand')}}(ZH)</el-button>
       </template>
     </el-dialog>
-  </div>
+  </el-config-provider>
 </template>
 
 <script>
@@ -540,6 +541,9 @@ import {nanoid} from 'nanoid'
 import draggable from 'vuedraggable'
 import * as linkify from 'linkifyjs'
 import G6 from '@antv/g6'
+
+import zhCn from 'element-plus/lib/locale/lang/zh-cn'
+import en from 'element-plus/lib/locale/lang/en'
 
 export default defineComponent({
   components: {
@@ -589,6 +593,7 @@ export default defineComponent({
       sideVisibleFolderTree: false,
       folderTreeData: [],
       storeBookList: [],
+      locale: zhCn
     }
   },
   computed: {
@@ -617,12 +622,28 @@ export default defineComponent({
     },
     displayBookCount () {
       return _.sumBy(this.displayBookList, book=>(book.hidden || book.folderHide) ? 0 : 1)
+    },
+    tagList () {
+      return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().uniq().map(t=>`"${t}"`).value()
     }
   },
   mounted () {
+    ipcRenderer['get-locale']().then(localeString=>{
+      if (localeString === 'zh-CN') {
+        this.locale = zhCn
+        this.$i18n.locale = 'zh-CN'
+      } else {
+        this.locale = en
+        this.$i18n.locale = 'en-US'
+      }
+    })
     ipcRenderer['send-message']((event, arg)=>{
       this.printMessage('info', arg)
-      if (arg.includes('failed')) console.log(arg)
+      if (arg.includes('failed')) {
+        console.error(arg)
+      } else {
+        console.log(arg)
+      }
     })
     ipcRenderer['load-setting']()
     .then(res=>{
@@ -705,7 +726,7 @@ export default defineComponent({
       if (this.imageStyleType === 'scroll') {
         return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
       } else {
-        // 28是.viewer-image-page的高度
+        // 28 is the heught of .viewer-image-page
         return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
       }
     },
@@ -812,7 +833,7 @@ export default defineComponent({
           }
           if (index == this.bookList.length - 1) {
             this.dialogVisibleSetting = false
-            this.printMessage('success', '导入完成，如导入数据有合集，需打开编辑合集后手动保存')
+            this.printMessage('success', this.$t('c.importMessage'))
           }
         })
         this.saveBookList()
@@ -983,7 +1004,7 @@ export default defineComponent({
       this.searchBook()
     },
     querySearch (queryString, callback) {
-      let result = queryString ? _.filter(this.searchHistory, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+      let result = queryString ? _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
         : this.searchHistory
       callback(result.map(s=>({value:s})))
     },
@@ -1016,7 +1037,7 @@ export default defineComponent({
         this.displayBookList = this.bookList
         this.chunkList()
         this.loadCollectionList()
-        this.printMessage('success', '强制重建漫画库完成')
+        this.printMessage('success', this.$t('c.rebuildMessage'))
       })
     },
     handleSizeChange () {
@@ -1207,7 +1228,7 @@ export default defineComponent({
       if (this.imageStyleType === 'scroll') {
         _.forIn(this.viewerImageList, (image, i)=>{
           if (i == (chunkIndex * this.thumbnailColumn + index)) return false
-          // 28.3是.viewer-image-page的高度的平均值
+          // 28.3 is the height of .viewer-image-page
           scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28.3
         })
       } else {
@@ -1220,7 +1241,7 @@ export default defineComponent({
       if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
     },
     addCollection () {
-      ElMessageBox.prompt('请输入合集名', '新增合集', {
+      ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {
       })
       .then(({ value }) => {
         let id = nanoid()
@@ -1233,7 +1254,7 @@ export default defineComponent({
         this.handleSelectCollectionChange(this.selectCollection)
       })
       .catch(() => {
-        this.printMessage('info', '已取消')
+        this.printMessage('info', this.$t('c.canceled'))
       })
     },
     saveCollection () {
@@ -1355,43 +1376,43 @@ export default defineComponent({
         y: e.y,
         items: [
           {
-            label: '获取EH元数据',
+            label: this.$t('m.getMetadata'),
             onClick: () => {
               this.getBookInfo(book, 'e-hentai')
             }
           },
           {
-            label: '获取EX元数据',
+            label: this.$t('m.getExMetadata'),
             onClick: () => {
               this.getBookInfo(book, 'exhentai')
             }
           },
           {
-            label: '通过文件名获取元数据',
+            label: this.$t('m.getMetadataByFilename'),
             onClick: () => {
               this.getBookInfo(book, 'exsearch')
             }
           },
           {
-            label: '打开漫画文件所在目录',
+            label: this.$t('m.openMangaFileLocation'),
             onClick: () => {
               this.showFile(book.filepath)
             }
           },
           {
-            label: '删除漫画',
+            label: this.$t('m.deleteManga'),
             onClick: () => {
               this.deleteLocalBook(book)
             }
           },
           {
-            label: '隐藏/显示漫画',
+            label: this.$t('m.hideManga') + "/" + this.$t('m.showManga'),
             onClick: () => {
               this.triggerHiddenBook(book)
             }
           },
           {
-            label: '复制图片到剪贴板',
+            label: this.$t('c.copyImageToClipboard'),
             onClick: () => {
               electronFunction['copy-image-to-clipboard'](book.coverPath)
             }
@@ -1406,13 +1427,13 @@ export default defineComponent({
         y: e.y,
         items: [
           {
-            label: '复制图片到剪贴板',
+            label: this.$t('c.copyImageToClipboard'),
             onClick: () => {
               electronFunction['copy-image-to-clipboard'](filepath)
             }
           },
           {
-            label: '指定为封面',
+            label: this.$t('c.designateAsCover'),
             onClick: () => {
               ipcRenderer['use-new-cover'](filepath)
               .then((coverPath)=>{
@@ -1422,7 +1443,7 @@ export default defineComponent({
             }
           },
           {
-            label: '取消',
+            label: this.$t('c.cancel'),
             onClick: () => {}
           },
         ]
@@ -1435,19 +1456,19 @@ export default defineComponent({
         y: e.y,
         items: [
           {
-            label: '复制漫画名到剪贴板',
+            label: this.$t('c.copyTitleToClipboard'),
             onClick: () => {
               electronFunction['copy-text-to-clipboard'](book.title_jpn || book.title)
             }
           },
           {
-            label: '复制链接到剪贴板',
+            label: this.$t('c.copyLinkToClipboard'),
             onClick: () => {
               electronFunction['copy-text-to-clipboard'](book.url)
             }
           },
           {
-            label: '取消',
+            label: this.$t('c.cancel'),
             onClick: () => {}
           },
         ]
@@ -1458,13 +1479,13 @@ export default defineComponent({
       let foundLink = linkify.find(comment, 'url')
       if (!_.isEmpty(foundLink)) {
         let items = foundLink.map(l=>({
-          label: `转到 ${l.href}`,
+          label: `${this.$t('c.redirect')} ${l.href}`,
           onClick: ()=>{
             ipcRenderer['open-url'](l.href)
           }
         }))
         items.push({
-          label: '取消',
+          label: this.$t('c.cancel'),
           onClick: () => {}
         })
         this.$contextmenu({
@@ -1481,7 +1502,7 @@ export default defineComponent({
         y: e.y,
         items: [
           {
-            label: '修补本地元数据',
+            label: this.$t('c.patchLocalMetadata'),
             onClick: () => {
               ipcRenderer['patch-local-metadata']()
               .then(()=>this.loadBookList())
@@ -1618,6 +1639,16 @@ export default defineComponent({
       }
       this.displayBookList = this.bookList
       this.chunkList()
+    },
+    addTagCat () {
+      ElMessageBox.prompt(this.$t('c.inputCategoryName'), this.$t('m.addCategory'), {
+      })
+      .then(({ value }) => {
+        this.tagGroup[value] = []
+      })
+      .catch(() => {
+        this.printMessage('info', this.$t('c.canceled'))
+      })
     }
   }
 })
@@ -1786,11 +1817,13 @@ body
       width: 100%
   .el-descriptions__label
     display: inline-block
-    width: 64px
+    text-align: right
+    width: 80px
 .book-tag-frame
   height: calc(100vh - 100px)
   overflow-y: auto
   padding-right: 10px
+  text-align: left
 .book-tag
   margin: 4px 6px
   cursor: pointer

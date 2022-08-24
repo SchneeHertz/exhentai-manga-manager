@@ -56,7 +56,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
 
 let getImageListFromArchive = async (filepath, VIEWER_PATH)=>{
   await spawnPromise(_7z, ['x', filepath, '-o' + VIEWER_PATH, '-p123456'])
-  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|gif|webp|avif)', {
+  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif)', {
     cwd: VIEWER_PATH,
     nocase: true
   })

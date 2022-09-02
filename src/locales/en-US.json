@@ -62,7 +62,9 @@
     "content": "Content",
     "tagAnalysis": "Tag Analysis",
     "searchLocal": "Search Local",
-    "getEXRecommand": "Get Ex Recommand"
+    "getEXRecommand": "Get Ex Recommand",
+    "widthLimit": "Image Width Limit(px)",
+    "widthLimitInfo": "Default value is the screen width(px)"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

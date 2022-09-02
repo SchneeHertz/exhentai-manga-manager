@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, dialog, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, session, dialog, shell, screen } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const process = require('process')
@@ -53,7 +53,8 @@ try {
     loadOnStart: false,
     requireGap: 10000,
     thumbnailColumn: 10,
-    showTranslation: false
+    showTranslation: false,
+    widthLimit: undefined
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }
@@ -72,6 +73,8 @@ let sendMessageToWebContents = (message)=>{
 }
 
 let mainWindow
+let screenWidth
+let sendImageLock = false
 function createWindow () {
   const win = new BrowserWindow({
     width: 1560,
@@ -101,6 +104,8 @@ function createWindow () {
 }
 app.disableHardwareAcceleration()
 app.whenReady().then(()=>{
+  const primaryDisplay = screen.getPrimaryDisplay()
+  screenWidth = primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor
   mainWindow = createWindow()
 })
 app.on('activate', () => {
@@ -375,22 +380,42 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
       break
   }
 
-  let result = []
-  for (let filepath of list) {
-    let metadata = await sharp(filepath).metadata()
-    result.push({
-      id: nanoid(),
-      filepath,
-      width: metadata.width,
-      height: metadata.height
-    })
-  }
-  return result
+  sendImageLock = true
+  ;(async ()=>{
+    let thumbnailWidth = _.isFinite(screenWidth / setting.thumbnailColumn) ? Math.floor(screenWidth / setting.thumbnailColumn) : 384
+    let widthLimit = setting.widthLimit || screenWidth
+    for (let index = 1; index <= list.length; index++) {
+      if (sendImageLock) {
+        let filepath = list[index-1]
+        let {width, height} = await sharp(filepath).metadata()
+        let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(6)}_${path.basename(filepath)}`)
+        if (width > widthLimit) {
+          await sharp(filepath)
+            .resize({width: widthLimit})
+            .toFile(resizedFilepath)
+          filepath = resizedFilepath
+        }
+        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(6)}_${path.basename(filepath)}`)
+        await sharp(filepath)
+          .resize({width: thumbnailWidth})
+          .toFile(thumbnailPath)
+        mainWindow.webContents.send('manga-content', {
+          id: nanoid(),
+          index,
+          filepath,
+          thumbnailPath,
+          width, height
+        })
+      }
+    }
+  })()
+
+  return list
 })
 
-
-
-
+ipcMain.handle('release-sendimagelock', ()=>{
+  sendImageLock = false
+})
 
 ipcMain.handle('open-local-book', async (event, filepath)=>{
   spawn(setting.imageExplorer, [filepath])

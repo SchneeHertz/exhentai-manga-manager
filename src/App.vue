@@ -1469,10 +1469,6 @@ export default defineComponent({
               })
             }
           },
-          {
-            label: this.$t('c.cancel'),
-            onClick: () => {}
-          },
         ]
       })
     },
@@ -1494,10 +1490,6 @@ export default defineComponent({
               electronFunction['copy-text-to-clipboard'](book.url)
             }
           },
-          {
-            label: this.$t('c.cancel'),
-            onClick: () => {}
-          },
         ]
       })
     },
@@ -1511,10 +1503,6 @@ export default defineComponent({
             ipcRenderer['open-url'](l.href)
           }
         }))
-        items.push({
-          label: this.$t('c.cancel'),
-          onClick: () => {}
-        })
         this.$contextmenu({
           x: e.x,
           y: e.y,
@@ -1953,9 +1941,10 @@ body
   width: 100%
   height: calc(95vh - 220px)
 
+.mx-menu-ghost-host
+  z-index: 3000!important
 .mx-context-menu
   background-color: var(--el-fill-color-extra-light)!important
-  z-index: 3000!important
   .mx-context-menu-item:hover
     background-color: var(--el-fill-color-dark)
   .mx-context-menu-item

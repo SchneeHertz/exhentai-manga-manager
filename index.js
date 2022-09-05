@@ -382,6 +382,7 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
 
   sendImageLock = true
   ;(async ()=>{
+    // 384 is the default 4K screen width divided by the default number of thumbnail columns
     let thumbnailWidth = _.isFinite(screenWidth / setting.thumbnailColumn) ? Math.floor(screenWidth / setting.thumbnailColumn) : 384
     let widthLimit = setting.widthLimit || screenWidth
     for (let index = 1; index <= list.length; index++) {

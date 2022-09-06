@@ -72,6 +72,7 @@ let sendMessageToWebContents = (message)=>{
   mainWindow.webContents.send('send-message', message)
 }
 
+app.commandLine.appendSwitch ("disable-http-cache")
 let mainWindow
 let screenWidth
 let sendImageLock = false

@@ -389,6 +389,12 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
     for (let index = 1; index <= list.length; index++) {
       if (sendImageLock) {
         let filepath = list[index-1]
+        if (filepath.search(/[%#]/) >= 0) {
+          console.log(filepath)
+          let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(6)}_${path.basename(filepath).replace(/[%#]/, '_')}`)
+          await fs.promises.copyFile(filepath, newFilepath)
+          filepath = newFilepath
+        }
         let {width, height} = await sharp(filepath).metadata()
         let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(6)}_${path.basename(filepath)}`)
         if (width > widthLimit) {

@@ -390,7 +390,6 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
       if (sendImageLock) {
         let filepath = list[index-1]
         if (filepath.search(/[%#]/) >= 0) {
-          console.log(filepath)
           let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(6)}_${path.basename(filepath).replace(/[%#]/, '_')}`)
           await fs.promises.copyFile(filepath, newFilepath)
           filepath = newFilepath

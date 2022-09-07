@@ -24,7 +24,9 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'patch-local-metadata': ()=>ipcRenderer.invoke('patch-local-metadata'),
   'set-progress-bar': (progress)=>ipcRenderer.invoke('set-progress-bar', progress),
   'get-folder-tree': (bookList)=>ipcRenderer.invoke('get-folder-tree', bookList),
-  'get-locale': ()=>ipcRenderer.invoke('get-locale')
+  'get-locale': ()=>ipcRenderer.invoke('get-locale'),
+  'manga-content': (func)=>ipcRenderer.on('manga-content', func),
+  'release-sendimagelock': ()=>ipcRenderer.invoke('release-sendimagelock')
 })
 
 contextBridge.exposeInMainWorld('electronFunction', {

@@ -295,6 +295,13 @@
         </el-col>
         <el-col :span="24">
           <div class="setting-line">
+            <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
+              <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
+            </el-input>
+          </div>
+        </el-col>
+        <el-col :span="24">
+          <div class="setting-line">
             <el-input class="label-input">
               <template #prepend><span class="setting-label">{{$t('m.theme')}}</span></template>
               <template #append>
@@ -408,6 +415,7 @@
       size="100%"
       :with-header="false"
       destroy-on-close
+      @closed="releaseSendImageLock"
     >
       <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
       <el-switch
@@ -432,7 +440,14 @@
         class="viewer-thumbnail-switch"
         width="60px"
       />
-      <div class="drawer-image-content" @click="scrollPage" v-if="!showThumbnail">
+      <div
+        class="drawer-image-content"
+        @click="scrollPage"
+        v-if="!showThumbnail"
+        v-loading="viewerImageList.length == 0"
+        element-loading-text="Loading"
+        element-loading-background="transparent"
+      >
         <div
           v-for="(image, index) in viewerImageList"
           :key="image.id"
@@ -445,7 +460,7 @@
             :style="returnImageStyle(image)"
           >
             <img
-              :src="image.filepath + '?a=' + Math.random()"
+              :src="image.filepath"
               class="viewer-image"
               :style="{height: returnImageStyle(image).height}"
               @contextmenu="onMangaImageContextMenu($event, image.filepath)"
@@ -455,12 +470,18 @@
           <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </div>
-      <div class="drawer-thumbnail-content"  v-if="showThumbnail">
+      <div
+        class="drawer-thumbnail-content"
+        v-if="showThumbnail"
+        v-loading="viewerImageList.length == 0"
+        element-loading-text="Loading"
+        element-loading-background="transparent"
+      >
         <!-- eslint-disable-next-line vue/valid-v-for -->
         <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
           <div v-for="(image, index) in chunk" :key="image.id">
             <img
-              :src="image.filepath + '?a=' + Math.random()"
+              :src="image.thumbnailPath"
               class="viewer-thumbnail"
               :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
               @click="handleClickThumbnail(chunkIndex, index)"
@@ -644,6 +665,9 @@ export default defineComponent({
       } else {
         console.log(arg)
       }
+    })
+    ipcRenderer['manga-content']((event, arg)=>{
+      this.viewerImageList.push(arg)
     })
     ipcRenderer['load-setting']()
     .then(res=>{
@@ -1093,7 +1117,7 @@ export default defineComponent({
       })
       ipcRenderer['load-manga-image-list'](_.cloneDeep(this.bookDetail))
       .then(list=>{
-        this.viewerImageList = list
+        // this.viewerImageList = list
         this.drawerVisibleViewer = true
       })
       .catch(err=>{
@@ -1126,6 +1150,9 @@ export default defineComponent({
           document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
         }
       }
+    },
+    releaseSendImageLock () {
+      ipcRenderer['release-sendimagelock']()
     },
     switchMark (book) {
       book.mark = !book.mark
@@ -1442,10 +1469,6 @@ export default defineComponent({
               })
             }
           },
-          {
-            label: this.$t('c.cancel'),
-            onClick: () => {}
-          },
         ]
       })
     },
@@ -1467,10 +1490,6 @@ export default defineComponent({
               electronFunction['copy-text-to-clipboard'](book.url)
             }
           },
-          {
-            label: this.$t('c.cancel'),
-            onClick: () => {}
-          },
         ]
       })
     },
@@ -1484,10 +1503,6 @@ export default defineComponent({
             ipcRenderer['open-url'](l.href)
           }
         }))
-        items.push({
-          label: this.$t('c.cancel'),
-          onClick: () => {}
-        })
         this.$contextmenu({
           x: e.x,
           y: e.y,
@@ -1867,7 +1882,8 @@ body
 .el-drawer__body
   padding-top: 0
   padding-bottom: 0
-
+.drawer-image-content
+  height: 100vh
 .viewer-close-button
   position: absolute
   top: 16px
@@ -1910,6 +1926,7 @@ body
   left: 1em
   z-index: 10
 .drawer-thumbnail-content
+  height: 100vh
   text-align: left
 .viewer-thumbnail
   margin: 8px 0 0
@@ -1924,9 +1941,10 @@ body
   width: 100%
   height: calc(95vh - 220px)
 
+.mx-menu-ghost-host
+  z-index: 3000!important
 .mx-context-menu
   background-color: var(--el-fill-color-extra-light)!important
-  z-index: 3000!important
   .mx-context-menu-item:hover
     background-color: var(--el-fill-color-dark)
   .mx-context-menu-item

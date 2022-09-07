@@ -62,7 +62,9 @@
     "content": "内容",
     "tagAnalysis": "标签分析",
     "searchLocal": "搜索本地",
-    "getEXRecommand": "获取EX推荐"
+    "getEXRecommand": "获取EX推荐",
+    "widthLimit": "限制图像宽度(px)",
+    "widthLimitInfo": "默认为屏幕宽度(px)"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

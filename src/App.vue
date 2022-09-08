@@ -214,6 +214,8 @@
                 </el-select>
               </div>
               <el-button class="add-tag-cats-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
+              <el-button class="copy-tag-clipboard" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
+              <el-button class="paste-tag-clipboard" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
             </div>
             <div v-else>
               <el-descriptions :column="1">
@@ -1316,11 +1318,13 @@ export default defineComponent({
             }
           })
           let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
+          let category = collectBook.map(book=>book.category).join(',')
+          let status = collectBook.map(book=>book.status).join(',')
           this.bookList.push({
             title: collection.title,
             id: collection.id,
             coverPath: collectBook[0].coverPath,
-            date, posted, rating, mark, tags, title_jpn,
+            date, posted, rating, mark, tags, title_jpn, category, status,
             list: collection.list,
             filepath: collectBook[0].filepath,
             collection: true
@@ -1442,6 +1446,18 @@ export default defineComponent({
             label: this.$t('c.copyImageToClipboard'),
             onClick: () => {
               electronFunction['copy-image-to-clipboard'](book.coverPath)
+            }
+          },
+          {
+            label: this.$t('m.copyTagClipboard'),
+            onClick: () => {
+              this.copyTagClipboard(book)
+            }
+          },
+          {
+            label: this.$t('m.pasteTagClipboard'),
+            onClick: () => {
+              this.pasteTagClipboard(book)
             }
           },
         ]
@@ -1664,7 +1680,14 @@ export default defineComponent({
       .catch(() => {
         this.printMessage('info', this.$t('c.canceled'))
       })
-    }
+    },
+    copyTagClipboard (book) {
+      electronFunction['copy-text-to-clipboard'](JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
+    },
+    pasteTagClipboard (book) {
+      let text = electronFunction['read-text-from-clipboard']()
+      _.assign(book, JSON.parse(text))
+    },
   }
 })
 </script>
@@ -1743,11 +1766,14 @@ body
   object-fit: cover
 .outer-read-button-group
   margin: 0 8px
-.outer-read-button
-  padding: 0 2px
+.outer-read-button:first-child
+  padding: 0 0 0 4px
+.outer-read-button + .outer-read-button
+  padding: 0 4px 0 0
 .book-status-tag
   padding: 0 2px
   margin-right: 8px
+  cursor: pointer
 .el-rate
   display: inline-block
   height: 18px

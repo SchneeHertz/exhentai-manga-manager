@@ -31,6 +31,7 @@
     "openMangaFileLocation": "打开漫画文件所在目录",
     "showManga": "显示漫画",
     "hideManga": "隐藏漫画",
+    "title": "标题",
     "metadataStatus": "元数据状态",
     "ehexAddress": "eh/ex地址",
     "addCategory": "增加类别",

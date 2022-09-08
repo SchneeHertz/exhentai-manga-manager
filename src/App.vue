@@ -199,6 +199,12 @@
           <el-scrollbar class="book-tag-frame">
             <div v-if="editingTag">
               <div class="edit-line">
+                <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')"></el-input>
+              </div>
+              <div class="edit-line">
+                <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')"></el-input>
+              </div>
+              <div class="edit-line">
                 <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')">
                   <el-option value="non-tag">non-tag</el-option>
                   <el-option value="tagged">tagged</el-option>
@@ -207,6 +213,11 @@
               </div>
               <div class="edit-line">
                 <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')"></el-input>
+              </div>
+              <div class="edit-line">
+                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')">
+                  <el-option v-for="cat in categoryOption" :value="cat" :key="cat">{{cat}}</el-option>
+                </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
                 <el-select v-model="bookDetail.tags[key]" :placeholder="key" filterable allow-create multiple>
@@ -648,6 +659,9 @@ export default defineComponent({
     },
     tagList () {
       return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().uniq().map(t=>`"${t}"`).value()
+    },
+    categoryOption () {
+      return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().uniq().value()
     }
   },
   mounted () {

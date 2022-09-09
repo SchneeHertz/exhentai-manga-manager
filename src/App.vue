@@ -473,7 +473,7 @@
             :style="returnImageStyle(image)"
           >
             <img
-              :src="image.filepath"
+              :src="`${image.filepath}?id=${image.id}`"
               class="viewer-image"
               :style="{height: returnImageStyle(image).height}"
               @contextmenu="onMangaImageContextMenu($event, image.filepath)"
@@ -494,7 +494,7 @@
         <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
           <div v-for="(image, index) in chunk" :key="image.id">
             <img
-              :src="image.thumbnailPath"
+              :src="`${image.thumbnailPath}?id=${image.id}`"
               class="viewer-thumbnail"
               :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
               @click="handleClickThumbnail(chunkIndex, index)"

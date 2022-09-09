@@ -14,6 +14,7 @@ require('superagent-proxy')(superagent)
 
 const {getFolderlist, solveBookTypeFolder, getImageListFromFolder} = require('./fileLoader/folder')
 const {getArchivelist, solveBookTypeArchive, getImageListFromArchive} = require('./fileLoader/archive')
+const {getZipFilelist, solveBookTypeZip, getImageListFromZip} = require('./fileLoader/zip')
 
 let STORE_PATH = app.getPath('userData')
 if (!fs.existsSync(STORE_PATH)) {
@@ -72,7 +73,6 @@ let sendMessageToWebContents = (message)=>{
   mainWindow.webContents.send('send-message', message)
 }
 
-app.commandLine.appendSwitch ("disable-http-cache")
 let mainWindow
 let screenWidth
 let sendImageLock = false
@@ -103,6 +103,7 @@ function createWindow () {
   })
   return win
 }
+
 app.disableHardwareAcceleration()
 app.whenReady().then(()=>{
   const primaryDisplay = screen.getPrimaryDisplay()
@@ -150,9 +151,11 @@ let getBookFilelist = async ()=>{
   //fileLoader: get fileList
   let folderList = await getFolderlist(setting.library)
   let archiveList = await getArchivelist(setting.library)
+  let zipList = await getZipFilelist(setting.library)
   return [
     ...folderList.map(filepath=>({filepath, type: 'folder'})),
     ...archiveList.map(filepath=>({filepath, type: 'archive'})),
+    ...zipList.map(filepath=>({filepath, type: 'zip'})),
   ]
 }
 
@@ -162,6 +165,9 @@ let geneCover = async (filepath, type) => {
   switch (type){
     case 'folder':
       ;({targetFilePath, coverPath, tempCoverPath, pageCount} = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
+      break
+    case 'zip':
+      ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
       break
     case 'archive':
       ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
@@ -373,11 +379,13 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
       list = await getImageListFromFolder(filepath, VIEWER_PATH)
       break
     case 'zip':
+      list = await getImageListFromZip(filepath, VIEWER_PATH)
+      break
     case 'archive':
       list = await getImageListFromArchive(filepath, VIEWER_PATH)
       break
     default:
-      list = await getImageListFromArchive(filepath, VIEWER_PATH)
+      list = await getImageListFromZip(filepath, VIEWER_PATH)
       break
   }
 

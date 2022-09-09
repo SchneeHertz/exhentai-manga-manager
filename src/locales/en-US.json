@@ -27,10 +27,11 @@
     "getMetadata": "Get Metadata",
     "getExMetadata": "Get Ex Metadata",
     "deleteManga": "Delete Manga",
-    "getMetadataByFilename": "Get Metadata By Filename",
+    "getMetadataByFilename": "Get Metadata by Filename",
     "openMangaFileLocation": "Open Manga Location",
     "showManga": "Show Manga",
     "hideManga": "Hide Manga",
+    "title": "Title",
     "metadataStatus": "Metadate Status",
     "ehexAddress": "eh/ex web page address",
     "addCategory": "Add Category",
@@ -64,20 +65,22 @@
     "searchLocal": "Search Local",
     "getEXRecommand": "Get Ex Recommand",
     "widthLimit": "Image Width Limit(px)",
-    "widthLimitInfo": "Default value is the screen width(px)"
+    "widthLimitInfo": "Default value is the screen width(px)",
+    "copyTagClipboard": "Copy Tag to Clipboard",
+    "pasteTagClipboard": "Paste Tag from Clipboard"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
     "rebuildMessage": "Forced rebuild library completed",
     "inputCollectionName": "Please input collection name",
     "canceled": "Canceled",
-    "copyImageToClipboard": "Copy image to clipboard",
-    "designateAsCover": "Designate as cover",
+    "copyImageToClipboard": "Copy Image to Clipboard",
+    "designateAsCover": "Designate as Cover",
     "cancel": "Cancel",
-    "copyTitleToClipboard": "Copy title to clipboard",
-    "copyLinkToClipboard": "Copy link to clipboard",
+    "copyTitleToClipboard": "Copy Title to Clipboard",
+    "copyLinkToClipboard": "Copy Link to Clipboard",
     "redirect": "Redirect",
-    "patchLocalMetadata": "Patch local metadata",
+    "patchLocalMetadata": "Patch Local Metadata",
     "inputCategoryName": "Please input category name"
   }
 }

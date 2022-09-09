@@ -10,7 +10,7 @@ const iconv = require('iconv-lite')
 const _7z = path.join(process.cwd(), 'resources/extraResources/7z.exe')
 
 let getArchivelist = async (libraryPath)=>{
-  let list = await promisify(glob)('**/*.@(rar|7z|zip|cbz|cb7|cbr)', {
+  let list = await promisify(glob)('**/*.@(rar|7z|cb7|cbr)', {
     cwd: libraryPath,
     nocase: true
   })
@@ -26,29 +26,33 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
     let match = /(?<== ).*$/.exec(p)
     return match ? match[0] : ''
   })
-  let imageList = _.filter(pathlist, p=>['.jpg','.jpeg','.png','.gif','.webp','.avif'].includes(path.extname(p).toLowerCase()))
+  let imageList = _.filter(pathlist, p=>['.jpg','.jpeg','.png','.webp','.avif'].includes(path.extname(p).toLowerCase()))
   imageList = imageList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  
   let targetFile
   let targetFilePath
+  let coverFile
   let tempCoverPath
   let coverPath
   if (imageList.length > 8) {
     targetFile = imageList[7]
+    coverFile = imageList[0]
     await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile, '-p123456'])
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, imageList[0], '-p123456'])
+    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, coverFile, '-p123456'])
   } else if (imageList.length > 0) {
     targetFile = imageList[0]
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, imageList[0], '-p123456'])
+    coverFile = imageList[0]
+    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile, '-p123456'])
   } else {
     throw 'compression package isnot include image'
   }
   targetFilePath = path.join(TEMP_PATH, nanoid() + path.extname(targetFile))
   await fs.promises.copyFile(path.join(tempFolder, targetFile), targetFilePath)
 
-  tempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(imageList[0]))
-  await fs.promises.copyFile(path.join(tempFolder, imageList[0]), tempCoverPath)
+  tempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(coverFile))
+  await fs.promises.copyFile(path.join(tempFolder, coverFile), tempCoverPath)
 
-  coverPath = path.join(COVER_PATH, nanoid() + path.extname(imageList[0]))
+  coverPath = path.join(COVER_PATH, nanoid() + path.extname(coverFile))
 
   let fileStat = await fs.promises.stat(filepath)
   return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size}

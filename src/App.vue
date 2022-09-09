@@ -199,6 +199,12 @@
           <el-scrollbar class="book-tag-frame">
             <div v-if="editingTag">
               <div class="edit-line">
+                <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')"></el-input>
+              </div>
+              <div class="edit-line">
+                <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')"></el-input>
+              </div>
+              <div class="edit-line">
                 <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')">
                   <el-option value="non-tag">non-tag</el-option>
                   <el-option value="tagged">tagged</el-option>
@@ -208,12 +214,19 @@
               <div class="edit-line">
                 <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')"></el-input>
               </div>
+              <div class="edit-line">
+                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')">
+                  <el-option v-for="cat in categoryOption" :value="cat" :key="cat">{{cat}}</el-option>
+                </el-select>
+              </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
                 <el-select v-model="bookDetail.tags[key]" :placeholder="key" filterable allow-create multiple>
                   <el-option v-for="tag in arr" :key="tag" :value="tag">{{tag}}</el-option>
                 </el-select>
               </div>
               <el-button class="add-tag-cats-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
+              <el-button class="copy-tag-clipboard" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
+              <el-button class="paste-tag-clipboard" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
             </div>
             <div v-else>
               <el-descriptions :column="1">
@@ -460,7 +473,7 @@
             :style="returnImageStyle(image)"
           >
             <img
-              :src="image.filepath"
+              :src="`${image.filepath}?id=${image.id}`"
               class="viewer-image"
               :style="{height: returnImageStyle(image).height}"
               @contextmenu="onMangaImageContextMenu($event, image.filepath)"
@@ -481,7 +494,7 @@
         <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
           <div v-for="(image, index) in chunk" :key="image.id">
             <img
-              :src="image.thumbnailPath"
+              :src="`${image.thumbnailPath}?id=${image.id}`"
               class="viewer-thumbnail"
               :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
               @click="handleClickThumbnail(chunkIndex, index)"
@@ -646,6 +659,9 @@ export default defineComponent({
     },
     tagList () {
       return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().uniq().map(t=>`"${t}"`).value()
+    },
+    categoryOption () {
+      return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().uniq().value()
     }
   },
   mounted () {
@@ -1316,11 +1332,13 @@ export default defineComponent({
             }
           })
           let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
+          let category = collectBook.map(book=>book.category).join(',')
+          let status = collectBook.map(book=>book.status).join(',')
           this.bookList.push({
             title: collection.title,
             id: collection.id,
             coverPath: collectBook[0].coverPath,
-            date, posted, rating, mark, tags, title_jpn,
+            date, posted, rating, mark, tags, title_jpn, category, status,
             list: collection.list,
             filepath: collectBook[0].filepath,
             collection: true
@@ -1442,6 +1460,18 @@ export default defineComponent({
             label: this.$t('c.copyImageToClipboard'),
             onClick: () => {
               electronFunction['copy-image-to-clipboard'](book.coverPath)
+            }
+          },
+          {
+            label: this.$t('m.copyTagClipboard'),
+            onClick: () => {
+              this.copyTagClipboard(book)
+            }
+          },
+          {
+            label: this.$t('m.pasteTagClipboard'),
+            onClick: () => {
+              this.pasteTagClipboard(book)
             }
           },
         ]
@@ -1664,7 +1694,14 @@ export default defineComponent({
       .catch(() => {
         this.printMessage('info', this.$t('c.canceled'))
       })
-    }
+    },
+    copyTagClipboard (book) {
+      electronFunction['copy-text-to-clipboard'](JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
+    },
+    pasteTagClipboard (book) {
+      let text = electronFunction['read-text-from-clipboard']()
+      _.assign(book, JSON.parse(text))
+    },
   }
 })
 </script>
@@ -1743,11 +1780,14 @@ body
   object-fit: cover
 .outer-read-button-group
   margin: 0 8px
-.outer-read-button
-  padding: 0 2px
+.outer-read-button:first-child
+  padding: 0 0 0 4px
+.outer-read-button + .outer-read-button
+  padding: 0 4px 0 0
 .book-status-tag
   padding: 0 2px
   margin-right: 8px
+  cursor: pointer
 .el-rate
   display: inline-block
   height: 18px

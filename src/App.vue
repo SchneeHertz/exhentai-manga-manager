@@ -1989,8 +1989,7 @@ body
     background-color: var(--el-fill-color-dark)
   .mx-context-menu-item
     padding: 6px
-    .text
-      color: var(--el-text-color-regular)
+    color: var(--el-text-color-regular)
 
 html.light
   color-scheme: light

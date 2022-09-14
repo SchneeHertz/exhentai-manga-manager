@@ -874,7 +874,7 @@ export default defineComponent({
       ipcRenderer['load-import-database']()
       .then(database=>{
         _.forIn(this.bookList, (book, index)=>{
-          let findData = _.find(database, {hash: book.hash})
+          let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
           if (findData) {
             _.assign(book, findData)
             if (book.url){

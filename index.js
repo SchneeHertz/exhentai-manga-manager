@@ -181,6 +181,7 @@ let geneCover = async (filepath, type) => {
       break
   }
 
+  let coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
   let imageResizeResult = await sharp(tempCoverPath)
   .resize(500, 707, {
     fit: 'contain'
@@ -192,7 +193,7 @@ let geneCover = async (filepath, type) => {
     return false
   })
   if (imageResizeResult){
-    return {targetFilePath, coverPath, pageCount, bundleSize}
+    return {targetFilePath, coverPath, pageCount, bundleSize, coverHash}
   } else {
     return {targetFilePath:undefined, coverPath:undefined}
   }
@@ -229,7 +230,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
         if (!foundData) {
           sendMessageToWebContents(`load ${filepath}, ${i+1} of ${list.length}`)
           let id = nanoid()
-          let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
+          let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
           if (targetFilePath && coverPath){
             let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
             existData.push({
@@ -241,6 +242,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
               id,
               pageCount,
               bundleSize,
+              coverHash,
               status: 'non-tag',
               exist: true,
               date: Date.now()
@@ -297,7 +299,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
       let {filepath, type} = list[i]
       sendMessageToWebContents(`load ${filepath}, ${i+1} of ${list.length}`)
       let id = nanoid()
-      let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         data.push({
@@ -309,6 +311,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
           id,
           pageCount,
           bundleSize,
+          coverHash,
           status: 'non-tag',
           date: Date.now()
         })
@@ -349,10 +352,10 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       let book = bookList[i]
       let {filepath, type} = book
       if (!type || type === 'zip') type = 'archive'
-      let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-        _.assign(book, {type, coverPath, hash, pageCount, bundleSize})
+        _.assign(book, {type, coverPath, hash, pageCount, bundleSize, coverHash})
         sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookList.length}`)
         mainWindow.setProgressBar(i/bookList.length)
       }

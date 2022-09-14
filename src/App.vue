@@ -522,7 +522,7 @@
     <el-drawer
       v-model="drawerVisibleCollection"
       direction="btt"
-      :size="464"
+      :size="456"
       destroy-on-close
     >
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
@@ -790,7 +790,7 @@ export default defineComponent({
       if (this.imageStyleType === 'scroll') {
         return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
       } else {
-        // 28 is the heught of .viewer-image-page
+        // 28 is the height of .viewer-image-page
         return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
       }
     },

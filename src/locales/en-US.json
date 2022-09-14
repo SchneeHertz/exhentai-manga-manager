@@ -67,7 +67,8 @@
     "widthLimit": "Image Width Limit(px)",
     "widthLimitInfo": "Default value is the screen width(px)",
     "copyTagClipboard": "Copy Tag to Clipboard",
-    "pasteTagClipboard": "Paste Tag from Clipboard"
+    "pasteTagClipboard": "Paste Tag from Clipboard",
+    "directEnter": "Cover to Read"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

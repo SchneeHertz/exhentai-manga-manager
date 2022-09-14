@@ -55,7 +55,8 @@ try {
     requireGap: 10000,
     thumbnailColumn: 10,
     showTranslation: false,
-    widthLimit: undefined
+    widthLimit: undefined,
+    directEnter: false
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }

@@ -65,10 +65,16 @@
             and book isn't hidden by folder select -->
           <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide">
             <p class="book-title"
+              @click="openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
               :title="book.title_jpn || book.title"
             >{{book.title_jpn || book.title}}</p>
-            <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
+            <img
+              class="book-cover"
+              :src="book.coverPath"
+              @click="setting.directEnter ? viewManga(book) : openBookDetail(book)"
+              @contextmenu="onBookContextMenu($event, book)"
+            />
             <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
             <el-icon
               :size="30"
@@ -76,8 +82,8 @@
               class="book-card-star" @click="switchMark(book)"
             ><StarFilled /></el-icon>
             <el-button-group class="outer-read-button-group">
-              <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">{{$t('m.re')}}</el-button>
-              <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">{{$t('m.ad')}}</el-button>
+              <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+              <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
             </el-button-group>
             <el-tag
               class="book-status-tag"
@@ -91,7 +97,7 @@
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><StarFilled /></el-icon>
-            <el-rate v-model="book.rating" allow-half disabled/>
+            <el-rate v-model="book.rating" allow-half/>
           </div>
         </div>
       </el-col>
@@ -157,7 +163,7 @@
           <el-row class="book-detail-function book-detail-cover-frame">
             <img
               class="book-detail-cover"
-              :src="bookDetail.coverPath" @click="viewManga"
+              :src="bookDetail.coverPath" @click="viewManga(bookDetail)"
               @contextmenu="onMangaImageContextMenu($event, bookDetail.coverPath)"
             />
             <el-icon
@@ -178,7 +184,7 @@
             </el-descriptions>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="success" plain @click="openLocalBook">{{$t('m.read')}}</el-button>
+            <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button>
             <el-button plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
@@ -271,7 +277,7 @@
     </el-dialog>
     <el-dialog
       v-model="dialogVisibleSetting"
-      width="40%"
+      width="42em"
       :modal="false"
     >
       <template #header><p class="detail-book-title">{{$t('m.setting')}}</p></template>
@@ -396,7 +402,7 @@
             <el-button class="function-button" type="success" plain @click="loadBookList(true)">{{$t('m.manualScan')}}</el-button>
           </div>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="5">
           <el-switch
             v-model="setting.loadOnStart"
             :inactive-text="$t('m.onStartScan')"
@@ -412,10 +418,18 @@
             class="setting-switch"
           />
         </el-col>
-        <el-col :span="6">
+        <el-col :span="5">
           <el-switch
             v-model="setting.showTranslation"
             :inactive-text="$t('m.tagTranslate')"
+            @change="handleTranslationSettingChange"
+            class="setting-switch"
+          />
+        </el-col>
+        <el-col :span="5">
+          <el-switch
+            v-model="setting.directEnter"
+            :inactive-text="$t('m.directEnter')"
             @change="handleTranslationSettingChange"
             class="setting-switch"
           />
@@ -513,8 +527,18 @@
     >
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
       <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
-        <p class="book-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
-        <img class="book-cover" :src="book.coverPath" @click="openBookDetail(book)" @contextmenu="onBookContextMenu($event, book)"/>
+        <p
+          class="book-title"
+          @click="openBookDetail(book)"
+          @contextmenu="onMangaTitleContextMenu($event, book)"
+          :title="book.title_jpn || book.title"
+        >{{book.title_jpn || book.title}}</p>
+        <img
+          class="book-cover"
+          :src="book.coverPath"
+          @click="setting.directEnter ? viewManga(book) : openBookDetail(book)"
+          @contextmenu="onBookContextMenu($event, book)"
+        />
         <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
         <el-icon
           :size="30"
@@ -523,8 +547,8 @@
           @click="switchMark(book)"
         ><StarFilled /></el-icon>
         <el-button-group class="outer-read-button-group">
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; openLocalBook()">{{$t('m.re')}}</el-button>
-          <el-button type="success" size="small" class="outer-read-button" plain @click="bookDetail = book; viewManga()">{{$t('m.ad')}}</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
         </el-button-group>
         <el-tag
           class="book-status-tag"
@@ -814,7 +838,8 @@ export default defineComponent({
       this.showComment = !!this.setting.showComment
       this.getComments(book.url)
     },
-    openLocalBook () {
+    openLocalBook (book) {
+      this.bookDetail = book
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
     },
     deleteLocalBook (book) {
@@ -1124,7 +1149,8 @@ export default defineComponent({
         this.saveBookList()
       }
     },
-    viewManga () {
+    viewManga (book) {
+      this.bookDetail = book
       this.viewerImageList = []
       const loading = ElLoading.service({
         lock: true,
@@ -1761,6 +1787,7 @@ body
   overflow-y: hidden
   margin: 8px 2px
   font-size: 14px
+  cursor: pointer
 .book-card-star, .book-detail-star, .book-card-language
   position: absolute
 .book-card-language

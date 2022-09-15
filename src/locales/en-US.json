@@ -84,7 +84,7 @@
     "copyTitleToClipboard": "Copy Title to Clipboard",
     "copyLinkToClipboard": "Copy Link to Clipboard",
     "redirect": "Redirect",
-    "patchLocalMetadata": "Patch Local Metadata",
+    "patchLocalMetadata": "PatchLocalMeta",
     "inputCategoryName": "Please input category name"
   }
 }

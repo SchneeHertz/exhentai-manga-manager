@@ -400,6 +400,11 @@
             </el-col>
             <el-col :span="5">
               <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="patchLocalMetadata">{{$t('c.patchLocalMetadata')}}</el-button>
+              </div>
+            </el-col>
+            <el-col :span="5">
+              <div class="setting-line">
                 <el-button class="function-button" type="primary" plain @click="exportDatabase">{{$t('m.exportMetadata')}}</el-button>
               </div>
             </el-col>
@@ -408,7 +413,7 @@
                 <el-button class="function-button" type="primary" plain @click="importDatabase">{{$t('m.importMetadata')}}</el-button>
               </div>
             </el-col>
-            <el-col :span="6">
+            <el-col :span="5">
               <div class="setting-line">
                 <el-button class="function-button" type="primary" plain @click="importDatabasefromSqlite">{{$t('m.importMetadatafromSqlite')}}</el-button>
               </div>
@@ -1594,21 +1599,9 @@ export default defineComponent({
         })
       }
     },
-    onForceLoadBookButtonContextMenu (e) {
-      e.preventDefault()
-      this.$contextmenu({
-        x: e.x,
-        y: e.y,
-        items: [
-          {
-            label: this.$t('c.patchLocalMetadata'),
-            onClick: () => {
-              ipcRenderer['patch-local-metadata']()
-              .then(()=>this.loadBookList())
-            }
-          }
-        ]
-      })
+    patchLocalMetadata () {
+      ipcRenderer['patch-local-metadata']()
+      .then(()=>this.loadBookList())
     },
     displayTagGraph () {
       let nodes = []

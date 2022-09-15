@@ -159,7 +159,7 @@
         </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
-        <el-col :span="showComment?6:9">
+        <el-col :span="6">
           <el-row class="book-detail-function book-detail-cover-frame">
             <img
               class="book-detail-cover"
@@ -201,7 +201,7 @@
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
         </el-col>
-        <el-col :span="showComment?10:15">
+        <el-col :span="showComment?10:18">
           <el-scrollbar class="book-tag-frame">
             <div v-if="editingTag">
               <div class="edit-line">
@@ -892,7 +892,7 @@ export default defineComponent({
         _.forIn(this.bookList, (book, index)=>{
           let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
           if (findData) {
-            _.assign(book, findData)
+            _.assign(book, _.omit(findData, 'hash'))
             if (book.url){
               book.status = 'tagged'
             } else {
@@ -925,6 +925,11 @@ export default defineComponent({
       .then(bookList=>{
         this.bookList = bookList
         this.saveBookList()
+        .then(()=>{
+          this.printMessage('success', this.$t('c.importMessage'))
+          this.displayBookList = this.bookList
+          this.chunkList()
+        })
       })
     },
     getBookInfo (book, server = 'e-hentai') {

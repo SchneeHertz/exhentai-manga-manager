@@ -280,161 +280,176 @@
       width="42em"
       :modal="false"
     >
-      <template #header><p class="detail-book-title">{{$t('m.setting')}}</p></template>
-      <el-row :gutter="8">
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model="setting.library">
-              <template #prepend><span class="setting-label">{{$t('m.library')}}</span></template>
-              <template #append><el-button @click="selectLibraryPath">{{$t('m.select')}}</el-button></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model="setting.imageExplorer">
-              <template #prepend><span class="setting-label">{{$t('m.imageViewer')}}</span></template>
-              <template #append><el-button @click="selectImageExplorerPath">{{$t('m.select')}}</el-button></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model.number="setting.requireGap" @change="saveSetting">
-              <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
-              <template #prepend><span class="setting-label">{{$t('m.thumbnailColumn')}}</span></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
-              <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input class="label-input">
-              <template #prepend><span class="setting-label">{{$t('m.theme')}}</span></template>
-              <template #append>
-                <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
-                  <el-option label="Default Dark" value="dark"></el-option>
-                  <el-option label="Default Light" value="light"></el-option>
-                  <el-option label="ExHentai" value="dark exhentai"></el-option>
-                  <el-option label="E-Hentai" value="light e-hentai"></el-option>
-                  <el-option label="nHentai" value="dark nhentai"></el-option>
-                </el-select>
-              </template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model="setting.igneous" @change="saveSetting">
-              <template #prepend><span class="setting-label">igneous</span></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model="setting.ipb_pass_hash" @change="saveSetting">
-              <template #prepend><span class="setting-label">ipb_pass_hash</span></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model="setting.ipb_member_id" @change="saveSetting">
-              <template #prepend><span class="setting-label">ipb_member_id</span></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="24">
-          <div class="setting-line">
-            <el-input v-model="setting.proxy" @change="saveSetting" :placeholder="$t('m.like') + ' http://127.0.0.1:7890'">
-              <template #prepend><span class="setting-label">{{$t('m.proxy')}}</span></template>
-            </el-input>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="setting-line">
-            <el-popover
-              placement="top-start"
-              effect="dark"
-              trigger="hover"
-              :content="$t('m.rebuildWarning')"
-            >
-              <template #reference>
-                <el-button class="function-button" plain @click="forceGeneBookList" @contextmenu="onForceLoadBookButtonContextMenu($event)">{{$t('m.rebuildLibrary')}}</el-button>
-              </template>
-            </el-popover>
-          </div>
-        </el-col>
-        <el-col :span="6">
-          <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">{{$t('m.batchGetMetadata')}}</el-button>
-          </div>
-        </el-col>
-        <el-col :span="6">
-          <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="exportDatabase">{{$t('m.exportMetadata')}}</el-button>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="setting-line">
-            <el-button class="function-button" type="primary" plain @click="importDatabase">{{$t('m.importMetadata')}}</el-button>
-          </div>
-        </el-col>
-        <el-col :span="4">
-          <div class="setting-line">
-            <el-button class="function-button" type="success" plain @click="loadBookList(true)">{{$t('m.manualScan')}}</el-button>
-          </div>
-        </el-col>
-        <el-col :span="5">
-          <el-switch
-            v-model="setting.loadOnStart"
-            :inactive-text="$t('m.onStartScan')"
-            @change="saveSetting"
-            class="setting-switch"
-          />
-        </el-col>
-        <el-col :span="5">
-          <el-switch
-            v-model="setting.showComment"
-            :inactive-text="$t('m.comment')"
-            @change="saveSetting"
-            class="setting-switch"
-          />
-        </el-col>
-        <el-col :span="5">
-          <el-switch
-            v-model="setting.showTranslation"
-            :inactive-text="$t('m.tagTranslate')"
-            @change="handleTranslationSettingChange"
-            class="setting-switch"
-          />
-        </el-col>
-        <el-col :span="5">
-          <el-switch
-            v-model="setting.directEnter"
-            :inactive-text="$t('m.directEnter')"
-            @change="handleTranslationSettingChange"
-            class="setting-switch"
-          />
-        </el-col>
-      </el-row>
+      <template #header><p class="setting-title">{{$t('m.setting')}}</p></template>
+      <el-tabs v-model="activeSettingPanel" class="setting-tabs">
+        <el-tab-pane :label="$t('m.general')" name="general">
+          <el-row :gutter="8">
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model="setting.library">
+                  <template #prepend><span class="setting-label">{{$t('m.library')}}</span></template>
+                  <template #append><el-button @click="selectLibraryPath">{{$t('m.select')}}</el-button></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model="setting.imageExplorer">
+                  <template #prepend><span class="setting-label">{{$t('m.imageViewer')}}</span></template>
+                  <template #append><el-button @click="selectImageExplorerPath">{{$t('m.select')}}</el-button></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input class="label-input">
+                  <template #prepend><span class="setting-label">{{$t('m.theme')}}</span></template>
+                  <template #append>
+                    <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
+                      <el-option label="Default Dark" value="dark"></el-option>
+                      <el-option label="Default Light" value="light"></el-option>
+                      <el-option label="ExHentai" value="dark exhentai"></el-option>
+                      <el-option label="E-Hentai" value="light e-hentai"></el-option>
+                      <el-option label="nHentai" value="dark nhentai"></el-option>
+                    </el-select>
+                  </template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model="setting.igneous" @change="saveSetting">
+                  <template #prepend><span class="setting-label">igneous</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model="setting.ipb_pass_hash" @change="saveSetting">
+                  <template #prepend><span class="setting-label">ipb_pass_hash</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model="setting.ipb_member_id" @change="saveSetting">
+                  <template #prepend><span class="setting-label">ipb_member_id</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model="setting.proxy" @change="saveSetting" :placeholder="$t('m.like') + ' http://127.0.0.1:7890'">
+                  <template #prepend><span class="setting-label">{{$t('m.proxy')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="5">
+              <div class="setting-line">
+                <el-button class="function-button" type="success" plain @click="loadBookList(true)">{{$t('m.manualScan')}}</el-button>
+              </div>
+            </el-col>
+            <el-col :span="7">
+              <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">{{$t('m.batchGetMetadata')}}</el-button>
+              </div>
+            </el-col>
+            <el-col :span="7">
+              <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
+              </div>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+        <el-tab-pane :label="$t('m.advanced')" name="advanced">
+          <el-row :gutter="8">
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.requireGap" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.thumbnailColumn')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="4">
+              <div class="setting-line">
+                <el-popover
+                  placement="top-start"
+                  effect="dark"
+                  trigger="hover"
+                  :content="$t('m.rebuildWarning')"
+                >
+                  <template #reference>
+                    <el-button class="function-button" plain @click="forceGeneBookList" @contextmenu="onForceLoadBookButtonContextMenu($event)">{{$t('m.rebuildLibrary')}}</el-button>
+                  </template>
+                </el-popover>
+              </div>
+            </el-col>
+            <el-col :span="5">
+              <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="exportDatabase">{{$t('m.exportMetadata')}}</el-button>
+              </div>
+            </el-col>
+            <el-col :span="5">
+              <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="importDatabase">{{$t('m.importMetadata')}}</el-button>
+              </div>
+            </el-col>
+            <el-col :span="6">
+              <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="importDatabasefromSqlite">{{$t('m.importMetadatafromSqlite')}}</el-button>
+              </div>
+            </el-col>
+          </el-row>
+          <el-row :gutter="8">
+            <el-col :span="6">
+              <el-switch
+                v-model="setting.loadOnStart"
+                :active-text="$t('m.onStartScan')"
+                @change="saveSetting"
+                class="setting-switch"
+              />
+            </el-col>
+            <el-col :span="6">
+              <el-switch
+                v-model="setting.showComment"
+                :active-text="$t('m.comment')"
+                @change="saveSetting"
+                class="setting-switch"
+              />
+            </el-col>
+            <el-col :span="6">
+              <el-switch
+                v-model="setting.showTranslation"
+                :active-text="$t('m.tagTranslate')"
+                @change="handleTranslationSettingChange"
+                class="setting-switch"
+              />
+            </el-col>
+            <el-col :span="6">
+              <el-switch
+                v-model="setting.directEnter"
+                :active-text="$t('m.directEnter')"
+                @change="handleTranslationSettingChange"
+                class="setting-switch"
+              />
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+      </el-tabs>
     </el-dialog>
     <el-drawer
       v-model="drawerVisibleViewer"
@@ -651,7 +666,8 @@ export default defineComponent({
       sideVisibleFolderTree: false,
       folderTreeData: [],
       storeBookList: [],
-      locale: zhCn
+      locale: zhCn,
+      activeSettingPanel: 'general'
     }
   },
   computed: {
@@ -901,6 +917,13 @@ export default defineComponent({
             this.printMessage('success', this.$t('c.importMessage'))
           }
         })
+        this.saveBookList()
+      })
+    },
+    importDatabasefromSqlite () {
+      ipcRenderer['import-sqlite'](_.cloneDeep(this.bookList))
+      .then(bookList=>{
+        this.bookList = bookList
         this.saveBookList()
       })
     },
@@ -1929,6 +1952,8 @@ body
       padding-left: 4px
       color: var(--el-text-color-regular)
 
+.setting-title
+  margin:0
 .setting-line
   margin: 6px 0
   .el-input-group__prepend

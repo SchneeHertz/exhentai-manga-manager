@@ -26,7 +26,8 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'get-folder-tree': (bookList)=>ipcRenderer.invoke('get-folder-tree', bookList),
   'get-locale': ()=>ipcRenderer.invoke('get-locale'),
   'manga-content': (func)=>ipcRenderer.on('manga-content', func),
-  'release-sendimagelock': ()=>ipcRenderer.invoke('release-sendimagelock')
+  'release-sendimagelock': ()=>ipcRenderer.invoke('release-sendimagelock'),
+  'import-sqlite': (bookList)=>ipcRenderer.invoke('import-sqlite', bookList),
 })
 
 contextBridge.exposeInMainWorld('electronFunction', {

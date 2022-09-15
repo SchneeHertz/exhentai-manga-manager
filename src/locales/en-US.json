@@ -51,8 +51,9 @@
     "rebuildLibrary": "ForceRebuild",
     "batchGetMetadata": "BatchGetMetadata",
     "batchGetExMetadata": "BatchGetExMetadata",
-    "exportMetadata": "Export",
-    "importMetadata": "Import",
+    "exportMetadata": "Export Metadata",
+    "importMetadata": "Import Metadata",
+    "importMetadatafromSqlite": "Import from Sqlite",
     "manualScan": "Manual Scan",
     "onStartScan": "Scan on Start",
     "comment": "Comment",
@@ -68,7 +69,9 @@
     "widthLimitInfo": "Default value is the screen width(px)",
     "copyTagClipboard": "Copy Tag to Clipboard",
     "pasteTagClipboard": "Paste Tag from Clipboard",
-    "directEnter": "Cover to Read"
+    "directEnter": "Cover to Read",
+    "general": "General",
+    "advanced": "Advanced"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

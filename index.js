@@ -9,6 +9,8 @@ const { nanoid } = require('nanoid')
 const sharp = require('sharp')
 const { spawn } = require('child_process')
 const { createHash } = require('crypto')
+const sqlite3 = require('sqlite3')
+const { open } = require('sqlite')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
 
@@ -559,6 +561,29 @@ ipcMain.handle('load-import-database', async (event, arg)=>{
   } else {
     return []
   }
+})
+
+ipcMain.handle('import-sqlite', async(event, bookList)=>{
+  let result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile']
+  })
+  if (!result.canceled) {
+    const db = await open({
+      filename: result.filePaths[0],
+      driver: sqlite3.Database
+    })
+    try {
+      for (let book of bookList) {
+        let metadata = await db.get('SELECT * FROM downloads WHERE url LIKE ?', `%${book.coverHash}%`)
+        _.assign(book, _.pick(metadata, ['name']))
+      }
+      await db.close()
+    } catch (e) {
+      console.log(e)
+      await db.close()
+    }
+  }
+  return bookList
 })
 
 ipcMain.handle('open-url', async(event, url)=>{

@@ -9,6 +9,8 @@ const { nanoid } = require('nanoid')
 const sharp = require('sharp')
 const { spawn } = require('child_process')
 const { createHash } = require('crypto')
+const sqlite3 = require('sqlite3')
+const { open } = require('sqlite')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
 
@@ -55,7 +57,8 @@ try {
     requireGap: 10000,
     thumbnailColumn: 10,
     showTranslation: false,
-    widthLimit: undefined
+    widthLimit: undefined,
+    directEnter: false
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }
@@ -180,6 +183,7 @@ let geneCover = async (filepath, type) => {
       break
   }
 
+  let coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
   let imageResizeResult = await sharp(tempCoverPath)
   .resize(500, 707, {
     fit: 'contain'
@@ -191,7 +195,7 @@ let geneCover = async (filepath, type) => {
     return false
   })
   if (imageResizeResult){
-    return {targetFilePath, coverPath, pageCount, bundleSize}
+    return {targetFilePath, coverPath, pageCount, bundleSize, coverHash}
   } else {
     return {targetFilePath:undefined, coverPath:undefined}
   }
@@ -219,16 +223,17 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
 
     sendMessageToWebContents('start loading library')
     let list = await getBookFilelist()
-    sendMessageToWebContents(`load ${list.length} book from library`)
+    let listLength = list.length
+    sendMessageToWebContents(`load ${listLength} book from library`)
 
-    for (let i = 0; i < list.length; i++) {
+    for (let i = 0; i < listLength; i++) {
       try {
         let {filepath, type} = list[i]
         let foundData = _.find(existData, {filepath: filepath})
         if (!foundData) {
-          sendMessageToWebContents(`load ${filepath}, ${i+1} of ${list.length}`)
+          sendMessageToWebContents(`load ${filepath}, ${i+1} of ${listLength}`)
           let id = nanoid()
-          let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
+          let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
           if (targetFilePath && coverPath){
             let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
             existData.push({
@@ -240,24 +245,25 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
               id,
               pageCount,
               bundleSize,
+              coverHash,
               status: 'non-tag',
               exist: true,
               date: Date.now()
             })
-            mainWindow.setProgressBar(i/list.length)
+            mainWindow.setProgressBar(i/listLength)
           }
         } else {
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
         }
         if ((i+1) % 100 == 0) {
-          sendMessageToWebContents(`load ${i+1} of ${list.length}`)
+          sendMessageToWebContents(`load ${i+1} of ${listLength}`)
           let tempExistData = _.cloneDeep(_.filter(existData, {exist: true}))
           _.forIn(tempExistData, b=>b.exist = undefined)
           await saveBookListToBrFile(tempExistData)
         }
       } catch (e) {
-        sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${list.length}`)
+        sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${listLength}`)
       }
     }
     try {
@@ -289,14 +295,15 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
   }
   sendMessageToWebContents('start loading library')
   let list = await getBookFilelist()
-  sendMessageToWebContents(`load ${list.length} book from library`)
+  let listLength = list.length
+  sendMessageToWebContents(`load ${listLength} book from library`)
   let data = []
-  for (let i = 0; i < list.length; i++) {
+  for (let i = 0; i < listLength; i++) {
     try {
       let {filepath, type} = list[i]
-      sendMessageToWebContents(`load ${filepath}, ${i+1} of ${list.length}`)
+      sendMessageToWebContents(`load ${filepath}, ${i+1} of ${listLength}`)
       let id = nanoid()
-      let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         data.push({
@@ -308,16 +315,17 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
           id,
           pageCount,
           bundleSize,
+          coverHash,
           status: 'non-tag',
           date: Date.now()
         })
       }
-      mainWindow.setProgressBar(i/list.length)
+      mainWindow.setProgressBar(i/listLength)
       if ((i+1) % 100 == 0) {
         await saveBookListToBrFile(data)
       }
     } catch (e) {
-      sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${list.length}`)
+      sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${listLength}`)
     }
   }
   try {
@@ -334,6 +342,7 @@ ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
 
 ipcMain.handle('patch-local-metadata', async(event, arg)=>{
   let bookList = await loadBookListFromBrFile()
+  let bookListLength = bookList.length
   try {
     await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
     await fs.promises.mkdir(TEMP_PATH, {recursive: true})
@@ -343,17 +352,17 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
     console.log(err)
   }
 
-  for (let i = 0; i < bookList.length; i++) {
+  for (let i = 0; i < bookListLength; i++) {
     try {
       let book = bookList[i]
       let {filepath, type} = book
       if (!type || type === 'zip') type = 'archive'
-      let {targetFilePath, coverPath, pageCount, bundleSize} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-        _.assign(book, {type, coverPath, hash, pageCount, bundleSize})
-        sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookList.length}`)
-        mainWindow.setProgressBar(i/bookList.length)
+        _.assign(book, {type, coverPath, hash, pageCount, bundleSize, coverHash})
+        sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookListLength}`)
+        mainWindow.setProgressBar(i/bookListLength)
       }
     } catch (e) {
       sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
@@ -555,6 +564,57 @@ ipcMain.handle('load-import-database', async (event, arg)=>{
   } else {
     return []
   }
+})
+
+ipcMain.handle('import-sqlite', async(event, bookList)=>{
+  let result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile']
+  })
+  if (!result.canceled) {
+    const db = await open({
+      filename: result.filePaths[0],
+      driver: sqlite3.Database
+    })
+    try {
+      let re = /'/g
+      let bookListLength = bookList.length
+      for (let i = 0; i < bookListLength; i++) {
+        let book = bookList[i]
+        let metadata = await db.get('SELECT * FROM gallery WHERE thumb LIKE ?', `%${book.coverHash}%`)
+        if (metadata) {
+          metadata.tags = {
+            artist: metadata.artist ? JSON.parse(metadata.artist.replace(re, '\"')) : undefined,
+            group: metadata.group ? JSON.parse(metadata.group.replace(re, '\"')) : undefined,
+            parody: metadata.parody ? JSON.parse(metadata.parody.replace(re, '\"')) : undefined,
+            character: metadata.character ? JSON.parse(metadata.character.replace(re, '\"')) : undefined,
+            female: metadata.female ? JSON.parse(metadata.female.replace(re, '\"')) : undefined,
+            male: metadata.male ? JSON.parse(metadata.male.replace(re, '\"')) : undefined,
+            language: metadata.language ? JSON.parse(metadata.language.replace(re, '\"')) : undefined,
+            mixed: metadata.mixed ? JSON.parse(metadata.mixed.replace(re, '\"')) : undefined,
+            other: metadata.other ? JSON.parse(metadata.other.replace(re, '\"')) : undefined,
+            cosplayer: metadata.cosplayer ? JSON.parse(metadata.cosplayer.replace(re, '\"')) : undefined,
+            rest: metadata.rest ? JSON.parse(metadata.rest.replace(re, '\"')) : undefined,
+          }
+          metadata.filecount = +metadata.filecount
+          metadata.rating = +metadata.rating
+          metadata.posted = +metadata.posted
+          metadata.filesize = +metadata.filesize
+          metadata.url = `https://exhentai.org/g/${metadata.gid}/${metadata.token}/`
+          _.assign(book, _.pick(metadata, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url']), {status: 'tagged'})
+          sendMessageToWebContents(`${i+1} of ${bookListLength}, found metadata for ${book.filepath}`)
+          mainWindow.setProgressBar(i/bookListLength)
+        } else {
+          sendMessageToWebContents(`${i+1} of ${bookListLength}, metadata not found for ${book.filepath}`)
+        }
+      }
+      await db.close()
+      mainWindow.setProgressBar(-1)
+    } catch (e) {
+      console.log(e)
+      await db.close()
+    }
+  }
+  return bookList
 })
 
 ipcMain.handle('open-url', async(event, url)=>{

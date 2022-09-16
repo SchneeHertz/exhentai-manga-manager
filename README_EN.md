@@ -36,10 +36,11 @@ Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/E
 - Themes
 - Tag analysis
 - Custom cover support
-- Show library folder structure, view comics by folder
+- Show library folder structure, view mangas by folder
+- Support importing exhentai overall metadata database backup
 
 ## TODO
-- Rename and move comic files according to rules
+- Rename and move manga files according to rules
 - Library scan optimization with exclusion list support
 
 ## Thanks

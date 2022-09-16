@@ -356,7 +356,7 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
     try {
       let book = bookList[i]
       let {filepath, type} = book
-      if (!type || type === 'zip') type = 'archive'
+      if (!type) type = 'archive'
       let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')

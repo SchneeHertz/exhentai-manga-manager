@@ -148,6 +148,71 @@
         @current-change="handleCurrentChange"
       />
     </el-row>
+    <el-drawer
+      v-model="sideVisibleFolderTree"
+      direction="ltr"
+      size="25%"
+      destroy-on-close
+    >
+      <el-tree
+        :data="folderTreeData"
+        @current-change="selectFolderTreeNode"
+      ></el-tree>
+    </el-drawer>
+    <el-dialog
+      v-model="dialogVisibleGraph"
+      width="80%"
+      top="5vh"
+      destroy-on-close
+      @close="destroyCanvas"
+    >
+      <template #header><p>{{$t('m.tagAnalysis')}}</p></template>
+      <div id="tag-graph"></div>
+      <template #footer>
+        <el-button type="primary" @click="geneRecommend(false, 'local')">{{$t('m.searchLocal')}}</el-button>
+        <el-button type="primary" @click="geneRecommend">{{$t('m.getEXRecommand')}}</el-button>
+        <el-button type="primary" @click="geneRecommend(true)">{{$t('m.getEXRecommand')}}(ZH)</el-button>
+      </template>
+    </el-dialog>
+    <el-drawer
+      v-model="drawerVisibleCollection"
+      direction="btt"
+      :size="456"
+      destroy-on-close
+    >
+      <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
+      <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
+        <p
+          class="book-title"
+          @click="openBookDetail(book)"
+          @contextmenu="onMangaTitleContextMenu($event, book)"
+          :title="book.title_jpn || book.title"
+        >{{book.title_jpn || book.title}}</p>
+        <img
+          class="book-cover"
+          :src="book.coverPath"
+          @click="setting.directEnter ? viewManga(book) : openBookDetail(book)"
+          @contextmenu="onBookContextMenu($event, book)"
+        />
+        <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+        <el-icon
+          :size="30"
+          :color="book.mark ? '#E6A23C' : '#666666'"
+          class="book-card-star"
+          @click="switchMark(book)"
+        ><StarFilled /></el-icon>
+        <el-button-group class="outer-read-button-group">
+          <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+          <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
+        </el-button-group>
+        <el-tag
+          class="book-status-tag"
+          :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+          @click="searchFromTag(book.status)"
+        >{{book.status}}</el-tag>
+        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
+      </div>
+    </el-drawer>
     <el-dialog
       v-model="dialogVisibleBookDetail"
       fullscreen
@@ -275,6 +340,89 @@
         </el-col>
       </el-row>
     </el-dialog>
+    <el-drawer
+      v-model="drawerVisibleViewer"
+      direction="ttb"
+      size="100%"
+      :with-header="false"
+      destroy-on-close
+      @closed="releaseSendImageLock"
+    >
+      <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
+      <el-switch
+        v-model="imageStyleType"
+        size="small"
+        inline-prompt
+        :active-text="$t('m.scrolling')"
+        :inactive-text="$t('m.singlePage')"
+        active-value="scroll"
+        inactive-value="click"
+        @change="saveImageStyleType"
+        class="viewer-switch"
+        width="60px"
+      />
+      <el-switch
+        v-model="showThumbnail"
+        size="small"
+        inline-prompt
+        :active-text="$t('m.thumbnail')"
+        :inactive-text="$t('m.content')"
+        @change="switchThumbnail"
+        class="viewer-thumbnail-switch"
+        width="60px"
+      />
+      <div
+        class="drawer-image-content"
+        @click="scrollPage"
+        v-if="!showThumbnail"
+        v-loading="viewerImageList.length == 0"
+        element-loading-text="Loading"
+        element-loading-background="transparent"
+      >
+        <div
+          v-for="(image, index) in viewerImageList"
+          :key="image.id"
+          class="image-frame"
+          :style="returnImageFrameStyle()"
+        >
+          <div
+            class="viewer-image-frame"
+            :id="image.id"
+            :style="returnImageStyle(image)"
+          >
+            <img
+              :src="`${image.filepath}?id=${image.id}`"
+              class="viewer-image"
+              :style="{height: returnImageStyle(image).height}"
+              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+            />
+            <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
+          </div>
+          <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
+        </div>
+      </div>
+      <div
+        class="drawer-thumbnail-content"
+        v-if="showThumbnail"
+        v-loading="viewerImageList.length == 0"
+        element-loading-text="Loading"
+        element-loading-background="transparent"
+      >
+        <!-- eslint-disable-next-line vue/valid-v-for -->
+        <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
+          <div v-for="(image, index) in chunk" :key="image.id">
+            <img
+              :src="`${image.thumbnailPath}?id=${image.id}`"
+              class="viewer-thumbnail"
+              :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
+              @click="handleClickThumbnail(chunkIndex, index)"
+              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+            />
+            <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
+          </div>
+        </el-space>
+      </div>
+    </el-drawer>
     <el-dialog
       v-model="dialogVisibleSetting"
       width="42em"
@@ -456,154 +604,6 @@
         </el-tab-pane>
       </el-tabs>
     </el-dialog>
-    <el-drawer
-      v-model="drawerVisibleViewer"
-      direction="ttb"
-      size="100%"
-      :with-header="false"
-      destroy-on-close
-      @closed="releaseSendImageLock"
-    >
-      <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
-      <el-switch
-        v-model="imageStyleType"
-        size="small"
-        inline-prompt
-        :active-text="$t('m.scrolling')"
-        :inactive-text="$t('m.singlePage')"
-        active-value="scroll"
-        inactive-value="click"
-        @change="saveImageStyleType"
-        class="viewer-switch"
-        width="60px"
-      />
-      <el-switch
-        v-model="showThumbnail"
-        size="small"
-        inline-prompt
-        :active-text="$t('m.thumbnail')"
-        :inactive-text="$t('m.content')"
-        @change="switchThumbnail"
-        class="viewer-thumbnail-switch"
-        width="60px"
-      />
-      <div
-        class="drawer-image-content"
-        @click="scrollPage"
-        v-if="!showThumbnail"
-        v-loading="viewerImageList.length == 0"
-        element-loading-text="Loading"
-        element-loading-background="transparent"
-      >
-        <div
-          v-for="(image, index) in viewerImageList"
-          :key="image.id"
-          class="image-frame"
-          :style="returnImageFrameStyle()"
-        >
-          <div
-            class="viewer-image-frame"
-            :id="image.id"
-            :style="returnImageStyle(image)"
-          >
-            <img
-              :src="`${image.filepath}?id=${image.id}`"
-              class="viewer-image"
-              :style="{height: returnImageStyle(image).height}"
-              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
-            />
-            <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
-          </div>
-          <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
-        </div>
-      </div>
-      <div
-        class="drawer-thumbnail-content"
-        v-if="showThumbnail"
-        v-loading="viewerImageList.length == 0"
-        element-loading-text="Loading"
-        element-loading-background="transparent"
-      >
-        <!-- eslint-disable-next-line vue/valid-v-for -->
-        <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
-          <div v-for="(image, index) in chunk" :key="image.id">
-            <img
-              :src="`${image.thumbnailPath}?id=${image.id}`"
-              class="viewer-thumbnail"
-              :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
-              @click="handleClickThumbnail(chunkIndex, index)"
-              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
-            />
-            <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
-          </div>
-        </el-space>
-      </div>
-    </el-drawer>
-    <el-drawer
-      v-model="drawerVisibleCollection"
-      direction="btt"
-      :size="456"
-      destroy-on-close
-    >
-      <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
-      <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
-        <p
-          class="book-title"
-          @click="openBookDetail(book)"
-          @contextmenu="onMangaTitleContextMenu($event, book)"
-          :title="book.title_jpn || book.title"
-        >{{book.title_jpn || book.title}}</p>
-        <img
-          class="book-cover"
-          :src="book.coverPath"
-          @click="setting.directEnter ? viewManga(book) : openBookDetail(book)"
-          @contextmenu="onBookContextMenu($event, book)"
-        />
-        <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
-        <el-icon
-          :size="30"
-          :color="book.mark ? '#E6A23C' : '#666666'"
-          class="book-card-star"
-          @click="switchMark(book)"
-        ><StarFilled /></el-icon>
-        <el-button-group class="outer-read-button-group">
-          <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-          <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
-        </el-button-group>
-        <el-tag
-          class="book-status-tag"
-          :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-          @click="searchFromTag(book.status)"
-        >{{book.status}}</el-tag>
-        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
-      </div>
-    </el-drawer>
-    <el-drawer
-      v-model="sideVisibleFolderTree"
-      direction="ltr"
-      size="25%"
-      destroy-on-close
-    >
-      <el-tree
-        :data="folderTreeData"
-        @current-change="selectFolderTreeNode"
-      ></el-tree>
-    </el-drawer>
-    <el-dialog
-      v-model="dialogVisibleGraph"
-      width="80%"
-      top="5vh"
-      destroy-on-close
-      @close="destroyCanvas"
-    >
-      <template #header><p>{{$t('m.tagAnalysis')}}</p></template>
-      <div id="tag-graph"></div>
-      <template #footer>
-        <el-button type="primary" @click="geneRecommend(false, 'local')">{{$t('m.searchLocal')}}</el-button>
-        <el-button type="primary" @click="geneRecommend">{{$t('m.getEXRecommand')}}</el-button>
-        <el-button type="primary" @click="geneRecommend(true)">{{$t('m.getEXRecommand')}}(ZH)</el-button>
-      </template>
-    </el-dialog>
   </el-config-provider>
 </template>
 
@@ -634,53 +634,55 @@ export default defineComponent({
   },
   data () {
     return {
-      bookList: [],
       dialogVisibleBookDetail: false,
-      bookDetail: {},
-      displayBookList: [],
       dialogVisibleSetting: false,
-      searchString: undefined,
-      setting: {},
-      currentPage: 1,
-      chunkDisplayBookList: [],
-      editingTag: false,
-      tagGroup: {},
-      serviceAvailable: true,
-      drawerVisibleViewer: false,
-      viewerImageList: [],
-      viewerImageWidth: 1280,
-      imageStyleType: 'scroll',
-      sortValue: undefined,
-      comments: [],
-      showComment: true,
-      showThumbnail: false,
-      thumbnailColumn: 10,
-      storeDrawerScrollTop: undefined,
+      dialogVisibleGraph: false,
+      sideVisibleFolderTree: false,
       editCollectionView: false,
+      drawerVisibleViewer: false,
+      drawerVisibleCollection: false,
+      // home
+      bookList: [],
+      displayBookList: [],
+      chunkDisplayBookList: [],
+      resolvedTranslation: {},
+      locale: zhCn,
+      searchString: undefined,
+      searchHistory: [],
+      sortValue: undefined,
+      currentPage: 1,
+      folderTreeData: [],
+      storeBookList: [],
+      tagNodeData: [],
+      displayNodeData: [],
+      // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
       collectionList: [],
-      drawerVisibleCollection: false,
       openCollectionTitle: undefined,
       openCollectionBookList: [],
-      resolvedTranslation: {},
-      searchHistory: [],
-      tagNodeData: [],
-      displayNodeData: [],
-      dialogVisibleGraph: false,
-      sideVisibleFolderTree: false,
-      folderTreeData: [],
-      storeBookList: [],
-      locale: zhCn,
-      activeSettingPanel: 'general'
+      // detail
+      bookDetail: {},
+      comments: [],
+      tagGroup: {},
+      editingTag: false,
+      // viewer
+      viewerImageList: [],
+      viewerImageWidth: 1280,
+      imageStyleType: 'scroll',
+      storeDrawerScrollTop: undefined,
+      // setting
+      setting: {},
+      activeSettingPanel: 'general',
+      serviceAvailable: true,
+      showComment: true,
+      showThumbnail: false,
+      thumbnailColumn: 10,
     }
   },
   computed: {
-    thumbnailList () {
-      if (this.setting.thumbnailColumn) {
-        this.thumbnailColumn = this.setting.thumbnailColumn
-      }
-      return _.chunk(this.viewerImageList, this.thumbnailColumn)
+    displayBookCount () {
+      return _.sumBy(this.displayBookList, book=>(book.hidden || book.folderHide) ? 0 : 1)
     },
     displaySelectCollectionList: {
       get () {
@@ -699,15 +701,18 @@ export default defineComponent({
         this.selectCollectionObject.list = list
       }
     },
-    displayBookCount () {
-      return _.sumBy(this.displayBookList, book=>(book.hidden || book.folderHide) ? 0 : 1)
+    categoryOption () {
+      return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().uniq().value()
     },
     tagList () {
       return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().uniq().map(t=>`"${t}"`).value()
     },
-    categoryOption () {
-      return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().uniq().value()
-    }
+    thumbnailList () {
+      if (this.setting.thumbnailColumn) {
+        this.thumbnailColumn = this.setting.thumbnailColumn
+      }
+      return _.chunk(this.viewerImageList, this.thumbnailColumn)
+    },
   },
   mounted () {
     ipcRenderer['get-locale']().then(localeString=>{
@@ -739,13 +744,14 @@ export default defineComponent({
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
-    window.addEventListener('keydown', this.resolveKey)
     this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
+    window.addEventListener('keydown', this.resolveKey)
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
   },
   methods: {
+    // base function
     resolveKey (event) {
       if (this.drawerVisibleViewer) {
         if (this.imageStyleType === 'click') {
@@ -789,41 +795,11 @@ export default defineComponent({
       })
       return result
     },
-    isChineseTranslatedManga (book) {
-      return _.includes(book?.tags?.language, 'chinese') ? true : false
-    },
     returnFileName (filepath) {
       let matched = /[^\\]+$/.exec(filepath)
       if (matched) {
         return matched[0]
       }
-    },
-    loadBookList (scan) {
-      ipcRenderer['load-book-list'](scan)
-      .then(res=>{
-        this.bookList = res.sort(this.sortList('date'))
-        this.displayBookList = this.bookList
-        this.chunkList()
-        this.loadCollectionList()
-      })
-    },
-    returnImageStyle(image) {
-      if (this.imageStyleType === 'scroll') {
-        return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
-      } else {
-        // 28 is the height of .viewer-image-page
-        return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
-      }
-    },
-    returnImageFrameStyle () {
-      if (this.imageStyleType === 'scroll') {
-        return {}
-      } else {
-        return {height: '100vh'}
-      }
-    },
-    saveImageStyleType (val) {
-      localStorage.setItem('imageStyleType', val)
     },
     sortList(label) {
       return (a, b)=>{
@@ -848,98 +824,84 @@ export default defineComponent({
       ElMessage.closeAll()
       ElMessage[type](msg)
     },
-    chunkList () {
-      this.currentPage = 1
-      this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, 0)
-      this.scrollMainPageTop()
-    },
-    openBookDetail (book) {
-      this.bookDetail = book
-      this.dialogVisibleBookDetail = true
-      this.showComment = !!this.setting.showComment
-      this.getComments(book.url)
-    },
-    openLocalBook (book) {
-      this.bookDetail = book
-      ipcRenderer['open-local-book'](this.bookDetail.filepath)
-    },
-    deleteLocalBook (book) {
-      ipcRenderer['delete-local-book'](book.filepath)
-      .then(()=>{
-        this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
-        this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
-        if (book.hidden) {
-          _.forIn(this.collectionList, collection=>{
-            collection.list = _.filter(collection.list, id=>id !== book.id)
-          })
-          this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
-        }
-        this.saveBookList()
-        .then(()=>{
-          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
-          if (book.hidden) this.saveCollection()
-          this.dialogVisibleBookDetail = false
-        })
+    loadBookList (scan) {
+      ipcRenderer['load-book-list'](scan)
+      .then(res=>{
+        this.bookList = res.sort(this.sortList('date'))
+        this.displayBookList = this.bookList
+        this.chunkList()
+        this.loadCollectionList()
       })
     },
-    exportDatabase () {
-      ipcRenderer['export-database']()
-      .then(database=>{
-        let dataStr = JSON.stringify(database, null, '  ')
-        let dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
-        let exportFileDefaultName = 'bookHashMetadata.json'
-        let linkElement = document.createElement('a')
-        linkElement.setAttribute('href', dataUri)
-        linkElement.setAttribute('download', exportFileDefaultName)
-        linkElement.click()
+    saveBookList () {
+      let bookList = _.cloneDeep(this.bookList)
+      bookList = _.filter(bookList, book=>!book.collection)
+      _.forIn(bookList, book=>{
+        delete book.collected
+        delete book.hidden
+        delete book.folderHide
       })
+      return ipcRenderer['save-book-list'](bookList)
     },
-    importDatabase () {
-      ipcRenderer['load-import-database']()
-      .then(database=>{
-        _.forIn(this.bookList, (book, index)=>{
-          let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
-          if (findData) {
-            _.assign(book, _.omit(findData, 'hash'))
-            if (book.url){
-              book.status = 'tagged'
+    loadCollectionList () {
+      ipcRenderer['load-collection-list']()
+      .then(res=>{
+        this.collectionList = res
+        _.forIn(this.collectionList, collection=>{
+          let collectBook = _.compact(collection.list.map(id=>{
+            return _.find(this.bookList, {id})
+          }))
+          collection.list = collectBook.map(book=>book.id)
+          collectBook.map(book=>book.hidden = true)
+          let date = _.reverse(_.sortBy(collectBook.map(book=>book.date)))[0]
+          let posted = _.reverse(_.sortBy(collectBook.map(book=>book.posted)))[0]
+          let rating = _.reverse(_.sortBy(collectBook.map(book=>book.rating)))[0]
+          let mark = _.some(collectBook, 'mark')
+          let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
+            if (_.isArray(obj) && _.isArray(src)) {
+              return _.uniq(obj.concat(src))
             } else {
-              book.status = 'tag-failed'
+              return src
             }
-            if (book.collectionInfo) {
-              let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
-              if (foundCollection) {
-                foundCollection.list = _.uniq([...foundCollection.list, book.id])
-              } else {
-                this.collectionList.push({
-                  id: book.collectionInfo.id,
-                  title: book.collectionInfo.title,
-                  list: [book.id]
-                })
-              }
-              delete book.collectionInfo
-            }
-          }
-          if (index == this.bookList.length - 1) {
-            this.dialogVisibleSetting = false
-            this.printMessage('success', this.$t('c.importMessage'))
-          }
+          })
+          let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
+          let category = collectBook.map(book=>book.category).join(',')
+          let status = collectBook.map(book=>book.status).join(',')
+          this.bookList.push({
+            title: collection.title,
+            id: collection.id,
+            coverPath: collectBook[0].coverPath,
+            date, posted, rating, mark, tags, title_jpn, category, status,
+            list: collection.list,
+            filepath: collectBook[0].filepath,
+            collection: true
+          })
         })
-        this.saveBookList()
+        this.displayBookList = this.bookList.sort(this.sortList('date'))
+        this.chunkList()
       })
     },
-    importDatabasefromSqlite () {
-      ipcRenderer['import-sqlite'](_.cloneDeep(this.bookList))
-      .then(bookList=>{
-        this.bookList = bookList
-        this.saveBookList()
-        .then(()=>{
-          this.printMessage('success', this.$t('c.importMessage'))
-          this.displayBookList = this.bookList
-          this.chunkList()
+    loadTranslationFromEhTagTranslation () {
+      let resultObject = {}
+      axios.get('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
+      .then(res=>{
+        let sourceTranslationDatabase = res.data.data
+        _.forIn(sourceTranslationDatabase, cat=>{
+          _.forIn(cat.data, (value, key)=>{
+            resultObject[key] = _.pick(value, ['name', 'intro'])
+          })
         })
+        this.resolvedTranslation = resultObject
+        localStorage.setItem('translationCache', JSON.stringify(resultObject))
+      })
+      .catch((error)=>{
+        console.log(error)
+        this.printMessage('warning', 'load translation from cache')
+        this.resolvedTranslation = JSON.parse(localStorage.getItem('translationCache'))
       })
     },
+
+    // metadata
     getBookInfo (book, server = 'e-hentai') {
       let getTag = (book, url) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
@@ -1066,175 +1028,11 @@ export default defineComponent({
       }
       load(this.setting.requireGap || 10000)
     },
-    saveBookList () {
-      let bookList = _.cloneDeep(this.bookList)
-      bookList = _.filter(bookList, book=>!book.collection)
-      _.forIn(bookList, book=>{
-        delete book.collected
-        delete book.hidden
-        delete book.folderHide
-      })
-      return ipcRenderer['save-book-list'](bookList)
-    },
-    handleSearchStringChange (val) {
-      if (!val) {
-        this.displayBookList = this.bookList
-        this.chunkList()
-      }
-    },
-    searchBook () {
-      let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
-      this.searchHistory = _.take(_.uniq([this.searchString, ...this.searchHistory]), 8)
-      localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory))
-      this.displayBookList = _.filter(this.bookList, (book)=>{
-        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category', 'filepath'])).toLowerCase()
-        return _.every(searchStringArray, (str)=>{
-          if (_.startsWith(str, '-')) {
-            return !bookString.includes(str.slice(1).replace(/["']/g, '').toLowerCase())
-          } else {
-            return bookString.includes(str.replace(/["']/g, '').toLowerCase())
-          }
-        })
-      })
-      this.chunkList()
-    },
-    searchFromTag (tag) {
-      this.dialogVisibleBookDetail = false
-      this.drawerVisibleCollection = false
-      this.searchString = `"${tag}"`
-      this.searchBook()
-    },
-    querySearch (queryString, callback) {
-      let result = queryString ? _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
-        : this.searchHistory
-      callback(result.map(s=>({value:s})))
-    },
+
+    // home header
     shuffleBook () {
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
-    },
-    selectLibraryPath () {
-      ipcRenderer['select-folder']()
-      .then(res=>{
-        this.setting.library = res
-        this.saveSetting()
-      })
-    },
-    selectImageExplorerPath () {
-      ipcRenderer['select-file']()
-      .then(res=>{
-        this.setting.imageExplorer = res
-        this.saveSetting()
-      })
-    },
-    saveSetting () {
-      ipcRenderer['save-setting'](_.cloneDeep(this.setting))
-    },
-    forceGeneBookList () {
-      this.dialogVisibleSetting = false
-      ipcRenderer['force-gene-book-list']()
-      .then(res=>{
-        this.bookList = res.sort(this.sortList('date'))
-        this.displayBookList = this.bookList
-        this.chunkList()
-        this.loadCollectionList()
-        this.printMessage('success', this.$t('c.rebuildMessage'))
-      })
-    },
-    handleSizeChange () {
-      this.chunkList()
-      this.saveSetting()
-      this.scrollMainPageTop()
-    },
-    handleCurrentChange (currentPage) {
-      this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, currentPage - 1)
-      this.scrollMainPageTop()
-    },
-    scrollMainPageTop () {
-      document.getElementsByClassName('book-card-area')[0].scrollTop = 0
-    },
-    openUrl (url) {
-      ipcRenderer['open-url'](url)
-    },
-    editTags () {
-      this.editingTag = !this.editingTag
-      if (this.editingTag) {
-        if (!_.has(this.bookDetail, 'tags')) this.bookDetail.tags = {}
-        let tempTagGroup = {}
-        _.forIn(this.bookList.map(b=>b.tags), (tagObject)=>{
-          _.forIn(tagObject, (tagArray, tagCat)=>{
-            if (_.isArray(tagArray)) {
-              if (_.has(tempTagGroup, tagCat)) {
-                tempTagGroup[tagCat] = [...tempTagGroup[tagCat], ...tagArray]
-              } else {
-                tempTagGroup[tagCat] = tagArray
-              }
-            }
-          })
-        })
-        _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.sortBy(_.uniq(tagArray))
-        })
-        this.tagGroup = tempTagGroup
-      } else {
-        _.forIn(this.bookDetail.tags, (tagarr, tagCat)=>{
-          if (_.isEmpty(tagarr)) {
-            delete this.bookDetail.tags[tagCat]
-          }
-        })
-        this.saveBookList()
-      }
-    },
-    viewManga (book) {
-      this.bookDetail = book
-      this.viewerImageList = []
-      const loading = ElLoading.service({
-        lock: true,
-        text: 'Loading',
-        background: _.includes(this.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
-      })
-      ipcRenderer['load-manga-image-list'](_.cloneDeep(this.bookDetail))
-      .then(list=>{
-        // this.viewerImageList = list
-        this.drawerVisibleViewer = true
-      })
-      .catch(err=>{
-        console.log(err)
-      })
-      .finally(()=>{
-        loading.close()
-      })
-    },
-    initResize (id) {
-      if (this.imageStyleType === 'scroll') {
-        let element = document.getElementById(id)
-        let Resize = (e)=>{
-          this.viewerImageWidth = e.clientX - element.offsetLeft
-        }
-        let stopResize = (e)=>{
-          window.removeEventListener('mousemove', Resize, false)
-          window.removeEventListener('mouseup', stopResize, false)
-          localStorage.setItem('viewerImageWidth', this.viewerImageWidth)
-        }
-        window.addEventListener('mousemove', Resize, false)
-        window.addEventListener('mouseup', stopResize, false)
-      }
-    },
-    scrollPage (event) {
-      if (this.imageStyleType === 'click') {
-        if(event.clientX > window.innerWidth / 2) {
-          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
-        } else {
-          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
-        }
-      }
-    },
-    releaseSendImageLock () {
-      ipcRenderer['release-sendimagelock']()
-    },
-    switchMark (book) {
-      book.mark = !book.mark
-      this.saveBookList()
     },
     handleSortChange (val) {
       switch(val){
@@ -1280,67 +1078,208 @@ export default defineComponent({
           break
       }
     },
-    showFile(filepath) {
-      ipcRenderer['show-file'](filepath)
-    },
-    getComments (url) {
-      this.comments = []
-      if (url) {
-        ipcRenderer['get-ex-webpage']({
-          url,
-          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
-        })
-        .then(res=>{
-          let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
-          commentElements.forEach(e=>{
-            let author = e.querySelector('.c2 .c3').textContent
-            let scoreTail = e.querySelectorAll('.c2 .nosel')
-            let score = scoreTail[scoreTail.length - 1].textContent
-            let content = e.querySelector('.c6').innerHTML
-            content = content.replace(/<br>/gi, '\n')
-            content = content.replace(/<.+?>/gi, '')
-            content = he.decode(content)
-            this.comments.push({
-              author, score, content, id: nanoid()
-            })
-          })
-        })
-      }
-    },
-    triggerShowComment () {
-      if (this.showComment) {
-        this.showComment = false
-      } else {
-        this.getComments(this.bookDetail.url)
-        this.showComment = true
-      }
-    },
-    switchThumbnail (val) {
+    // home search
+    handleSearchStringChange (val) {
       if (!val) {
-        if (this.storeDrawerScrollTop) {
-          this.$nextTick(()=>{
-            document.getElementsByClassName('el-drawer__body')[0].scrollTop = this.storeDrawerScrollTop
-            this.storeDrawerScrollTop = undefined
-          })
-        }
-      } else {
-        this.storeDrawerScrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollTop
+        this.displayBookList = this.bookList
+        this.chunkList()
       }
     },
-    handleClickThumbnail(chunkIndex, index) {
-      this.showThumbnail = false
-      let scrollTopValue = 0
-      if (this.imageStyleType === 'scroll') {
-        _.forIn(this.viewerImageList, (image, i)=>{
-          if (i == (chunkIndex * this.thumbnailColumn + index)) return false
-          // 28.3 is the height of .viewer-image-page
-          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28.3
+    searchBook () {
+      let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
+      this.searchHistory = _.take(_.uniq([this.searchString, ...this.searchHistory]), 8)
+      localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory))
+      this.displayBookList = _.filter(this.bookList, (book)=>{
+        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category', 'filepath'])).toLowerCase()
+        return _.every(searchStringArray, (str)=>{
+          if (_.startsWith(str, '-')) {
+            return !bookString.includes(str.slice(1).replace(/["']/g, '').toLowerCase())
+          } else {
+            return bookString.includes(str.replace(/["']/g, '').toLowerCase())
+          }
         })
-      } else {
-        scrollTopValue = window.innerHeight * (chunkIndex * this.thumbnailColumn + index)
-      }
-      this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
+      })
+      this.chunkList()
     },
+    searchFromTag (tag) {
+      this.dialogVisibleBookDetail = false
+      this.drawerVisibleCollection = false
+      this.searchString = `"${tag}"`
+      this.searchBook()
+    },
+    querySearch (queryString, callback) {
+      let result = queryString ? _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+        : this.searchHistory
+      callback(result.map(s=>({value:s})))
+    },
+    // home main
+    openBookDetail (book) {
+      this.bookDetail = book
+      this.dialogVisibleBookDetail = true
+      this.showComment = !!this.setting.showComment
+      this.getComments(book.url)
+    },
+    switchMark (book) {
+      book.mark = !book.mark
+      this.saveBookList()
+    },
+    isChineseTranslatedManga (book) {
+      return _.includes(book?.tags?.language, 'chinese') ? true : false
+    },
+    // home page
+    chunkList () {
+      this.currentPage = 1
+      this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, 0)
+      this.scrollMainPageTop()
+    },
+    handleSizeChange () {
+      this.chunkList()
+      this.saveSetting()
+      this.scrollMainPageTop()
+    },
+    handleCurrentChange (currentPage) {
+      this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, currentPage - 1)
+      this.scrollMainPageTop()
+    },
+    scrollMainPageTop () {
+      document.getElementsByClassName('book-card-area')[0].scrollTop = 0
+    },
+
+
+    // folder tree
+    geneFolderTree () {
+      this.sideVisibleFolderTree = !this.sideVisibleFolderTree
+      if (this.sideVisibleFolderTree) {
+        let bookList = _.isEmpty(this.storeBookList) ? _.cloneDeep(this.bookList) : _.cloneDeep(this.storeBookList)
+        ipcRenderer['get-folder-tree'](bookList)
+        .then(data=>{
+          this.folderTreeData = data
+        })
+      }
+    },
+    selectFolderTreeNode (selectNode) {
+      if (selectNode.folderPath === '.') {
+        this.bookList.map(book=>book.folderHide = false)
+      } else {
+        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath
+        this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+      }
+      this.displayBookList = this.bookList
+      this.chunkList()
+    },
+
+    // tag analysis and recommand search
+    displayTagGraph () {
+      let nodes = []
+      _.forIn(this.bookList, book=>{
+        let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
+        let tempNodes = []
+        _.forIn(tags, (list, cat)=>{
+          list.map(tag=>{
+            tempNodes.push(`${cat}##${tag}`)
+          })
+        })
+        nodes = nodes.concat(tempNodes)
+      })
+      let nodesObject = _.countBy(nodes)
+      const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
+      let tempNodeData = []
+      _.forIn(nodesObject, (count, label)=>{
+        let labelArray = _.split(label, '##')
+        try {
+          tempNodeData.push({
+            id: nanoid(),
+            count,
+            size: Math.ceil(Math.log(count)*10+50),
+            oriSize: Math.ceil(Math.log(count)*10+50),
+            name: `${labelArray[0]}:"${labelArray[1]}$"`,
+            shortName: labelArray[1],
+            label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
+            style:{fill: _.sample(colors)}
+          })
+        } catch {}
+      })
+      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 72)
+      this.tagNodeData = _.shuffle(this.tagNodeData)
+      this.displayNodeData = this.tagNodeData
+      this.dialogVisibleGraph = true
+      this.$nextTick(()=>{
+        let graph = new G6.Graph({
+          container: 'tag-graph',
+          layout: {
+            type: 'force',
+            nodeStrength: 40,
+            collideStrength: 0.8,
+            alphaDecay: 0.01,
+            nodeSpacing: 2,
+            preventOverlap: true,
+          },
+          modes: {
+            default: ['drag-canvas', 'zoom-canvas', 'drag-node']
+          }
+        })
+        graph.data({nodes: this.tagNodeData, edges:[]})
+        const refreshDragedNodePosition = (e)=>{
+          const model = e.item.get('model')
+          model.fx = e.x
+          model.fy = e.y
+        }
+        graph.on('node:dragstart', (e)=>{
+          graph.layout()
+          refreshDragedNodePosition(e)
+        })
+        graph.on('node:drag', (e)=>{
+          refreshDragedNodePosition(e)
+        })
+        graph.on('node:dragend', (e)=>{
+          e.item.get('model').fx = null
+          e.item.get('model').fy = null
+        })
+        graph.on('node:click', (e)=>{
+          const node = e.item
+          const states = node.getStates()
+          let clicked = false
+          const model = node.getModel()
+          _.find(this.displayNodeData, {id: model.id}).size = 200
+          let size = 200
+          states.forEach((state)=>{
+            if (state === 'click') {
+              clicked = true
+              size = model.oriSize
+              _.find(this.displayNodeData, {id: model.id}).size = model.oriSize
+            }
+          })
+          graph.setItemState(node, 'click', !clicked)
+          graph.updateItem(node, {
+            size
+          })
+          graph.layout()
+        })
+        graph.render()
+      })
+    },
+    geneRecommend (chinese = false, type = 'exhentai') {
+      let tagGroup1 = _.filter(this.displayNodeData, n=>n.size < 200)
+      let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
+      let tagGroup3 = []
+      if (tagGroup2.length >= 3) {
+        tagGroup3 = tagGroup2
+      } else {
+        tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
+      }
+      if (type === 'exhentai') {
+        ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' chinese':''}`)
+      } else {
+        this.dialogVisibleGraph = false
+        this.searchString = `${tagGroup3.map(n=>`"${n.shortName}"`).join(' ')}`
+        this.searchBook()
+      }
+    },
+    destroyCanvas () {
+      document.querySelector('#tag-graph canvas').remove()
+    },
+
+    // collection view function
     createCollection () {
       this.editCollectionView = true
       if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
@@ -1372,44 +1311,6 @@ export default defineComponent({
       })
       this.editCollectionView = false
     },
-    loadCollectionList () {
-      ipcRenderer['load-collection-list']()
-      .then(res=>{
-        this.collectionList = res
-        _.forIn(this.collectionList, collection=>{
-          let collectBook = _.compact(collection.list.map(id=>{
-            return _.find(this.bookList, {id})
-          }))
-          collection.list = collectBook.map(book=>book.id)
-          collectBook.map(book=>book.hidden = true)
-          let date = _.reverse(_.sortBy(collectBook.map(book=>book.date)))[0]
-          let posted = _.reverse(_.sortBy(collectBook.map(book=>book.posted)))[0]
-          let rating = _.reverse(_.sortBy(collectBook.map(book=>book.rating)))[0]
-          let mark = _.some(collectBook, 'mark')
-          let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
-            if (_.isArray(obj) && _.isArray(src)) {
-              return _.uniq(obj.concat(src))
-            } else {
-              return src
-            }
-          })
-          let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
-          let category = collectBook.map(book=>book.category).join(',')
-          let status = collectBook.map(book=>book.status).join(',')
-          this.bookList.push({
-            title: collection.title,
-            id: collection.id,
-            coverPath: collectBook[0].coverPath,
-            date, posted, rating, mark, tags, title_jpn, category, status,
-            list: collection.list,
-            filepath: collectBook[0].filepath,
-            collection: true
-          })
-        })
-        this.displayBookList = this.bookList.sort(this.sortList('date'))
-        this.chunkList()
-      })
-    },
     handleSelectCollectionChange (val) {
       this.selectCollectionObject= _.find(this.collectionList, {id: val})
       _.forIn(this.bookList, book=>{
@@ -1438,29 +1339,216 @@ export default defineComponent({
       }))
       this.openCollectionTitle = book.title
     },
+
+    // detail view function
+    openUrl (url) {
+      ipcRenderer['open-url'](url)
+    },
     triggerHiddenBook (book) {
       book.hiddenBook = !book.hiddenBook
       this.saveBookList()
     },
-    loadTranslationFromEhTagTranslation () {
-      let resultObject = {}
-      axios.get('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
-      .then(res=>{
-        let sourceTranslationDatabase = res.data.data
-        _.forIn(sourceTranslationDatabase, cat=>{
-          _.forIn(cat.data, (value, key)=>{
-            resultObject[key] = _.pick(value, ['name', 'intro'])
+    showFile(filepath) {
+      ipcRenderer['show-file'](filepath)
+    },
+    openLocalBook (book) {
+      this.bookDetail = book
+      ipcRenderer['open-local-book'](this.bookDetail.filepath)
+    },
+    deleteLocalBook (book) {
+      ipcRenderer['delete-local-book'](book.filepath)
+      .then(()=>{
+        this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
+        this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
+        if (book.hidden) {
+          _.forIn(this.collectionList, collection=>{
+            collection.list = _.filter(collection.list, id=>id !== book.id)
           })
+          this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
+        }
+        this.saveBookList()
+        .then(()=>{
+          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
+          if (book.hidden) this.saveCollection()
+          this.dialogVisibleBookDetail = false
         })
-        this.resolvedTranslation = resultObject
-        localStorage.setItem('translationCache', JSON.stringify(resultObject))
-      })
-      .catch((error)=>{
-        console.log(error)
-        this.printMessage('warning', 'load translation from cache')
-        this.resolvedTranslation = JSON.parse(localStorage.getItem('translationCache'))
       })
     },
+    viewManga (book) {
+      this.bookDetail = book
+      this.viewerImageList = []
+      const loading = ElLoading.service({
+        lock: true,
+        text: 'Loading',
+        background: _.includes(this.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+      })
+      ipcRenderer['load-manga-image-list'](_.cloneDeep(this.bookDetail))
+      .then(list=>{
+        // this.viewerImageList = list
+        this.drawerVisibleViewer = true
+      })
+      .catch(err=>{
+        console.log(err)
+      })
+      .finally(()=>{
+        loading.close()
+      })
+    },
+    triggerShowComment () {
+      if (this.showComment) {
+        this.showComment = false
+      } else {
+        this.getComments(this.bookDetail.url)
+        this.showComment = true
+      }
+    },
+    getComments (url) {
+      this.comments = []
+      if (url) {
+        ipcRenderer['get-ex-webpage']({
+          url,
+          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+        })
+        .then(res=>{
+          let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
+          commentElements.forEach(e=>{
+            let author = e.querySelector('.c2 .c3').textContent
+            let scoreTail = e.querySelectorAll('.c2 .nosel')
+            let score = scoreTail[scoreTail.length - 1].textContent
+            let content = e.querySelector('.c6').innerHTML
+            content = content.replace(/<br>/gi, '\n')
+            content = content.replace(/<.+?>/gi, '')
+            content = he.decode(content)
+            this.comments.push({
+              author, score, content, id: nanoid()
+            })
+          })
+        })
+      }
+    },
+    editTags () {
+      this.editingTag = !this.editingTag
+      if (this.editingTag) {
+        if (!_.has(this.bookDetail, 'tags')) this.bookDetail.tags = {}
+        let tempTagGroup = {}
+        _.forIn(this.bookList.map(b=>b.tags), (tagObject)=>{
+          _.forIn(tagObject, (tagArray, tagCat)=>{
+            if (_.isArray(tagArray)) {
+              if (_.has(tempTagGroup, tagCat)) {
+                tempTagGroup[tagCat] = [...tempTagGroup[tagCat], ...tagArray]
+              } else {
+                tempTagGroup[tagCat] = tagArray
+              }
+            }
+          })
+        })
+        _.forIn(tempTagGroup, (tagArray, tagCat)=>{
+          tempTagGroup[tagCat] = _.sortBy(_.uniq(tagArray))
+        })
+        this.tagGroup = tempTagGroup
+      } else {
+        _.forIn(this.bookDetail.tags, (tagarr, tagCat)=>{
+          if (_.isEmpty(tagarr)) {
+            delete this.bookDetail.tags[tagCat]
+          }
+        })
+        this.saveBookList()
+      }
+    },
+    addTagCat () {
+      ElMessageBox.prompt(this.$t('c.inputCategoryName'), this.$t('m.addCategory'), {
+      })
+      .then(({ value }) => {
+        this.tagGroup[value] = []
+      })
+      .catch(() => {
+        this.printMessage('info', this.$t('c.canceled'))
+      })
+    },
+
+    // copy and paste tag
+    copyTagClipboard (book) {
+      electronFunction['copy-text-to-clipboard'](JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
+    },
+    pasteTagClipboard (book) {
+      let text = electronFunction['read-text-from-clipboard']()
+      _.assign(book, JSON.parse(text))
+    },
+
+    // internal viewer
+    returnImageStyle(image) {
+      if (this.imageStyleType === 'scroll') {
+        return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
+      } else {
+        // 28 is the height of .viewer-image-page
+        return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
+      }
+    },
+    returnImageFrameStyle () {
+      if (this.imageStyleType === 'scroll') {
+        return {}
+      } else {
+        return {height: '100vh'}
+      }
+    },
+    saveImageStyleType (val) {
+      localStorage.setItem('imageStyleType', val)
+    },
+    switchThumbnail (val) {
+      if (!val) {
+        if (this.storeDrawerScrollTop) {
+          this.$nextTick(()=>{
+            document.getElementsByClassName('el-drawer__body')[0].scrollTop = this.storeDrawerScrollTop
+            this.storeDrawerScrollTop = undefined
+          })
+        }
+      } else {
+        this.storeDrawerScrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollTop
+      }
+    },
+    handleClickThumbnail(chunkIndex, index) {
+      this.showThumbnail = false
+      let scrollTopValue = 0
+      if (this.imageStyleType === 'scroll') {
+        _.forIn(this.viewerImageList, (image, i)=>{
+          if (i == (chunkIndex * this.thumbnailColumn + index)) return false
+          // 28.3 is the height of .viewer-image-page
+          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28.3
+        })
+      } else {
+        scrollTopValue = window.innerHeight * (chunkIndex * this.thumbnailColumn + index)
+      }
+      this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
+    },
+    scrollPage (event) {
+      if (this.imageStyleType === 'click') {
+        if(event.clientX > window.innerWidth / 2) {
+          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
+        } else {
+          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
+        }
+      }
+    },
+    initResize (id) {
+      if (this.imageStyleType === 'scroll') {
+        let element = document.getElementById(id)
+        let Resize = (e)=>{
+          this.viewerImageWidth = e.clientX - element.offsetLeft
+        }
+        let stopResize = (e)=>{
+          window.removeEventListener('mousemove', Resize, false)
+          window.removeEventListener('mouseup', stopResize, false)
+          localStorage.setItem('viewerImageWidth', this.viewerImageWidth)
+        }
+        window.addEventListener('mousemove', Resize, false)
+        window.addEventListener('mouseup', stopResize, false)
+      }
+    },
+    releaseSendImageLock () {
+      ipcRenderer['release-sendimagelock']()
+    },
+
+    // setting
     handleTranslationSettingChange (val) {
       if (val) {
         this.loadTranslationFromEhTagTranslation()
@@ -1476,6 +1564,100 @@ export default defineComponent({
     changeTheme (classValue) {
       document.documentElement.setAttribute('class', classValue)
     },
+    selectLibraryPath () {
+      ipcRenderer['select-folder']()
+      .then(res=>{
+        this.setting.library = res
+        this.saveSetting()
+      })
+    },
+    selectImageExplorerPath () {
+      ipcRenderer['select-file']()
+      .then(res=>{
+        this.setting.imageExplorer = res
+        this.saveSetting()
+      })
+    },
+    saveSetting () {
+      ipcRenderer['save-setting'](_.cloneDeep(this.setting))
+    },
+    forceGeneBookList () {
+      this.dialogVisibleSetting = false
+      ipcRenderer['force-gene-book-list']()
+      .then(res=>{
+        this.bookList = res.sort(this.sortList('date'))
+        this.displayBookList = this.bookList
+        this.chunkList()
+        this.loadCollectionList()
+        this.printMessage('success', this.$t('c.rebuildMessage'))
+      })
+    },
+    patchLocalMetadata () {
+      ipcRenderer['patch-local-metadata']()
+      .then(()=>this.loadBookList())
+    },
+
+    // import/export
+    exportDatabase () {
+      ipcRenderer['export-database']()
+      .then(database=>{
+        let dataStr = JSON.stringify(database, null, '  ')
+        let dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
+        let exportFileDefaultName = 'bookHashMetadata.json'
+        let linkElement = document.createElement('a')
+        linkElement.setAttribute('href', dataUri)
+        linkElement.setAttribute('download', exportFileDefaultName)
+        linkElement.click()
+      })
+    },
+    importDatabase () {
+      ipcRenderer['load-import-database']()
+      .then(database=>{
+        _.forIn(this.bookList, (book, index)=>{
+          let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
+          if (findData) {
+            _.assign(book, _.omit(findData, 'hash'))
+            if (book.url){
+              book.status = 'tagged'
+            } else {
+              book.status = 'tag-failed'
+            }
+            if (book.collectionInfo) {
+              let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
+              if (foundCollection) {
+                foundCollection.list = _.uniq([...foundCollection.list, book.id])
+              } else {
+                this.collectionList.push({
+                  id: book.collectionInfo.id,
+                  title: book.collectionInfo.title,
+                  list: [book.id]
+                })
+              }
+              delete book.collectionInfo
+            }
+          }
+          if (index == this.bookList.length - 1) {
+            this.dialogVisibleSetting = false
+            this.printMessage('success', this.$t('c.importMessage'))
+          }
+        })
+        this.saveBookList()
+      })
+    },
+    importDatabasefromSqlite () {
+      ipcRenderer['import-sqlite'](_.cloneDeep(this.bookList))
+      .then(bookList=>{
+        this.bookList = bookList
+        this.saveBookList()
+        .then(()=>{
+          this.printMessage('success', this.$t('c.importMessage'))
+          this.displayBookList = this.bookList
+          this.chunkList()
+        })
+      })
+    },
+
+    // contextmenu
     onBookContextMenu (e, book) {
       e.preventDefault()
       this.$contextmenu({
@@ -1602,156 +1784,7 @@ export default defineComponent({
         })
       }
     },
-    patchLocalMetadata () {
-      ipcRenderer['patch-local-metadata']()
-      .then(()=>this.loadBookList())
-    },
-    displayTagGraph () {
-      let nodes = []
-      _.forIn(this.bookList, book=>{
-        let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
-        let tempNodes = []
-        _.forIn(tags, (list, cat)=>{
-          list.map(tag=>{
-            tempNodes.push(`${cat}##${tag}`)
-          })
-        })
-        nodes = nodes.concat(tempNodes)
-      })
-      let nodesObject = _.countBy(nodes)
-      const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
-      let tempNodeData = []
-      _.forIn(nodesObject, (count, label)=>{
-        let labelArray = _.split(label, '##')
-        try {
-          tempNodeData.push({
-            id: nanoid(),
-            count,
-            size: Math.ceil(Math.log(count)*10+50),
-            oriSize: Math.ceil(Math.log(count)*10+50),
-            name: `${labelArray[0]}:"${labelArray[1]}$"`,
-            shortName: labelArray[1],
-            label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
-            style:{fill: _.sample(colors)}
-          })
-        } catch {}
-      })
-      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 72)
-      this.tagNodeData = _.shuffle(this.tagNodeData)
-      this.displayNodeData = this.tagNodeData
-      this.dialogVisibleGraph = true
-      this.$nextTick(()=>{
-        let graph = new G6.Graph({
-          container: 'tag-graph',
-          layout: {
-            type: 'force',
-            nodeStrength: 40,
-            collideStrength: 0.8,
-            alphaDecay: 0.01,
-            nodeSpacing: 2,
-            preventOverlap: true,
-          },
-          modes: {
-            default: ['drag-canvas', 'zoom-canvas', 'drag-node']
-          }
-        })
-        graph.data({nodes: this.tagNodeData, edges:[]})
-        const refreshDragedNodePosition = (e)=>{
-          const model = e.item.get('model')
-          model.fx = e.x
-          model.fy = e.y
-        }
-        graph.on('node:dragstart', (e)=>{
-          graph.layout()
-          refreshDragedNodePosition(e)
-        })
-        graph.on('node:drag', (e)=>{
-          refreshDragedNodePosition(e)
-        })
-        graph.on('node:dragend', (e)=>{
-          e.item.get('model').fx = null
-          e.item.get('model').fy = null
-        })
-        graph.on('node:click', (e)=>{
-          const node = e.item
-          const states = node.getStates()
-          let clicked = false
-          const model = node.getModel()
-          _.find(this.displayNodeData, {id: model.id}).size = 200
-          let size = 200
-          states.forEach((state)=>{
-            if (state === 'click') {
-              clicked = true
-              size = model.oriSize
-              _.find(this.displayNodeData, {id: model.id}).size = model.oriSize
-            }
-          })
-          graph.setItemState(node, 'click', !clicked)
-          graph.updateItem(node, {
-            size
-          })
-          graph.layout()
-        })
-        graph.render()
-      })
-    },
-    geneRecommend (chinese = false, type = 'exhentai') {
-      let tagGroup1 = _.filter(this.displayNodeData, n=>n.size < 200)
-      let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
-      let tagGroup3 = []
-      if (tagGroup2.length >= 3) {
-        tagGroup3 = tagGroup2
-      } else {
-        tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
-      }
-      if (type === 'exhentai') {
-        ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' chinese':''}`)
-      } else {
-        this.dialogVisibleGraph = false
-        this.searchString = `${tagGroup3.map(n=>`"${n.shortName}"`).join(' ')}`
-        this.searchBook()
-      }
-    },
-    destroyCanvas () {
-      document.querySelector('#tag-graph canvas').remove()
-    },
-    geneFolderTree () {
-      this.sideVisibleFolderTree = !this.sideVisibleFolderTree
-      if (this.sideVisibleFolderTree) {
-        let bookList = _.isEmpty(this.storeBookList) ? _.cloneDeep(this.bookList) : _.cloneDeep(this.storeBookList)
-        ipcRenderer['get-folder-tree'](bookList)
-        .then(data=>{
-          this.folderTreeData = data
-        })
-      }
-    },
-    selectFolderTreeNode (selectNode) {
-      if (selectNode.folderPath === '.') {
-        this.bookList.map(book=>book.folderHide = false)
-      } else {
-        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath
-        this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
-      }
-      this.displayBookList = this.bookList
-      this.chunkList()
-    },
-    addTagCat () {
-      ElMessageBox.prompt(this.$t('c.inputCategoryName'), this.$t('m.addCategory'), {
-      })
-      .then(({ value }) => {
-        this.tagGroup[value] = []
-      })
-      .catch(() => {
-        this.printMessage('info', this.$t('c.canceled'))
-      })
-    },
-    copyTagClipboard (book) {
-      electronFunction['copy-text-to-clipboard'](JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
-    },
-    pasteTagClipboard (book) {
-      let text = electronFunction['read-text-from-clipboard']()
-      _.assign(book, JSON.parse(text))
-    },
+
   }
 })
 </script>
@@ -1842,6 +1875,13 @@ body
 .el-rate
   display: inline-block
   height: 18px
+
+.open-collection-title
+  margin: 0 10px
+
+#tag-graph
+  width: 100%
+  height: calc(95vh - 220px)
 
 .book-collect-card
   width: 155px
@@ -2027,12 +2067,6 @@ body
   text-align: center
   font-size: 11px
 
-.open-collection-title
-  margin: 0 10px
-
-#tag-graph
-  width: 100%
-  height: calc(95vh - 220px)
 
 .mx-menu-ghost-host
   z-index: 3000!important

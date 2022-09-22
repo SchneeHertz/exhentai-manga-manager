@@ -868,13 +868,16 @@ export default defineComponent({
       .then(()=>{
         this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
         this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
-        _.forIn(this.collectionList, collection=>{
-          collection.list = _.filter(collection.list, id=>id !== book.id)
-        })
-        this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
+        if (book.hidden) {
+          _.forIn(this.collectionList, collection=>{
+            collection.list = _.filter(collection.list, id=>id !== book.id)
+          })
+          this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
+        }
         this.saveBookList()
         .then(()=>{
-          this.saveCollection()
+          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
+          if (book.hidden) this.saveCollection()
           this.dialogVisibleBookDetail = false
         })
       })

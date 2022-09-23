@@ -71,7 +71,8 @@
     "pasteTagClipboard": "Paste Tag from Clipboard",
     "directEnter": "Cover to Read",
     "general": "General",
-    "advanced": "Advanced"
+    "advanced": "Advanced",
+    "nextManga": "Next Manga"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
@@ -85,6 +86,7 @@
     "copyLinkToClipboard": "Copy Link to Clipboard",
     "redirect": "Redirect",
     "patchLocalMetadata": "PatchLocalMeta",
-    "inputCategoryName": "Please input category name"
+    "inputCategoryName": "Please input category name",
+    "lastManga": "This is the last manga"
   }
 }

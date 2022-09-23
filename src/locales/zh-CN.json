@@ -71,7 +71,9 @@
     "pasteTagClipboard": "从剪贴板粘贴标签信息",
     "directEnter": "封面进阅读",
     "general": "常用",
-    "advanced": "高级"
+    "advanced": "高级",
+    "nextManga": "下一本",
+    "nextMangaRandom": "下一本(随机)"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",
@@ -85,6 +87,7 @@
     "copyLinkToClipboard": "复制链接到剪贴板",
     "redirect": "转到",
     "patchLocalMetadata": "修补本地元数据",
-    "inputCategoryName": "请输入类别名"
+    "inputCategoryName": "请输入类别名",
+    "lastManga": "已经是最后一本"
   }
 }

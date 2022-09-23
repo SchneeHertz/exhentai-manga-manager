@@ -149,6 +149,91 @@
       />
     </el-row>
     <el-drawer
+      v-model="drawerVisibleViewer"
+      direction="ttb"
+      size="100%"
+      :with-header="false"
+      destroy-on-close
+      @closed="releaseSendImageLock"
+    >
+      <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
+      <el-switch
+        v-model="imageStyleType"
+        size="small"
+        inline-prompt
+        :active-text="$t('m.scrolling')"
+        :inactive-text="$t('m.singlePage')"
+        active-value="scroll"
+        inactive-value="click"
+        @change="saveImageStyleType"
+        class="viewer-switch"
+        width="60px"
+      />
+      <el-switch
+        v-model="showThumbnail"
+        size="small"
+        inline-prompt
+        :active-text="$t('m.thumbnail')"
+        :inactive-text="$t('m.content')"
+        @change="switchThumbnail"
+        class="viewer-thumbnail-switch"
+        width="60px"
+      />
+      <div
+        class="drawer-image-content"
+        @click="scrollPage"
+        v-if="!showThumbnail"
+        v-loading="viewerImageList.length == 0"
+        element-loading-text="Loading"
+        element-loading-background="transparent"
+      >
+        <div
+          v-for="(image, index) in viewerImageList"
+          :key="image.id"
+          class="image-frame"
+          :style="returnImageFrameStyle()"
+        >
+          <div
+            class="viewer-image-frame"
+            :id="image.id"
+            :style="returnImageStyle(image)"
+          >
+            <img
+              :src="`${image.filepath}?id=${image.id}`"
+              class="viewer-image"
+              :style="{height: returnImageStyle(image).height}"
+              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+            />
+            <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
+          </div>
+          <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
+        </div>
+        <el-button size="large" type="success" class="next-manga-button" @click="toNextManga(true)">{{$t('m.nextMangaRandom')}}</el-button>
+        <el-button size="large" type="success" class="next-manga-button" @click="toNextManga(false)">{{$t('m.nextManga')}}</el-button>
+      </div>
+      <div
+        class="drawer-thumbnail-content"
+        v-if="showThumbnail"
+        v-loading="viewerImageList.length == 0"
+        element-loading-text="Loading"
+        element-loading-background="transparent"
+      >
+        <!-- eslint-disable-next-line vue/valid-v-for -->
+        <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
+          <div v-for="(image, index) in chunk" :key="image.id">
+            <img
+              :src="`${image.thumbnailPath}?id=${image.id}`"
+              class="viewer-thumbnail"
+              :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
+              @click="handleClickThumbnail(chunkIndex, index)"
+              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+            />
+            <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
+          </div>
+        </el-space>
+      </div>
+    </el-drawer>
+    <el-drawer
       v-model="sideVisibleFolderTree"
       direction="ltr"
       size="25%"
@@ -340,89 +425,6 @@
         </el-col>
       </el-row>
     </el-dialog>
-    <el-drawer
-      v-model="drawerVisibleViewer"
-      direction="ttb"
-      size="100%"
-      :with-header="false"
-      destroy-on-close
-      @closed="releaseSendImageLock"
-    >
-      <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
-      <el-switch
-        v-model="imageStyleType"
-        size="small"
-        inline-prompt
-        :active-text="$t('m.scrolling')"
-        :inactive-text="$t('m.singlePage')"
-        active-value="scroll"
-        inactive-value="click"
-        @change="saveImageStyleType"
-        class="viewer-switch"
-        width="60px"
-      />
-      <el-switch
-        v-model="showThumbnail"
-        size="small"
-        inline-prompt
-        :active-text="$t('m.thumbnail')"
-        :inactive-text="$t('m.content')"
-        @change="switchThumbnail"
-        class="viewer-thumbnail-switch"
-        width="60px"
-      />
-      <div
-        class="drawer-image-content"
-        @click="scrollPage"
-        v-if="!showThumbnail"
-        v-loading="viewerImageList.length == 0"
-        element-loading-text="Loading"
-        element-loading-background="transparent"
-      >
-        <div
-          v-for="(image, index) in viewerImageList"
-          :key="image.id"
-          class="image-frame"
-          :style="returnImageFrameStyle()"
-        >
-          <div
-            class="viewer-image-frame"
-            :id="image.id"
-            :style="returnImageStyle(image)"
-          >
-            <img
-              :src="`${image.filepath}?id=${image.id}`"
-              class="viewer-image"
-              :style="{height: returnImageStyle(image).height}"
-              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
-            />
-            <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
-          </div>
-          <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
-        </div>
-      </div>
-      <div
-        class="drawer-thumbnail-content"
-        v-if="showThumbnail"
-        v-loading="viewerImageList.length == 0"
-        element-loading-text="Loading"
-        element-loading-background="transparent"
-      >
-        <!-- eslint-disable-next-line vue/valid-v-for -->
-        <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
-          <div v-for="(image, index) in chunk" :key="image.id">
-            <img
-              :src="`${image.thumbnailPath}?id=${image.id}`"
-              class="viewer-thumbnail"
-              :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
-              @click="handleClickThumbnail(chunkIndex, index)"
-              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
-            />
-            <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
-          </div>
-        </el-space>
-      </div>
-    </el-drawer>
     <el-dialog
       v-model="dialogVisibleSetting"
       width="42em"
@@ -1108,7 +1110,7 @@ export default defineComponent({
       this.searchBook()
     },
     querySearch (queryString, callback) {
-      let result = queryString ? _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+      let result = queryString ? _.filter(_.compact(this.searchHistory.concat(this.tagList)), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
         : this.searchHistory
       callback(result.map(s=>({value:s})))
     },
@@ -1546,6 +1548,20 @@ export default defineComponent({
     },
     releaseSendImageLock () {
       ipcRenderer['release-sendimagelock']()
+    },
+    toNextManga (random) {
+      this.releaseSendImageLock()
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
+      if (random) {
+        this.viewManga(_.sample(activeBookList))
+      } else {
+        let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
+        if (indexNow === activeBookList.length - 1) {
+          this.printMessage('warning', this.$t('c.lastManga'))
+        } else {
+          this.viewManga(activeBookList[indexNow + 1])
+        }
+      }
     },
 
     // setting
@@ -2053,6 +2069,8 @@ body
       background-color: var(--el-color-primary)
   .viewer-image-page
     margin-bottom: 10px
+.next-manga-button
+  margin: 30px 0 60px
 .viewer-thumbnail-switch
   position: absolute
   top: 3em

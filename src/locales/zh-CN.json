@@ -1,5 +1,8 @@
 {
   "m":{
+    "folderTree": "文件夹树",
+    "search": "搜索",
+    "shuffle": "打乱",
     "sort": "排序",
     "bookmarkOnly": "仅收藏",
     "collectionOnly": "仅合集",

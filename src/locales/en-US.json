@@ -1,5 +1,8 @@
 {
   "m":{
+    "folderTree": "Folder Tree",
+    "search": "Search",
+    "shuffle": "Shuffle",
     "sort": "SortBy",
     "bookmarkOnly": "Bookmark Only",
     "collectionOnly": "Collection Only",

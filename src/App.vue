@@ -2,7 +2,7 @@
   <el-config-provider :locale="locale">
     <el-row :gutter="20">
       <el-col :span="1" :offset="2">
-        <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree"></el-button>
+        <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
       </el-col>
       <el-col :span="9">
         <el-autocomplete
@@ -15,16 +15,16 @@
         ></el-autocomplete>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="Search" plain class="function-button" @click="searchBook"></el-button>
+        <el-button type="primary" :icon="Search32Filled" plain class="function-button" @click="searchBook" :title="$t('m.search')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook"></el-button>
+        <el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook" :title="$t('m.shuffle')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdBulb" plain class="function-button" @click="displayTagGraph"></el-button>
+        <el-button type="primary" :icon="MdBulb" plain class="function-button" @click="displayTagGraph" :title="$t('m.tagAnalysis')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true"></el-button>
+        <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
       </el-col>
       <el-col :span="3">
         <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
@@ -39,16 +39,16 @@
           <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
         </el-select>
       </el-col>
-      <el-col :span="4" :offset="1">
-        <el-row :gutter="4">
-          <el-col :span="10" :offset="7"  v-if="!editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="createCollection">{{$t('m.manageCollection')}}</el-button>
+      <el-col :span="4">
+        <el-row :gutter="20">
+          <el-col :span="6"  v-if="!editCollectionView">
+            <el-button type="primary" plain class="function-button" @click="createCollection" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
           </el-col>
-          <el-col :span="10" :offset="2" v-if="editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="addCollection">{{$t('m.addCollection')}}</el-button>
+          <el-col :span="6" v-if="editCollectionView">
+            <el-button type="primary" plain class="function-button" @click="addCollection" :icon="Collections20Filled" :title="$t('m.addCollection')"></el-button>
           </el-col>
-          <el-col :span="10" v-if="editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="saveCollection">{{$t('m.save')}}</el-button>
+          <el-col :span="6" v-if="editCollectionView">
+            <el-button type="primary" plain class="function-button" @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
           </el-col>
         </el-row>
       </el-col>
@@ -80,7 +80,7 @@
               :size="30"
               :color="book.mark ? '#E6A23C' : '#666666'"
               class="book-card-star" @click="switchMark(book)"
-            ><StarFilled /></el-icon>
+            ><BookmarkTwotone /></el-icon>
             <el-button-group class="outer-read-button-group">
               <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
               <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
@@ -96,7 +96,7 @@
             <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
-            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><StarFilled /></el-icon>
+            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><BookmarkTwotone /></el-icon>
             <el-rate v-model="book.rating" allow-half/>
           </div>
         </div>
@@ -130,6 +130,7 @@
               <div class="book-collection-line">
                 <img class="book-collection-cover" :src="element.coverPath" />
                 <p class="book-collection-title" :title="element.title_jpn || element.title">{{element.title_jpn || element.title}}</p>
+                <el-icon :size="20" color="#FF0000" class="book-collection-remove" @click="handleClickCollectBadge(element)"><IosRemoveCircleOutline /></el-icon>
               </div>
             </template>
           </draggable>
@@ -285,7 +286,7 @@
           :color="book.mark ? '#E6A23C' : '#666666'"
           class="book-card-star"
           @click="switchMark(book)"
-        ><StarFilled /></el-icon>
+        ><BookmarkTwotone /></el-icon>
         <el-button-group class="outer-read-button-group">
           <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
           <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
@@ -320,7 +321,7 @@
               :size="30"
               :color="bookDetail.mark ? '#E6A23C' : '#666666'"
               class="book-detail-star" @click="switchMark(bookDetail)"
-            ><StarFilled /></el-icon>
+            ><BookmarkTwotone /></el-icon>
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
@@ -613,9 +614,11 @@
 import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
-import { Close, Search, Setting } from '@element-plus/icons-vue'
-import { MdShuffle, MdBulb } from '@vicons/ionicons4'
-import { TreeViewAlt } from '@vicons/carbon'
+import { Close, Setting } from '@element-plus/icons-vue'
+import { Collections20Filled, Search32Filled } from '@vicons/fluent'
+import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline } from '@vicons/ionicons4'
+import { BookmarkTwotone } from '@vicons/material'
+import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
 import {nanoid} from 'nanoid'
 import draggable from 'vuedraggable'
@@ -627,11 +630,13 @@ import en from 'element-plus/lib/locale/lang/en'
 
 export default defineComponent({
   components: {
-    draggable
+    draggable,
+    BookmarkTwotone,
+    IosRemoveCircleOutline
   },
   setup () {
     return {
-      Close, Search, Setting, MdShuffle, MdBulb, TreeViewAlt
+      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, TreeViewAlt, CicsSystemGroup,
     }
   },
   data () {
@@ -1867,11 +1872,11 @@ body
   left: 19px
   top: 52px
 .book-card-star
-  right: 16px
+  right: 12px
   top: 40px
 .book-detail-star
-  right: 0
-  top: -0.5em
+  right: -8px
+  top: -14px
 .book-cover
   border-radius: 8px
   width: 200px
@@ -1940,6 +1945,11 @@ body
       overflow-y: hidden
       margin: 4px 4px 4px 54px
       font-size: 12px
+    .book-collection-remove
+      position: absolute
+      bottom: 2px
+      right: 2px
+      cursor: pointer
 
 .el-dialog
   .el-dialog__header

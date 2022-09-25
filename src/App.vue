@@ -263,7 +263,7 @@
     <el-drawer
       v-model="drawerVisibleCollection"
       direction="btt"
-      :size="456"
+      :size="840"
       destroy-on-close
     >
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>

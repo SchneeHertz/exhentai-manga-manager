@@ -516,7 +516,21 @@
           <el-row :gutter="8">
             <el-col :span="24">
               <div class="setting-line">
-                <el-input v-model.number="setting.requireGap" @change="saveSetting">
+                <el-input class="label-input">
+                  <template #prepend><span class="setting-label">{{$t('m.language')}}</span></template>
+                  <template #append>
+                    <el-select placeholder=" " v-model="setting.language" @change="handleLanguageChange">
+                      <el-option :label="$t('m.systemDefault')" value="default"></el-option>
+                      <el-option label="zh-CN" value="zh-CN"></el-option>
+                      <el-option label="en-US" value="en-US"></el-option>
+                    </el-select>
+                  </template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.requireGap" :placeholder="$t('m.requireGapInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
                 </el-input>
               </div>
@@ -571,36 +585,32 @@
             </el-col>
           </el-row>
           <el-row :gutter="8">
-            <el-col :span="6">
+            <el-col :span="6" class="setting-switch">
               <el-switch
                 v-model="setting.loadOnStart"
                 :active-text="$t('m.onStartScan')"
                 @change="saveSetting"
-                class="setting-switch"
               />
             </el-col>
-            <el-col :span="6">
+            <el-col :span="6" class="setting-switch">
               <el-switch
                 v-model="setting.showComment"
                 :active-text="$t('m.comment')"
                 @change="saveSetting"
-                class="setting-switch"
               />
             </el-col>
-            <el-col :span="6">
+            <el-col :span="6" class="setting-switch">
               <el-switch
                 v-model="setting.showTranslation"
                 :active-text="$t('m.tagTranslate')"
                 @change="handleTranslationSettingChange"
-                class="setting-switch"
               />
             </el-col>
-            <el-col :span="6">
+            <el-col :span="6" class="setting-switch">
               <el-switch
                 v-model="setting.directEnter"
                 :active-text="$t('m.directEnter')"
                 @change="handleTranslationSettingChange"
-                class="setting-switch"
               />
             </el-col>
           </el-row>
@@ -722,15 +732,6 @@ export default defineComponent({
     },
   },
   mounted () {
-    ipcRenderer['get-locale']().then(localeString=>{
-      if (localeString === 'zh-CN') {
-        this.locale = zhCn
-        this.$i18n.locale = 'zh-CN'
-      } else {
-        this.locale = en
-        this.$i18n.locale = 'en-US'
-      }
-    })
     ipcRenderer['send-message']((event, arg)=>{
       this.printMessage('info', arg)
       if (arg.includes('failed')) {
@@ -748,6 +749,7 @@ export default defineComponent({
       this.loadBookList(this.setting.loadOnStart)
       if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
       if (this.setting.theme) this.changeTheme(this.setting.theme)
+      this.handleLanguageChange(this.setting.language)
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
@@ -1617,6 +1619,31 @@ export default defineComponent({
       ipcRenderer['patch-local-metadata']()
       .then(()=>this.loadBookList())
     },
+    handleLanguageChange (val) {
+      ipcRenderer['get-locale']().then(localeString=>{
+        let languageCode
+        if (!val || (val === 'default')) {
+          languageCode = localeString
+        } else {
+          languageCode = val
+        }
+        switch (languageCode) {
+          case 'zh-CN':
+            this.locale = zhCn
+            this.$i18n.locale = 'zh-CN'
+            break
+          case 'en-US':
+            this.locale = en
+            this.$i18n.locale = 'en-US'
+            break
+          default:
+            this.locale = en
+            this.$i18n.locale = 'en-US'
+            break
+        }
+        this.saveSetting()
+      })
+    },
 
     // import/export
     exportDatabase () {
@@ -2024,8 +2051,9 @@ body
 .setting-line
   margin: 6px 0
   .el-input-group__prepend
-    width: 100px
+    width: 110px
 .setting-switch
+  text-align: left
   margin-top: 6px
 .label-input>.el-input__wrapper
   display: none

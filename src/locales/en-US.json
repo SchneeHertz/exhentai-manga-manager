@@ -46,6 +46,7 @@
     "select": "Select",
     "imageViewer": "Image Viewer",
     "requestGap": "Request Gap(ms)",
+    "requireGapInfo": "Default value is 10000",
     "thumbnailColumn": "Thumbnail Column",
     "theme": "Theme",
     "like": "Like",
@@ -75,7 +76,10 @@
     "directEnter": "Cover to Read",
     "general": "General",
     "advanced": "Advanced",
-    "nextManga": "Next Manga"
+    "nextManga": "Next Manga",
+    "nextMangaRandom": "Next Manga (Random)",
+    "language": "Language",
+    "systemDefault": "System Default"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

@@ -41,7 +41,7 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
     coverFile = imageList[0]
     zip.extractEntryTo(findZFile(targetFile), tempFolder, true, true)
   } else {
-    throw 'compression package isnot include image'
+    throw new Error('compression package isnot include image')
   }
 
   targetFilePath = path.join(TEMP_PATH, nanoid() + path.extname(targetFile))

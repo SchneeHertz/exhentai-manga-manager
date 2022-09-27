@@ -132,8 +132,17 @@ app.on('ready', async () => {
   }
 })
 
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
 
+process.on('exit', () => {
+  app.quit()
+})
 
+// base function
 let loadBookListFromBrFile = async ()=>{
   try {
     let buffer = await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json.br'))
@@ -150,7 +159,6 @@ let saveBookListToBrFile = async (data)=>{
   return await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json.br'), buffer)
 }
 
-
 let getBookFilelist = async ()=>{
   //fileLoader: get fileList
   let folderList = await getFolderlist(setting.library)
@@ -163,7 +171,7 @@ let getBookFilelist = async ()=>{
   ]
 }
 
-let geneCover = async (filepath, type) => {
+let geneCover = async (filepath, type)=>{
   let targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize
   //fileLoader: get targetFile for hash, get tempCover for cover
   switch (type){
@@ -203,6 +211,8 @@ let geneCover = async (filepath, type) => {
 
 }
 
+
+// library and metadata
 ipcMain.handle('load-book-list', async (event, scan)=>{
   if (scan) {
 
@@ -284,8 +294,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
   }
 })
 
-
-ipcMain.handle('force-gene-book-list', async (event, ...arg)=>{
+ipcMain.handle('force-gene-book-list', async (event, arg)=>{
   try {
     await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
     await fs.promises.mkdir(TEMP_PATH, {recursive: true})
@@ -382,7 +391,128 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
   return bookList
 })
 
+ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
+  if (setting.proxy) {
+    return await superagent
+    .get(url)
+    .set('Cookie', cookie)
+    .proxy(setting.proxy)
+    .then(res=>{
+      return res.text
+    })
+    .catch(e=>{
+      sendMessageToWebContents(`get ex comments failed because ${e}`)
+    })
+  } else {
+    return await superagent
+    .get(url)
+    .set('Cookie', cookie)
+    .then(res=>{
+      return res.text
+    })
+    .catch(e=>{
+      sendMessageToWebContents(`get ex comments failed because ${e}`)
+    })
+  }
+})
 
+ipcMain.handle('save-book-list', async (event, list)=>{
+  return await saveBookListToBrFile(list)
+})
+
+// home
+ipcMain.handle('get-folder-tree', async(event, bookList)=>{
+  let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
+  folderList.sort()
+  let librarySplitPaths = setting.library.split(path.sep)
+  librarySplitPaths.pop()
+  let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).filter(p=>!librarySplitPaths.includes(p)))
+  let treeData = []
+  let addToTree = (treeLevel, parent, parentPath, child, childPath, rootLevel)=>{
+    rootLevel ??= treeLevel
+    if (_.isEmpty(rootLevel)) {
+      rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
+      return true
+    }
+    let foundParent = _.find(treeLevel, {label: parent})
+    if (foundParent) {
+      let foundChild = _.find(foundParent.children, {label: child})
+      if (!foundChild) {
+        foundParent.children.push({label: child, folderPath: childPath, children: []})
+      }
+      return true
+    } else {
+      if (!_.isEmpty(treeLevel)) {
+        let results = treeLevel.map(node=>addToTree(node.children, parent, parentPath, child, childPath, rootLevel))
+        if (_.isEmpty(_.compact(results)) && treeLevel == rootLevel) {
+          rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
+          return true
+        } else {
+          return !_.isEmpty(_.compact(results))
+        }
+      } else {
+        return false
+      }
+    }
+  }
+  _.forIn(bookPathSplitList, bookPath=>{
+    let length = bookPath.length
+    for (let i = 0; i < length-1; i++) {
+      addToTree(treeData, bookPath[i], path.join(...bookPath.slice(1, i+1)), bookPath[i+1], path.join(...bookPath.slice(1, i+2)))
+    }
+  })
+  return treeData
+})
+
+ipcMain.handle('load-collection-list', async (event, arg)=>{
+  let list
+  try {
+    list = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'collectionList.json'), {encoding: 'utf-8'}))
+  } catch (err) {
+    console.log(err)
+    list = []
+  }
+  return list
+})
+
+ipcMain.handle('save-collection-list', async (event, list)=>{
+  return await fs.promises.writeFile(path.join(STORE_PATH, 'collectionList.json'), JSON.stringify(list, null, '  '), {encoding: 'utf-8'})
+})
+
+// detail
+ipcMain.handle('open-url', async(event, url)=>{
+  shell.openExternal(url)
+})
+
+ipcMain.handle('show-file', async (event, filepath)=>{
+  shell.showItemInFolder(filepath)
+})
+
+ipcMain.handle('use-new-cover', async(event, filepath)=>{
+  let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
+  let imageResizeResult = await sharp(filepath)
+  .resize(500, 707, {
+    fit: 'contain'
+  })
+  .toFile(coverPath)
+  .catch((e)=>{
+    sendMessageToWebContents(`generate cover from ${filepath} failed because ${e}`)
+    return false
+  })
+  if (imageResizeResult) {
+    return coverPath
+  }
+})
+
+ipcMain.handle('open-local-book', async (event, filepath)=>{
+  spawn(setting.imageExplorer, [filepath])
+})
+
+ipcMain.handle('delete-local-book', async (event, filepath)=>{
+  return shell.trashItem(filepath)
+})
+
+// viewer
 ipcMain.handle('load-manga-image-list', async(event, book)=>{
   await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})
   await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
@@ -446,47 +576,8 @@ ipcMain.handle('release-sendimagelock', ()=>{
   sendImageLock = false
 })
 
-ipcMain.handle('open-local-book', async (event, filepath)=>{
-  spawn(setting.imageExplorer, [filepath])
-})
 
-ipcMain.handle('delete-local-book', async (event, filepath)=>{
-  return shell.trashItem(filepath)
-})
-
-ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
-  if (setting.proxy) {
-    return await superagent
-    .get(url)
-    .set('Cookie', cookie)
-    .proxy(setting.proxy)
-    .then(res=>{
-      return res.text
-    })
-    .catch(e=>{
-      sendMessageToWebContents(`get ex comments failed because ${e}`)
-    })
-  } else {
-    return await superagent
-    .get(url)
-    .set('Cookie', cookie)
-    .then(res=>{
-      return res.text
-    })
-    .catch(e=>{
-      sendMessageToWebContents(`get ex comments failed because ${e}`)
-    })
-  }
-})
-
-// ipcMain.handle('get-cover-hash', async (event, filepath)=>{
-//   return createHash('sha1').update(fs.readFileSync(filepath)).digest('hex')
-// })
-
-ipcMain.handle('save-book-list', async (event, list)=>{
-  return await saveBookListToBrFile(list)
-})
-
+// setting
 ipcMain.handle('select-folder', async (event, type)=>{
   let result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory']
@@ -618,102 +709,10 @@ ipcMain.handle('import-sqlite', async(event, bookList)=>{
   return bookList
 })
 
-ipcMain.handle('open-url', async(event, url)=>{
-  shell.openExternal(url)
-})
-
-ipcMain.handle('show-file', async (event, filepath)=>{
-  shell.showItemInFolder(filepath)
-})
-
-ipcMain.handle('load-collection-list', async (event, arg)=>{
-  let list
-  try {
-    list = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'collectionList.json'), {encoding: 'utf-8'}))
-  } catch (err) {
-    console.log(err)
-    list = []
-  }
-  return list
-})
-
-ipcMain.handle('save-collection-list', async (event, list)=>{
-  return await fs.promises.writeFile(path.join(STORE_PATH, 'collectionList.json'), JSON.stringify(list, null, '  '), {encoding: 'utf-8'})
-})
-
-ipcMain.handle('use-new-cover', async(event, filepath)=>{
-  let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
-  let imageResizeResult = await sharp(filepath)
-  .resize(500, 707, {
-    fit: 'contain'
-  })
-  .toFile(coverPath)
-  .catch((e)=>{
-    sendMessageToWebContents(`generate cover from ${filepath} failed because ${e}`)
-    return false
-  })
-  if (imageResizeResult) {
-    return coverPath
-  }
-})
-
 ipcMain.handle('set-progress-bar', async(event, progress)=>{
   mainWindow.setProgressBar(progress)
 })
 
-ipcMain.handle('get-folder-tree', async(event, bookList)=>{
-  let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
-  folderList.sort()
-  let librarySplitPaths = setting.library.split(path.sep)
-  librarySplitPaths.pop()
-  let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).filter(p=>!librarySplitPaths.includes(p)))
-  let treeData = []
-  let addToTree = (treeLevel, parent, parentPath, child, childPath, rootLevel)=>{
-    rootLevel ??= treeLevel
-    if (_.isEmpty(rootLevel)) {
-      rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
-      return true
-    }
-    let foundParent = _.find(treeLevel, {label: parent})
-    if (foundParent) {
-      let foundChild = _.find(foundParent.children, {label: child})
-      if (!foundChild) {
-        foundParent.children.push({label: child, folderPath: childPath, children: []})
-      }
-      return true
-    } else {
-      if (!_.isEmpty(treeLevel)) {
-        let results = treeLevel.map(node=>addToTree(node.children, parent, parentPath, child, childPath, rootLevel))
-        if (_.isEmpty(_.compact(results)) && treeLevel == rootLevel) {
-          rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
-          return true
-        } else {
-          return !_.isEmpty(_.compact(results))
-        }
-      } else {
-        return false
-      }
-    }
-  }
-  _.forIn(bookPathSplitList, bookPath=>{
-    let length = bookPath.length
-    for (let i = 0; i < length-1; i++) {
-      addToTree(treeData, bookPath[i], path.join(...bookPath.slice(1, i+1)), bookPath[i+1], path.join(...bookPath.slice(1, i+2)))
-    }
-  })
-  return treeData
-})
-
 ipcMain.handle('get-locale', async(event, arg)=>{
   return app.getLocale()
-})
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-process.on('exit', () => {
-  app.quit()
 })

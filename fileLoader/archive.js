@@ -44,7 +44,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
     coverFile = imageList[0]
     await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile, '-p123456'])
   } else {
-    throw 'compression package isnot include image'
+    throw new Error('compression package isnot include image')
   }
   targetFilePath = path.join(TEMP_PATH, nanoid() + path.extname(targetFile))
   await fs.promises.copyFile(path.join(tempFolder, targetFile), targetFilePath)

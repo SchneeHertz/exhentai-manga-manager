@@ -237,12 +237,14 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
     let listLength = list.length
     sendMessageToWebContents(`load ${listLength} book from library`)
 
+    let foundNewBook = false
     for (let i = 0; i < listLength; i++) {
       try {
         let {filepath, type} = list[i]
         let foundData = _.find(existData, {filepath: filepath})
         if (!foundData) {
           sendMessageToWebContents(`load ${filepath}, ${i+1} of ${listLength}`)
+          foundNewBook = true
           let id = nanoid()
           let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
           if (targetFilePath && coverPath){
@@ -267,11 +269,14 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
         }
-        if ((i+1) % 100 == 0) {
+        if ((i+1) % 200 == 0) {
           sendMessageToWebContents(`load ${i+1} of ${listLength}`)
-          let tempExistData = _.cloneDeep(_.filter(existData, {exist: true}))
-          _.forIn(tempExistData, b=>b.exist = undefined)
-          await saveBookListToBrFile(tempExistData)
+          if (foundNewBook) {
+            let tempExistData = _.cloneDeep(existData)
+            _.forIn(tempExistData, b=>b.exist = undefined)
+            await saveBookListToBrFile(tempExistData)
+            foundNewBook = false
+          }
         }
       } catch (e) {
         sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${listLength}`)

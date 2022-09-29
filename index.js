@@ -552,8 +552,8 @@ ipcMain.handle('load-manga-image-list', async(event, book)=>{
           filepath = newFilepath
         }
         let {width, height} = await sharp(filepath).metadata()
-        let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(6)}_${path.basename(filepath)}`)
         if (width > widthLimit) {
+          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(6)}_${path.basename(filepath)}`)
           await sharp(filepath)
             .resize({width: widthLimit})
             .toFile(resizedFilepath)

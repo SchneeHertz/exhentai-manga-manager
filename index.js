@@ -58,7 +58,7 @@ try {
     thumbnailColumn: 10,
     showTranslation: false,
     widthLimit: undefined,
-    directEnter: false,
+    directEnter: 'detail',
     language: 'default'
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})

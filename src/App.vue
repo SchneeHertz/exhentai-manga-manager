@@ -72,7 +72,7 @@
             <img
               class="book-cover"
               :src="book.coverPath"
-              @click="setting.directEnter ? viewManga(book) : openBookDetail(book)"
+              @click="handleClickCover(book)"
               @contextmenu="onBookContextMenu($event, book)"
             />
             <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
@@ -277,7 +277,7 @@
         <img
           class="book-cover"
           :src="book.coverPath"
-          @click="setting.directEnter ? viewManga(book) : openBookDetail(book)"
+          @click="handleClickCover(book)"
           @contextmenu="onBookContextMenu($event, book)"
         />
         <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
@@ -530,6 +530,20 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
+                <el-input class="label-input">
+                  <template #prepend><span class="setting-label">{{$t('m.directEnter')}}</span></template>
+                  <template #append>
+                    <el-select placeholder=" " v-model="setting.directEnter" @change="saveSetting">
+                      <el-option :label="$t('m.detailPage')" value="detail"></el-option>
+                      <el-option :label="$t('m.internalViewer')" value="internalViewer"></el-option>
+                      <el-option :label="$t('m.externalViewer')" value="externalViewer"></el-option>
+                    </el-select>
+                  </template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
                 <el-input v-model.number="setting.requireGap" :placeholder="$t('m.requireGapInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
                 </el-input>
@@ -603,13 +617,6 @@
               <el-switch
                 v-model="setting.showTranslation"
                 :active-text="$t('m.tagTranslate')"
-                @change="handleTranslationSettingChange"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.directEnter"
-                :active-text="$t('m.directEnter')"
                 @change="handleTranslationSettingChange"
               />
             </el-col>
@@ -1127,6 +1134,19 @@ export default defineComponent({
       this.dialogVisibleBookDetail = true
       this.showComment = !!this.setting.showComment
       this.getComments(book.url)
+    },
+    handleClickCover (book) {
+      switch (this.setting.directEnter) {
+        case 'internalViewer':
+          this.viewManga(book)
+          break
+        case 'externalViewer':
+          this.openLocalBook(book)
+          break
+        default:
+          this.openBookDetail(book)
+          break
+      }
     },
     switchMark (book) {
       book.mark = !book.mark

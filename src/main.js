@@ -21,9 +21,6 @@ const app = createApp(App)
 window._ = _
 
 app.use(ElementPlus)
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
 app.use(ContextMenu)
 app.use(createI18n({
   locale: 'zh-CN',

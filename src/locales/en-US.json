@@ -1,5 +1,8 @@
 {
   "m":{
+    "folderTree": "Folder Tree",
+    "search": "Search",
+    "shuffle": "Shuffle",
     "sort": "SortBy",
     "bookmarkOnly": "Bookmark Only",
     "collectionOnly": "Collection Only",
@@ -41,8 +44,9 @@
     "setting": "Setting",
     "library": "Library Folder",
     "select": "Select",
-    "imageViewer": "Image Viewer",
+    "imageViewer": "External Viewer",
     "requestGap": "Request Gap(ms)",
+    "requireGapInfo": "Default value is 10000",
     "thumbnailColumn": "Thumbnail Column",
     "theme": "Theme",
     "like": "Like",
@@ -69,9 +73,16 @@
     "widthLimitInfo": "Default value is the screen width(px)",
     "copyTagClipboard": "Copy Tag to Clipboard",
     "pasteTagClipboard": "Paste Tag from Clipboard",
-    "directEnter": "Cover to Read",
+    "directEnter": "Act when Click Cover",
+    "detailPage": "Detail Page",
+    "internalViewer": "Internal Viewer",
+    "externalViewer": "External Viewer",
     "general": "General",
-    "advanced": "Advanced"
+    "advanced": "Advanced",
+    "nextManga": "Next Manga",
+    "nextMangaRandom": "Next Manga (Random)",
+    "language": "Language",
+    "systemDefault": "System Default"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
@@ -85,6 +96,7 @@
     "copyLinkToClipboard": "Copy Link to Clipboard",
     "redirect": "Redirect",
     "patchLocalMetadata": "PatchLocalMeta",
-    "inputCategoryName": "Please input category name"
+    "inputCategoryName": "Please input category name",
+    "lastManga": "This is the last manga"
   }
 }

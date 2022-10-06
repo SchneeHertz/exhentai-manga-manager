@@ -1,5 +1,8 @@
 {
   "m":{
+    "folderTree": "文件夹树",
+    "search": "搜索",
+    "shuffle": "打乱",
     "sort": "排序",
     "bookmarkOnly": "仅收藏",
     "collectionOnly": "仅合集",
@@ -41,8 +44,9 @@
     "setting": "设置",
     "library": "库文件夹",
     "select": "选择",
-    "imageViewer": "图像浏览器",
+    "imageViewer": "外置阅读器",
     "requestGap": "请求间隔(毫秒)",
+    "requireGapInfo": "默认值是10000ms",
     "thumbnailColumn": "缩略图列数",
     "theme": "主题",
     "like": "格式为",
@@ -69,9 +73,16 @@
     "widthLimitInfo": "默认为屏幕宽度(px)",
     "copyTagClipboard": "复制标签信息到剪贴板",
     "pasteTagClipboard": "从剪贴板粘贴标签信息",
-    "directEnter": "封面进阅读",
+    "directEnter": "点击封面进入",
+    "detailPage": "详情页",
+    "internalViewer": "内置阅读器",
+    "externalViewer": "外置阅读器",
     "general": "常用",
-    "advanced": "高级"
+    "advanced": "高级",
+    "nextManga": "下一本",
+    "nextMangaRandom": "下一本(随机)",
+    "language": "语言",
+    "systemDefault": "系统默认"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",
@@ -85,6 +96,7 @@
     "copyLinkToClipboard": "复制链接到剪贴板",
     "redirect": "转到",
     "patchLocalMetadata": "修补本地元数据",
-    "inputCategoryName": "请输入类别名"
+    "inputCategoryName": "请输入类别名",
+    "lastManga": "已经是最后一本"
   }
 }

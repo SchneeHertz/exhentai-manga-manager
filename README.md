@@ -49,9 +49,13 @@
 - [EhTagTranslation/Database](https://github.com/EhTagTranslation/Database)
 
 
-## 爱发电
+## 赞助
 https://afdian.net/@SeldonHorizon
-如果这个软件帮到了你，可以请我喝杯奶茶
+如果这个软件帮到了你，可以请我喝杯奶茶  
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/schneehertz)
+If this software helps you, you can buy me a cup of coffee
+
 
 ## Recommended IDE Setup
 

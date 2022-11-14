@@ -9,7 +9,7 @@ let getFolderlist = async (libraryPath)=>{
     cwd: libraryPath,
     nocase: true
   })
-  let list = _.uniq(imageList.map(filepath=>path.dirname(filepath)))
+  let list = _.sortedUniq(_.sortBy(imageList.map(filepath=>path.dirname(filepath))))
   list = list.map(filepath=>path.join(libraryPath, filepath))
   return list
 }

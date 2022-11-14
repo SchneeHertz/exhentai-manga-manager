@@ -998,13 +998,13 @@ export default defineComponent({
         getTag(book, book.url)
       } else {
         if (server === 'e-hentai') {
-          axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`)
+          axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
           .then(res=>{
             resolveWebPage(book, res.data)
           })
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
-            url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on`,
+            url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
             cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{
@@ -1018,7 +1018,7 @@ export default defineComponent({
             matchTitle = book.title
           }
           ipcRenderer['get-ex-webpage']({
-            url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}`,
+            url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}&f_cats=689`,
             cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
           })
           .then(res=>{

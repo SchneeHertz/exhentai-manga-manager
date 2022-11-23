@@ -42,6 +42,7 @@ Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/E
 ## TODO
 - Rename and move manga files according to rules
 - Library scan optimization with exclusion list support
+- Built-in double page view
 
 ## Thanks
 This project has been helped by many open source projects
@@ -49,9 +50,9 @@ This project has been helped by many open source projects
 - [EhTagTranslation/Database](https://github.com/EhTagTranslation/Database)
 
 
-## Sponsor
-https://afdian.net/@SeldonHorizon
-If this software helps you, you can buy me a cup of milk tea
+## Funding
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/schneehertz)
+If this software helps you, you can buy me a cup of coffee
 
 ## Recommended IDE Setup
 

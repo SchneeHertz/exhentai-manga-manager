@@ -1,7 +1,7 @@
 {
   "name": "exhentai-manga-manager",
   "private": true,
-  "version": "1.4.2",
+  "version": "1.4.3",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.5.9",
+    "electron-window-state": "^5.0.3",
     "glob": "^7.2.0",
     "iconv-lite": "^0.6.3",
     "lodash": "^4.17.21",

@@ -13,6 +13,7 @@ const sqlite3 = require('sqlite3')
 const { open } = require('sqlite')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
+const windowStateKeeper = require('electron-window-state')
 
 const {getFolderlist, solveBookTypeFolder, getImageListFromFolder} = require('./fileLoader/folder')
 const {getArchivelist, solveBookTypeArchive, getImageListFromArchive} = require('./fileLoader/archive')
@@ -81,16 +82,22 @@ let mainWindow
 let screenWidth
 let sendImageLock = false
 function createWindow () {
+  let mainWindowState = windowStateKeeper({
+    defaultWidth: 1560,
+    defaultHeight: 1000
+  })
   const win = new BrowserWindow({
-    width: 1560,
-    height: 1000,
+    'x': mainWindowState.x,
+    'y': mainWindowState.y,
+    'width': mainWindowState.width,
+    'height': mainWindowState.height,
     webPreferences: {
       webSecurity: app.isPackaged ? true : false,
       preload: path.join(__dirname, 'preload.js')
     },
     show: false
   })
-
+  mainWindowState.manage(win)
   if (app.isPackaged) {
     win.loadFile('dist/index.html')
   } else {

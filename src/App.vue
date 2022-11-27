@@ -838,7 +838,10 @@ export default defineComponent({
     },
     printMessage(type, msg) {
       ElMessage.closeAll()
-      ElMessage[type](msg)
+      ElMessage[type]({
+        message: msg,
+        offset: 50
+      })
     },
     loadBookList (scan) {
       ipcRenderer['load-book-list'](scan)

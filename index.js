@@ -277,13 +277,19 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
         }
-        if ((i+1) % 200 == 0) {
+        if ((i+1) % 100 == 0) {
           sendMessageToWebContents(`load ${i+1} of ${listLength}`)
           if (foundNewBook) {
             let tempExistData = _.cloneDeep(existData)
             _.forIn(tempExistData, b=>b.exist = undefined)
             await saveBookListToBrFile(tempExistData)
             foundNewBook = false
+            try {
+              await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+              await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+            } catch (err) {
+              console.log(err)
+            }
           }
         }
       } catch (e) {
@@ -389,6 +395,9 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       }
     } catch (e) {
       sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+    }
+    if ((i+1) % 100 == 0) {
+      await saveBookListToBrFile(bookList)
     }
   }
 

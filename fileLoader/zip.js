@@ -50,7 +50,7 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
   tempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(imageList[0]))
   await fs.promises.copyFile(path.join(tempFolder, imageList[0]), tempCoverPath)
 
-  coverPath = path.join(COVER_PATH, nanoid() + path.extname(imageList[0]))
+  coverPath = path.join(COVER_PATH, nanoid() + '.webp')
 
   let fileStat = await fs.promises.stat(filepath)
   return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size}

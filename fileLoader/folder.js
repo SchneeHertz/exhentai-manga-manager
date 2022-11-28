@@ -27,7 +27,7 @@ let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
     targetFilePath = list[0]
   }
   let tempCoverPath = list[0]
-  let coverPath = path.join(COVER_PATH, nanoid() + path.extname(list[0]))
+  let coverPath = path.join(COVER_PATH, nanoid() + '.webp')
   return {targetFilePath, tempCoverPath, coverPath, pageCount: list.length}
 }
 

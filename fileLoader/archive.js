@@ -28,7 +28,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   })
   let imageList = _.filter(pathlist, p=>['.jpg','.jpeg','.png','.webp','.avif'].includes(path.extname(p).toLowerCase()))
   imageList = imageList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
-  
+
   let targetFile
   let targetFilePath
   let coverFile
@@ -52,7 +52,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   tempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(coverFile))
   await fs.promises.copyFile(path.join(tempFolder, coverFile), tempCoverPath)
 
-  coverPath = path.join(COVER_PATH, nanoid() + path.extname(coverFile))
+  coverPath = path.join(COVER_PATH, nanoid() + '.webp')
 
   let fileStat = await fs.promises.stat(filepath)
   return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size}

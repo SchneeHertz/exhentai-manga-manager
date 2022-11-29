@@ -237,11 +237,13 @@
     <el-drawer
       v-model="sideVisibleFolderTree"
       direction="ltr"
-      size="25%"
-      destroy-on-close
+      size="20%"
+      modal-class="side-tree-modal"
     >
       <el-tree
         :data="folderTreeData"
+        default-expand-all
+        :expand-on-click-node="false"
         @current-change="selectFolderTreeNode"
       ></el-tree>
     </el-drawer>
@@ -1871,6 +1873,9 @@ body
 .search-input,
 .function-button
   width: 100%
+
+.side-tree-modal
+  background-color: var(--el-mask-color-extra-light)
 
 .book-card-area
   height: calc(100vh - 98px)

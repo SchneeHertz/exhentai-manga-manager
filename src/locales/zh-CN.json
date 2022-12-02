@@ -85,7 +85,9 @@
     "nextMangaRandom": "下一本(随机)",
     "language": "语言",
     "systemDefault": "系统默认",
-    "filenameAsTitle": "文件名作为标题"
+    "filenameAsTitle": "文件名作为标题",
+    "excludeFile": "排除文件",
+    "excludeFileInfo": "请输入需要排除的文件路径的正则表达式"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

@@ -242,6 +242,15 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
 
     sendMessageToWebContents('start loading library')
     let list = await getBookFilelist()
+    if (!_.isEmpty(setting.excludeFile)) {
+      let excludeRe
+      try {
+        excludeRe = new RegExp(setting.excludeFile)
+        list = _.filter(list, file=>!excludeRe.test(file.filepath))
+      } catch {
+        console.log('Illegal regular expressions')
+      }
+    }
     let listLength = list.length
     sendMessageToWebContents(`load ${listLength} book from library`)
 
@@ -324,6 +333,15 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
   }
   sendMessageToWebContents('start loading library')
   let list = await getBookFilelist()
+  if (!_.isEmpty(setting.excludeFile)) {
+    let excludeRe
+    try {
+      excludeRe = new RegExp(setting.excludeFile)
+      list = _.filter(list, file=>!excludeRe.test(file.filepath))
+    } catch {
+      console.log('Illegal regular expressions')
+    }
+  }
   let listLength = list.length
   sendMessageToWebContents(`load ${listLength} book from library`)
   let data = []

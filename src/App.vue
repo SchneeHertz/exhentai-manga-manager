@@ -570,6 +570,13 @@
                 </el-input>
               </div>
             </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
             <el-col :span="4">
               <div class="setting-line">
                 <el-popconfirm

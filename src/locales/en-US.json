@@ -51,8 +51,10 @@
     "theme": "Theme",
     "like": "Like",
     "proxy": "Proxy",
-    "rebuildWarning": "This operation with rebuild library and empty exist metadata",
+    "rebuildWarning": "This operation will rebuild library and empty exist metadata",
     "rebuildLibrary": "ForceRebuild",
+    "patchWarning": "This operation will delete all current covers and update the local file properties",
+    "patchLocalMetadata": "PatchLocalMeta",
     "batchGetMetadata": "BatchGetMetadata",
     "batchGetExMetadata": "BatchGetExMetadata",
     "exportMetadata": "Export Metadata",
@@ -83,7 +85,7 @@
     "nextMangaRandom": "Next Manga (Random)",
     "language": "Language",
     "systemDefault": "System Default",
-    "filenameAsTitle": "Filename As Title"
+    "filenameAsTitle": "FilenameAsTitle"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
@@ -96,7 +98,6 @@
     "copyTitleToClipboard": "Copy Title to Clipboard",
     "copyLinkToClipboard": "Copy Link to Clipboard",
     "redirect": "Redirect",
-    "patchLocalMetadata": "PatchLocalMeta",
     "inputCategoryName": "Please input category name",
     "lastManga": "This is the last manga"
   }

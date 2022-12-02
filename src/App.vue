@@ -572,21 +572,28 @@
             </el-col>
             <el-col :span="4">
               <div class="setting-line">
-                <el-popover
+                <el-popconfirm
                   placement="top-start"
-                  effect="dark"
-                  trigger="hover"
-                  :content="$t('m.rebuildWarning')"
+                  :title="$t('m.rebuildWarning')"
+                  @confirm="forceGeneBookList"
                 >
                   <template #reference>
-                    <el-button class="function-button" plain @click="forceGeneBookList" @contextmenu="onForceLoadBookButtonContextMenu($event)">{{$t('m.rebuildLibrary')}}</el-button>
+                    <el-button class="function-button" plain>{{$t('m.rebuildLibrary')}}</el-button>
                   </template>
-                </el-popover>
+                </el-popconfirm>
               </div>
             </el-col>
             <el-col :span="5">
               <div class="setting-line">
-                <el-button class="function-button" type="primary" plain @click="patchLocalMetadata">{{$t('c.patchLocalMetadata')}}</el-button>
+                <el-popconfirm
+                  placement="top-start"
+                  :title="$t('m.patchWarning')"
+                  @confirm="patchLocalMetadata"
+                >
+                  <template #reference>
+                    <el-button class="function-button" type="primary" plain>{{$t('m.patchLocalMetadata')}}</el-button>
+                  </template>
+                </el-popconfirm>
               </div>
             </el-col>
             <el-col :span="5">

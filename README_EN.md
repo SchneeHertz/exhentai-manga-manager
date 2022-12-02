@@ -41,7 +41,6 @@ Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/E
 
 ## TODO
 - Rename and move manga files according to rules
-- Library scan optimization with exclusion list support
 - Built-in double page view
 
 ## Thanks

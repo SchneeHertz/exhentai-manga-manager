@@ -13,6 +13,7 @@ const sqlite3 = require('sqlite3')
 const { open } = require('sqlite')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
+const windowStateKeeper = require('electron-window-state')
 
 const {getFolderlist, solveBookTypeFolder, getImageListFromFolder} = require('./fileLoader/folder')
 const {getArchivelist, solveBookTypeArchive, getImageListFromArchive} = require('./fileLoader/archive')
@@ -81,16 +82,22 @@ let mainWindow
 let screenWidth
 let sendImageLock = false
 function createWindow () {
+  let mainWindowState = windowStateKeeper({
+    defaultWidth: 1560,
+    defaultHeight: 1000
+  })
   const win = new BrowserWindow({
-    width: 1560,
-    height: 1000,
+    'x': mainWindowState.x,
+    'y': mainWindowState.y,
+    'width': mainWindowState.width,
+    'height': mainWindowState.height,
     webPreferences: {
       webSecurity: app.isPackaged ? true : false,
       preload: path.join(__dirname, 'preload.js')
     },
     show: false
   })
-
+  mainWindowState.manage(win)
   if (app.isPackaged) {
     win.loadFile('dist/index.html')
   } else {
@@ -155,6 +162,7 @@ let loadBookListFromBrFile = async ()=>{
 }
 
 let saveBookListToBrFile = async (data)=>{
+  console.log('Saved BookList')
   let buffer = await promisify(brotliCompress)(JSON.stringify(data))
   return await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json.br'), buffer)
 }
@@ -234,6 +242,15 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
 
     sendMessageToWebContents('start loading library')
     let list = await getBookFilelist()
+    if (!_.isEmpty(setting.excludeFile)) {
+      let excludeRe
+      try {
+        excludeRe = new RegExp(setting.excludeFile)
+        list = _.filter(list, file=>!excludeRe.test(file.filepath))
+      } catch {
+        console.log('Illegal regular expressions')
+      }
+    }
     let listLength = list.length
     sendMessageToWebContents(`load ${listLength} book from library`)
 
@@ -269,13 +286,19 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
         }
-        if ((i+1) % 200 == 0) {
+        if ((i+1) % 100 == 0) {
           sendMessageToWebContents(`load ${i+1} of ${listLength}`)
           if (foundNewBook) {
             let tempExistData = _.cloneDeep(existData)
             _.forIn(tempExistData, b=>b.exist = undefined)
             await saveBookListToBrFile(tempExistData)
             foundNewBook = false
+            try {
+              await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+              await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+            } catch (err) {
+              console.log(err)
+            }
           }
         }
       } catch (e) {
@@ -310,6 +333,15 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
   }
   sendMessageToWebContents('start loading library')
   let list = await getBookFilelist()
+  if (!_.isEmpty(setting.excludeFile)) {
+    let excludeRe
+    try {
+      excludeRe = new RegExp(setting.excludeFile)
+      list = _.filter(list, file=>!excludeRe.test(file.filepath))
+    } catch {
+      console.log('Illegal regular expressions')
+    }
+  }
   let listLength = list.length
   sendMessageToWebContents(`load ${listLength} book from library`)
   let data = []
@@ -381,6 +413,9 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       }
     } catch (e) {
       sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+    }
+    if ((i+1) % 100 == 0) {
+      await saveBookListToBrFile(bookList)
     }
   }
 
@@ -677,31 +712,36 @@ ipcMain.handle('import-sqlite', async(event, bookList)=>{
       let bookListLength = bookList.length
       for (let i = 0; i < bookListLength; i++) {
         let book = bookList[i]
-        let metadata = await db.get('SELECT * FROM gallery WHERE thumb LIKE ?', `%${book.coverHash}%`)
-        if (metadata) {
-          metadata.tags = {
-            artist: metadata.artist ? JSON.parse(metadata.artist.replace(re, '\"')) : undefined,
-            group: metadata.group ? JSON.parse(metadata.group.replace(re, '\"')) : undefined,
-            parody: metadata.parody ? JSON.parse(metadata.parody.replace(re, '\"')) : undefined,
-            character: metadata.character ? JSON.parse(metadata.character.replace(re, '\"')) : undefined,
-            female: metadata.female ? JSON.parse(metadata.female.replace(re, '\"')) : undefined,
-            male: metadata.male ? JSON.parse(metadata.male.replace(re, '\"')) : undefined,
-            language: metadata.language ? JSON.parse(metadata.language.replace(re, '\"')) : undefined,
-            mixed: metadata.mixed ? JSON.parse(metadata.mixed.replace(re, '\"')) : undefined,
-            other: metadata.other ? JSON.parse(metadata.other.replace(re, '\"')) : undefined,
-            cosplayer: metadata.cosplayer ? JSON.parse(metadata.cosplayer.replace(re, '\"')) : undefined,
-            rest: metadata.rest ? JSON.parse(metadata.rest.replace(re, '\"')) : undefined,
+        if (book.status !== 'tagged') {
+          let metadata = await db.get('SELECT * FROM gallery WHERE thumb LIKE ?', `%${book.coverHash}%`)
+          if (metadata) {
+            metadata.tags = {
+              artist: metadata.artist ? JSON.parse(metadata.artist.replace(re, '\"')) : undefined,
+              group: metadata.group ? JSON.parse(metadata.group.replace(re, '\"')) : undefined,
+              parody: metadata.parody ? JSON.parse(metadata.parody.replace(re, '\"')) : undefined,
+              character: metadata.character ? JSON.parse(metadata.character.replace(re, '\"')) : undefined,
+              female: metadata.female ? JSON.parse(metadata.female.replace(re, '\"')) : undefined,
+              male: metadata.male ? JSON.parse(metadata.male.replace(re, '\"')) : undefined,
+              language: metadata.language ? JSON.parse(metadata.language.replace(re, '\"')) : undefined,
+              mixed: metadata.mixed ? JSON.parse(metadata.mixed.replace(re, '\"')) : undefined,
+              other: metadata.other ? JSON.parse(metadata.other.replace(re, '\"')) : undefined,
+              cosplayer: metadata.cosplayer ? JSON.parse(metadata.cosplayer.replace(re, '\"')) : undefined,
+              rest: metadata.rest ? JSON.parse(metadata.rest.replace(re, '\"')) : undefined,
+            }
+            metadata.filecount = +metadata.filecount
+            metadata.rating = +metadata.rating
+            metadata.posted = +metadata.posted
+            metadata.filesize = +metadata.filesize
+            metadata.url = `https://exhentai.org/g/${metadata.gid}/${metadata.token}/`
+            _.assign(book, _.pick(metadata, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url']), {status: 'tagged'})
+            sendMessageToWebContents(`${i+1} of ${bookListLength}, found metadata for ${book.filepath}`)
+            mainWindow.setProgressBar(i/bookListLength)
+          } else {
+            sendMessageToWebContents(`${i+1} of ${bookListLength}, metadata not found for ${book.filepath}`)
           }
-          metadata.filecount = +metadata.filecount
-          metadata.rating = +metadata.rating
-          metadata.posted = +metadata.posted
-          metadata.filesize = +metadata.filesize
-          metadata.url = `https://exhentai.org/g/${metadata.gid}/${metadata.token}/`
-          _.assign(book, _.pick(metadata, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url']), {status: 'tagged'})
-          sendMessageToWebContents(`${i+1} of ${bookListLength}, found metadata for ${book.filepath}`)
-          mainWindow.setProgressBar(i/bookListLength)
-        } else {
-          sendMessageToWebContents(`${i+1} of ${bookListLength}, metadata not found for ${book.filepath}`)
+        }
+        if ((i+1) % 100 == 0) {
+          await saveBookListToBrFile(bookList)
         }
       }
       await db.close()

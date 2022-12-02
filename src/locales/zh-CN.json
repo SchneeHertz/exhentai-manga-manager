@@ -82,7 +82,8 @@
     "nextManga": "下一本",
     "nextMangaRandom": "下一本(随机)",
     "language": "语言",
-    "systemDefault": "系统默认"
+    "systemDefault": "系统默认",
+    "filenameAsTitle": "文件名作为标题"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

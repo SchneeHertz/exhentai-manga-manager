@@ -82,7 +82,8 @@
     "nextManga": "Next Manga",
     "nextMangaRandom": "Next Manga (Random)",
     "language": "Language",
-    "systemDefault": "System Default"
+    "systemDefault": "System Default",
+    "filenameAsTitle": "Filename As Title"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

@@ -67,8 +67,8 @@
             <p class="book-title"
               @click="openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
-              :title="book.title_jpn || book.title"
-            >{{book.title_jpn || book.title}}</p>
+              :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title"
+            >{{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
             <img
               class="book-cover"
               :src="book.coverPath"
@@ -111,7 +111,8 @@
           v-show="!book.collection && !book.folderHide"
         >
           <div class="book-collect-card">
-            <p class="book-collect-title" :title="book.title_jpn || book.title">{{book.title_jpn || book.title}}</p>
+            <p class="book-collect-title" :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title">
+              {{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
             <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
         </el-badge>
@@ -129,7 +130,10 @@
             <template #item="{element}">
               <div class="book-collection-line">
                 <img class="book-collection-cover" :src="element.coverPath" />
-                <p class="book-collection-title" :title="element.title_jpn || element.title">{{element.title_jpn || element.title}}</p>
+                <p
+                  class="book-collection-title"
+                  :title="setting.filenameAsTitle ? returnFileName(element.filepath) : element.title_jpn || element.title"
+                >{{setting.filenameAsTitle ? returnFileName(element.filepath) : element.title_jpn || element.title}}</p>
                 <el-icon :size="20" color="#FF0000" class="book-collection-remove" @click="handleClickCollectBadge(element)"><IosRemoveCircleOutline /></el-icon>
               </div>
             </template>
@@ -274,8 +278,8 @@
           class="book-title"
           @click="openBookDetail(book)"
           @contextmenu="onMangaTitleContextMenu($event, book)"
-          :title="book.title_jpn || book.title"
-        >{{book.title_jpn || book.title}}</p>
+          :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title"
+        >{{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
         <img
           class="book-cover"
           :src="book.coverPath"
@@ -308,7 +312,7 @@
       <template #header>
         <p class="detail-book-title">
           <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">
-            {{bookDetail.title_jpn || bookDetail.title}}</span>
+            {{setting.filenameAsTitle ? returnFileName(bookDetail.filepath) : bookDetail.title_jpn || bookDetail.title}}</span>
         </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
@@ -389,8 +393,9 @@
             </div>
             <div v-else>
               <el-descriptions :column="1">
+                <el-descriptions-item :label="$t('m.title')+':'" v-if="setting.filenameAsTitle">{{bookDetail.title_jpn}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.englishTitle')+':'">{{bookDetail.title}}</el-descriptions-item>
-                <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileName(bookDetail.filepath)}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.filename')+':'" v-if="!setting.filenameAsTitle">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.category')+':'">
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
@@ -622,6 +627,13 @@
                 @change="handleTranslationSettingChange"
               />
             </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.filenameAsTitle"
+                :active-text="$t('m.filenameAsTitle')"
+                @change="handleTranslationSettingChange"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
       </el-tabs>
@@ -814,6 +826,11 @@ export default defineComponent({
       return result
     },
     returnFileName (filepath) {
+      // Windows only
+      return filepath.replace(/^.*\\|\.[^.]*$/g, '')
+    },
+    returnFileNameWithExt (filepath) {
+      // Windows only
       let matched = /[^\\]+$/.exec(filepath)
       if (matched) {
         return matched[0]

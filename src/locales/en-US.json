@@ -87,7 +87,9 @@
     "systemDefault": "System Default",
     "filenameAsTitle": "FilenameAsTitle",
     "excludeFile": "Exclude File",
-    "excludeFileInfo": "Please enter the regular expression for the path of the file to be excluded"
+    "excludeFileInfo": "Please enter the regular expression for the path of the file to be excluded",
+    "folderTreeWidth": "Folder Tree Width",
+    "folderTreeWidthInfo": "Default is 20%, can accept numbers(px) or valid css values"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

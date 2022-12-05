@@ -241,7 +241,7 @@
     <el-drawer
       v-model="sideVisibleFolderTree"
       direction="ltr"
-      size="20%"
+      :size="setting.folderTreeWidth ? setting.folderTreeWidth : '20%'"
       modal-class="side-tree-modal"
     >
       <el-tree
@@ -572,8 +572,15 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
-                <el-input v-model.number="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
+                <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model="setting.folderTreeWidth" :placeholder="$t('m.folderTreeWidthInfo')" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.folderTreeWidth')}}</span></template>
                 </el-input>
               </div>
             </el-col>

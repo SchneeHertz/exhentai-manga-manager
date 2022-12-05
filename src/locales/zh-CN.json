@@ -89,7 +89,7 @@
     "excludeFile": "排除文件",
     "excludeFileInfo": "请输入需要排除的文件路径的正则表达式",
     "folderTreeWidth": "文件夹树宽度",
-    "folderTreeWidthInfo": "默认为20%，可接受数字(单位为px)或有效的css值"
+    "folderTreeWidthInfo": "默认为20%，接受有效的css值，如400px, 30%, 25vw"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

@@ -74,6 +74,7 @@
     "getEXRecommand": "Get Ex Recommand",
     "widthLimit": "Image Width Limit(px)",
     "widthLimitInfo": "Default value is the screen width(px)",
+    "getTagbyUrl": "Get Tag by Url",
     "copyTagClipboard": "Copy Tag to Clipboard",
     "pasteTagClipboard": "Paste Tag from Clipboard",
     "directEnter": "Act when Click Cover",

@@ -347,7 +347,7 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
-            <el-button type="primary" plain 
+            <el-button type="primary" plain
               @click="openSearchDialog(bookDetail)"
             >{{$t('m.getMetadataByFilename')}}</el-button>
           </el-row>
@@ -385,9 +385,10 @@
                   <el-option v-for="tag in arr" :key="tag" :value="tag">{{tag}}</el-option>
                 </el-select>
               </div>
-              <el-button class="add-tag-cats-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
-              <el-button class="copy-tag-clipboard" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
-              <el-button class="paste-tag-clipboard" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
+              <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
+              <el-button class="tag-edit-button" @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
+              <el-button class="tag-edit-button" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
+              <el-button class="tag-edit-button" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
             </div>
             <div v-else>
               <el-descriptions :column="1">
@@ -457,11 +458,10 @@
             class="search-result-ind"
           >{{result.title}}</p>
         </div>
-        <el-empty v-else :description="$t('m.noResults')" image-size="100" />
+        <el-empty v-else :description="$t('m.noResults')" :image-size="100" />
       </div>
     </el-dialog>
-    <el-dialog
-      v-model="dialogVisibleSetting"
+    <el-dialog v-model="dialogVisibleSetting"
       width="42em"
       :modal="false"
     >
@@ -996,7 +996,9 @@ export default defineComponent({
     // metadata
     openSearchDialog (book, server) {
       this.dialogVisibleEhSearch = true
+      this.ehSearchResultList = []
       this.searchStringDialog = this.returnFileName(book.filepath)
+
       if (server) {
         this.getBookListFromEh(book, server)
       }
@@ -2198,6 +2200,8 @@ body
 .book-tag
   margin: 4px 6px
   cursor: pointer
+.tag-edit-button
+  margin-top: 4px
 .book-comment-frame
   text-align: left
   height: calc(100vh - 100px)
@@ -2225,6 +2229,8 @@ body
     width: 100px
   .search-result-ind
     cursor: pointer
+    text-align: left
+    margin: 8px 0
   .search-result-ind:hover
     background-color: var(--el-fill-color-dark)
 

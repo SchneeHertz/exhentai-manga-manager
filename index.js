@@ -116,6 +116,7 @@ function createWindow () {
 }
 
 app.disableHardwareAcceleration()
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
 app.whenReady().then(()=>{
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor

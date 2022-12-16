@@ -1,6 +1,6 @@
 <template>
   <el-config-provider :locale="locale">
-    <el-row :gutter="20">
+    <el-row :gutter="20" class="book-search-bar">
       <el-col :span="1" :offset="2">
         <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
       </el-col>
@@ -153,8 +153,7 @@
         @current-change="handleCurrentChange"
       />
     </el-row>
-    <el-drawer
-      v-model="drawerVisibleViewer"
+    <el-drawer v-model="drawerVisibleViewer"
       direction="ttb"
       size="100%"
       :with-header="false"
@@ -238,10 +237,9 @@
         </el-space>
       </div>
     </el-drawer>
-    <el-drawer
-      v-model="sideVisibleFolderTree"
+    <el-drawer v-model="sideVisibleFolderTree"
       direction="ltr"
-      size="20%"
+      :size="setting.folderTreeWidth ? setting.folderTreeWidth : '20%'"
       modal-class="side-tree-modal"
     >
       <el-tree
@@ -251,8 +249,7 @@
         @current-change="selectFolderTreeNode"
       ></el-tree>
     </el-drawer>
-    <el-dialog
-      v-model="dialogVisibleGraph"
+    <el-dialog v-model="dialogVisibleGraph"
       width="80%"
       top="5vh"
       destroy-on-close
@@ -266,10 +263,9 @@
         <el-button type="primary" @click="geneRecommend(true)">{{$t('m.getEXRecommand')}}(ZH)</el-button>
       </template>
     </el-dialog>
-    <el-drawer
-      v-model="drawerVisibleCollection"
+    <el-drawer v-model="drawerVisibleCollection"
       direction="btt"
-      :size="840"
+      size="80vh"
       destroy-on-close
     >
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
@@ -305,9 +301,9 @@
         <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
       </div>
     </el-drawer>
-    <el-dialog
-      v-model="dialogVisibleBookDetail"
+    <el-dialog v-model="dialogVisibleBookDetail"
       fullscreen
+      custom-class="dialog-detail"
     >
       <template #header>
         <p class="detail-book-title">
@@ -346,12 +342,14 @@
             <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="getBookInfo(bookDetail, 'e-hentai')">{{$t('m.getMetadata')}}</el-button>
-            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exhentai')">{{$t('m.getExMetadata')}}</el-button>
+            <el-button plain @click="openSearchDialog(bookDetail, 'e-hentai')">{{$t('m.getMetadata')}}</el-button>
+            <el-button type="primary" plain @click="openSearchDialog(bookDetail, 'exhentai')">{{$t('m.getExMetadata')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
             <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
-            <el-button type="primary" plain @click="getBookInfo(bookDetail, 'exsearch')">{{$t('m.getMetadataByFilename')}}</el-button>
+            <el-button type="primary" plain
+              @click="openSearchDialog(bookDetail)"
+            >{{$t('m.getMetadataByFilename')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
             <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
@@ -387,9 +385,10 @@
                   <el-option v-for="tag in arr" :key="tag" :value="tag">{{tag}}</el-option>
                 </el-select>
               </div>
-              <el-button class="add-tag-cats-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
-              <el-button class="copy-tag-clipboard" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
-              <el-button class="paste-tag-clipboard" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
+              <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
+              <el-button class="tag-edit-button" @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
+              <el-button class="tag-edit-button" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
+              <el-button class="tag-edit-button" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
             </div>
             <div v-else>
               <el-descriptions :column="1">
@@ -433,8 +432,36 @@
         </el-col>
       </el-row>
     </el-dialog>
-    <el-dialog
-      v-model="dialogVisibleSetting"
+    <el-dialog v-model="dialogVisibleEhSearch"
+      width="40%"
+      :title="$t('m.search')"
+      destroy-on-close
+      custom-class="dialog-search"
+    >
+      <el-input v-model="searchStringDialog" :disabled="disabledSearchString">
+        <template #prepend>
+          <el-select class="search-type-select" v-model="searchTypeDialog">
+            <el-option label="exhentai" value="exsearch" />
+            <el-option label="e-hentai" value="e-search" />
+          </el-select>
+        </template>
+        <template #append>
+          <el-button :icon="Search32Filled" @click="getBookListFromEh(bookDetail, searchTypeDialog)"/>
+        </template>
+      </el-input>
+      <div v-loading="searchResultLoading">
+        <div class="search-result" v-if="ehSearchResultList.length > 0">
+          <p
+            v-for="result in ehSearchResultList"
+            :key="result.url"
+            @click="resolveSearchResult(bookDetail, result.url)"
+            class="search-result-ind"
+          >{{result.title}}</p>
+        </div>
+        <el-empty v-else :description="$t('m.noResults')" :image-size="100" />
+      </div>
+    </el-dialog>
+    <el-dialog v-model="dialogVisibleSetting"
       width="42em"
       :modal="false"
     >
@@ -572,8 +599,15 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
-                <el-input v-model.number="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
+                <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model="setting.folderTreeWidth" :placeholder="$t('m.folderTreeWidthInfo')" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.folderTreeWidth')}}</span></template>
                 </el-input>
               </div>
             </el-col>
@@ -693,6 +727,7 @@ export default defineComponent({
       editCollectionView: false,
       drawerVisibleViewer: false,
       drawerVisibleCollection: false,
+      dialogVisibleEhSearch: false,
       // home
       bookList: [],
       displayBookList: [],
@@ -718,6 +753,11 @@ export default defineComponent({
       comments: [],
       tagGroup: {},
       editingTag: false,
+      searchResultLoading: false,
+      searchStringDialog: undefined,
+      searchTypeDialog: 'exsearch',
+      disabledSearchString: false,
+      ehSearchResultList: [],
       // viewer
       viewerImageList: [],
       viewerImageWidth: 1280,
@@ -954,6 +994,81 @@ export default defineComponent({
     },
 
     // metadata
+    openSearchDialog (book, server) {
+      this.dialogVisibleEhSearch = true
+      this.ehSearchResultList = []
+      this.searchStringDialog = this.returnFileName(book.filepath)
+
+      if (server) {
+        this.getBookListFromEh(book, server)
+      }
+    },
+    getBookListFromEh (book, server = 'e-hentai') {
+      let resolveWebPage = (book, htmlString)=>{
+        try {
+          let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.gl3c.glname')
+          this.ehSearchResultList = []
+          resultNodes.forEach((node)=>{
+            this.ehSearchResultList.push({
+              title: node.querySelector('.glink').innerHTML,
+              url: node.querySelector('a').getAttribute('href')
+            })
+          })
+        } catch (e) {
+          console.log(e)
+          if (htmlString.includes('Your IP address has been')) {
+            this.printMessage('error', 'Your IP address has been temporarily banned')
+          } else {
+            this.printMessage('error', 'Get tag failed')
+          }
+        }
+      }
+      this.searchResultLoading = true
+      if (server === 'e-hentai') {
+        axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
+        .then(res=>{
+          resolveWebPage(book, res.data)
+        })
+        .finally(()=>{
+          this.searchResultLoading = false
+        })
+      } else if (server === 'exhentai') {
+        ipcRenderer['get-ex-webpage']({
+          url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
+          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+        })
+        .then(res=>{
+          resolveWebPage(book, res)
+        })
+        .finally(()=>{
+          this.searchResultLoading = false
+        })
+      } else if (server === 'e-search') {
+        axios.get(`https://e-hentai.org/?f_search=${encodeURI(this.searchStringDialog)}&f_cats=689`)
+        .then(res=>{
+          resolveWebPage(book, res.data)
+        })
+        .finally(()=>{
+          this.searchResultLoading = false
+        })
+      } else if (server === 'exsearch') {
+        ipcRenderer['get-ex-webpage']({
+          url: `https://exhentai.org/?f_search=${encodeURI(this.searchStringDialog)}&f_cats=689`,
+          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+        })
+        .then(res=>{
+          resolveWebPage(book, res)
+        })
+        .finally(()=>{
+          this.searchResultLoading = false
+        })
+      }
+    },
+    resolveSearchResult (book, url) {
+      book.url = url
+      this.getBookInfo(book)
+      this.dialogVisibleEhSearch = false
+    },
     getBookInfo (book, server = 'e-hentai') {
       let getTag = (book, url) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
@@ -1046,20 +1161,20 @@ export default defineComponent({
           .then(res=>{
             resolveWebPage(book, res)
           })
-        } else if (server === 'exsearch') {
-          let matchTitle = /\[[^[]+?]([^[]+)/.exec(book.title)
-          if (matchTitle) {
-            matchTitle = matchTitle[1]
-          } else {
-            matchTitle = book.title
-          }
-          ipcRenderer['get-ex-webpage']({
-            url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}&f_cats=689`,
-            cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
-          })
-          .then(res=>{
-            resolveWebPage(book, res)
-          })
+        // } else if (server === 'exsearch') {
+        //   let matchTitle = /\[[^[]+?]([^[]+)/.exec(book.title)
+        //   if (matchTitle) {
+        //     matchTitle = matchTitle[1]
+        //   } else {
+        //     matchTitle = book.title
+        //   }
+        //   ipcRenderer['get-ex-webpage']({
+        //     url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}&f_cats=689`,
+        //     cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+        //   })
+        //   .then(res=>{
+        //     resolveWebPage(book, res)
+        //   })
         }
       }
     },
@@ -1771,19 +1886,19 @@ export default defineComponent({
           {
             label: this.$t('m.getMetadata'),
             onClick: () => {
-              this.getBookInfo(book, 'e-hentai')
+              this.openSearchDialog(book, 'e-hentai')
             }
           },
           {
             label: this.$t('m.getExMetadata'),
             onClick: () => {
-              this.getBookInfo(book, 'exhentai')
+              this.openSearchDialog(book, 'exhentai')
             }
           },
           {
             label: this.$t('m.getMetadataByFilename'),
             onClick: () => {
-              this.getBookInfo(book, 'exsearch')
+              this.openSearchDialog(book)
             }
           },
           {
@@ -2037,7 +2152,7 @@ body
       right: 2px
       cursor: pointer
 
-.el-dialog
+.el-dialog.is-fullscreen
   .el-dialog__header
     .el-dialog__headerbtn
       margin: 8px 16px 0 0
@@ -2085,6 +2200,8 @@ body
 .book-tag
   margin: 4px 6px
   cursor: pointer
+.tag-edit-button
+  margin-top: 4px
 .book-comment-frame
   text-align: left
   height: calc(100vh - 100px)
@@ -2104,6 +2221,18 @@ body
       white-space: pre-wrap
       padding-left: 4px
       color: var(--el-text-color-regular)
+
+.dialog-search
+  .el-dialog__body
+    padding: 5px 20px 16px
+  .search-type-select
+    width: 100px
+  .search-result-ind
+    cursor: pointer
+    text-align: left
+    margin: 8px 0
+  .search-result-ind:hover
+    background-color: var(--el-fill-color-dark)
 
 .setting-title
   margin:0

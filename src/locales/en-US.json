@@ -34,6 +34,7 @@
     "openMangaFileLocation": "Open Manga Location",
     "showManga": "Show Manga",
     "hideManga": "Hide Manga",
+    "noResults": "No Results",
     "title": "Title",
     "metadataStatus": "Metadate Status",
     "ehexAddress": "eh/ex web page address",
@@ -73,6 +74,7 @@
     "getEXRecommand": "Get Ex Recommand",
     "widthLimit": "Image Width Limit(px)",
     "widthLimitInfo": "Default value is the screen width(px)",
+    "getTagbyUrl": "Get Tag by Url",
     "copyTagClipboard": "Copy Tag to Clipboard",
     "pasteTagClipboard": "Paste Tag from Clipboard",
     "directEnter": "Act when Click Cover",
@@ -87,7 +89,9 @@
     "systemDefault": "System Default",
     "filenameAsTitle": "FilenameAsTitle",
     "excludeFile": "Exclude File",
-    "excludeFileInfo": "Please enter the regular expression for the path of the file to be excluded"
+    "excludeFileInfo": "Please enter the regular expression for the path of the file to be excluded",
+    "folderTreeWidth": "Folder Tree Width",
+    "folderTreeWidthInfo": "Default is 20%, accept valid css values, like 400px, 30%, 25vw etc."
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

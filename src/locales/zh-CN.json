@@ -34,6 +34,7 @@
     "openMangaFileLocation": "打开漫画文件所在目录",
     "showManga": "显示漫画",
     "hideManga": "隐藏漫画",
+    "noResults": "无结果",
     "title": "标题",
     "metadataStatus": "元数据状态",
     "ehexAddress": "eh/ex地址",
@@ -73,6 +74,7 @@
     "getEXRecommand": "获取EX推荐",
     "widthLimit": "限制图像宽度(px)",
     "widthLimitInfo": "默认为屏幕宽度(px)",
+    "getTagbyUrl": "用网址获取元数据",
     "copyTagClipboard": "复制标签信息到剪贴板",
     "pasteTagClipboard": "从剪贴板粘贴标签信息",
     "directEnter": "点击封面进入",
@@ -87,7 +89,9 @@
     "systemDefault": "系统默认",
     "filenameAsTitle": "文件名作为标题",
     "excludeFile": "排除文件",
-    "excludeFileInfo": "请输入需要排除的文件路径的正则表达式"
+    "excludeFileInfo": "请输入需要排除的文件路径的正则表达式",
+    "folderTreeWidth": "文件夹树宽度",
+    "folderTreeWidthInfo": "默认为20%，接受有效的css值，如400px, 30%, 25vw"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

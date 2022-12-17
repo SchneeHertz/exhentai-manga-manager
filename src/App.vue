@@ -2062,11 +2062,12 @@ body
   right: -1px
   top: -1px
 .book-title
-  height: 37px
+  height: 36px
   overflow-y: hidden
   margin: 8px 2px
   font-size: 14px
   cursor: pointer
+  line-height: 18px
 .book-card-star, .book-detail-star, .book-card-language
   position: absolute
 .book-card-language

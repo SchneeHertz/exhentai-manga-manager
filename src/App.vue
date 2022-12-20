@@ -998,7 +998,7 @@ export default defineComponent({
       this.dialogVisibleEhSearch = true
       this.ehSearchResultList = []
       this.searchStringDialog = this.returnFileName(book.filepath)
-
+      this.bookDetail = book
       if (server) {
         this.getBookListFromEh(book, server)
       }

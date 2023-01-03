@@ -6,12 +6,24 @@
       </el-col>
       <el-col :span="9">
         <el-autocomplete
-          v-model="searchString"
+          :model-value="searchString"
           :fetch-suggestions="querySearch"
+          @keyup.enter="searchBook"
+          @change="handleSearchStringChange"
+          @select="handleSearchBoxSelect"
+          @input="handleInput"
+          clearable
+          class="search-input"
+          v-if="setting.advancedSearch"
+        ></el-autocomplete>
+        <el-autocomplete
+          v-model="searchString"
+          :fetch-suggestions="querySearchLegacy"
           @keyup.enter="searchBook"
           @change="handleSearchStringChange"
           clearable
           class="search-input"
+          v-else
         ></el-autocomplete>
       </el-col>
       <el-col :span="1">
@@ -682,6 +694,13 @@
                 @change="handleTranslationSettingChange"
               />
             </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.advancedSearch"
+                :active-text="$t('m.advancedSearch')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
       </el-tabs>
@@ -794,10 +813,10 @@ export default defineComponent({
       }
     },
     categoryOption () {
-      return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().uniq().value()
+      return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().sortBy().sortedUniq().value()
     },
     tagList () {
-      return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().uniq().map(t=>`"${t}"`).value()
+      return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().sortBy().sortedUniq().map(t=>`"${t}"`).value()
     },
     thumbnailList () {
       if (this.setting.thumbnailColumn) {
@@ -951,7 +970,7 @@ export default defineComponent({
           let mark = _.some(collectBook, 'mark')
           let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
             if (_.isArray(obj) && _.isArray(src)) {
-              return _.uniq(obj.concat(src))
+              return _.sortedUniq(_.sortBy(obj.concat(src)))
             } else {
               return src
             }
@@ -1246,10 +1265,47 @@ export default defineComponent({
       }
     },
     // home search
+    querySearch (queryString, callback) {
+      let result = []
+      if (queryString) {
+        let keywords = queryString.match(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
+        if (keywords) {
+          result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].toLowerCase()))
+        } else {
+          result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+        }
+      } else {
+        result = this.searchHistory
+      }
+      callback(result.map(s=>({value:s})))
+    },
+    querySearchLegacy (queryString, callback) {
+      let result = []
+      if (queryString) {
+        result = _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+      } else {
+        result = this.searchHistory
+      }
+      callback(result.map(s=>({value:s})))
+    },
     handleSearchStringChange (val) {
       if (!val) {
+        this.searchString = ''
         this.displayBookList = this.bookList
         this.chunkList()
+      }
+    },
+    handleInput (val) {
+      if (!this.searchString || val.search(this.searchString) !== -1 || this.searchString.search(val) !== -1) {
+        this.searchString = val
+      }
+    },
+    handleSearchBoxSelect (item) {
+      let keywordIndex = this.searchString.search(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
+      if (keywordIndex !== -1) {
+        this.searchString = this.searchString.slice(0, keywordIndex) + ' ' + item.value
+      } else {
+        this.searchString = item.value
       }
     },
     searchBook () {
@@ -1273,11 +1329,6 @@ export default defineComponent({
       this.drawerVisibleCollection = false
       this.searchString = `"${tag}"`
       this.searchBook()
-    },
-    querySearch (queryString, callback) {
-      let result = queryString ? _.filter(_.compact(this.searchHistory.concat(this.tagList)), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
-        : this.searchHistory
-      callback(result.map(s=>({value:s})))
     },
     // home main
     openBookDetail (book) {
@@ -1623,7 +1674,7 @@ export default defineComponent({
           })
         })
         _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.sortBy(_.uniq(tagArray))
+          tempTagGroup[tagCat] = _.sortedUniq(_.sortBy(tagArray))
         })
         this.tagGroup = tempTagGroup
       } else {

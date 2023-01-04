@@ -271,7 +271,7 @@
       <div id="tag-graph"></div>
       <template #footer>
         <el-button type="primary" @click="geneRecommend(false, 'local')">{{$t('m.searchLocal')}}</el-button>
-        <el-button type="primary" @click="geneRecommend">{{$t('m.getEXRecommand')}}</el-button>
+        <el-button type="primary" @click="geneRecommend(false)">{{$t('m.getEXRecommand')}}</el-button>
         <el-button type="primary" @click="geneRecommend(true)">{{$t('m.getEXRecommand')}}(ZH)</el-button>
       </template>
     </el-dialog>
@@ -1499,7 +1499,7 @@ export default defineComponent({
       //   tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
       // }
       if (type === 'exhentai') {
-        ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' chinese':''}`)
+        ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
       } else {
         this.dialogVisibleGraph = false
         this.searchString = `${tagGroup3.map(n=>`"${n.shortName}"`).join(' ')}`

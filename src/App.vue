@@ -468,7 +468,7 @@
                       <el-tag
                         type="info"
                         class="book-tag"
-                        @click="searchFromTag(tag)"
+                        @click="searchFromTag(tag, key)"
                       >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
                     </template>
                   </el-popover>
@@ -833,6 +833,19 @@ export default defineComponent({
       showComment: true,
       showThumbnail: false,
       thumbnailColumn: 10,
+      // dict
+      cat2letter: {
+        language: 'l',
+        parody: 'p',
+        character: 'c',
+        group: 'g',
+        artist: 'a',
+        female: 'f',
+        male: 'm',
+        mixed: 'x',
+        other: 'o',
+        cosplayer: 'cos'
+      }
     }
   },
   computed: {
@@ -860,7 +873,12 @@ export default defineComponent({
       return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().sortBy().sortedUniq().value()
     },
     tagList () {
-      return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().sortBy().sortedUniq().map(t=>`"${t}"`).value()
+      return _(this.bookList.map(b=>{
+        return _.map(b.tags, (tags, cat)=>{
+          let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+          return _.map(tags, tag=>`${letter}:"${tag}"`)
+        })
+      })).flattenDeep().sortBy().sortedUniq().value()
     },
     thumbnailList () {
       if (this.setting.thumbnailColumn) {
@@ -1340,9 +1358,17 @@ export default defineComponent({
       if (queryString) {
         let keywords = queryString.match(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
         if (keywords) {
-          result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].toLowerCase()))
+          if (keywords[1][0] === '-') {
+            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].slice(1).toLowerCase()))
+          } else {
+            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].toLowerCase()))
+          }
         } else {
-          result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+          if (queryString[0] === '-') {
+            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.slice(1).toLowerCase()))
+          } else {
+            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+          }
         }
       } else {
         result = this.searchHistory
@@ -1373,9 +1399,17 @@ export default defineComponent({
     handleSearchBoxSelect (item) {
       let keywordIndex = this.searchString.search(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
       if (keywordIndex !== -1) {
-        this.searchString = this.searchString.slice(0, keywordIndex) + ' ' + item.value
+        if (this.searchString[keywordIndex+1] === '-') {
+          this.searchString = this.searchString.slice(0, keywordIndex) + ' -' + item.value
+        } else {
+          this.searchString = this.searchString.slice(0, keywordIndex) + ' ' + item.value
+        }
       } else {
-        this.searchString = item.value
+        if (this.searchString[0] === '-') {
+          this.searchString = '-' + item.value
+        } else {
+          this.searchString = item.value
+        }
       }
     },
     searchBook () {
@@ -1383,21 +1417,33 @@ export default defineComponent({
       this.searchHistory = _.take(_.uniq([this.searchString, ...this.searchHistory]), 8)
       localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory))
       this.displayBookList = _.filter(this.bookList, (book)=>{
-        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category', 'filepath'])).toLowerCase()
+        let bookString = JSON.stringify(
+          _.assign(
+            {},
+            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath']),
+            {
+              tags: _.map(book.tags, (tags, cat)=>{
+                let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+                return _.map(tags, tag=>`${letter}:${tag}`)
+              })
+            }
+          )
+        ).toLowerCase()
         return _.every(searchStringArray, (str)=>{
           if (_.startsWith(str, '-')) {
-            return !bookString.includes(str.slice(1).replace(/["']/g, '').toLowerCase())
+            return !bookString.includes(str.slice(1).replace(/["'$]/g, '').toLowerCase())
           } else {
-            return bookString.includes(str.replace(/["']/g, '').toLowerCase())
+            return bookString.includes(str.replace(/["'$]/g, '').toLowerCase())
           }
         })
       })
       this.chunkList()
     },
-    searchFromTag (tag) {
+    searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
       this.drawerVisibleCollection = false
-      this.searchString = `"${tag}"`
+      let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+      this.searchString = `${letter}:"${tag}"`
       this.searchBook()
     },
     // home main
@@ -1488,13 +1534,14 @@ export default defineComponent({
       _.forIn(nodesObject, (count, label)=>{
         let labelArray = _.split(label, '##')
         try {
+          let letter = this.cat2letter[labelArray[0]] ? this.cat2letter[labelArray[0]] : labelArray[0]
           tempNodeData.push({
             id: nanoid(),
             count,
             size: Math.ceil(Math.log(count)*10+50),
             oriSize: Math.ceil(Math.log(count)*10+50),
-            name: `${labelArray[0]}:"${labelArray[1]}$"`,
-            shortName: labelArray[1],
+            name: `${letter}:"${labelArray[1]}$"`,
+            shortName: `${letter}:"${labelArray[1]}"`,
             label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
             style:{fill: _.sample(colors)}
           })
@@ -1572,7 +1619,7 @@ export default defineComponent({
         ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
       } else {
         this.dialogVisibleGraph = false
-        this.searchString = `${tagGroup3.map(n=>`"${n.shortName}"`).join(' ')}`
+        this.searchString = `${tagGroup3.map(n=>n.shortName).join(' ')}`
         this.searchBook()
       }
     },

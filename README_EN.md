@@ -38,10 +38,10 @@ Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/E
 - Custom cover support
 - Show library folder structure, view mangas by folder
 - Support importing exhentai overall metadata database backup
+- Built-in double page view
 
 ## TODO
 - Rename and move manga files according to rules
-- Built-in double page view
 
 ## Thanks
 This project has been helped by many open source projects

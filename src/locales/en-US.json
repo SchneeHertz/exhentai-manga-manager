@@ -108,6 +108,6 @@
     "redirect": "Redirect",
     "inputCategoryName": "Please input category name",
     "lastManga": "This is the last manga",
-    "insertEmptyPageInfo": "Press / key to switch whether to display the first page alone"
+    "insertEmptyPageInfo": "Press / key to adjust the double page order"
   }
 }

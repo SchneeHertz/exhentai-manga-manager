@@ -284,7 +284,7 @@
               :src="`${image.thumbnailPath}?id=${image.id}`"
               class="viewer-thumbnail"
               :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
-              @click="handleClickThumbnail(chunkIndex, index)"
+              @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image.filepath)"
             />
             <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
@@ -845,7 +845,19 @@ export default defineComponent({
         mixed: 'x',
         other: 'o',
         cosplayer: 'cos'
-      }
+      },
+      categoryOption: [
+        'Doujinshi',
+        'Manga',
+        'Artist CG',
+        'Game CG',
+        'Western',
+        'Non-H',
+        'Image Set',
+        'Cosplay',
+        'Asian Porn',
+        'Misc',
+      ]
     }
   },
   computed: {
@@ -869,9 +881,6 @@ export default defineComponent({
         this.selectCollectionObject.list = list
       }
     },
-    categoryOption () {
-      return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().sortBy().sortedUniq().value()
-    },
     tagList () {
       return _(this.bookList.map(b=>{
         return _.map(b.tags, (tags, cat)=>{
@@ -887,28 +896,34 @@ export default defineComponent({
       return _.chunk(this.viewerImageList, this.thumbnailColumn)
     },
     viewerImageListDouble () {
-      let result = []
-      let frame = {page: [], pageNumber: []}
-      let pageNumber = 0
-      for (let image of this.viewerImageList) {
-        pageNumber += 1
-        if (image.width > image.height) {
-          if (frame.page.length > 0) {
-            result.push(_.clone(frame))
-            frame = {page: [], pageNumber: []}
-          }
-          result.push({page: [image], pageNumber: [pageNumber]})
-        } else {
-          frame.page.push(image)
-          frame.pageNumber.push(pageNumber)
-          if ((this.insertEmptyPage && result.length === 0) || frame.page.length >= 2) {
-            result.push(_.clone(frame))
-            frame = {page: [], pageNumber: []}
+      if (this.imageStyleType === 'double') {
+        let result = []
+        let frame = {page: [], pageNumber: []}
+        let pageNumber = 0
+        let currentPage = 0
+        try {
+          currentPage = _.floor(document.getElementsByClassName('el-drawer__body')[0].scrollTop / window.innerHeight)
+        } catch {}
+        for (let image of this.viewerImageList) {
+          pageNumber += 1
+          if (image.width > image.height) {
+            if (frame.page.length > 0) {
+              result.push(_.clone(frame))
+              frame = {page: [], pageNumber: []}
+            }
+            result.push({page: [image], pageNumber: [pageNumber]})
+          } else {
+            frame.page.push(image)
+            frame.pageNumber.push(pageNumber)
+            if ((this.insertEmptyPage && result.length === currentPage) || frame.page.length >= 2) {
+              result.push(_.clone(frame))
+              frame = {page: [], pageNumber: []}
+            }
           }
         }
+        if (frame.page.length > 0) result.push(_.clone(frame))
+        return result
       }
-      if (frame.page.length > 0) result.push(_.clone(frame))
-      return result
     }
   },
   mounted () {
@@ -1826,7 +1841,7 @@ export default defineComponent({
     // internal viewer
     returnImageStyle(image) {
       if (this.imageStyleType === 'scroll') {
-        return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
+        return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px'}
       } else {
         // 28 is the height of .viewer-image-page
         return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
@@ -1857,17 +1872,24 @@ export default defineComponent({
         this.storeDrawerScrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollTop
       }
     },
-    handleClickThumbnail(chunkIndex, index) {
+    handleClickThumbnail(id) {
       this.showThumbnail = false
       let scrollTopValue = 0
       if (this.imageStyleType === 'scroll') {
-        _.forIn(this.viewerImageList, (image, i)=>{
-          if (i == (chunkIndex * this.thumbnailColumn + index)) return false
-          // 28.3 is the height of .viewer-image-page
-          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28.3
+        _.forIn(this.viewerImageList, (image)=>{
+          if (image.id === id) return false
+          // 28 is the height of .viewer-image-page
+          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
         })
-      } else {
-        scrollTopValue = window.innerHeight * (chunkIndex * this.thumbnailColumn + index)
+      } else if (this.imageStyleType === 'single') {
+        scrollTopValue = window.innerHeight * _.findIndex(this.viewerImageList, {id: id})
+      } else if (this.imageStyleType === 'double') {
+        _.forIn(this.viewerImageListDouble, (imageGroup, index)=>{
+          if (_.find(imageGroup.page, {id: id})) {
+            scrollTopValue = window.innerHeight * index
+            return false
+          }
+        })
       }
       this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
     },
@@ -2462,6 +2484,7 @@ body
   .viewer-image-frame
     position: relative
     margin: 0 auto
+    max-width: 96vw
     .viewer-image
       position: absolute
       right: 0

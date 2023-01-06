@@ -65,10 +65,11 @@
     "onStartScan": "Scan on Start",
     "comment": "Comment",
     "tagTranslate": "Tag Translate",
-    "scrolling": "🧻",
-    "singlePage": "📄",
-    "thumbnail": "▦",
-    "content": "🖼️",
+    "scrolling": "scroll",
+    "singlePage": "single",
+    "doublePage": "double",
+    "thumbnail": "thumb",
+    "content": "content",
     "tagAnalysis": "Tag Analysis",
     "searchLocal": "Search Local",
     "getEXRecommand": "Get Ex Recommand",
@@ -106,6 +107,7 @@
     "copyLinkToClipboard": "Copy Link to Clipboard",
     "redirect": "Redirect",
     "inputCategoryName": "Please input category name",
-    "lastManga": "This is the last manga"
+    "lastManga": "This is the last manga",
+    "insertEmptyPageInfo": "Press / key to switch whether to display the first page alone"
   }
 }

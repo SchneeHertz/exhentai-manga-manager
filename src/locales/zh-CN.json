@@ -67,6 +67,7 @@
     "tagTranslate": "标签翻译",
     "scrolling": "卷轴",
     "singlePage": "单页",
+    "doublePage": "双页",
     "thumbnail": "缩略图",
     "content": "内容",
     "tagAnalysis": "标签分析",
@@ -106,6 +107,7 @@
     "copyLinkToClipboard": "复制链接到剪贴板",
     "redirect": "转到",
     "inputCategoryName": "请输入类别名",
-    "lastManga": "已经是最后一本"
+    "lastManga": "已经是最后一本",
+    "insertEmptyPageInfo": "按/键切换是否单独显示首页"
   }
 }

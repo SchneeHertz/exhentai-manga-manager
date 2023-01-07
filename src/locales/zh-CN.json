@@ -67,6 +67,7 @@
     "tagTranslate": "标签翻译",
     "scrolling": "卷轴",
     "singlePage": "单页",
+    "doublePage": "双页",
     "thumbnail": "缩略图",
     "content": "内容",
     "tagAnalysis": "标签分析",
@@ -91,7 +92,8 @@
     "excludeFile": "排除文件",
     "excludeFileInfo": "请输入需要排除的文件路径的正则表达式",
     "folderTreeWidth": "文件夹树宽度",
-    "folderTreeWidthInfo": "默认为20%，接受有效的css值，如400px, 30%, 25vw"
+    "folderTreeWidthInfo": "默认为20%，接受有效的css值，如400px, 30%, 25vw",
+    "advancedSearch": "高级搜索框"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",
@@ -105,6 +107,7 @@
     "copyLinkToClipboard": "复制链接到剪贴板",
     "redirect": "转到",
     "inputCategoryName": "请输入类别名",
-    "lastManga": "已经是最后一本"
+    "lastManga": "已经是最后一本",
+    "insertEmptyPageInfo": "按/键调整双页排序"
   }
 }

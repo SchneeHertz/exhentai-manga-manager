@@ -65,10 +65,11 @@
     "onStartScan": "Scan on Start",
     "comment": "Comment",
     "tagTranslate": "Tag Translate",
-    "scrolling": "🧻",
-    "singlePage": "📄",
-    "thumbnail": "▦",
-    "content": "🖼️",
+    "scrolling": "scroll",
+    "singlePage": "single",
+    "doublePage": "double",
+    "thumbnail": "thumb",
+    "content": "content",
     "tagAnalysis": "Tag Analysis",
     "searchLocal": "Search Local",
     "getEXRecommand": "Get Ex Recommand",
@@ -91,7 +92,8 @@
     "excludeFile": "Exclude File",
     "excludeFileInfo": "Please enter the regular expression for the path of the file to be excluded",
     "folderTreeWidth": "Folder Tree Width",
-    "folderTreeWidthInfo": "Default is 20%, accept valid css values, like 400px, 30%, 25vw etc."
+    "folderTreeWidthInfo": "Default is 20%, accept valid css values, like 400px, 30%, 25vw etc.",
+    "advancedSearch": "Advanced Search"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
@@ -105,6 +107,7 @@
     "copyLinkToClipboard": "Copy Link to Clipboard",
     "redirect": "Redirect",
     "inputCategoryName": "Please input category name",
-    "lastManga": "This is the last manga"
+    "lastManga": "This is the last manga",
+    "insertEmptyPageInfo": "Press / key to adjust the double page order"
   }
 }

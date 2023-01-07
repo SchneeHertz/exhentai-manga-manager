@@ -6,12 +6,24 @@
       </el-col>
       <el-col :span="9">
         <el-autocomplete
-          v-model="searchString"
+          :model-value="searchString"
           :fetch-suggestions="querySearch"
+          @keyup.enter="searchBook"
+          @change="handleSearchStringChange"
+          @select="handleSearchBoxSelect"
+          @input="handleInput"
+          clearable
+          class="search-input"
+          v-if="setting.advancedSearch"
+        ></el-autocomplete>
+        <el-autocomplete
+          v-model="searchString"
+          :fetch-suggestions="querySearchLegacy"
           @keyup.enter="searchBook"
           @change="handleSearchStringChange"
           clearable
           class="search-input"
+          v-else
         ></el-autocomplete>
       </el-col>
       <el-col :span="1">
@@ -161,28 +173,26 @@
       @closed="releaseSendImageLock"
     >
       <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
-      <el-switch
+      <el-select
         v-model="imageStyleType"
         size="small"
-        inline-prompt
-        :active-text="$t('m.scrolling')"
-        :inactive-text="$t('m.singlePage')"
-        active-value="scroll"
-        inactive-value="click"
         @change="saveImageStyleType"
-        class="viewer-switch"
-        width="60px"
-      />
-      <el-switch
+        class="viewer-mode"
+        ref="viewermode"
+      >
+        <el-option value="scroll" :label="$t('m.scrolling')" />
+        <el-option value="single" :label="$t('m.singlePage')" />
+        <el-option value="double" :label="$t('m.doublePage')" />
+      </el-select>
+      <el-select
         v-model="showThumbnail"
         size="small"
-        inline-prompt
-        :active-text="$t('m.thumbnail')"
-        :inactive-text="$t('m.content')"
         @change="switchThumbnail"
-        class="viewer-thumbnail-switch"
-        width="60px"
-      />
+        class="viewer-thumbnail-select"
+      >
+        <el-option :value="true" :label="$t('m.thumbnail')" />
+        <el-option :value="false" :label="$t('m.content')" />
+      </el-select>
       <div
         class="drawer-image-content"
         @click="scrollPage"
@@ -191,26 +201,71 @@
         element-loading-text="Loading"
         element-loading-background="transparent"
       >
-        <div
-          v-for="(image, index) in viewerImageList"
-          :key="image.id"
-          class="image-frame"
-          :style="returnImageFrameStyle()"
-        >
+        <div v-if="imageStyleType === 'scroll'">
           <div
-            class="viewer-image-frame"
-            :id="image.id"
-            :style="returnImageStyle(image)"
+            v-for="(image, index) in viewerImageList"
+            :key="image.id"
+            class="image-frame"
+            :style="returnImageFrameStyle()"
           >
-            <img
-              :src="`${image.filepath}?id=${image.id}`"
-              class="viewer-image"
-              :style="{height: returnImageStyle(image).height}"
-              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
-            />
-            <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
+            <div
+              class="viewer-image-frame"
+              :id="image.id"
+              :style="returnImageStyle(image)"
+            >
+              <img
+                :src="`${image.filepath}?id=${image.id}`"
+                class="viewer-image"
+                :style="{height: returnImageStyle(image).height}"
+                @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+              />
+              <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
+            </div>
+            <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
-          <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
+        </div>
+        <div v-else-if="imageStyleType === 'single'">
+          <div
+            v-for="(image, index) in viewerImageList"
+            :key="image.id"
+            class="image-frame"
+            :style="returnImageFrameStyle()"
+          >
+            <div
+              class="viewer-image-frame"
+              :id="image.id"
+              :style="returnImageStyle(image)"
+            >
+              <img
+                :src="`${image.filepath}?id=${image.id}`"
+                class="viewer-image"
+                :style="{height: returnImageStyle(image).height}"
+                @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+              />
+            </div>
+            <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
+          </div>
+        </div>
+        <div v-else>
+          <div
+            v-for="imageGroup in viewerImageListDouble"
+            class="image-frame"
+            :style="returnImageFrameStyle()"
+          >
+            <div
+              class="viewer-image-frame viewer-image-frame-double"
+              v-for="image in imageGroup.page"
+              :style="returnImageStyle(image)"
+            >
+              <img
+                :src="`${image.filepath}?id=${image.id}`"
+                class="viewer-image"
+                :style="{height: returnImageStyle(image).height}"
+                @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+              />
+            </div>
+            <div class="viewer-image-page">{{imageGroup.pageNumber.join(', ')}} of {{viewerImageList.length}}</div>
+          </div>
         </div>
         <el-button size="large" type="success" class="next-manga-button" @click="toNextManga(true)">{{$t('m.nextMangaRandom')}}</el-button>
         <el-button size="large" type="success" class="next-manga-button" @click="toNextManga(false)">{{$t('m.nextManga')}}</el-button>
@@ -229,7 +284,7 @@
               :src="`${image.thumbnailPath}?id=${image.id}`"
               class="viewer-thumbnail"
               :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
-              @click="handleClickThumbnail(chunkIndex, index)"
+              @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image.filepath)"
             />
             <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
@@ -259,7 +314,7 @@
       <div id="tag-graph"></div>
       <template #footer>
         <el-button type="primary" @click="geneRecommend(false, 'local')">{{$t('m.searchLocal')}}</el-button>
-        <el-button type="primary" @click="geneRecommend">{{$t('m.getEXRecommand')}}</el-button>
+        <el-button type="primary" @click="geneRecommend(false)">{{$t('m.getEXRecommand')}}</el-button>
         <el-button type="primary" @click="geneRecommend(true)">{{$t('m.getEXRecommand')}}(ZH)</el-button>
       </template>
     </el-dialog>
@@ -413,7 +468,7 @@
                       <el-tag
                         type="info"
                         class="book-tag"
-                        @click="searchFromTag(tag)"
+                        @click="searchFromTag(tag, key)"
                       >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
                     </template>
                   </el-popover>
@@ -682,6 +737,13 @@
                 @change="handleTranslationSettingChange"
               />
             </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.advancedSearch"
+                :active-text="$t('m.advancedSearch')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
       </el-tabs>
@@ -763,6 +825,7 @@ export default defineComponent({
       viewerImageWidth: 1280,
       imageStyleType: 'scroll',
       storeDrawerScrollTop: undefined,
+      insertEmptyPage: false,
       // setting
       setting: {},
       activeSettingPanel: 'general',
@@ -770,6 +833,31 @@ export default defineComponent({
       showComment: true,
       showThumbnail: false,
       thumbnailColumn: 10,
+      // dict
+      cat2letter: {
+        language: 'l',
+        parody: 'p',
+        character: 'c',
+        group: 'g',
+        artist: 'a',
+        female: 'f',
+        male: 'm',
+        mixed: 'x',
+        other: 'o',
+        cosplayer: 'cos'
+      },
+      categoryOption: [
+        'Doujinshi',
+        'Manga',
+        'Artist CG',
+        'Game CG',
+        'Western',
+        'Non-H',
+        'Image Set',
+        'Cosplay',
+        'Asian Porn',
+        'Misc',
+      ]
     }
   },
   computed: {
@@ -793,11 +881,13 @@ export default defineComponent({
         this.selectCollectionObject.list = list
       }
     },
-    categoryOption () {
-      return _(this.bookList.map(b=>b.collection ? undefined : b.category)).compact().uniq().value()
-    },
     tagList () {
-      return _(this.bookList.map(b=>_.values(b.tags))).flattenDeep().uniq().map(t=>`"${t}"`).value()
+      return _(this.bookList.map(b=>{
+        return _.map(b.tags, (tags, cat)=>{
+          let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+          return _.map(tags, tag=>`${letter}:"${tag}"`)
+        })
+      })).flattenDeep().sortBy().sortedUniq().value()
     },
     thumbnailList () {
       if (this.setting.thumbnailColumn) {
@@ -805,6 +895,36 @@ export default defineComponent({
       }
       return _.chunk(this.viewerImageList, this.thumbnailColumn)
     },
+    viewerImageListDouble () {
+      if (this.imageStyleType === 'double') {
+        let result = []
+        let frame = {page: [], pageNumber: []}
+        let pageNumber = 0
+        let currentPage = 0
+        try {
+          currentPage = _.floor(document.getElementsByClassName('el-drawer__body')[0].scrollTop / window.innerHeight)
+        } catch {}
+        for (let image of this.viewerImageList) {
+          pageNumber += 1
+          if (image.width > image.height) {
+            if (frame.page.length > 0) {
+              result.push(_.clone(frame))
+              frame = {page: [], pageNumber: []}
+            }
+            result.push({page: [image], pageNumber: [pageNumber]})
+          } else {
+            frame.page.push(image)
+            frame.pageNumber.push(pageNumber)
+            if ((this.insertEmptyPage && result.length === currentPage) || frame.page.length >= 2) {
+              result.push(_.clone(frame))
+              frame = {page: [], pageNumber: []}
+            }
+          }
+        }
+        if (frame.page.length > 0) result.push(_.clone(frame))
+        return result
+      }
+    }
   },
   mounted () {
     ipcRenderer['send-message']((event, arg)=>{
@@ -838,11 +958,13 @@ export default defineComponent({
     // base function
     resolveKey (event) {
       if (this.drawerVisibleViewer) {
-        if (this.imageStyleType === 'click') {
+        if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
           if (event.key === 'ArrowRight') {
             document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
           } else if (event.key === 'ArrowLeft') {
             document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
+          } else if (event.key === "/") {
+            this.insertEmptyPage = !this.insertEmptyPage
           }
         }
         if (event.key === 'ArrowUp') {
@@ -951,7 +1073,7 @@ export default defineComponent({
           let mark = _.some(collectBook, 'mark')
           let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
             if (_.isArray(obj) && _.isArray(src)) {
-              return _.uniq(obj.concat(src))
+              return _.sortedUniq(_.sortBy(obj.concat(src)))
             } else {
               return src
             }
@@ -998,7 +1120,7 @@ export default defineComponent({
       this.dialogVisibleEhSearch = true
       this.ehSearchResultList = []
       this.searchStringDialog = this.returnFileName(book.filepath)
-
+      this.bookDetail = book
       if (server) {
         this.getBookListFromEh(book, server)
       }
@@ -1161,20 +1283,6 @@ export default defineComponent({
           .then(res=>{
             resolveWebPage(book, res)
           })
-        // } else if (server === 'exsearch') {
-        //   let matchTitle = /\[[^[]+?]([^[]+)/.exec(book.title)
-        //   if (matchTitle) {
-        //     matchTitle = matchTitle[1]
-        //   } else {
-        //     matchTitle = book.title
-        //   }
-        //   ipcRenderer['get-ex-webpage']({
-        //     url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}&f_cats=689`,
-        //     cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
-        //   })
-        //   .then(res=>{
-        //     resolveWebPage(book, res)
-        //   })
         }
       }
     },
@@ -1246,10 +1354,63 @@ export default defineComponent({
       }
     },
     // home search
+    querySearch (queryString, callback) {
+      let result = []
+      if (queryString) {
+        let keywords = queryString.match(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
+        if (keywords) {
+          if (keywords[1][0] === '-') {
+            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].slice(1).toLowerCase()))
+          } else {
+            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].toLowerCase()))
+          }
+        } else {
+          if (queryString[0] === '-') {
+            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.slice(1).toLowerCase()))
+          } else {
+            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+          }
+        }
+      } else {
+        result = this.tagList
+      }
+      callback(result.map(s=>({value:s})))
+    },
+    querySearchLegacy (queryString, callback) {
+      let result = []
+      if (queryString) {
+        result = _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+      } else {
+        result = this.searchHistory
+      }
+      callback(result.map(s=>({value:s})))
+    },
     handleSearchStringChange (val) {
       if (!val) {
+        this.searchString = ''
         this.displayBookList = this.bookList
         this.chunkList()
+      }
+    },
+    handleInput (val) {
+      if (!this.searchString || val.search(this.searchString) !== -1 || this.searchString.search(val) !== -1) {
+        this.searchString = val
+      }
+    },
+    handleSearchBoxSelect (item) {
+      let keywordIndex = this.searchString.search(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
+      if (keywordIndex !== -1) {
+        if (this.searchString[keywordIndex+1] === '-') {
+          this.searchString = this.searchString.slice(0, keywordIndex) + ' -' + item.value
+        } else {
+          this.searchString = this.searchString.slice(0, keywordIndex) + ' ' + item.value
+        }
+      } else {
+        if (this.searchString[0] === '-') {
+          this.searchString = '-' + item.value
+        } else {
+          this.searchString = item.value
+        }
       }
     },
     searchBook () {
@@ -1257,27 +1418,34 @@ export default defineComponent({
       this.searchHistory = _.take(_.uniq([this.searchString, ...this.searchHistory]), 8)
       localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory))
       this.displayBookList = _.filter(this.bookList, (book)=>{
-        let bookString = JSON.stringify(_.pick(book, ['title', 'title_jpn', 'tags', 'status', 'category', 'filepath'])).toLowerCase()
+        let bookString = JSON.stringify(
+          _.assign(
+            {},
+            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath']),
+            {
+              tags: _.map(book.tags, (tags, cat)=>{
+                let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+                return _.map(tags, tag=>`${letter}:${tag}`)
+              })
+            }
+          )
+        ).toLowerCase()
         return _.every(searchStringArray, (str)=>{
           if (_.startsWith(str, '-')) {
-            return !bookString.includes(str.slice(1).replace(/["']/g, '').toLowerCase())
+            return !bookString.includes(str.slice(1).replace(/["'$]/g, '').toLowerCase())
           } else {
-            return bookString.includes(str.replace(/["']/g, '').toLowerCase())
+            return bookString.includes(str.replace(/["'$]/g, '').toLowerCase())
           }
         })
       })
       this.chunkList()
     },
-    searchFromTag (tag) {
+    searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
       this.drawerVisibleCollection = false
-      this.searchString = `"${tag}"`
+      let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+      this.searchString = `${letter}:"${tag}"`
       this.searchBook()
-    },
-    querySearch (queryString, callback) {
-      let result = queryString ? _.filter(_.compact(this.searchHistory.concat(this.tagList)), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
-        : this.searchHistory
-      callback(result.map(s=>({value:s})))
     },
     // home main
     openBookDetail (book) {
@@ -1367,13 +1535,14 @@ export default defineComponent({
       _.forIn(nodesObject, (count, label)=>{
         let labelArray = _.split(label, '##')
         try {
+          let letter = this.cat2letter[labelArray[0]] ? this.cat2letter[labelArray[0]] : labelArray[0]
           tempNodeData.push({
             id: nanoid(),
             count,
             size: Math.ceil(Math.log(count)*10+50),
             oriSize: Math.ceil(Math.log(count)*10+50),
-            name: `${labelArray[0]}:"${labelArray[1]}$"`,
-            shortName: labelArray[1],
+            name: `${letter}:"${labelArray[1]}$"`,
+            shortName: `${letter}:"${labelArray[1]}"`,
             label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
             style:{fill: _.sample(colors)}
           })
@@ -1439,19 +1608,19 @@ export default defineComponent({
       })
     },
     geneRecommend (chinese = false, type = 'exhentai') {
-      let tagGroup1 = _.filter(this.displayNodeData, n=>n.size < 200)
+      // let tagGroup1 = _.filter(this.displayNodeData, n=>n.size < 200)
       let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
-      let tagGroup3 = []
-      if (tagGroup2.length >= 3) {
-        tagGroup3 = tagGroup2
-      } else {
-        tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
-      }
+      let tagGroup3 = tagGroup2
+      // if (tagGroup2.length >= 3) {
+      //   tagGroup3 = tagGroup2
+      // } else {
+      //   tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
+      // }
       if (type === 'exhentai') {
-        ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' chinese':''}`)
+        ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
       } else {
         this.dialogVisibleGraph = false
-        this.searchString = `${tagGroup3.map(n=>`"${n.shortName}"`).join(' ')}`
+        this.searchString = `${tagGroup3.map(n=>n.shortName).join(' ')}`
         this.searchBook()
       }
     },
@@ -1623,7 +1792,7 @@ export default defineComponent({
           })
         })
         _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.sortBy(_.uniq(tagArray))
+          tempTagGroup[tagCat] = _.sortedUniq(_.sortBy(tagArray))
         })
         this.tagGroup = tempTagGroup
       } else {
@@ -1658,7 +1827,7 @@ export default defineComponent({
     // internal viewer
     returnImageStyle(image) {
       if (this.imageStyleType === 'scroll') {
-        return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px' }
+        return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px'}
       } else {
         // 28 is the height of .viewer-image-page
         return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
@@ -1672,9 +1841,12 @@ export default defineComponent({
       }
     },
     saveImageStyleType (val) {
+      setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
       localStorage.setItem('imageStyleType', val)
+      if (val === 'double') this.printMessage('info', this.$t('c.insertEmptyPageInfo'))
     },
     switchThumbnail (val) {
+      setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
       if (!val) {
         if (this.storeDrawerScrollTop) {
           this.$nextTick(()=>{
@@ -1686,22 +1858,29 @@ export default defineComponent({
         this.storeDrawerScrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollTop
       }
     },
-    handleClickThumbnail(chunkIndex, index) {
+    handleClickThumbnail(id) {
       this.showThumbnail = false
       let scrollTopValue = 0
       if (this.imageStyleType === 'scroll') {
-        _.forIn(this.viewerImageList, (image, i)=>{
-          if (i == (chunkIndex * this.thumbnailColumn + index)) return false
-          // 28.3 is the height of .viewer-image-page
-          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28.3
+        _.forIn(this.viewerImageList, (image)=>{
+          if (image.id === id) return false
+          // 28 is the height of .viewer-image-page
+          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
         })
-      } else {
-        scrollTopValue = window.innerHeight * (chunkIndex * this.thumbnailColumn + index)
+      } else if (this.imageStyleType === 'single') {
+        scrollTopValue = window.innerHeight * _.findIndex(this.viewerImageList, {id: id})
+      } else if (this.imageStyleType === 'double') {
+        _.forIn(this.viewerImageListDouble, (imageGroup, index)=>{
+          if (_.find(imageGroup.page, {id: id})) {
+            scrollTopValue = window.innerHeight * index
+            return false
+          }
+        })
       }
       this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
     },
     scrollPage (event) {
-      if (this.imageStyleType === 'click') {
+      if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
         if(event.clientX > window.innerWidth / 2) {
           document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
         } else {
@@ -2062,11 +2241,12 @@ body
   right: -1px
   top: -1px
 .book-title
-  height: 37px
+  height: 36px
   overflow-y: hidden
   margin: 8px 2px
   font-size: 14px
   cursor: pointer
+  line-height: 18px
 .book-card-star, .book-detail-star, .book-card-language
   position: absolute
 .book-card-language
@@ -2271,16 +2451,26 @@ body
       width: 32px
 .viewer-close-button:hover
   color: var(--el-color-primary) !important
-.viewer-switch
+.viewer-mode
   position: absolute
   top: 1em
   left: 1em
   z-index: 10
+  width: 76px
+.viewer-thumbnail-select
+  position: absolute
+  top: 3em
+  left: 1em
+  z-index: 10
+  width: 76px
 .image-frame
   overflow-y: hidden
+  display: table
+  margin: auto
   .viewer-image-frame
     position: relative
     margin: 0 auto
+    max-width: 96vw
     .viewer-image
       position: absolute
       right: 0
@@ -2293,16 +2483,15 @@ body
       cursor: ew-resize
     .viewer-image-bar:hover
       background-color: var(--el-color-primary)
+  .viewer-image-frame-double
+    float: right
   .viewer-image-page
+    line-height: 18px
     margin-bottom: 10px
 .next-manga-button
   margin: 30px 0 60px
-.viewer-thumbnail-switch
-  position: absolute
-  top: 3em
-  left: 1em
-  z-index: 10
 .drawer-thumbnail-content
+  margin-top: 5em
   height: 100vh
   text-align: left
 .viewer-thumbnail

@@ -1283,20 +1283,6 @@ export default defineComponent({
           .then(res=>{
             resolveWebPage(book, res)
           })
-        // } else if (server === 'exsearch') {
-        //   let matchTitle = /\[[^[]+?]([^[]+)/.exec(book.title)
-        //   if (matchTitle) {
-        //     matchTitle = matchTitle[1]
-        //   } else {
-        //     matchTitle = book.title
-        //   }
-        //   ipcRenderer['get-ex-webpage']({
-        //     url: `https://exhentai.org/?f_search=${encodeURI(matchTitle)}&f_cats=689`,
-        //     cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
-        //   })
-        //   .then(res=>{
-        //     resolveWebPage(book, res)
-        //   })
         }
       }
     },
@@ -1386,7 +1372,7 @@ export default defineComponent({
           }
         }
       } else {
-        result = this.searchHistory
+        result = this.tagList
       }
       callback(result.map(s=>({value:s})))
     },

@@ -1443,8 +1443,12 @@ export default defineComponent({
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
       this.drawerVisibleCollection = false
-      let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
-      this.searchString = `${letter}:"${tag}"`
+      if (cat) {
+        let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+        this.searchString = `${letter}:"${tag}"`
+      } else {
+        this.searchString = `"${tag}"`
+      }
       this.searchBook()
     },
     // home main

@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'load-manga-image-list': (book)=>ipcRenderer.invoke('load-manga-image-list', book),
   'show-file': (filepath)=>ipcRenderer.invoke('show-file', filepath),
   'get-ex-webpage': (obj)=>ipcRenderer.invoke('get-ex-webpage', obj),
+  'post-data-ex': (obj)=>ipcRenderer.invoke('post-data-ex', obj),
   'load-collection-list': ()=>ipcRenderer.invoke('load-collection-list'),
   'save-collection-list': (list)=>ipcRenderer.invoke('save-collection-list', list),
   'use-new-cover': (filepath)=>ipcRenderer.invoke('use-new-cover', filepath),

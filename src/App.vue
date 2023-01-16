@@ -579,6 +579,13 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
+                <el-input v-model="setting.star" @change="saveSetting">
+                  <template #prepend><span class="setting-label">star</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
                 <el-input v-model="setting.proxy" @change="saveSetting" :placeholder="$t('m.like') + ' http://127.0.0.1:7890'">
                   <template #prepend><span class="setting-label">{{$t('m.proxy')}}</span></template>
                 </el-input>
@@ -924,6 +931,9 @@ export default defineComponent({
         if (frame.page.length > 0) result.push(_.clone(frame))
         return result
       }
+    },
+    cookie () {
+      return `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id};star=${this.setting.star}`
     }
   },
   mounted () {
@@ -1157,7 +1167,7 @@ export default defineComponent({
       } else if (server === 'exhentai') {
         ipcRenderer['get-ex-webpage']({
           url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
-          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+          cookie: this.cookie
         })
         .then(res=>{
           resolveWebPage(book, res)
@@ -1176,7 +1186,7 @@ export default defineComponent({
       } else if (server === 'exsearch') {
         ipcRenderer['get-ex-webpage']({
           url: `https://exhentai.org/?f_search=${encodeURI(this.searchStringDialog)}&f_cats=689`,
-          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+          cookie: this.cookie
         })
         .then(res=>{
           resolveWebPage(book, res)
@@ -1194,18 +1204,22 @@ export default defineComponent({
     getBookInfo (book, server = 'e-hentai') {
       let getTag = (book, url) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
-        axios.post('https://api.e-hentai.org/api.php', {
-          'method': 'gdata',
-          'gidlist': [
-              [+match[1], match[2]]
-          ],
-          'namespace': 1
+        ipcRenderer['post-data-ex']({
+          url: 'https://api.e-hentai.org/api.php',
+          data: {
+            'method': 'gdata',
+            'gidlist': [
+                [+match[1], match[2]]
+            ],
+            'namespace': 1
+          },
+          cookie: this.cookie
         })
         .then(res=>{
           try {
             _.assign(
               book,
-              _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+              _.pick(JSON.parse(res).gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
               {url: url}
             )
             book.posted = +book.posted
@@ -1236,7 +1250,7 @@ export default defineComponent({
             _.throttle(this.saveBookList, 10000)()
           } catch (e) {
             console.log(e)
-            if (_.includes(res.data, 'Your IP address has been')) {
+            if (_.includes(res, 'Your IP address has been')) {
               book.status = 'non-tag'
               this.printMessage('error', 'Your IP address has been temporarily banned')
               this.saveBookList()
@@ -1278,7 +1292,7 @@ export default defineComponent({
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
-            cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+            cookie: this.cookie
           })
           .then(res=>{
             resolveWebPage(book, res)
@@ -1760,7 +1774,7 @@ export default defineComponent({
       if (url) {
         ipcRenderer['get-ex-webpage']({
           url,
-          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+          cookie: this.cookie
         })
         .then(res=>{
           let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')

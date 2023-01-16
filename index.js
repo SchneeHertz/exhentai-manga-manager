@@ -442,7 +442,7 @@ ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
       return res.text
     })
     .catch(e=>{
-      sendMessageToWebContents(`get ex comments failed because ${e}`)
+      sendMessageToWebContents(`get ex page failed because ${e}`)
     })
   } else {
     return await superagent
@@ -452,7 +452,32 @@ ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
       return res.text
     })
     .catch(e=>{
-      sendMessageToWebContents(`get ex comments failed because ${e}`)
+      sendMessageToWebContents(`get ex page failed because ${e}`)
+    })
+  }
+})
+
+ipcMain.handle('post-data-ex', async (event, {url, data, cookie})=>{
+  if (setting.proxy) {
+    return await superagent
+    .post(url, data)
+    .set('Cookie', cookie)
+    .proxy(setting.proxy)
+    .then(res=>{
+      return res.text
+    })
+    .catch(e=>{
+      sendMessageToWebContents(`get ex data failed because ${e}`)
+    })
+  } else {
+    return await superagent
+    .post(url, data)
+    .set('Cookie', cookie)
+    .then(res=>{
+      return res.text
+    })
+    .catch(e=>{
+      sendMessageToWebContents(`get ex data failed because ${e}`)
     })
   }
 })

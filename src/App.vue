@@ -2055,7 +2055,7 @@ export default defineComponent({
             '',
             {
               type: 'info',
-              'show-cancel-button': false
+              showCancelButton: false
             }
           )
         }

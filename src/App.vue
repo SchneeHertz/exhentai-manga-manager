@@ -517,7 +517,7 @@
       </div>
     </el-dialog>
     <el-dialog v-model="dialogVisibleSetting"
-      width="42em"
+      width="45em"
       :modal="false"
     >
       <template #header><p class="setting-title">{{$t('m.setting')}}</p></template>
@@ -604,6 +604,11 @@
             <el-col :span="7">
               <div class="setting-line">
                 <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
+              </div>
+            </el-col>
+            <el-col :span="5">
+              <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="autoCheckUpdates(true)">{{$t('m.checkUpdates')}}</el-button>
               </div>
             </el-col>
           </el-row>
@@ -751,6 +756,13 @@
                 @change="saveSetting"
               />
             </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.autoCheckUpdates"
+                :active-text="$t('m.autoCheckUpdates')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
       </el-tabs>
@@ -775,6 +787,8 @@ import G6 from '@antv/g6'
 
 import zhCn from 'element-plus/lib/locale/lang/zh-cn'
 import en from 'element-plus/lib/locale/lang/en'
+
+import { version } from '../package.json'
 
 export default defineComponent({
   components: {
@@ -897,8 +911,10 @@ export default defineComponent({
       })).flattenDeep().sortBy().sortedUniq().value()
     },
     thumbnailList () {
-      if (this.setting.thumbnailColumn) {
+      if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
         this.thumbnailColumn = this.setting.thumbnailColumn
+      } else {
+        this.thumbnailColumn = 10
       }
       return _.chunk(this.viewerImageList, this.thumbnailColumn)
     },
@@ -954,6 +970,11 @@ export default defineComponent({
       this.loadBookList(this.setting.loadOnStart)
       if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
       if (this.setting.theme) this.changeTheme(this.setting.theme)
+      if (this.setting.autoCheckUpdates === undefined) {
+        this.setting.autoCheckUpdates = true
+        this.saveSetting()
+      }
+      if (this.setting.autoCheckUpdates) this.autoCheckUpdates(false)
       this.handleLanguageChange(this.setting.language)
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
@@ -2010,6 +2031,34 @@ export default defineComponent({
             break
         }
         this.saveSetting()
+      })
+    },
+    autoCheckUpdates (forceShowDialog) {
+      axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
+      .then(res=>{
+        let { tag_name, html_url} = res.data
+        if (tag_name !== 'v' + version) {
+          this.$confirm(
+            this.$t('c.newVersion') + tag_name,
+            '',
+            {
+              confirmButtonText: this.$t('c.downloadUpdate'),
+              type: 'success'
+            }
+          )
+          .then(()=>{
+            ipcRenderer['open-url'](html_url)
+          })
+        } else if (forceShowDialog) {
+          this.$confirm(
+            this.$t('c.notNewVersion'),
+            '',
+            {
+              type: 'info',
+              'show-cancel-button': false
+            }
+          )
+        }
       })
     },
 

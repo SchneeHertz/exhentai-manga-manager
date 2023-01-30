@@ -2036,8 +2036,8 @@ export default defineComponent({
     autoCheckUpdates (forceShowDialog) {
       axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
       .then(res=>{
-        let { tag_name, html_url} = res.data
-        if (tag_name !== 'v' + version) {
+        let { tag_name, html_url } = res.data
+        if (tag_name && tag_name !== 'v' + version) {
           this.$confirm(
             this.$t('c.newVersion') + tag_name,
             '',

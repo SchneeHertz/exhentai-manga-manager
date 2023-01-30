@@ -68,9 +68,9 @@ try {
 let logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), {flags: 'w'})
 let logStdout = process.stdout
 
-console.log = (message)=>{
-  logFile.write(format(message) + '\n')
-  logStdout.write(format(message) + '\n')
+console.log = (...message)=>{
+  logFile.write(format(...message) + '\n')
+  logStdout.write(format(...message) + '\n')
 }
 
 let sendMessageToWebContents = (message)=>{
@@ -115,7 +115,6 @@ function createWindow () {
   return win
 }
 
-// app.disableHardwareAcceleration()
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
 app.whenReady().then(()=>{
   const primaryDisplay = screen.getPrimaryDisplay()
@@ -488,8 +487,7 @@ ipcMain.handle('save-book-list', async (event, list)=>{
 
 // home
 ipcMain.handle('get-folder-tree', async(event, bookList)=>{
-  let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
-  folderList.sort()
+  let folderList = _.sortedUniq(_.sortBy(bookList.map(b=>path.dirname(b.filepath))))
   let librarySplitPaths = setting.library.split(path.sep)
   librarySplitPaths.pop()
   let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).filter(p=>!librarySplitPaths.includes(p)))

@@ -513,65 +513,6 @@ ipcMain.handle('get-folder-tree', async(event, bookList)=>{
     return preRoot
   }
   return resolveTree([], folderTreeObject, [])
-  // // 排序去重剪裁得到库文件夹-最底层文件夹的路径列表组 bookPathSplitList
-  // let folderList = _.sortedUniq(_.sortBy(bookList.map(b=>path.dirname(b.filepath))))
-  // let librarySplitPathsLength = setting.library.split(path.sep).length - 1
-  // let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).slice(librarySplitPathsLength))
-  // console.log(bookPathSplitList)
-  // // 将父文件夹-子文件夹关系添加到树中的函数
-  // let addToTree = (treeLevel, parent, parentPath, child, childPath, rootLevel)=>{
-  //   // treeLevel: 当前树结构
-  //   // parent: 父文件夹名
-  //   // parentPath: 以库文件夹为根的，父文件夹的路径
-  //   // child: 子文件夹名
-  //   // childPath: 以库文件夹为根的，子文件夹的路径
-  //   // roorLevel: 根结构
-  //   // 当根结构未定义时，用当前树结构赋值，出现在根文件夹-第一层文件夹的步骤
-  //   rootLevel ??= treeLevel
-  //   if (_.isEmpty(rootLevel)) {
-  //     // 向空的根结构加入根文件夹-第一层文件夹关系，返回，处理下一组关系
-  //     rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
-  //     return
-  //   }
-  //   // 使用父文件夹路径在当前树结构第一层寻找已存在的父文件夹节点
-  //   let foundParent = _.find(treeLevel, {folderPath: parentPath})
-  //   if (foundParent) {
-  //     // 如果找到父文件夹节点，确认子文件夹节点是否存在，不存在则添加节点，如果此次返回在递归调用中，则是返回成功标记，否则为处理下一组关系
-  //     let foundChild = _.find(foundParent.children, {label: child})
-  //     if (!foundChild) {
-  //       foundParent.children.push({label: child, folderPath: childPath, children: []})
-  //     }
-  //     return true
-  //   } else {
-  //     // 如果没找到父文件夹节点，检查当前树结构是否为空
-  //     if (!_.isEmpty(treeLevel)) {
-  //       // 当前树结构不为空，迭代当前树结构，深入一层，使用递归继续处理父文件夹-子文件夹关系
-  //       let results = treeLevel.map(node=>addToTree(node.children, parent, parentPath, child, childPath, rootLevel))
-  //       // 检查迭代结果
-  //       if (_.isEmpty(_.compact(results)) && treeLevel == rootLevel) {
-  //         // 当当前树结构为根结构且处理结果中不存在成功的标记，将父文件夹-子文件夹关系添加到根结构中，返回，处理下一组关系
-  //         rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
-  //         return
-  //       } else {
-  //         // 当处理结果中存在成功的标记，返回成功标记，否则返回失败标记
-  //         return !_.isEmpty(_.compact(results))
-  //       }
-  //     } else {
-  //       // 当前树结构为空，返回失败标记
-  //       return false
-  //     }
-  //   }
-  // }
-  // let treeData = []
-  // // 解析每一个路径列表
-  // _.forIn(bookPathSplitList, bookPath=>{
-  //   let length = bookPath.length
-  //   for (let i = 0; i < length-1; i++) {
-  //     // 对于一个路径列表，处理每一对父文件夹-子文件夹关系
-  //     addToTree(treeData, bookPath[i], path.join(...bookPath.slice(1, i+1)), bookPath[i+1], path.join(...bookPath.slice(1, i+2)))
-  //   }
-  // })
-  // return treeData
 })
 
 ipcMain.handle('load-collection-list', async (event, arg)=>{

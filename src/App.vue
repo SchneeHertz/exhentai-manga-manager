@@ -1545,10 +1545,10 @@ export default defineComponent({
       }
     },
     selectFolderTreeNode (selectNode) {
-      if (selectNode.folderPath === '.') {
+      if (selectNode.folderPath.length <= 1) {
         this.bookList.map(book=>book.folderHide = false)
       } else {
-        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath
+        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
         this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
       }
       this.displayBookList = this.bookList

@@ -493,7 +493,7 @@
       destroy-on-close
       custom-class="dialog-search"
     >
-      <el-input v-model="searchStringDialog" :disabled="disabledSearchString">
+      <el-input v-model="searchStringDialog" :disabled="disabledSearchString" @keyup.enter="getBookListFromEh(bookDetail, searchTypeDialog)">
         <template #prepend>
           <el-select class="search-type-select" v-model="searchTypeDialog">
             <el-option label="exhentai" value="exsearch" />

@@ -493,7 +493,7 @@
       destroy-on-close
       custom-class="dialog-search"
     >
-      <el-input v-model="searchStringDialog" :disabled="disabledSearchString">
+      <el-input v-model="searchStringDialog" :disabled="disabledSearchString" @keyup.enter="getBookListFromEh(bookDetail, searchTypeDialog)">
         <template #prepend>
           <el-select class="search-type-select" v-model="searchTypeDialog">
             <el-option label="exhentai" value="exsearch" />
@@ -517,7 +517,7 @@
       </div>
     </el-dialog>
     <el-dialog v-model="dialogVisibleSetting"
-      width="42em"
+      width="45em"
       :modal="false"
     >
       <template #header><p class="setting-title">{{$t('m.setting')}}</p></template>
@@ -579,6 +579,13 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
+                <el-input v-model="setting.star" @change="saveSetting">
+                  <template #prepend><span class="setting-label">star</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
                 <el-input v-model="setting.proxy" @change="saveSetting" :placeholder="$t('m.like') + ' http://127.0.0.1:7890'">
                   <template #prepend><span class="setting-label">{{$t('m.proxy')}}</span></template>
                 </el-input>
@@ -597,6 +604,11 @@
             <el-col :span="7">
               <div class="setting-line">
                 <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
+              </div>
+            </el-col>
+            <el-col :span="5">
+              <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="autoCheckUpdates(true)">{{$t('m.checkUpdates')}}</el-button>
               </div>
             </el-col>
           </el-row>
@@ -744,6 +756,13 @@
                 @change="saveSetting"
               />
             </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.autoCheckUpdates"
+                :active-text="$t('m.autoCheckUpdates')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
       </el-tabs>
@@ -768,6 +787,8 @@ import G6 from '@antv/g6'
 
 import zhCn from 'element-plus/lib/locale/lang/zh-cn'
 import en from 'element-plus/lib/locale/lang/en'
+
+import { version } from '../package.json'
 
 export default defineComponent({
   components: {
@@ -890,8 +911,10 @@ export default defineComponent({
       })).flattenDeep().sortBy().sortedUniq().value()
     },
     thumbnailList () {
-      if (this.setting.thumbnailColumn) {
+      if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
         this.thumbnailColumn = this.setting.thumbnailColumn
+      } else {
+        this.thumbnailColumn = 10
       }
       return _.chunk(this.viewerImageList, this.thumbnailColumn)
     },
@@ -924,6 +947,9 @@ export default defineComponent({
         if (frame.page.length > 0) result.push(_.clone(frame))
         return result
       }
+    },
+    cookie () {
+      return `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id};star=${this.setting.star}`
     }
   },
   mounted () {
@@ -944,6 +970,11 @@ export default defineComponent({
       this.loadBookList(this.setting.loadOnStart)
       if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
       if (this.setting.theme) this.changeTheme(this.setting.theme)
+      if (this.setting.autoCheckUpdates === undefined) {
+        this.setting.autoCheckUpdates = true
+        this.saveSetting()
+      }
+      if (this.setting.autoCheckUpdates) this.autoCheckUpdates(false)
       this.handleLanguageChange(this.setting.language)
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
@@ -1157,7 +1188,7 @@ export default defineComponent({
       } else if (server === 'exhentai') {
         ipcRenderer['get-ex-webpage']({
           url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
-          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+          cookie: this.cookie
         })
         .then(res=>{
           resolveWebPage(book, res)
@@ -1176,7 +1207,7 @@ export default defineComponent({
       } else if (server === 'exsearch') {
         ipcRenderer['get-ex-webpage']({
           url: `https://exhentai.org/?f_search=${encodeURI(this.searchStringDialog)}&f_cats=689`,
-          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+          cookie: this.cookie
         })
         .then(res=>{
           resolveWebPage(book, res)
@@ -1194,18 +1225,22 @@ export default defineComponent({
     getBookInfo (book, server = 'e-hentai') {
       let getTag = (book, url) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
-        axios.post('https://api.e-hentai.org/api.php', {
-          'method': 'gdata',
-          'gidlist': [
-              [+match[1], match[2]]
-          ],
-          'namespace': 1
+        ipcRenderer['post-data-ex']({
+          url: 'https://api.e-hentai.org/api.php',
+          data: {
+            'method': 'gdata',
+            'gidlist': [
+                [+match[1], match[2]]
+            ],
+            'namespace': 1
+          },
+          cookie: this.cookie
         })
         .then(res=>{
           try {
             _.assign(
               book,
-              _.pick(res.data.gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+              _.pick(JSON.parse(res).gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
               {url: url}
             )
             book.posted = +book.posted
@@ -1236,7 +1271,7 @@ export default defineComponent({
             _.throttle(this.saveBookList, 10000)()
           } catch (e) {
             console.log(e)
-            if (_.includes(res.data, 'Your IP address has been')) {
+            if (_.includes(res, 'Your IP address has been')) {
               book.status = 'non-tag'
               this.printMessage('error', 'Your IP address has been temporarily banned')
               this.saveBookList()
@@ -1278,7 +1313,7 @@ export default defineComponent({
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
-            cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+            cookie: this.cookie
           })
           .then(res=>{
             resolveWebPage(book, res)
@@ -1443,8 +1478,12 @@ export default defineComponent({
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
       this.drawerVisibleCollection = false
-      let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
-      this.searchString = `${letter}:"${tag}"`
+      if (cat) {
+        let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+        this.searchString = `${letter}:"${tag}"`
+      } else {
+        this.searchString = `"${tag}"`
+      }
       this.searchBook()
     },
     // home main
@@ -1506,10 +1545,10 @@ export default defineComponent({
       }
     },
     selectFolderTreeNode (selectNode) {
-      if (selectNode.folderPath === '.') {
+      if (selectNode.folderPath.length <= 1) {
         this.bookList.map(book=>book.folderHide = false)
       } else {
-        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath
+        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
         this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
       }
       this.displayBookList = this.bookList
@@ -1756,7 +1795,7 @@ export default defineComponent({
       if (url) {
         ipcRenderer['get-ex-webpage']({
           url,
-          cookie: `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id}`
+          cookie: this.cookie
         })
         .then(res=>{
           let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
@@ -1992,6 +2031,34 @@ export default defineComponent({
             break
         }
         this.saveSetting()
+      })
+    },
+    autoCheckUpdates (forceShowDialog) {
+      axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
+      .then(res=>{
+        let { tag_name, html_url } = res.data
+        if (tag_name && tag_name !== 'v' + version) {
+          this.$confirm(
+            this.$t('c.newVersion') + tag_name,
+            '',
+            {
+              confirmButtonText: this.$t('c.downloadUpdate'),
+              type: 'success'
+            }
+          )
+          .then(()=>{
+            ipcRenderer['open-url'](html_url)
+          })
+        } else if (forceShowDialog) {
+          this.$confirm(
+            this.$t('c.notNewVersion'),
+            '',
+            {
+              type: 'info',
+              showCancelButton: false
+            }
+          )
+        }
       })
     },
 

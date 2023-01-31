@@ -93,7 +93,9 @@
     "excludeFileInfo": "Please enter the regular expression for the path of the file to be excluded",
     "folderTreeWidth": "Folder Tree Width",
     "folderTreeWidthInfo": "Default is 20%, accept valid css values, like 400px, 30%, 25vw etc.",
-    "advancedSearch": "Advanced Search"
+    "advancedSearch": "Advanced Search",
+    "checkUpdates": "Check Updates",
+    "autoCheckUpdates": "Auto Check Updates"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
@@ -108,6 +110,9 @@
     "redirect": "Redirect",
     "inputCategoryName": "Please input category name",
     "lastManga": "This is the last manga",
-    "insertEmptyPageInfo": "Press / key to adjust the double page order"
+    "insertEmptyPageInfo": "Press / key to adjust the double page order",
+    "notNewVersion": "Not update is available",
+    "newVersion": "New Version: ",
+    "downloadUpdate": "Download Update"
   }
 }

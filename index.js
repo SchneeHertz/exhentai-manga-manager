@@ -68,9 +68,9 @@ try {
 let logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), {flags: 'w'})
 let logStdout = process.stdout
 
-console.log = (message)=>{
-  logFile.write(format(message) + '\n')
-  logStdout.write(format(message) + '\n')
+console.log = (...message)=>{
+  logFile.write(format(...message) + '\n')
+  logStdout.write(format(...message) + '\n')
 }
 
 let sendMessageToWebContents = (message)=>{
@@ -115,7 +115,6 @@ function createWindow () {
   return win
 }
 
-app.disableHardwareAcceleration()
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
 app.whenReady().then(()=>{
   const primaryDisplay = screen.getPrimaryDisplay()
@@ -442,7 +441,7 @@ ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
       return res.text
     })
     .catch(e=>{
-      sendMessageToWebContents(`get ex comments failed because ${e}`)
+      sendMessageToWebContents(`get ex page failed because ${e}`)
     })
   } else {
     return await superagent
@@ -452,7 +451,32 @@ ipcMain.handle('get-ex-webpage', async (event, {url, cookie})=>{
       return res.text
     })
     .catch(e=>{
-      sendMessageToWebContents(`get ex comments failed because ${e}`)
+      sendMessageToWebContents(`get ex page failed because ${e}`)
+    })
+  }
+})
+
+ipcMain.handle('post-data-ex', async (event, {url, data, cookie})=>{
+  if (setting.proxy) {
+    return await superagent
+    .post(url, data)
+    .set('Cookie', cookie)
+    .proxy(setting.proxy)
+    .then(res=>{
+      return res.text
+    })
+    .catch(e=>{
+      sendMessageToWebContents(`get ex data failed because ${e}`)
+    })
+  } else {
+    return await superagent
+    .post(url, data)
+    .set('Cookie', cookie)
+    .then(res=>{
+      return res.text
+    })
+    .catch(e=>{
+      sendMessageToWebContents(`get ex data failed because ${e}`)
     })
   }
 })
@@ -463,46 +487,32 @@ ipcMain.handle('save-book-list', async (event, list)=>{
 
 // home
 ipcMain.handle('get-folder-tree', async(event, bookList)=>{
-  let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
-  folderList.sort()
-  let librarySplitPaths = setting.library.split(path.sep)
-  librarySplitPaths.pop()
-  let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).filter(p=>!librarySplitPaths.includes(p)))
-  let treeData = []
-  let addToTree = (treeLevel, parent, parentPath, child, childPath, rootLevel)=>{
-    rootLevel ??= treeLevel
-    if (_.isEmpty(rootLevel)) {
-      rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
-      return true
-    }
-    let foundParent = _.find(treeLevel, {label: parent})
-    if (foundParent) {
-      let foundChild = _.find(foundParent.children, {label: child})
-      if (!foundChild) {
-        foundParent.children.push({label: child, folderPath: childPath, children: []})
-      }
-      return true
-    } else {
-      if (!_.isEmpty(treeLevel)) {
-        let results = treeLevel.map(node=>addToTree(node.children, parent, parentPath, child, childPath, rootLevel))
-        if (_.isEmpty(_.compact(results)) && treeLevel == rootLevel) {
-          rootLevel.push({label: parent, folderPath: parentPath, children: [{label: child, folderPath: childPath, children: []}]})
-          return true
-        } else {
-          return !_.isEmpty(_.compact(results))
-        }
-      } else {
-        return false
-      }
-    }
+  let folderList = _.sortedUniq(_.sortBy(bookList.map(b=>path.dirname(b.filepath))))
+  let librarySplitPathsLength = setting.library.split(path.sep).length - 1
+  let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).slice(librarySplitPathsLength))
+  let folderTreeObject = {}
+  for(let folders of bookPathSplitList){
+    _.set(folderTreeObject, folders.map(f=>'_'+f), {})
   }
-  _.forIn(bookPathSplitList, bookPath=>{
-    let length = bookPath.length
-    for (let i = 0; i < length-1; i++) {
-      addToTree(treeData, bookPath[i], path.join(...bookPath.slice(1, i+1)), bookPath[i+1], path.join(...bookPath.slice(1, i+2)))
-    }
-  })
-  return treeData
+  let resolveTree = (preRoot, tree, initFolder)=>{
+    _.forIn(tree, (node, label)=>{
+      let trueLabel = label.slice(1)
+      if (_.isEmpty(node)) {
+        preRoot.push({
+          label: trueLabel,
+          folderPath: [...initFolder, trueLabel]
+        })
+      } else {
+        preRoot.push({
+          label: trueLabel,
+          folderPath: [...initFolder, trueLabel],
+          children: resolveTree([], node, [...initFolder, trueLabel])
+        })
+      }
+    })
+    return preRoot
+  }
+  return resolveTree([], folderTreeObject, [])
 })
 
 ipcMain.handle('load-collection-list', async (event, arg)=>{

@@ -763,6 +763,13 @@
                 @change="saveSetting"
               />
             </el-col>
+            <el-col :span="12" class="setting-switch">
+              <el-switch
+                v-model="setting.batchTagfailedBook"
+                :active-text="$t('m.batchTagfailedBook')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
       </el-tabs>
@@ -1328,7 +1335,11 @@ export default defineComponent({
       let load = async (gap) => {
         for (let i = 0; i < this.bookList.length; i++) {
           ipcRenderer['set-progress-bar'](i/this.bookList.length)
-          if (this.bookList[i].status === 'non-tag' && this.serviceAvailable) {
+          if (
+            (this.bookList[i].status === 'non-tag'
+            || (this.setting.batchTagfailedBook && this.bookList[i].status === 'tag-failed'))
+            && this.serviceAvailable
+          ) {
             this.getBookInfo(this.bookList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
@@ -1647,14 +1658,8 @@ export default defineComponent({
       })
     },
     geneRecommend (chinese = false, type = 'exhentai') {
-      // let tagGroup1 = _.filter(this.displayNodeData, n=>n.size < 200)
       let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
       let tagGroup3 = tagGroup2
-      // if (tagGroup2.length >= 3) {
-      //   tagGroup3 = tagGroup2
-      // } else {
-      //   tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
-      // }
       if (type === 'exhentai') {
         ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
       } else {

@@ -988,6 +988,7 @@ export default defineComponent({
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
     window.addEventListener('keydown', this.resolveKey)
+    this.throttleSaveBookList = _.throttle(this.saveBookList, 10000)
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
@@ -1275,7 +1276,7 @@ export default defineComponent({
             })
             book.tags = tagObject
             book.status = 'tagged'
-            _.throttle(this.saveBookList, 10000)()
+            this.throttleSaveBookList()
           } catch (e) {
             console.log(e)
             if (_.includes(res, 'Your IP address has been')) {

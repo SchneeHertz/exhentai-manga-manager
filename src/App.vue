@@ -1590,10 +1590,11 @@ export default defineComponent({
           tempNodeData.push({
             id: nanoid(),
             count,
-            size: Math.ceil(Math.log(count)*10+50),
-            oriSize: Math.ceil(Math.log(count)*10+50),
+            size: Math.ceil(Math.pow(Math.log(count), 2) + 80),
+            oriSize: Math.ceil(Math.pow(Math.log(count), 2) + 80),
             name: `${letter}:"${labelArray[1]}$"`,
             shortName: `${letter}:"${labelArray[1]}"`,
+            oriLabel: label,
             label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
             style:{fill: _.sample(colors)}
           })
@@ -1602,6 +1603,47 @@ export default defineComponent({
       this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 72)
       this.tagNodeData = _.shuffle(this.tagNodeData)
       this.displayNodeData = this.tagNodeData
+      let edges = []
+      let tempTagGroup = []
+      _.forIn(this.bookList, book=>{
+        let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
+        let tempTags = []
+        _.forIn(tags, (list, cat)=>{
+          _.forIn(list, tag=>{
+            let foundNode = _.find(this.tagNodeData, {oriLabel: `${cat}##${tag}`})
+            if (foundNode) {
+              tempTags.push(foundNode.id)
+            }
+          })
+        })
+        for (let i = 0; i < tempTags.length; i++) {
+          for (let j = i + 1; j < tempTags.length; j++) {
+            let foundGroup = _.find(tempTagGroup, g=>_.isEqual(g.set, new Set([tempTags[i], tempTags[j]])))
+            if (foundGroup) {
+              foundGroup.count += 1
+            } else {
+              tempTagGroup.push({
+                set: new Set([tempTags[i], tempTags[j]]),
+                count: 1
+              })
+            }
+          }
+        }
+      })
+      let maxCount = _.max(tempTagGroup.map(g=>g.count))
+      let countLimit =  maxCount * 0.1
+      _.forIn(tempTagGroup, g=>{
+        if (g.count > countLimit) {
+          g.array = [...g.set]
+          edges.push({
+            source: g.array[0],
+            target: g.array[1],
+            style: {
+              lineWidth: Math.round(g.count / maxCount * 6)
+            }
+          })
+        }
+      })
       this.dialogVisibleGraph = true
       this.$nextTick(()=>{
         let graph = new G6.Graph({
@@ -1609,16 +1651,22 @@ export default defineComponent({
           layout: {
             type: 'force',
             nodeStrength: 40,
-            collideStrength: 0.8,
-            alphaDecay: 0.01,
-            nodeSpacing: 2,
+            collideStrength: 0.9,
+            alphaDecay: 0.02,
+            nodeSpacing: 10,
             preventOverlap: true,
+          },
+          defaultEdge: {
+            type: 'line',
+            style: {
+              stroke: '#6196FE'
+            }
           },
           modes: {
             default: ['drag-canvas', 'zoom-canvas', 'drag-node']
           }
         })
-        graph.data({nodes: this.tagNodeData, edges:[]})
+        graph.data({nodes: this.tagNodeData, edges})
         const refreshDragedNodePosition = (e)=>{
           const model = e.item.get('model')
           model.fx = e.x

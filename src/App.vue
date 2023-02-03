@@ -1590,8 +1590,8 @@ export default defineComponent({
           tempNodeData.push({
             id: nanoid(),
             count,
-            size: Math.ceil(Math.pow(Math.log(count), 2) + 80),
-            oriSize: Math.ceil(Math.pow(Math.log(count), 2) + 80),
+            size: Math.ceil(Math.log(count) ** 2 + 80),
+            oriSize: Math.ceil(Math.log(count) ** 2 + 80),
             name: `${letter}:"${labelArray[1]}$"`,
             shortName: `${letter}:"${labelArray[1]}"`,
             oriLabel: label,

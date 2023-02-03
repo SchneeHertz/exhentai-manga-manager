@@ -305,8 +305,7 @@
       ></el-tree>
     </el-drawer>
     <el-dialog v-model="dialogVisibleGraph"
-      width="80%"
-      top="5vh"
+      fullscreen
       destroy-on-close
       @close="destroyCanvas"
     >
@@ -831,7 +830,6 @@ export default defineComponent({
       folderTreeData: [],
       storeBookList: [],
       tagNodeData: [],
-      displayNodeData: [],
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -1571,7 +1569,7 @@ export default defineComponent({
     displayTagGraph () {
       let nodes = []
       _.forIn(this.bookList, book=>{
-        let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
+        let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
         let tempNodes = []
         _.forIn(tags, (list, cat)=>{
           list.map(tag=>{
@@ -1590,8 +1588,8 @@ export default defineComponent({
           tempNodeData.push({
             id: nanoid(),
             count,
-            size: Math.ceil(Math.log(count) ** 2 + 80),
-            oriSize: Math.ceil(Math.log(count) ** 2 + 80),
+            size: Math.ceil(Math.log(count) ** 2 + 70),
+            oriSize: Math.ceil(Math.log(count) ** 2 + 70),
             name: `${letter}:"${labelArray[1]}$"`,
             shortName: `${letter}:"${labelArray[1]}"`,
             oriLabel: label,
@@ -1600,13 +1598,12 @@ export default defineComponent({
           })
         } catch {}
       })
-      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 72)
+      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 96)
       this.tagNodeData = _.shuffle(this.tagNodeData)
-      this.displayNodeData = this.tagNodeData
       let edges = []
       let tempTagGroup = []
       _.forIn(this.bookList, book=>{
-        let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
+        let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
         let tempTags = []
         _.forIn(tags, (list, cat)=>{
           _.forIn(list, tag=>{
@@ -1616,14 +1613,15 @@ export default defineComponent({
             }
           })
         })
+        tempTags.sort()
         for (let i = 0; i < tempTags.length; i++) {
           for (let j = i + 1; j < tempTags.length; j++) {
-            let foundGroup = _.find(tempTagGroup, g=>_.isEqual(g.set, new Set([tempTags[i], tempTags[j]])))
+            let foundGroup = _.find(tempTagGroup, {set: tempTags[i] + '##' + tempTags[j]})
             if (foundGroup) {
               foundGroup.count += 1
             } else {
               tempTagGroup.push({
-                set: new Set([tempTags[i], tempTags[j]]),
+                set: tempTags[i] + '##' + tempTags[j],
                 count: 1
               })
             }
@@ -1634,7 +1632,7 @@ export default defineComponent({
       let countLimit =  maxCount * 0.1
       _.forIn(tempTagGroup, g=>{
         if (g.count > countLimit) {
-          g.array = [...g.set]
+          g.array = g.set.split('##')
           edges.push({
             source: g.array[0],
             target: g.array[1],
@@ -1651,10 +1649,17 @@ export default defineComponent({
           layout: {
             type: 'force',
             nodeStrength: 40,
-            collideStrength: 0.9,
-            alphaDecay: 0.02,
+            edgeStrength: 0.01,
+            collideStrength: 1,
+            alphaDecay: 0.1,
             nodeSpacing: 10,
             preventOverlap: true,
+          },
+          defaultNode: {
+            style: {
+              stroke: '#6196FE',
+              lineWidth: 1
+            }
           },
           defaultEdge: {
             type: 'line',
@@ -1688,26 +1693,48 @@ export default defineComponent({
           const states = node.getStates()
           let clicked = false
           const model = node.getModel()
-          _.find(this.displayNodeData, {id: model.id}).size = 200
+          _.find(this.tagNodeData, {id: model.id}).size = 200
           let size = 200
           states.forEach((state)=>{
             if (state === 'click') {
               clicked = true
               size = model.oriSize
-              _.find(this.displayNodeData, {id: model.id}).size = model.oriSize
+              _.find(this.tagNodeData, {id: model.id}).size = model.oriSize
             }
           })
           graph.setItemState(node, 'click', !clicked)
-          graph.updateItem(node, {
-            size
+          graph.getNodes().forEach((node)=>{
+            graph.updateItem(node, {
+              style: {
+                stroke: '#6196FE',
+                lineWidth: 1
+              }
+            })
           })
+          if (!clicked) {
+            graph.updateItem(node, {
+              size,
+              style: {
+                stroke: '#FF0000',
+                lineWidth: 3
+              }
+            })
+            node.getNeighbors().forEach((node)=>{
+              graph.updateItem(node, {
+                style: {
+                  stroke: '#FF0000',
+                  lineWidth: 3
+                }
+              })
+            })
+          }
           graph.layout()
         })
         graph.render()
       })
     },
     geneRecommend (chinese = false, type = 'exhentai') {
-      let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
+      let tagGroup2 = _.filter(this.tagNodeData, n=>n.size >= 200)
       let tagGroup3 = tagGroup2
       if (type === 'exhentai') {
         ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
@@ -2404,7 +2431,7 @@ body
 
 #tag-graph
   width: 100%
-  height: calc(95vh - 220px)
+  height: calc(100vh - 170px)
 
 .book-collect-card
   width: 155px

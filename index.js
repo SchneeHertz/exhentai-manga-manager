@@ -313,6 +313,16 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
     }
 
     existData = _.filter(existData, {exist: true})
+    try {
+      let coverList = await fs.promises.readdir(COVER_PATH)
+      let existCoverList = existData.map(b=>b.coverPath)
+      let removeCoverList = _.difference(coverList.map(p=>path.join(COVER_PATH, p)), existCoverList)
+      for (let coverPath of removeCoverList) {
+        await fs.promises.rm(coverPath)
+      }
+    } catch (err) {
+      console.log(err)
+    }
     _.forIn(existData, b=>b.exist = undefined)
     await saveBookListToBrFile(existData)
     mainWindow.setProgressBar(-1)

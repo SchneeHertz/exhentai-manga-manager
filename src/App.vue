@@ -1501,7 +1501,7 @@ export default defineComponent({
       this.bookDetail = book
       this.dialogVisibleBookDetail = true
       this.showComment = !!this.setting.showComment
-      this.getComments(book.url)
+      if (this.showComment) this.getComments(book.url)
     },
     handleClickCover (book) {
       switch (this.setting.directEnter) {

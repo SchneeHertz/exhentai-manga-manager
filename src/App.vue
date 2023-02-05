@@ -587,6 +587,7 @@
               <div class="setting-line">
                 <el-input v-model="setting.proxy" @change="saveSetting" :placeholder="$t('m.like') + ' http://127.0.0.1:7890'">
                   <template #prepend><span class="setting-label">{{$t('m.proxy')}}</span></template>
+                  <template #append><el-button @click="testProxy">{{$t('m.test')}}</el-button></template>
                 </el-input>
               </div>
             </el-col>
@@ -2140,6 +2141,15 @@ export default defineComponent({
             }
           )
         }
+      })
+    },
+    testProxy () {
+      axios.get('https://e-hentai.org')
+      .then(()=>{
+        this.printMessage('success', this.$t('c.proxyWorking'))
+      })
+      .catch(()=>{
+        this.printMessage('error', this.$t('c.proxyNotWorking'))
       })
     },
 

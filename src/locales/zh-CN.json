@@ -96,7 +96,8 @@
     "advancedSearch": "高级搜索框",
     "checkUpdates": "检查更新",
     "autoCheckUpdates": "自动检查更新",
-    "batchTagfailedBook": "同时批量获取tag-failed漫画的元数据"
+    "batchTagfailedBook": "同时批量获取tag-failed漫画的元数据",
+    "test": "测试"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",
@@ -114,6 +115,8 @@
     "insertEmptyPageInfo": "按/键调整双页排序",
     "notNewVersion": "已是最新版本",
     "newVersion": "新版本: ",
-    "downloadUpdate": "下载更新"
+    "downloadUpdate": "下载更新",
+    "proxyWorking": "代理服务器连接正常",
+    "proxyNotWorking": "连接错误，检查代理服务器是否工作，设置是否正确"
   }
 }

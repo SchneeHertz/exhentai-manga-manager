@@ -914,7 +914,7 @@ export default defineComponent({
           let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
           return _.map(tags, tag=>`${letter}:"${tag}"`)
         })
-      })).flattenDeep().sortBy().sortedUniq().value()
+      })).flattenDeep().uniq().value()
     },
     thumbnailList () {
       if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
@@ -1111,7 +1111,7 @@ export default defineComponent({
           let mark = _.some(collectBook, 'mark')
           let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
             if (_.isArray(obj) && _.isArray(src)) {
-              return _.sortedUniq(_.sortBy(obj.concat(src)))
+              return _.uniq(obj.concat(src))
             } else {
               return src
             }
@@ -1913,7 +1913,7 @@ export default defineComponent({
           })
         })
         _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.sortedUniq(_.sortBy(tagArray))
+          tempTagGroup[tagCat] = _.uniq(tagArray)
         })
         this.tagGroup = tempTagGroup
       } else {

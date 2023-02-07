@@ -95,7 +95,9 @@
     "folderTreeWidthInfo": "Default is 20%, accept valid css values, like 400px, 30%, 25vw etc.",
     "advancedSearch": "Advanced Search",
     "checkUpdates": "Check Updates",
-    "autoCheckUpdates": "Auto Check Updates"
+    "autoCheckUpdates": "Auto Check Updates",
+    "batchTagfailedBook": "Also batch get metadata of tag-failed book",
+    "test": "Test"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
@@ -113,6 +115,8 @@
     "insertEmptyPageInfo": "Press / key to adjust the double page order",
     "notNewVersion": "Not update is available",
     "newVersion": "New Version: ",
-    "downloadUpdate": "Download Update"
+    "downloadUpdate": "Download Update",
+    "proxyWorking": "Proxy server is working",
+    "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct"
   }
 }

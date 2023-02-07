@@ -226,35 +226,40 @@
         </div>
         <div v-else-if="imageStyleType === 'single'">
           <div
-            v-for="(image, index) in viewerImageList"
-            :key="image.id"
             class="image-frame"
             :style="returnImageFrameStyle()"
           >
             <div
               class="viewer-image-frame"
-              :id="image.id"
-              :style="returnImageStyle(image)"
+              :id="viewerImageList[currentImageIndex]?.id"
+              :style="returnImageStyle(viewerImageList[currentImageIndex])"
             >
               <img
-                :src="`${image.filepath}?id=${image.id}`"
+                :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
                 class="viewer-image"
-                :style="{height: returnImageStyle(image).height}"
-                @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+                :style="{height: returnImageStyle(viewerImageList[currentImageIndex])?.height}"
+                @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex]?.filepath)"
               />
             </div>
-            <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
+            <img
+              :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
+              class="viewer-image-preload"
+            />
+            <img
+              :src="`${viewerImageList[currentImageIndex + 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
+              class="viewer-image-preload"
+            />
           </div>
         </div>
         <div v-else>
           <div
-            v-for="imageGroup in viewerImageListDouble"
             class="image-frame"
             :style="returnImageFrameStyle()"
           >
             <div
               class="viewer-image-frame viewer-image-frame-double"
-              v-for="image in imageGroup.page"
+              v-for="image in viewerImageListDouble[currentImageIndex]?.page"
               :style="returnImageStyle(image)"
             >
               <img
@@ -264,11 +269,17 @@
                 @contextmenu="onMangaImageContextMenu($event, image.filepath)"
               />
             </div>
-            <div class="viewer-image-page">{{imageGroup.pageNumber.join(', ')}} of {{viewerImageList.length}}</div>
+            <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page">
+              <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
+            </div>
+            <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page">
+              <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
+            </div>
+            <div class="viewer-image-page">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
           </div>
         </div>
-        <el-button size="large" type="success" class="next-manga-button" @click="toNextManga(true)">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" class="next-manga-button" @click="toNextManga(false)">{{$t('m.nextManga')}}</el-button>
+        <el-button size="large" type="success" class="next-manga-button" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
+        <el-button size="large" type="success" class="next-manga-button" @click="toNextManga">{{$t('m.nextManga')}}</el-button>
       </div>
       <div
         class="drawer-thumbnail-content"
@@ -305,8 +316,7 @@
       ></el-tree>
     </el-drawer>
     <el-dialog v-model="dialogVisibleGraph"
-      width="80%"
-      top="5vh"
+      fullscreen
       destroy-on-close
       @close="destroyCanvas"
     >
@@ -588,6 +598,7 @@
               <div class="setting-line">
                 <el-input v-model="setting.proxy" @change="saveSetting" :placeholder="$t('m.like') + ' http://127.0.0.1:7890'">
                   <template #prepend><span class="setting-label">{{$t('m.proxy')}}</span></template>
+                  <template #append><el-button @click="testProxy">{{$t('m.test')}}</el-button></template>
                 </el-input>
               </div>
             </el-col>
@@ -763,6 +774,13 @@
                 @change="saveSetting"
               />
             </el-col>
+            <el-col :span="12" class="setting-switch">
+              <el-switch
+                v-model="setting.batchTagfailedBook"
+                :active-text="$t('m.batchTagfailedBook')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
       </el-tabs>
@@ -824,7 +842,6 @@ export default defineComponent({
       folderTreeData: [],
       storeBookList: [],
       tagNodeData: [],
-      displayNodeData: [],
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -845,8 +862,10 @@ export default defineComponent({
       viewerImageList: [],
       viewerImageWidth: 1280,
       imageStyleType: 'scroll',
+      _currentImageIndex: 0,
       storeDrawerScrollTop: undefined,
       insertEmptyPage: false,
+      insertEmptyPageIndex: 1,
       // setting
       setting: {},
       activeSettingPanel: 'general',
@@ -908,7 +927,7 @@ export default defineComponent({
           let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
           return _.map(tags, tag=>`${letter}:"${tag}"`)
         })
-      })).flattenDeep().sortBy().sortedUniq().value()
+      })).flattenDeep().uniq().value()
     },
     thumbnailList () {
       if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
@@ -923,10 +942,6 @@ export default defineComponent({
         let result = []
         let frame = {page: [], pageNumber: []}
         let pageNumber = 0
-        let currentPage = 0
-        try {
-          currentPage = _.floor(document.getElementsByClassName('el-drawer__body')[0].scrollTop / window.innerHeight)
-        } catch {}
         for (let image of this.viewerImageList) {
           pageNumber += 1
           if (image.width > image.height) {
@@ -938,7 +953,7 @@ export default defineComponent({
           } else {
             frame.page.push(image)
             frame.pageNumber.push(pageNumber)
-            if ((this.insertEmptyPage && result.length === currentPage) || frame.page.length >= 2) {
+            if ((this.insertEmptyPage && result.length === this.insertEmptyPageIndex) || frame.page.length >= 2) {
               result.push(_.clone(frame))
               frame = {page: [], pageNumber: []}
             }
@@ -950,6 +965,26 @@ export default defineComponent({
     },
     cookie () {
       return `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id};star=${this.setting.star}`
+    },
+    currentImageIndex: {
+      get () {
+        return this._currentImageIndex
+      },
+      set (val) {
+        let listLength
+        if (this.imageStyleType === 'single') {
+          listLength = this.viewerImageList.length
+        } else {
+          listLength = this.viewerImageListDouble.length
+        }
+        if (val < 0) {
+          this._currentImageIndex = 0
+        } else if (val > listLength - 1 && listLength >= 1) {
+          this._currentImageIndex = listLength - 1
+        } else {
+          this._currentImageIndex = val
+        }
+      }
     }
   },
   mounted () {
@@ -981,6 +1016,7 @@ export default defineComponent({
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
     window.addEventListener('keydown', this.resolveKey)
+    this.throttleSaveBookList = _.throttle(this.saveBookList, 10000)
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
@@ -990,30 +1026,36 @@ export default defineComponent({
     resolveKey (event) {
       if (this.drawerVisibleViewer) {
         if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
-          if (event.key === 'ArrowRight') {
-            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
-          } else if (event.key === 'ArrowLeft') {
-            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
+          if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+            this.currentImageIndex += 1
+          } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+            this.currentImageIndex -= 1
           } else if (event.key === "/") {
+            this.insertEmptyPageIndex = this.currentImageIndex
             this.insertEmptyPage = !this.insertEmptyPage
+          } else if (event.key === 'Home') {
+            this.currentImageIndex = 0
+          } else if (event.key === 'End') {
+            this.currentImageIndex = 100000
           }
-        }
-        if (event.key === 'ArrowUp') {
-          if (event.ctrlKey) {
-            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 100)
-          } else {
-            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 10)
+        } else {
+          if (event.key === 'ArrowUp') {
+            if (event.ctrlKey) {
+              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 100)
+            } else {
+              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 10)
+            }
+          } else if (event.key === 'ArrowDown') {
+            if (event.ctrlKey) {
+              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 100)
+            } else {
+              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 10)
+            }
+          } else if (event.key === 'Home') {
+            document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
+          } else if (event.key === 'End') {
+            document.getElementsByClassName('el-drawer__body')[0].scrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollHeight
           }
-        } else if (event.key === 'ArrowDown') {
-          if (event.ctrlKey) {
-            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 100)
-          } else {
-            document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 10)
-          }
-        } else if (event.key === 'Home') {
-          document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
-        } else if (event.key === 'End') {
-          document.getElementsByClassName('el-drawer__body')[0].scrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollHeight
         }
       }
     },
@@ -1104,7 +1146,7 @@ export default defineComponent({
           let mark = _.some(collectBook, 'mark')
           let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
             if (_.isArray(obj) && _.isArray(src)) {
-              return _.sortedUniq(_.sortBy(obj.concat(src)))
+              return _.uniq(obj.concat(src))
             } else {
               return src
             }
@@ -1268,7 +1310,7 @@ export default defineComponent({
             })
             book.tags = tagObject
             book.status = 'tagged'
-            _.throttle(this.saveBookList, 10000)()
+            this.throttleSaveBookList()
           } catch (e) {
             console.log(e)
             if (_.includes(res, 'Your IP address has been')) {
@@ -1328,7 +1370,11 @@ export default defineComponent({
       let load = async (gap) => {
         for (let i = 0; i < this.bookList.length; i++) {
           ipcRenderer['set-progress-bar'](i/this.bookList.length)
-          if (this.bookList[i].status === 'non-tag' && this.serviceAvailable) {
+          if (
+            (this.bookList[i].status === 'non-tag'
+            || (this.setting.batchTagfailedBook && this.bookList[i].status === 'tag-failed'))
+            && this.serviceAvailable
+          ) {
             this.getBookInfo(this.bookList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
@@ -1491,7 +1537,7 @@ export default defineComponent({
       this.bookDetail = book
       this.dialogVisibleBookDetail = true
       this.showComment = !!this.setting.showComment
-      this.getComments(book.url)
+      if (this.showComment) this.getComments(book.url)
     },
     handleClickCover (book) {
       switch (this.setting.directEnter) {
@@ -1559,7 +1605,7 @@ export default defineComponent({
     displayTagGraph () {
       let nodes = []
       _.forIn(this.bookList, book=>{
-        let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
+        let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
         let tempNodes = []
         _.forIn(tags, (list, cat)=>{
           list.map(tag=>{
@@ -1578,18 +1624,60 @@ export default defineComponent({
           tempNodeData.push({
             id: nanoid(),
             count,
-            size: Math.ceil(Math.log(count)*10+50),
-            oriSize: Math.ceil(Math.log(count)*10+50),
+            size: Math.ceil(Math.log(count) ** 2 + 70),
+            oriSize: Math.ceil(Math.log(count) ** 2 + 70),
             name: `${letter}:"${labelArray[1]}$"`,
             shortName: `${letter}:"${labelArray[1]}"`,
+            oriLabel: label,
             label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
             style:{fill: _.sample(colors)}
           })
         } catch {}
       })
-      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 72)
+      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 96)
       this.tagNodeData = _.shuffle(this.tagNodeData)
-      this.displayNodeData = this.tagNodeData
+      let edges = []
+      let tempTagGroup = []
+      _.forIn(this.bookList, book=>{
+        let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
+        let tempTags = []
+        _.forIn(tags, (list, cat)=>{
+          _.forIn(list, tag=>{
+            let foundNode = _.find(this.tagNodeData, {oriLabel: `${cat}##${tag}`})
+            if (foundNode) {
+              tempTags.push(foundNode.id)
+            }
+          })
+        })
+        tempTags.sort()
+        for (let i = 0; i < tempTags.length; i++) {
+          for (let j = i + 1; j < tempTags.length; j++) {
+            let foundGroup = _.find(tempTagGroup, {set: tempTags[i] + '##' + tempTags[j]})
+            if (foundGroup) {
+              foundGroup.count += 1
+            } else {
+              tempTagGroup.push({
+                set: tempTags[i] + '##' + tempTags[j],
+                count: 1
+              })
+            }
+          }
+        }
+      })
+      let maxCount = _.max(tempTagGroup.map(g=>g.count))
+      let countLimit =  maxCount * 0.1
+      _.forIn(tempTagGroup, g=>{
+        if (g.count > countLimit) {
+          g.array = g.set.split('##')
+          edges.push({
+            source: g.array[0],
+            target: g.array[1],
+            style: {
+              lineWidth: Math.round(g.count / maxCount * 6)
+            }
+          })
+        }
+      })
       this.dialogVisibleGraph = true
       this.$nextTick(()=>{
         let graph = new G6.Graph({
@@ -1597,16 +1685,29 @@ export default defineComponent({
           layout: {
             type: 'force',
             nodeStrength: 40,
-            collideStrength: 0.8,
-            alphaDecay: 0.01,
-            nodeSpacing: 2,
+            edgeStrength: 0.01,
+            collideStrength: 1,
+            alphaDecay: 0.1,
+            nodeSpacing: 10,
             preventOverlap: true,
+          },
+          defaultNode: {
+            style: {
+              stroke: '#6196FE',
+              lineWidth: 1
+            }
+          },
+          defaultEdge: {
+            type: 'line',
+            style: {
+              stroke: '#6196FE'
+            }
           },
           modes: {
             default: ['drag-canvas', 'zoom-canvas', 'drag-node']
           }
         })
-        graph.data({nodes: this.tagNodeData, edges:[]})
+        graph.data({nodes: this.tagNodeData, edges})
         const refreshDragedNodePosition = (e)=>{
           const model = e.item.get('model')
           model.fx = e.x
@@ -1628,33 +1729,49 @@ export default defineComponent({
           const states = node.getStates()
           let clicked = false
           const model = node.getModel()
-          _.find(this.displayNodeData, {id: model.id}).size = 200
+          _.find(this.tagNodeData, {id: model.id}).size = 200
           let size = 200
           states.forEach((state)=>{
             if (state === 'click') {
               clicked = true
               size = model.oriSize
-              _.find(this.displayNodeData, {id: model.id}).size = model.oriSize
+              _.find(this.tagNodeData, {id: model.id}).size = model.oriSize
             }
           })
           graph.setItemState(node, 'click', !clicked)
-          graph.updateItem(node, {
-            size
+          graph.getNodes().forEach((node)=>{
+            graph.updateItem(node, {
+              style: {
+                stroke: '#6196FE',
+                lineWidth: 1
+              }
+            })
           })
+          if (!clicked) {
+            graph.updateItem(node, {
+              size,
+              style: {
+                stroke: '#FF0000',
+                lineWidth: 3
+              }
+            })
+            node.getNeighbors().forEach((node)=>{
+              graph.updateItem(node, {
+                style: {
+                  stroke: '#FF0000',
+                  lineWidth: 3
+                }
+              })
+            })
+          }
           graph.layout()
         })
         graph.render()
       })
     },
     geneRecommend (chinese = false, type = 'exhentai') {
-      // let tagGroup1 = _.filter(this.displayNodeData, n=>n.size < 200)
-      let tagGroup2 = _.filter(this.displayNodeData, n=>n.size >= 200)
+      let tagGroup2 = _.filter(this.tagNodeData, n=>n.size >= 200)
       let tagGroup3 = tagGroup2
-      // if (tagGroup2.length >= 3) {
-      //   tagGroup3 = tagGroup2
-      // } else {
-      //   tagGroup3 = [...tagGroup2, ..._.sampleSize(tagGroup1, 3 - tagGroup2.length)]
-      // }
       if (type === 'exhentai') {
         ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
       } else {
@@ -1831,7 +1948,7 @@ export default defineComponent({
           })
         })
         _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.sortedUniq(_.sortBy(tagArray))
+          tempTagGroup[tagCat] = _.uniq(tagArray)
         })
         this.tagGroup = tempTagGroup
       } else {
@@ -1865,11 +1982,13 @@ export default defineComponent({
 
     // internal viewer
     returnImageStyle(image) {
-      if (this.imageStyleType === 'scroll') {
-        return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px'}
-      } else {
-        // 28 is the height of .viewer-image-page
-        return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
+      if (image) {
+        if (this.imageStyleType === 'scroll') {
+          return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px'}
+        } else {
+          // 28 is the height of .viewer-image-page
+          return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
+        }
       }
     },
     returnImageFrameStyle () {
@@ -1886,15 +2005,17 @@ export default defineComponent({
     },
     switchThumbnail (val) {
       setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
-      if (!val) {
-        if (this.storeDrawerScrollTop) {
-          this.$nextTick(()=>{
-            document.getElementsByClassName('el-drawer__body')[0].scrollTop = this.storeDrawerScrollTop
-            this.storeDrawerScrollTop = undefined
-          })
+      if (this.imageStyleType === 'scroll') {
+        if (!val) {
+          if (this.storeDrawerScrollTop) {
+            this.$nextTick(()=>{
+              document.getElementsByClassName('el-drawer__body')[0].scrollTop = this.storeDrawerScrollTop
+              this.storeDrawerScrollTop = undefined
+            })
+          }
+        } else {
+          this.storeDrawerScrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollTop
         }
-      } else {
-        this.storeDrawerScrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollTop
       }
     },
     handleClickThumbnail(id) {
@@ -1906,24 +2027,24 @@ export default defineComponent({
           // 28 is the height of .viewer-image-page
           scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
         })
+        this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
       } else if (this.imageStyleType === 'single') {
-        scrollTopValue = window.innerHeight * _.findIndex(this.viewerImageList, {id: id})
+        this.currentImageIndex = _.findIndex(this.viewerImageList, {id: id})
       } else if (this.imageStyleType === 'double') {
         _.forIn(this.viewerImageListDouble, (imageGroup, index)=>{
           if (_.find(imageGroup.page, {id: id})) {
-            scrollTopValue = window.innerHeight * index
+            this.currentImageIndex = index
             return false
           }
         })
       }
-      this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
     },
     scrollPage (event) {
       if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
         if(event.clientX > window.innerWidth / 2) {
-          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight)
+          this.currentImageIndex += 1
         } else {
-          document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, -window.innerHeight)
+          this.currentImageIndex -= 1
         }
       }
     },
@@ -1943,20 +2064,24 @@ export default defineComponent({
       }
     },
     releaseSendImageLock () {
+      this.currentImageIndex = 0
       ipcRenderer['release-sendimagelock']()
     },
-    toNextManga (random) {
+    toNextMangaRandom (event) {
+      event.stopPropagation()
       this.releaseSendImageLock()
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
-      if (random) {
-        this.viewManga(_.sample(activeBookList))
+      this.viewManga(_.sample(activeBookList))
+    },
+    toNextManga (event) {
+      event.stopPropagation()
+      this.releaseSendImageLock()
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
+      let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
+      if (indexNow === activeBookList.length - 1) {
+        this.printMessage('warning', this.$t('c.lastManga'))
       } else {
-        let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
-        if (indexNow === activeBookList.length - 1) {
-          this.printMessage('warning', this.$t('c.lastManga'))
-        } else {
-          this.viewManga(activeBookList[indexNow + 1])
-        }
+        this.viewManga(activeBookList[indexNow + 1])
       }
     },
 
@@ -2059,6 +2184,15 @@ export default defineComponent({
             }
           )
         }
+      })
+    },
+    testProxy () {
+      axios.get('https://e-hentai.org')
+      .then(()=>{
+        this.printMessage('success', this.$t('c.proxyWorking'))
+      })
+      .catch(()=>{
+        this.printMessage('error', this.$t('c.proxyNotWorking'))
       })
     },
 
@@ -2350,7 +2484,7 @@ body
 
 #tag-graph
   width: 100%
-  height: calc(95vh - 220px)
+  height: calc(100vh - 170px)
 
 .book-collect-card
   width: 155px
@@ -2554,7 +2688,10 @@ body
     float: right
   .viewer-image-page
     line-height: 18px
-    margin-bottom: 10px
+    margin-top: 3px
+    margin-bottom: 7px
+  .viewer-image-preload
+    display: none
 .next-manga-button
   margin: 30px 0 60px
 .drawer-thumbnail-content

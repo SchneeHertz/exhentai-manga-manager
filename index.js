@@ -313,6 +313,16 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
     }
 
     existData = _.filter(existData, {exist: true})
+    try {
+      let coverList = await fs.promises.readdir(COVER_PATH)
+      let existCoverList = existData.map(b=>b.coverPath)
+      let removeCoverList = _.difference(coverList.map(p=>path.join(COVER_PATH, p)), existCoverList)
+      for (let coverPath of removeCoverList) {
+        await fs.promises.rm(coverPath)
+      }
+    } catch (err) {
+      console.log(err)
+    }
     _.forIn(existData, b=>b.exist = undefined)
     await saveBookListToBrFile(existData)
     mainWindow.setProgressBar(-1)
@@ -487,7 +497,7 @@ ipcMain.handle('save-book-list', async (event, list)=>{
 
 // home
 ipcMain.handle('get-folder-tree', async(event, bookList)=>{
-  let folderList = _.sortedUniq(_.sortBy(bookList.map(b=>path.dirname(b.filepath))))
+  let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
   let librarySplitPathsLength = setting.library.split(path.sep).length - 1
   let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).slice(librarySplitPathsLength))
   let folderTreeObject = {}

@@ -55,7 +55,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   coverPath = path.join(COVER_PATH, nanoid() + '.webp')
 
   let fileStat = await fs.promises.stat(filepath)
-  return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size}
+  return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size, mtime: fileStat?.mtime}
 }
 
 let getImageListFromArchive = async (filepath, VIEWER_PATH)=>{

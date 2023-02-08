@@ -184,19 +184,19 @@ let geneCover = async (filepath, type)=>{
   //fileLoader: get targetFile for hash, get tempCover for cover
   switch (type){
     case 'folder':
-      ;({targetFilePath, coverPath, tempCoverPath, pageCount} = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
+      ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime} = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
       break
     case 'zip':
       try {
-        ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
+        ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
       } catch (e) {
         console.log(e)
         console.log(`reload ${filepath} use adm-zip`)
-        ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
+        ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime} = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
       }
       break
     case 'archive':
-      ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
+      ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
       break
   }
 
@@ -212,7 +212,7 @@ let geneCover = async (filepath, type)=>{
     return false
   })
   if (imageResizeResult){
-    return {targetFilePath, coverPath, pageCount, bundleSize, coverHash}
+    return {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash}
   } else {
     return {targetFilePath:undefined, coverPath:undefined}
   }
@@ -263,7 +263,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           sendMessageToWebContents(`load ${filepath}, ${i+1} of ${listLength}`)
           foundNewBook = true
           let id = nanoid()
-          let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
+          let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
           if (targetFilePath && coverPath){
             let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
             existData.push({
@@ -275,6 +275,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
               id,
               pageCount,
               bundleSize,
+              mtime,
               coverHash,
               status: 'non-tag',
               exist: true,
@@ -360,7 +361,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
       let {filepath, type} = list[i]
       sendMessageToWebContents(`load ${filepath}, ${i+1} of ${listLength}`)
       let id = nanoid()
-      let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         data.push({
@@ -372,6 +373,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
           id,
           pageCount,
           bundleSize,
+          mtime,
           coverHash,
           status: 'non-tag',
           date: Date.now()
@@ -414,15 +416,15 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       let book = bookList[i]
       let {filepath, type} = book
       if (!type) type = 'archive'
-      let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-        _.assign(book, {type, coverPath, hash, pageCount, bundleSize, coverHash})
+        _.assign(book, {type, coverPath, hash, pageCount, bundleSize, mtime, coverHash})
         sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookListLength}`)
         mainWindow.setProgressBar(i/bookListLength)
       }
     } catch (e) {
-      sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+      sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)
     }
     if ((i+1) % 100 == 0) {
       await saveBookListToBrFile(bookList)

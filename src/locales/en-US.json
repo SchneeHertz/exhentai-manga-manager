@@ -97,7 +97,10 @@
     "checkUpdates": "Check Updates",
     "autoCheckUpdates": "Auto Check Updates",
     "batchTagfailedBook": "Also batch get metadata of tag-failed book",
-    "test": "Test"
+    "test": "Test",
+    "mtime": "Modify Time",
+    "mtimeAscend": "Modify Time Ascend",
+    "mtimeDescend": "Modify Time Descend"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

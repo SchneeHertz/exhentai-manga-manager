@@ -45,6 +45,8 @@
           <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
           <el-option :label="$t('m.addTimeAscend')" value="addAscend"></el-option>
           <el-option :label="$t('m.addTimeDescend')" value="addDescend"></el-option>
+          <el-option :label="$t('m.mtimeAscend')" value="mtimeAscend"></el-option>
+          <el-option :label="$t('m.mtimeDescend')" value="mtimeDescend"></el-option>
           <el-option :label="$t('m.postTimeAscend')" value="postAscend"></el-option>
           <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
           <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
@@ -398,6 +400,7 @@
               <el-descriptions-item :label="$t('m.fileSize')+':'">
                 {{Math.floor(bookDetail.bundleSize / 1048576)}} | {{Math.floor(bookDetail.filesize / 1048576)}} MB
               </el-descriptions-item>
+              <el-descriptions-item :label="$t('m.mtime')+':'">{{new Date(bookDetail.mtime).toLocaleString("zh-CN")}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.postTime')+':'">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
             </el-descriptions>
           </el-row>
@@ -1014,6 +1017,7 @@ export default defineComponent({
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
+    this.sortValue = localStorage.getItem('sortValue')
     this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
     window.addEventListener('keydown', this.resolveKey)
     this.throttleSaveBookList = _.throttle(this.saveBookList, 10000)
@@ -1114,9 +1118,14 @@ export default defineComponent({
     loadBookList (scan) {
       ipcRenderer['load-book-list'](scan)
       .then(res=>{
-        this.bookList = res.sort(this.sortList('date'))
-        this.displayBookList = this.bookList
-        this.chunkList()
+        if (this.sortValue) {
+          this.bookList = res
+          this.handleSortChange(this.sortValue)
+        } else {
+          this.bookList = res.sort(this.sortList('date'))
+          this.displayBookList = this.bookList
+          this.chunkList()
+        }
         this.loadCollectionList()
       })
     },
@@ -1164,8 +1173,7 @@ export default defineComponent({
             collection: true
           })
         })
-        this.displayBookList = this.bookList.sort(this.sortList('date'))
-        this.chunkList()
+        this.handleSortChange(this.sortValue)
       })
     },
     loadTranslationFromEhTagTranslation () {
@@ -1390,49 +1398,60 @@ export default defineComponent({
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
-    handleSortChange (val) {
+    handleSortChange (val, isSearch) {
+      let bookList = this.bookList
+      if (isSearch) bookList = this.displayBookList
       switch(val){
         case 'mark':
-          this.displayBookList = _.filter(this.bookList, 'mark')
+          this.displayBookList = _.filter(bookList, 'mark')
           this.chunkList()
           break
         case 'collection':
-          this.displayBookList = _.filter(this.bookList, 'collection')
+          this.displayBookList = _.filter(bookList, 'collection')
           this.chunkList()
           break
         case 'hidden':
-          this.displayBookList = _.filter(this.bookList, 'hiddenBook')
+          this.displayBookList = _.filter(bookList, 'hiddenBook')
           this.chunkList()
           break
         case 'addAscend':
-          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('date')))
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('date')))
           this.chunkList()
           break
         case 'addDescend':
-          this.displayBookList = this.bookList.sort(this.sortList('date'))
+          this.displayBookList = bookList.sort(this.sortList('date'))
+          this.chunkList()
+          break
+        case 'mtimeAscend':
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('mtime')))
+          this.chunkList()
+          break
+        case 'mtimeDescend':
+          this.displayBookList = bookList.sort(this.sortList('mtime'))
           this.chunkList()
           break
         case 'postAscend':
-          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('posted')))
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('posted')))
           this.chunkList()
           break
         case 'postDescend':
-          this.displayBookList = this.bookList.sort(this.sortList('posted'))
+          this.displayBookList = bookList.sort(this.sortList('posted'))
           this.chunkList()
           break
         case 'scoreAscend':
-          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('rating')))
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('rating')))
           this.chunkList()
           break
         case 'scoreDescend':
-          this.displayBookList = this.bookList.sort(this.sortList('rating'))
+          this.displayBookList = bookList.sort(this.sortList('rating'))
           this.chunkList()
           break
         default:
-          this.displayBookList = this.bookList
+          this.displayBookList = bookList
           this.chunkList()
           break
       }
+      localStorage.setItem('sortValue', val)
     },
     // home search
     querySearch (queryString, callback) {
@@ -1469,8 +1488,7 @@ export default defineComponent({
     handleSearchStringChange (val) {
       if (!val) {
         this.searchString = ''
-        this.displayBookList = this.bookList
-        this.chunkList()
+        this.handleSortChange(this.sortValue)
       }
     },
     handleInput (val) {
@@ -1519,7 +1537,7 @@ export default defineComponent({
           }
         })
       })
-      this.chunkList()
+      this.handleSortChange(this.sortValue, true)
     },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
@@ -1597,8 +1615,7 @@ export default defineComponent({
         let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
         this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
       }
-      this.displayBookList = this.bookList
-      this.chunkList()
+      this.handleSortChange(this.sortValue)
     },
 
     // tag analysis and recommand search
@@ -2122,9 +2139,14 @@ export default defineComponent({
       this.dialogVisibleSetting = false
       ipcRenderer['force-gene-book-list']()
       .then(res=>{
-        this.bookList = res.sort(this.sortList('date'))
-        this.displayBookList = this.bookList
-        this.chunkList()
+        if (this.sortValue) {
+          this.bookList = res
+          this.handleSortChange(this.sortValue)
+        } else {
+          this.bookList = res.sort(this.sortList('date'))
+          this.displayBookList = this.bookList
+          this.chunkList()
+        }
         this.loadCollectionList()
         this.printMessage('success', this.$t('c.rebuildMessage'))
       })
@@ -2250,8 +2272,7 @@ export default defineComponent({
         this.saveBookList()
         .then(()=>{
           this.printMessage('success', this.$t('c.importMessage'))
-          this.displayBookList = this.bookList
-          this.chunkList()
+          this.handleSortChange(this.sortValue)
         })
       })
     },

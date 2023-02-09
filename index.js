@@ -275,7 +275,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
               id,
               pageCount,
               bundleSize,
-              mtime,
+              mtime: mtime.toJSON(),
               coverHash,
               status: 'non-tag',
               exist: true,
@@ -373,7 +373,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
           id,
           pageCount,
           bundleSize,
-          mtime,
+          mtime: mtime.toJSON(),
           coverHash,
           status: 'non-tag',
           date: Date.now()
@@ -419,7 +419,7 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-        _.assign(book, {type, coverPath, hash, pageCount, bundleSize, mtime, coverHash})
+        _.assign(book, {type, coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash})
         sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookListLength}`)
         mainWindow.setProgressBar(i/bookListLength)
       }

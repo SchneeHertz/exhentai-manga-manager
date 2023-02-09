@@ -1120,11 +1120,8 @@ export default defineComponent({
       .then(res=>{
         if (this.sortValue) {
           this.bookList = res
-          this.handleSortChange(this.sortValue)
         } else {
           this.bookList = res.sort(this.sortList('date'))
-          this.displayBookList = this.bookList
-          this.chunkList()
         }
         this.loadCollectionList()
       })
@@ -2141,11 +2138,8 @@ export default defineComponent({
       .then(res=>{
         if (this.sortValue) {
           this.bookList = res
-          this.handleSortChange(this.sortValue)
         } else {
           this.bookList = res.sort(this.sortList('date'))
-          this.displayBookList = this.bookList
-          this.chunkList()
         }
         this.loadCollectionList()
         this.printMessage('success', this.$t('c.rebuildMessage'))

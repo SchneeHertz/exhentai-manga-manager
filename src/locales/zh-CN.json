@@ -127,6 +127,7 @@
     "newVersion": "新版本: ",
     "downloadUpdate": "下载更新",
     "proxyWorking": "代理服务器连接正常",
-    "proxyNotWorking": "连接错误，检查代理服务器是否工作，设置是否正确"
+    "proxyNotWorking": "连接错误，检查代理服务器是否工作，设置是否正确",
+    "confirmDelete": "确定删除？"
   }
 }

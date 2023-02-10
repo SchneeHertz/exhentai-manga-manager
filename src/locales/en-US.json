@@ -127,6 +127,7 @@
     "newVersion": "New Version: ",
     "downloadUpdate": "Download Update",
     "proxyWorking": "Proxy server is working",
-    "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct"
+    "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct",
+    "confirmDelete": "Confirm delete?"
   }
 }

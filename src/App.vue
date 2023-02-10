@@ -1919,21 +1919,28 @@ export default defineComponent({
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
     },
     deleteLocalBook (book) {
-      ipcRenderer['delete-local-book'](book.filepath)
+      ElMessageBox.confirm(
+        this.$t('c.confirmDelete'),
+        '',
+        {}
+      )
       .then(()=>{
-        this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
-        this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
-        if (book.hidden) {
-          _.forIn(this.collectionList, collection=>{
-            collection.list = _.filter(collection.list, id=>id !== book.id)
-          })
-          this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
-        }
-        this.saveBookList()
+        ipcRenderer['delete-local-book'](book.filepath)
         .then(()=>{
-          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
-          if (book.hidden) this.saveCollection()
-          this.dialogVisibleBookDetail = false
+          this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
+          this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
+          if (book.hidden) {
+            _.forIn(this.collectionList, collection=>{
+              collection.list = _.filter(collection.list, id=>id !== book.id)
+            })
+            this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
+          }
+          this.saveBookList()
+          .then(()=>{
+            this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
+            if (book.hidden) this.saveCollection()
+            this.dialogVisibleBookDetail = false
+          })
         })
       })
     },
@@ -2223,7 +2230,7 @@ export default defineComponent({
       .then(res=>{
         let { tag_name, html_url } = res.data
         if (tag_name && tag_name !== 'v' + this.version) {
-          this.$confirm(
+          ElMessageBox.confirm(
             this.$t('c.newVersion') + tag_name,
             '',
             {
@@ -2235,7 +2242,7 @@ export default defineComponent({
             ipcRenderer['open-url'](html_url)
           })
         } else if (forceShowDialog) {
-          this.$confirm(
+          ElMessageBox.confirm(
             this.$t('c.notNewVersion'),
             '',
             {

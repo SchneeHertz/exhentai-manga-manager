@@ -38,6 +38,9 @@
       <el-col :span="1">
         <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
       </el-col>
+      <el-col :span="1">
+        <el-button :icon="MdInformationCircleOutline" plain class="function-button" @click="dialogVisibleInfo = true" :title="$t('m.about')"></el-button>
+      </el-col>
       <el-col :span="3">
         <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
           <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
@@ -788,6 +791,26 @@
         </el-tab-pane>
       </el-tabs>
     </el-dialog>
+    <el-dialog v-model="dialogVisibleInfo"
+      width="30em"
+    >
+      <template #header><p class="setting-title">{{$t('m.about')}}</p></template>
+      <el-descriptions :column="1">
+        <el-descriptions-item :label="$t('m.appName')+':'">exhentai-manga-manager</el-descriptions-item>
+        <el-descriptions-item :label="$t('m.version')+':'">
+          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/releases')">{{version}}</a>
+        </el-descriptions-item>
+        <el-descriptions-item :label="$t('m.appPage')+':'">
+          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager')">github</a>
+        </el-descriptions-item>
+        <el-descriptions-item :label="$t('m.help')+':'">
+          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki')">github wiki</a>
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button type="primary" @click="dialogVisibleInfo = false">{{$t('m.close')}}</el-button>
+      </template>
+    </el-dialog>
   </el-config-provider>
 </template>
 
@@ -797,7 +820,7 @@ import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Close, Setting } from '@element-plus/icons-vue'
 import { Collections20Filled, Search32Filled } from '@vicons/fluent'
-import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline } from '@vicons/ionicons4'
+import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
@@ -819,7 +842,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, TreeViewAlt, CicsSystemGroup,
+      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline
     }
   },
   data () {
@@ -832,6 +855,7 @@ export default defineComponent({
       drawerVisibleViewer: false,
       drawerVisibleCollection: false,
       dialogVisibleEhSearch: false,
+      dialogVisibleInfo: false,
       // home
       bookList: [],
       displayBookList: [],
@@ -845,6 +869,7 @@ export default defineComponent({
       folderTreeData: [],
       storeBookList: [],
       tagNodeData: [],
+      version: version,
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -1191,6 +1216,9 @@ export default defineComponent({
         this.printMessage('warning', 'load translation from cache')
         this.resolvedTranslation = JSON.parse(localStorage.getItem('translationCache'))
       })
+    },
+    openLink (link) {
+      ipcRenderer['open-url'](link)
     },
 
     // metadata
@@ -2178,7 +2206,7 @@ export default defineComponent({
       axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
       .then(res=>{
         let { tag_name, html_url } = res.data
-        if (tag_name && tag_name !== 'v' + version) {
+        if (tag_name && tag_name !== 'v' + this.version) {
           this.$confirm(
             this.$t('c.newVersion') + tag_name,
             '',

@@ -100,7 +100,13 @@
     "test": "Test",
     "mtime": "Modify Time",
     "mtimeAscend": "Modify Time Ascend",
-    "mtimeDescend": "Modify Time Descend"
+    "mtimeDescend": "Modify Time Descend",
+    "about": "About",
+    "appName": "App Name",
+    "version": "Version",
+    "appPage": "App Website",
+    "help": "Help",
+    "close": "Close"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

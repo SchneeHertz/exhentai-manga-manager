@@ -7,7 +7,7 @@ const { promisify, format } = require('util')
 const _ = require('lodash')
 const { nanoid } = require('nanoid')
 const sharp = require('sharp')
-const { spawn } = require('child_process')
+const { exec } = require('child_process')
 const { createHash } = require('crypto')
 const sqlite3 = require('sqlite3')
 const { open } = require('sqlite')
@@ -52,7 +52,7 @@ try {
   setting = {
     proxy: undefined,
     library: app.getPath('downloads'),
-    imageExplorer: 'C:\\Windows\\explorer.exe',
+    imageExplorer: '\"C:\\Windows\\explorer.exe\"',
     pageSize: 10,
     loadOnStart: false,
     requireGap: 10000,
@@ -501,7 +501,7 @@ ipcMain.handle('save-book-list', async (event, list)=>{
 ipcMain.handle('get-folder-tree', async(event, bookList)=>{
   let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
   let librarySplitPathsLength = setting.library.split(path.sep).length - 1
-  let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).slice(librarySplitPathsLength))
+  let bookPathSplitList = folderList.sort().map(fp=>fp.split(path.sep).slice(librarySplitPathsLength))
   let folderTreeObject = {}
   for(let folders of bookPathSplitList){
     _.set(folderTreeObject, folders.map(f=>'_'+f), {})
@@ -568,7 +568,7 @@ ipcMain.handle('use-new-cover', async(event, filepath)=>{
 })
 
 ipcMain.handle('open-local-book', async (event, filepath)=>{
-  spawn(setting.imageExplorer, [filepath])
+  exec(`${setting.imageExplorer} "${filepath}"`)
 })
 
 ipcMain.handle('delete-local-book', async (event, filepath)=>{

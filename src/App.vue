@@ -554,7 +554,7 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
-                <el-input v-model="setting.imageExplorer">
+                <el-input v-model="setting.imageExplorer" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.imageViewer')}}</span></template>
                   <template #append><el-button @click="selectImageExplorerPath">{{$t('m.select')}}</el-button></template>
                 </el-input>
@@ -2181,7 +2181,7 @@ export default defineComponent({
     selectImageExplorerPath () {
       ipcRenderer['select-file']()
       .then(res=>{
-        this.setting.imageExplorer = res
+        this.setting.imageExplorer = `"${res}"`
         this.saveSetting()
       })
     },

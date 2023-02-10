@@ -19,7 +19,7 @@ const dirSize = async dir => {
 }
 
 let getFolderlist = async (libraryPath)=>{
-  let imageList = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif)', {
+  let imageList = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: libraryPath,
     nocase: true
   })
@@ -29,7 +29,7 @@ let getFolderlist = async (libraryPath)=>{
 }
 
 let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
-  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif)', {
+  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: folderpath,
     nocase: true
   })
@@ -48,7 +48,7 @@ let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
 }
 
 let getImageListFromFolder = async (folderpath, VIEWER_PATH)=>{
-  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif)', {
+  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: folderpath,
     nocase: true
   })

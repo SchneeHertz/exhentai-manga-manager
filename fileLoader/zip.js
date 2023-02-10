@@ -23,7 +23,7 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
     return _.find(zipFileList, zFile=>zFile.entryName == entryName)
   }
   let fileList = zipFileList.map(zFile=>zFile.entryName)
-  let imageList = _.filter(fileList, filepath=>_.includes(['.jpg', ',jpeg', '.png', '.webp', '.avif'], path.extname(filepath).toLowerCase()))
+  let imageList = _.filter(fileList, filepath=>_.includes(['.jpg', ',jpeg', '.png', '.webp', '.avif', '.gif'], path.extname(filepath).toLowerCase()))
   imageList = imageList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
 
   let targetFile
@@ -59,7 +59,7 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
 let getImageListFromZip = async (filepath, VIEWER_PATH)=>{
   let zip = new AdmZip(filepath)
   zip.extractAllTo(VIEWER_PATH, true)
-  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif)', {
+  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: VIEWER_PATH,
     nocase: true
   })

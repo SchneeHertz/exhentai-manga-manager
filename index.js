@@ -577,8 +577,12 @@ ipcMain.handle('delete-local-book', async (event, filepath)=>{
 
 // viewer
 ipcMain.handle('load-manga-image-list', async(event, book)=>{
-  await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})
-  await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
+  try {
+    await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
+  } catch (err) {
+    console.log(err)
+  }
   let {filepath, type} = book
 
   let list

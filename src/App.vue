@@ -65,6 +65,9 @@
             <el-button type="primary" plain class="function-button" @click="addCollection" :icon="Collections20Filled" :title="$t('m.addCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
+            <el-button type="primary" plain class="function-button" @click="renameCollection" :icon="Rename16Regular" :title="$t('m.renameCollection')"></el-button>
+          </el-col>
+          <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain class="function-button" @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
           </el-col>
         </el-row>
@@ -819,7 +822,7 @@ import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Close, Setting } from '@element-plus/icons-vue'
-import { Collections20Filled, Search32Filled } from '@vicons/fluent'
+import { Collections20Filled, Search32Filled, Rename16Regular } from '@vicons/fluent'
 import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
@@ -842,7 +845,8 @@ export default defineComponent({
   },
   setup () {
     return {
-      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline
+      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave,
+      TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular
     }
   },
   data () {
@@ -1832,8 +1836,7 @@ export default defineComponent({
       if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
     },
     addCollection () {
-      ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {
-      })
+      ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {})
       .then(({ value }) => {
         let id = nanoid()
         this.collectionList.push({
@@ -1847,6 +1850,19 @@ export default defineComponent({
       .catch(() => {
         this.printMessage('info', this.$t('c.canceled'))
       })
+    },
+    renameCollection () {
+      if (_.has(this.selectCollectionObject, 'title')) {
+        ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.renameCollection'), {
+          inputValue: this.selectCollectionObject.title
+        })
+        .then(({ value }) => {
+          this.selectCollectionObject.title = value
+        })
+        .catch(() => {
+          this.printMessage('info', this.$t('c.canceled'))
+        })
+      }
     },
     saveCollection () {
       this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(_.compact(c.list)))

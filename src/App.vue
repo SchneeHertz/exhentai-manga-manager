@@ -46,6 +46,7 @@
           <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
           <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
           <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
+          <el-option :label="$t('m.shuffle')" value="shuffle"></el-option>
           <el-option :label="$t('m.addTimeAscend')" value="addAscend"></el-option>
           <el-option :label="$t('m.addTimeDescend')" value="addDescend"></el-option>
           <el-option :label="$t('m.mtimeAscend')" value="mtimeAscend"></el-option>
@@ -1441,6 +1442,10 @@ export default defineComponent({
           break
         case 'hidden':
           this.displayBookList = _.filter(bookList, 'hiddenBook')
+          this.chunkList()
+          break
+        case 'shuffle':
+          this.displayBookList = _.shuffle(bookList)
           this.chunkList()
           break
         case 'addAscend':

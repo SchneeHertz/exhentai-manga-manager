@@ -287,7 +287,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
         }
-        if ((i+1) % 100 == 0) {
+        if ((i+1) % 100 === 0) {
           sendMessageToWebContents(`load ${i+1} of ${listLength}`)
           if (foundNewBook) {
             let tempExistData = _.cloneDeep(existData)
@@ -380,7 +380,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
         })
       }
       mainWindow.setProgressBar(i/listLength)
-      if ((i+1) % 100 == 0) {
+      if ((i+1) % 100 === 0) {
         await saveBookListToBrFile(data)
       }
     } catch (e) {
@@ -426,7 +426,7 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
     } catch (e) {
       sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)
     }
-    if ((i+1) % 100 == 0) {
+    if ((i+1) % 100 === 0) {
       await saveBookListToBrFile(bookList)
     }
   }
@@ -767,7 +767,7 @@ ipcMain.handle('import-sqlite', async(event, bookList)=>{
             sendMessageToWebContents(`${i+1} of ${bookListLength}, metadata not found for ${book.filepath}`)
           }
         }
-        if ((i+1) % 100 == 0) {
+        if ((i+1) % 100 === 0) {
           await saveBookListToBrFile(bookList)
         }
       }

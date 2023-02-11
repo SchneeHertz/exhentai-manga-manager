@@ -217,7 +217,7 @@
         class="drawer-image-content"
         @click="scrollPage"
         v-if="!showThumbnail"
-        v-loading="viewerImageList.length == 0"
+        v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"
         element-loading-background="transparent"
       >
@@ -304,7 +304,7 @@
       <div
         class="drawer-thumbnail-content"
         v-if="showThumbnail"
-        v-loading="viewerImageList.length == 0"
+        v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"
         element-loading-background="transparent"
       >
@@ -1122,7 +1122,7 @@ export default defineComponent({
       let count = 0
       let countIndex = 0
       _.forIn(list, element=>{
-        if (countIndex == index) result.push(element)
+        if (countIndex === index) result.push(element)
         if (!element.hidden && !element.folderHide) count++
         if (count >= size) {
           countIndex++
@@ -2140,7 +2140,7 @@ export default defineComponent({
       } else if (this.imageStyleType === 'double') {
         _.forIn(this.viewerImageListDouble, (imageGroup, index)=>{
           if (_.find(imageGroup.page, {id: id})) {
-            this.currentImageIndex = index
+            this.currentImageIndex = +index
             return false
           }
         })
@@ -2344,7 +2344,7 @@ export default defineComponent({
               delete book.collectionInfo
             }
           }
-          if (index == this.bookList.length - 1) {
+          if (+index === this.bookList.length - 1) {
             this.dialogVisibleSetting = false
             this.printMessage('success', this.$t('c.importMessage'))
           }

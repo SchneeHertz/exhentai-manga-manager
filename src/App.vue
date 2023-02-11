@@ -15,7 +15,12 @@
           clearable
           class="search-input"
           v-if="setting.advancedSearch"
-        ></el-autocomplete>
+        >
+          <template #default="{ item }">
+            <span class="autocomplete-label">{{ item.label }}</span>
+            <span class="autocomplete-value">{{ item.value }}</span>
+          </template>
+        </el-autocomplete>
         <el-autocomplete
           v-model="searchString"
           :fetch-suggestions="querySearchLegacy"
@@ -24,7 +29,12 @@
           clearable
           class="search-input"
           v-else
-        ></el-autocomplete>
+        >
+          <template #default="{ item }">
+            <span class="autocomplete-label">{{ item.label }}</span>
+            <span class="autocomplete-value">{{ item.value }}</span>
+          </template>
+        </el-autocomplete>
       </el-col>
       <el-col :span="1">
         <el-button type="primary" :icon="Search32Filled" plain class="function-button" @click="searchBook" :title="$t('m.search')"></el-button>
@@ -874,7 +884,6 @@ export default defineComponent({
       resolvedTranslation: {},
       locale: zhCn,
       searchString: undefined,
-      searchHistory: [],
       sortValue: undefined,
       currentPage: 1,
       folderTreeData: [],
@@ -963,10 +972,20 @@ export default defineComponent({
     tagList () {
       return _(this.bookList.map(b=>{
         return _.map(b.tags, (tags, cat)=>{
-          let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
-          return _.map(tags, tag=>`${letter}:"${tag}"`)
+          return _.map(tags, tag=>`${cat}##${tag}`)
         })
-      })).flattenDeep().uniq().value()
+      }))
+      .flattenDeep().uniq().sort()
+      .map(combinedTag=>{
+        let tagArray = _.split(combinedTag, '##')
+        let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
+        let labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
+        return {
+          label: `${labelHeader}:${this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]}`,
+          value: `${letter}:"${tagArray[1]}"`
+        }
+      })
+      .value()
     },
     thumbnailList () {
       if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
@@ -1054,7 +1073,6 @@ export default defineComponent({
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     this.sortValue = localStorage.getItem('sortValue')
-    this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
     window.addEventListener('keydown', this.resolveKey)
     this.throttleSaveBookList = _.throttle(this.saveBookList, 10000)
   },
@@ -1500,30 +1518,45 @@ export default defineComponent({
         let keywords = queryString.match(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
         if (keywords) {
           if (keywords[1][0] === '-') {
-            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].slice(1).toLowerCase()))
+            result = _.filter(this.tagList, str=>{
+              return _.includes(str.value.toLowerCase(), keywords[1].slice(1).toLowerCase())
+              || _.includes(str.label.toLowerCase(), keywords[1].slice(1).toLowerCase())
+            })
           } else {
-            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].toLowerCase()))
+            result = _.filter(this.tagList, str=>{
+              return _.includes(str.value.toLowerCase(), keywords[1].toLowerCase())
+              || _.includes(str.label.toLowerCase(), keywords[1].toLowerCase())
+            })
           }
         } else {
           if (queryString[0] === '-') {
-            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.slice(1).toLowerCase()))
+            result = _.filter(this.tagList, str=>{
+              return _.includes(str.value.toLowerCase(), queryString.slice(1).toLowerCase())
+              || _.includes(str.label.toLowerCase(), queryString.slice(1).toLowerCase())
+            })
           } else {
-            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+            result = _.filter(this.tagList, str=>{
+              return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
+              || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
+            })
           }
         }
       } else {
         result = this.tagList
       }
-      callback(result.map(s=>({value:s})))
+      callback(result)
     },
     querySearchLegacy (queryString, callback) {
       let result = []
       if (queryString) {
-        result = _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+        result = _.filter(this.tagList, str=>{
+          return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
+          || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
+        })
       } else {
-        result = this.searchHistory
+        result = this.tagList
       }
-      callback(result.map(s=>({value:s})))
+      callback(result)
     },
     handleSearchStringChange (val) {
       if (!val) {
@@ -1554,8 +1587,6 @@ export default defineComponent({
     },
     searchBook () {
       let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
-      this.searchHistory = _.take(_.uniq([this.searchString, ...this.searchHistory]), 8)
-      localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory))
       this.displayBookList = _.filter(this.bookList, (book)=>{
         let bookString = JSON.stringify(
           _.assign(
@@ -2476,6 +2507,9 @@ body
 .search-input,
 .function-button
   width: 100%
+.autocomplete-value
+  margin-left: 2em
+  float: right
 
 .side-tree-modal
   background-color: var(--el-mask-color-extra-light)

@@ -97,6 +97,7 @@
               @contextmenu="onBookContextMenu($event, book)"
             />
             <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="info">{{ book.pageCount }}P</el-tag>
             <el-icon
               :size="30"
               :color="book.mark ? '#E6A23C' : '#666666'"
@@ -357,6 +358,7 @@
           @contextmenu="onBookContextMenu($event, book)"
         />
         <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+        <el-tag class="book-card-pagecount" size="small" type="info">{{ book.pageCount }}P</el-tag>
         <el-icon
           :size="30"
           :color="book.mark ? '#E6A23C' : '#666666'"
@@ -2523,11 +2525,14 @@ body
   font-size: 14px
   cursor: pointer
   line-height: 18px
-.book-card-star, .book-detail-star, .book-card-language
+.book-card-star, .book-detail-star, .book-card-language, .book-card-pagecount
   position: absolute
 .book-card-language
   left: 19px
   top: 52px
+.book-card-pagecount
+  left: 19px
+  top: 315px
 .book-card-star
   right: 12px
   top: 40px

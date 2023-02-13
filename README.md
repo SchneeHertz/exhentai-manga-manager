@@ -4,7 +4,7 @@
 
 <img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="256"/>
 
-管理从ExHentai下载的短篇漫画
+管理或阅读从ExHentai下载的短篇漫画
 
 ![cover.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/cover.jpg)
 ![detail.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/detail.jpg)

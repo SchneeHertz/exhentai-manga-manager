@@ -60,7 +60,8 @@ try {
     showTranslation: false,
     widthLimit: undefined,
     directEnter: 'detail',
-    language: 'default'
+    language: 'default',
+    advancedSearch: true
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }

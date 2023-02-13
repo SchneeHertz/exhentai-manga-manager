@@ -15,7 +15,12 @@
           clearable
           class="search-input"
           v-if="setting.advancedSearch"
-        ></el-autocomplete>
+        >
+          <template #default="{ item }">
+            <span class="autocomplete-label">{{ item.label }}</span>
+            <span class="autocomplete-value">{{ item.value }}</span>
+          </template>
+        </el-autocomplete>
         <el-autocomplete
           v-model="searchString"
           :fetch-suggestions="querySearchLegacy"
@@ -24,7 +29,12 @@
           clearable
           class="search-input"
           v-else
-        ></el-autocomplete>
+        >
+          <template #default="{ item }">
+            <span class="autocomplete-label">{{ item.label }}</span>
+            <span class="autocomplete-value">{{ item.value }}</span>
+          </template>
+        </el-autocomplete>
       </el-col>
       <el-col :span="1">
         <el-button type="primary" :icon="Search32Filled" plain class="function-button" @click="searchBook" :title="$t('m.search')"></el-button>
@@ -38,13 +48,19 @@
       <el-col :span="1">
         <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
       </el-col>
+      <el-col :span="1">
+        <el-button :icon="MdInformationCircleOutline" plain class="function-button" @click="dialogVisibleInfo = true" :title="$t('m.about')"></el-button>
+      </el-col>
       <el-col :span="3">
         <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
           <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
           <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
           <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
+          <el-option :label="$t('m.shuffle')" value="shuffle"></el-option>
           <el-option :label="$t('m.addTimeAscend')" value="addAscend"></el-option>
           <el-option :label="$t('m.addTimeDescend')" value="addDescend"></el-option>
+          <el-option :label="$t('m.mtimeAscend')" value="mtimeAscend"></el-option>
+          <el-option :label="$t('m.mtimeDescend')" value="mtimeDescend"></el-option>
           <el-option :label="$t('m.postTimeAscend')" value="postAscend"></el-option>
           <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
           <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
@@ -58,6 +74,9 @@
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain class="function-button" @click="addCollection" :icon="Collections20Filled" :title="$t('m.addCollection')"></el-button>
+          </el-col>
+          <el-col :span="6" v-if="editCollectionView">
+            <el-button type="primary" plain class="function-button" @click="renameCollection" :icon="Rename16Regular" :title="$t('m.renameCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain class="function-button" @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
@@ -88,6 +107,7 @@
               @contextmenu="onBookContextMenu($event, book)"
             />
             <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="info">{{ book.pageCount }}P</el-tag>
             <el-icon
               :size="30"
               :color="book.mark ? '#E6A23C' : '#666666'"
@@ -197,7 +217,7 @@
         class="drawer-image-content"
         @click="scrollPage"
         v-if="!showThumbnail"
-        v-loading="viewerImageList.length == 0"
+        v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"
         element-loading-background="transparent"
       >
@@ -284,7 +304,7 @@
       <div
         class="drawer-thumbnail-content"
         v-if="showThumbnail"
-        v-loading="viewerImageList.length == 0"
+        v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"
         element-loading-background="transparent"
       >
@@ -348,6 +368,7 @@
           @contextmenu="onBookContextMenu($event, book)"
         />
         <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+        <el-tag class="book-card-pagecount" size="small" type="info">{{ book.pageCount }}P</el-tag>
         <el-icon
           :size="30"
           :color="book.mark ? '#E6A23C' : '#666666'"
@@ -398,6 +419,7 @@
               <el-descriptions-item :label="$t('m.fileSize')+':'">
                 {{Math.floor(bookDetail.bundleSize / 1048576)}} | {{Math.floor(bookDetail.filesize / 1048576)}} MB
               </el-descriptions-item>
+              <el-descriptions-item :label="$t('m.mtime')+':'">{{new Date(bookDetail.mtime).toLocaleString("zh-CN")}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.postTime')+':'">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
             </el-descriptions>
           </el-row>
@@ -544,7 +566,7 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
-                <el-input v-model="setting.imageExplorer">
+                <el-input v-model="setting.imageExplorer" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.imageViewer')}}</span></template>
                   <template #append><el-button @click="selectImageExplorerPath">{{$t('m.select')}}</el-button></template>
                 </el-input>
@@ -785,6 +807,30 @@
         </el-tab-pane>
       </el-tabs>
     </el-dialog>
+    <el-dialog v-model="dialogVisibleInfo"
+      width="30em"
+    >
+      <template #header><p class="setting-title">{{$t('m.about')}}</p></template>
+      <el-descriptions :column="1">
+        <el-descriptions-item :label="$t('m.appName')+':'">exhentai-manga-manager</el-descriptions-item>
+        <el-descriptions-item :label="$t('m.version')+':'">
+          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/releases')">{{version}}</a>
+        </el-descriptions-item>
+        <el-descriptions-item :label="$t('m.appPage')+':'">
+          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager')">github</a>
+        </el-descriptions-item>
+        <el-descriptions-item :label="$t('m.help')+':'">
+          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki')">github wiki</a>
+        </el-descriptions-item>
+        <el-descriptions-item :label="$t('m.donation')+':'">
+          <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://afdian.net/a/SeldonHorizon')">爱发电</a>
+          <a v-else href="#" @click="openLink('https://www.buymeacoffee.com/schneehertz')">buy me a coffee</a>
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button type="primary" @click="dialogVisibleInfo = false">{{$t('m.close')}}</el-button>
+      </template>
+    </el-dialog>
   </el-config-provider>
 </template>
 
@@ -793,8 +839,8 @@ import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Close, Setting } from '@element-plus/icons-vue'
-import { Collections20Filled, Search32Filled } from '@vicons/fluent'
-import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline } from '@vicons/ionicons4'
+import { Collections20Filled, Search32Filled, Rename16Regular } from '@vicons/fluent'
+import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
@@ -816,7 +862,8 @@ export default defineComponent({
   },
   setup () {
     return {
-      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, TreeViewAlt, CicsSystemGroup,
+      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave,
+      TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular
     }
   },
   data () {
@@ -829,6 +876,7 @@ export default defineComponent({
       drawerVisibleViewer: false,
       drawerVisibleCollection: false,
       dialogVisibleEhSearch: false,
+      dialogVisibleInfo: false,
       // home
       bookList: [],
       displayBookList: [],
@@ -836,12 +884,12 @@ export default defineComponent({
       resolvedTranslation: {},
       locale: zhCn,
       searchString: undefined,
-      searchHistory: [],
       sortValue: undefined,
       currentPage: 1,
       folderTreeData: [],
       storeBookList: [],
       tagNodeData: [],
+      version: version,
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -924,10 +972,20 @@ export default defineComponent({
     tagList () {
       return _(this.bookList.map(b=>{
         return _.map(b.tags, (tags, cat)=>{
-          let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
-          return _.map(tags, tag=>`${letter}:"${tag}"`)
+          return _.map(tags, tag=>`${cat}##${tag}`)
         })
-      })).flattenDeep().uniq().value()
+      }))
+      .flattenDeep().uniq().sort()
+      .map(combinedTag=>{
+        let tagArray = _.split(combinedTag, '##')
+        let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
+        let labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
+        return {
+          label: `${labelHeader}:${this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]}`,
+          value: `${letter}:"${tagArray[1]}"`
+        }
+      })
+      .value()
     },
     thumbnailList () {
       if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
@@ -1014,7 +1072,7 @@ export default defineComponent({
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
-    this.searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]')
+    this.sortValue = localStorage.getItem('sortValue')
     window.addEventListener('keydown', this.resolveKey)
     this.throttleSaveBookList = _.throttle(this.saveBookList, 10000)
   },
@@ -1064,7 +1122,7 @@ export default defineComponent({
       let count = 0
       let countIndex = 0
       _.forIn(list, element=>{
-        if (countIndex == index) result.push(element)
+        if (countIndex === index) result.push(element)
         if (!element.hidden && !element.folderHide) count++
         if (count >= size) {
           countIndex++
@@ -1114,9 +1172,11 @@ export default defineComponent({
     loadBookList (scan) {
       ipcRenderer['load-book-list'](scan)
       .then(res=>{
-        this.bookList = res.sort(this.sortList('date'))
-        this.displayBookList = this.bookList
-        this.chunkList()
+        if (this.sortValue) {
+          this.bookList = res
+        } else {
+          this.bookList = res.sort(this.sortList('date'))
+        }
         this.loadCollectionList()
       })
     },
@@ -1164,8 +1224,7 @@ export default defineComponent({
             collection: true
           })
         })
-        this.displayBookList = this.bookList.sort(this.sortList('date'))
-        this.chunkList()
+        this.handleSortChange(this.sortValue)
       })
     },
     loadTranslationFromEhTagTranslation () {
@@ -1186,6 +1245,9 @@ export default defineComponent({
         this.printMessage('warning', 'load translation from cache')
         this.resolvedTranslation = JSON.parse(localStorage.getItem('translationCache'))
       })
+    },
+    openLink (link) {
+      ipcRenderer['open-url'](link)
     },
 
     // metadata
@@ -1390,49 +1452,64 @@ export default defineComponent({
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
-    handleSortChange (val) {
+    handleSortChange (val, isSearch) {
+      let bookList = this.bookList
+      if (isSearch) bookList = this.displayBookList
       switch(val){
         case 'mark':
-          this.displayBookList = _.filter(this.bookList, 'mark')
+          this.displayBookList = _.filter(bookList, 'mark')
           this.chunkList()
           break
         case 'collection':
-          this.displayBookList = _.filter(this.bookList, 'collection')
+          this.displayBookList = _.filter(bookList, 'collection')
           this.chunkList()
           break
         case 'hidden':
-          this.displayBookList = _.filter(this.bookList, 'hiddenBook')
+          this.displayBookList = _.filter(bookList, 'hiddenBook')
+          this.chunkList()
+          break
+        case 'shuffle':
+          this.displayBookList = _.shuffle(bookList)
           this.chunkList()
           break
         case 'addAscend':
-          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('date')))
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('date')))
           this.chunkList()
           break
         case 'addDescend':
-          this.displayBookList = this.bookList.sort(this.sortList('date'))
+          this.displayBookList = bookList.sort(this.sortList('date'))
+          this.chunkList()
+          break
+        case 'mtimeAscend':
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('mtime')))
+          this.chunkList()
+          break
+        case 'mtimeDescend':
+          this.displayBookList = bookList.sort(this.sortList('mtime'))
           this.chunkList()
           break
         case 'postAscend':
-          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('posted')))
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('posted')))
           this.chunkList()
           break
         case 'postDescend':
-          this.displayBookList = this.bookList.sort(this.sortList('posted'))
+          this.displayBookList = bookList.sort(this.sortList('posted'))
           this.chunkList()
           break
         case 'scoreAscend':
-          this.displayBookList = _.reverse(this.bookList.sort(this.sortList('rating')))
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('rating')))
           this.chunkList()
           break
         case 'scoreDescend':
-          this.displayBookList = this.bookList.sort(this.sortList('rating'))
+          this.displayBookList = bookList.sort(this.sortList('rating'))
           this.chunkList()
           break
         default:
-          this.displayBookList = this.bookList
+          this.displayBookList = bookList
           this.chunkList()
           break
       }
+      localStorage.setItem('sortValue', val)
     },
     // home search
     querySearch (queryString, callback) {
@@ -1441,36 +1518,50 @@ export default defineComponent({
         let keywords = queryString.match(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
         if (keywords) {
           if (keywords[1][0] === '-') {
-            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].slice(1).toLowerCase()))
+            result = _.filter(this.tagList, str=>{
+              return _.includes(str.value.toLowerCase(), keywords[1].slice(1).toLowerCase())
+              || _.includes(str.label.toLowerCase(), keywords[1].slice(1).toLowerCase())
+            })
           } else {
-            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), keywords[1].toLowerCase()))
+            result = _.filter(this.tagList, str=>{
+              return _.includes(str.value.toLowerCase(), keywords[1].toLowerCase())
+              || _.includes(str.label.toLowerCase(), keywords[1].toLowerCase())
+            })
           }
         } else {
           if (queryString[0] === '-') {
-            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.slice(1).toLowerCase()))
+            result = _.filter(this.tagList, str=>{
+              return _.includes(str.value.toLowerCase(), queryString.slice(1).toLowerCase())
+              || _.includes(str.label.toLowerCase(), queryString.slice(1).toLowerCase())
+            })
           } else {
-            result = _.filter(this.tagList, str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+            result = _.filter(this.tagList, str=>{
+              return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
+              || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
+            })
           }
         }
       } else {
         result = this.tagList
       }
-      callback(result.map(s=>({value:s})))
+      callback(result)
     },
     querySearchLegacy (queryString, callback) {
       let result = []
       if (queryString) {
-        result = _.filter(this.searchHistory.concat(this.tagList), str=>_.includes(str.toLowerCase(), queryString.toLowerCase()))
+        result = _.filter(this.tagList, str=>{
+          return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
+          || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
+        })
       } else {
-        result = this.searchHistory
+        result = this.tagList
       }
-      callback(result.map(s=>({value:s})))
+      callback(result)
     },
     handleSearchStringChange (val) {
       if (!val) {
         this.searchString = ''
-        this.displayBookList = this.bookList
-        this.chunkList()
+        this.handleSortChange(this.sortValue)
       }
     },
     handleInput (val) {
@@ -1496,8 +1587,6 @@ export default defineComponent({
     },
     searchBook () {
       let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
-      this.searchHistory = _.take(_.uniq([this.searchString, ...this.searchHistory]), 8)
-      localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory))
       this.displayBookList = _.filter(this.bookList, (book)=>{
         let bookString = JSON.stringify(
           _.assign(
@@ -1519,7 +1608,7 @@ export default defineComponent({
           }
         })
       })
-      this.chunkList()
+      this.handleSortChange(this.sortValue, true)
     },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
@@ -1597,8 +1686,7 @@ export default defineComponent({
         let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
         this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
       }
-      this.displayBookList = this.bookList
-      this.chunkList()
+      this.handleSortChange(this.sortValue)
     },
 
     // tag analysis and recommand search
@@ -1790,8 +1878,7 @@ export default defineComponent({
       if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
     },
     addCollection () {
-      ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {
-      })
+      ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {})
       .then(({ value }) => {
         let id = nanoid()
         this.collectionList.push({
@@ -1805,6 +1892,19 @@ export default defineComponent({
       .catch(() => {
         this.printMessage('info', this.$t('c.canceled'))
       })
+    },
+    renameCollection () {
+      if (_.has(this.selectCollectionObject, 'title')) {
+        ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.renameCollection'), {
+          inputValue: this.selectCollectionObject.title
+        })
+        .then(({ value }) => {
+          this.selectCollectionObject.title = value
+        })
+        .catch(() => {
+          this.printMessage('info', this.$t('c.canceled'))
+        })
+      }
     },
     saveCollection () {
       this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(_.compact(c.list)))
@@ -1861,21 +1961,28 @@ export default defineComponent({
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
     },
     deleteLocalBook (book) {
-      ipcRenderer['delete-local-book'](book.filepath)
+      ElMessageBox.confirm(
+        this.$t('c.confirmDelete'),
+        '',
+        {}
+      )
       .then(()=>{
-        this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
-        this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
-        if (book.hidden) {
-          _.forIn(this.collectionList, collection=>{
-            collection.list = _.filter(collection.list, id=>id !== book.id)
-          })
-          this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
-        }
-        this.saveBookList()
+        ipcRenderer['delete-local-book'](book.filepath)
         .then(()=>{
-          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
-          if (book.hidden) this.saveCollection()
-          this.dialogVisibleBookDetail = false
+          this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
+          this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
+          if (book.hidden) {
+            _.forIn(this.collectionList, collection=>{
+              collection.list = _.filter(collection.list, id=>id !== book.id)
+            })
+            this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
+          }
+          this.saveBookList()
+          .then(()=>{
+            this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
+            if (book.hidden) this.saveCollection()
+            this.dialogVisibleBookDetail = false
+          })
         })
       })
     },
@@ -2033,7 +2140,7 @@ export default defineComponent({
       } else if (this.imageStyleType === 'double') {
         _.forIn(this.viewerImageListDouble, (imageGroup, index)=>{
           if (_.find(imageGroup.page, {id: id})) {
-            this.currentImageIndex = index
+            this.currentImageIndex = +index
             return false
           }
         })
@@ -2111,7 +2218,7 @@ export default defineComponent({
     selectImageExplorerPath () {
       ipcRenderer['select-file']()
       .then(res=>{
-        this.setting.imageExplorer = res
+        this.setting.imageExplorer = `"${res}"`
         this.saveSetting()
       })
     },
@@ -2122,9 +2229,11 @@ export default defineComponent({
       this.dialogVisibleSetting = false
       ipcRenderer['force-gene-book-list']()
       .then(res=>{
-        this.bookList = res.sort(this.sortList('date'))
-        this.displayBookList = this.bookList
-        this.chunkList()
+        if (this.sortValue) {
+          this.bookList = res
+        } else {
+          this.bookList = res.sort(this.sortList('date'))
+        }
         this.loadCollectionList()
         this.printMessage('success', this.$t('c.rebuildMessage'))
       })
@@ -2162,8 +2271,8 @@ export default defineComponent({
       axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
       .then(res=>{
         let { tag_name, html_url } = res.data
-        if (tag_name && tag_name !== 'v' + version) {
-          this.$confirm(
+        if (tag_name && tag_name !== 'v' + this.version) {
+          ElMessageBox.confirm(
             this.$t('c.newVersion') + tag_name,
             '',
             {
@@ -2175,7 +2284,7 @@ export default defineComponent({
             ipcRenderer['open-url'](html_url)
           })
         } else if (forceShowDialog) {
-          this.$confirm(
+          ElMessageBox.confirm(
             this.$t('c.notNewVersion'),
             '',
             {
@@ -2235,7 +2344,7 @@ export default defineComponent({
               delete book.collectionInfo
             }
           }
-          if (index == this.bookList.length - 1) {
+          if (+index === this.bookList.length - 1) {
             this.dialogVisibleSetting = false
             this.printMessage('success', this.$t('c.importMessage'))
           }
@@ -2250,8 +2359,7 @@ export default defineComponent({
         this.saveBookList()
         .then(()=>{
           this.printMessage('success', this.$t('c.importMessage'))
-          this.displayBookList = this.bookList
-          this.chunkList()
+          this.handleSortChange(this.sortValue)
         })
       })
     },
@@ -2399,6 +2507,9 @@ body
 .search-input,
 .function-button
   width: 100%
+.autocomplete-value
+  margin-left: 2em
+  float: right
 
 .side-tree-modal
   background-color: var(--el-mask-color-extra-light)
@@ -2448,11 +2559,14 @@ body
   font-size: 14px
   cursor: pointer
   line-height: 18px
-.book-card-star, .book-detail-star, .book-card-language
+.book-card-star, .book-detail-star, .book-card-language, .book-card-pagecount
   position: absolute
 .book-card-language
   left: 19px
   top: 52px
+.book-card-pagecount
+  left: 19px
+  top: 315px
 .book-card-star
   right: 12px
   top: 40px

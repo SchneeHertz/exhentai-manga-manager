@@ -26,7 +26,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
     let match = /(?<== ).*$/.exec(p)
     return match ? match[0] : ''
   })
-  let imageList = _.filter(pathlist, p=>['.jpg','.jpeg','.png','.webp','.avif'].includes(path.extname(p).toLowerCase()))
+  let imageList = _.filter(pathlist, p=>['.jpg','.jpeg','.png','.webp','.avif', '.gif'].includes(path.extname(p).toLowerCase()))
   imageList = imageList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
 
   let targetFile
@@ -55,12 +55,12 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   coverPath = path.join(COVER_PATH, nanoid() + '.webp')
 
   let fileStat = await fs.promises.stat(filepath)
-  return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size}
+  return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size, mtime: fileStat?.mtime}
 }
 
 let getImageListFromArchive = async (filepath, VIEWER_PATH)=>{
   await spawnPromise(_7z, ['x', filepath, '-o' + VIEWER_PATH, '-p123456'])
-  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif)', {
+  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: VIEWER_PATH,
     nocase: true
   })

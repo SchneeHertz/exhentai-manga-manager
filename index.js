@@ -7,7 +7,7 @@ const { promisify, format } = require('util')
 const _ = require('lodash')
 const { nanoid } = require('nanoid')
 const sharp = require('sharp')
-const { spawn } = require('child_process')
+const { exec } = require('child_process')
 const { createHash } = require('crypto')
 const sqlite3 = require('sqlite3')
 const { open } = require('sqlite')
@@ -52,7 +52,7 @@ try {
   setting = {
     proxy: undefined,
     library: app.getPath('downloads'),
-    imageExplorer: 'C:\\Windows\\explorer.exe',
+    imageExplorer: '\"C:\\Windows\\explorer.exe\"',
     pageSize: 10,
     loadOnStart: false,
     requireGap: 10000,
@@ -60,7 +60,8 @@ try {
     showTranslation: false,
     widthLimit: undefined,
     directEnter: 'detail',
-    language: 'default'
+    language: 'default',
+    advancedSearch: true
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), {encoding: 'utf-8'})
 }
@@ -184,19 +185,19 @@ let geneCover = async (filepath, type)=>{
   //fileLoader: get targetFile for hash, get tempCover for cover
   switch (type){
     case 'folder':
-      ;({targetFilePath, coverPath, tempCoverPath, pageCount} = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
+      ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime} = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
       break
     case 'zip':
       try {
-        ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
+        ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
       } catch (e) {
         console.log(e)
         console.log(`reload ${filepath} use adm-zip`)
-        ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
+        ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime} = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
       }
       break
     case 'archive':
-      ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
+      ;({targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime} = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
       break
   }
 
@@ -212,7 +213,7 @@ let geneCover = async (filepath, type)=>{
     return false
   })
   if (imageResizeResult){
-    return {targetFilePath, coverPath, pageCount, bundleSize, coverHash}
+    return {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash}
   } else {
     return {targetFilePath:undefined, coverPath:undefined}
   }
@@ -263,7 +264,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           sendMessageToWebContents(`load ${filepath}, ${i+1} of ${listLength}`)
           foundNewBook = true
           let id = nanoid()
-          let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
+          let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
           if (targetFilePath && coverPath){
             let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
             existData.push({
@@ -275,6 +276,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
               id,
               pageCount,
               bundleSize,
+              mtime: mtime.toJSON(),
               coverHash,
               status: 'non-tag',
               exist: true,
@@ -286,7 +288,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
         }
-        if ((i+1) % 100 == 0) {
+        if ((i+1) % 100 === 0) {
           sendMessageToWebContents(`load ${i+1} of ${listLength}`)
           if (foundNewBook) {
             let tempExistData = _.cloneDeep(existData)
@@ -360,7 +362,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
       let {filepath, type} = list[i]
       sendMessageToWebContents(`load ${filepath}, ${i+1} of ${listLength}`)
       let id = nanoid()
-      let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         data.push({
@@ -372,13 +374,14 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
           id,
           pageCount,
           bundleSize,
+          mtime: mtime.toJSON(),
           coverHash,
           status: 'non-tag',
           date: Date.now()
         })
       }
       mainWindow.setProgressBar(i/listLength)
-      if ((i+1) % 100 == 0) {
+      if ((i+1) % 100 === 0) {
         await saveBookListToBrFile(data)
       }
     } catch (e) {
@@ -414,17 +417,17 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       let book = bookList[i]
       let {filepath, type} = book
       if (!type) type = 'archive'
-      let {targetFilePath, coverPath, pageCount, bundleSize, coverHash} = await geneCover(filepath, type)
+      let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-        _.assign(book, {type, coverPath, hash, pageCount, bundleSize, coverHash})
+        _.assign(book, {type, coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash})
         sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookListLength}`)
         mainWindow.setProgressBar(i/bookListLength)
       }
     } catch (e) {
-      sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+      sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)
     }
-    if ((i+1) % 100 == 0) {
+    if ((i+1) % 100 === 0) {
       await saveBookListToBrFile(bookList)
     }
   }
@@ -499,7 +502,7 @@ ipcMain.handle('save-book-list', async (event, list)=>{
 ipcMain.handle('get-folder-tree', async(event, bookList)=>{
   let folderList = _.uniq(bookList.map(b=>path.dirname(b.filepath)))
   let librarySplitPathsLength = setting.library.split(path.sep).length - 1
-  let bookPathSplitList = folderList.map(fp=>fp.split(path.sep).slice(librarySplitPathsLength))
+  let bookPathSplitList = folderList.sort().map(fp=>fp.split(path.sep).slice(librarySplitPathsLength))
   let folderTreeObject = {}
   for(let folders of bookPathSplitList){
     _.set(folderTreeObject, folders.map(f=>'_'+f), {})
@@ -566,7 +569,7 @@ ipcMain.handle('use-new-cover', async(event, filepath)=>{
 })
 
 ipcMain.handle('open-local-book', async (event, filepath)=>{
-  spawn(setting.imageExplorer, [filepath])
+  exec(`${setting.imageExplorer} "${filepath}"`)
 })
 
 ipcMain.handle('delete-local-book', async (event, filepath)=>{
@@ -575,8 +578,12 @@ ipcMain.handle('delete-local-book', async (event, filepath)=>{
 
 // viewer
 ipcMain.handle('load-manga-image-list', async(event, book)=>{
-  await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})
-  await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
+  try {
+    await fs.promises.rm(VIEWER_PATH, {recursive: true, force: true})
+    await fs.promises.mkdir(VIEWER_PATH, {recursive: true})
+  } catch (err) {
+    console.log(err)
+  }
   let {filepath, type} = book
 
   let list
@@ -761,7 +768,7 @@ ipcMain.handle('import-sqlite', async(event, bookList)=>{
             sendMessageToWebContents(`${i+1} of ${bookListLength}, metadata not found for ${book.filepath}`)
           }
         }
-        if ((i+1) % 100 == 0) {
+        if ((i+1) % 100 === 0) {
           await saveBookListToBrFile(bookList)
         }
       }

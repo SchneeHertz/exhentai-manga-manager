@@ -15,6 +15,7 @@
     "ratingDescend": "Rating Descend",
     "manageCollection": "EditCollection",
     "addCollection": "Add Collection",
+    "renameCollection": "Rename Collection",
     "save": "Save",
     "re": "Re",
     "ad": "ad",
@@ -97,7 +98,17 @@
     "checkUpdates": "Check Updates",
     "autoCheckUpdates": "Auto Check Updates",
     "batchTagfailedBook": "Also batch get metadata of tag-failed book",
-    "test": "Test"
+    "test": "Test",
+    "mtime": "Modify Time",
+    "mtimeAscend": "Modify Time Ascend",
+    "mtimeDescend": "Modify Time Descend",
+    "about": "About",
+    "appName": "App Name",
+    "version": "Version",
+    "appPage": "App Website",
+    "help": "Help",
+    "donation": "Donation",
+    "close": "Close"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
@@ -117,6 +128,7 @@
     "newVersion": "New Version: ",
     "downloadUpdate": "Download Update",
     "proxyWorking": "Proxy server is working",
-    "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct"
+    "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct",
+    "confirmDelete": "Confirm delete?"
   }
 }

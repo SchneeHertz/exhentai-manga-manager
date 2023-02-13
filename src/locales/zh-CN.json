@@ -15,6 +15,7 @@
     "ratingDescend": "评分倒序",
     "manageCollection": "编辑合集",
     "addCollection": "新增合集",
+    "renameCollection": "重命名合集",
     "save": "保存",
     "re": "阅",
     "ad": "读",
@@ -97,7 +98,17 @@
     "checkUpdates": "检查更新",
     "autoCheckUpdates": "自动检查更新",
     "batchTagfailedBook": "同时批量获取tag-failed漫画的元数据",
-    "test": "测试"
+    "test": "测试",
+    "mtime": "修改时间",
+    "mtimeAscend": "修改时间正序",
+    "mtimeDescend": "修改时间倒序",
+    "about": "关于",
+    "appName": "应用名",
+    "version": "版本",
+    "appPage": "应用网址",
+    "help": "帮助",
+    "donation": "捐赠",
+    "close": "关闭"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",
@@ -117,6 +128,7 @@
     "newVersion": "新版本: ",
     "downloadUpdate": "下载更新",
     "proxyWorking": "代理服务器连接正常",
-    "proxyNotWorking": "连接错误，检查代理服务器是否工作，设置是否正确"
+    "proxyNotWorking": "连接错误，检查代理服务器是否工作，设置是否正确",
+    "confirmDelete": "确定删除？"
   }
 }

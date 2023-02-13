@@ -3,9 +3,23 @@ const glob = require('glob')
 const { promisify } = require('util')
 const { nanoid } = require('nanoid')
 const _ = require('lodash')
+const { readdir, stat } = require('fs/promises')
+
+const dirSize = async dir => {
+  const files = await readdir( dir, { withFileTypes: true } )
+  const filesize = files.map( async file => {
+    const filepath = path.join( dir, file.name )
+    if ( file.isFile() ) {
+      const { size } = await stat( filepath )
+      return size
+    }
+    return 0
+  } )
+  return ( await Promise.all( filesize ) ).flat( Infinity ).reduce( ( i, size ) => i + size, 0 )
+}
 
 let getFolderlist = async (libraryPath)=>{
-  let imageList = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif)', {
+  let imageList = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: libraryPath,
     nocase: true
   })
@@ -15,7 +29,7 @@ let getFolderlist = async (libraryPath)=>{
 }
 
 let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
-  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif)', {
+  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: folderpath,
     nocase: true
   })
@@ -28,11 +42,13 @@ let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
   }
   let tempCoverPath = list[0]
   let coverPath = path.join(COVER_PATH, nanoid() + '.webp')
-  return {targetFilePath, tempCoverPath, coverPath, pageCount: list.length}
+  let fileStat = await stat(folderpath)
+  let bundleSize = await dirSize(folderpath)
+  return {targetFilePath, tempCoverPath, coverPath, pageCount: list.length, bundleSize, mtime: fileStat?.mtime}
 }
 
 let getImageListFromFolder = async (folderpath, VIEWER_PATH)=>{
-  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif)', {
+  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: folderpath,
     nocase: true
   })

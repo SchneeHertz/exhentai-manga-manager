@@ -2106,6 +2106,7 @@ export default defineComponent({
       }
     },
     saveImageStyleType (val) {
+      this.currentImageIndex = 0
       setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
       localStorage.setItem('imageStyleType', val)
       if (val === 'double') this.printMessage('info', this.$t('c.insertEmptyPageInfo'))

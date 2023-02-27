@@ -48,9 +48,6 @@
       <el-col :span="1">
         <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
       </el-col>
-      <el-col :span="1">
-        <el-button :icon="MdInformationCircleOutline" plain class="function-button" @click="dialogVisibleInfo = true" :title="$t('m.about')"></el-button>
-      </el-col>
       <el-col :span="3">
         <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
           <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
@@ -551,6 +548,7 @@
     <el-dialog v-model="dialogVisibleSetting"
       width="45em"
       :modal="false"
+      custom-class="setting-dialog"
     >
       <template #header><p class="setting-title">{{$t('m.setting')}}</p></template>
       <el-tabs v-model="activeSettingPanel" class="setting-tabs">
@@ -637,11 +635,6 @@
             <el-col :span="7">
               <div class="setting-line">
                 <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
-              </div>
-            </el-col>
-            <el-col :span="5">
-              <div class="setting-line">
-                <el-button class="function-button" type="primary" plain @click="autoCheckUpdates(true)">{{$t('m.checkUpdates')}}</el-button>
               </div>
             </el-col>
           </el-row>
@@ -805,31 +798,33 @@
             </el-col>
           </el-row>
         </el-tab-pane>
+        <el-tab-pane :label="$t('m.about')" name="about">
+          <el-descriptions :column="1">
+            <el-descriptions-item :label="$t('m.appName')+':'">exhentai-manga-manager</el-descriptions-item>
+            <el-descriptions-item :label="$t('m.version')+':'">
+              <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/releases')">{{version}}</a>
+            </el-descriptions-item>
+            <el-descriptions-item :label="$t('m.appPage')+':'">
+              <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager')">github</a>
+            </el-descriptions-item>
+            <el-descriptions-item :label="$t('m.help')+':'">
+              <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki')">github wiki</a>
+            </el-descriptions-item>
+            <el-descriptions-item :label="$t('m.donation')+':'">
+              <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://afdian.net/a/SeldonHorizon')">爱发电</a>
+              <a v-else href="#" @click="openLink('https://www.buymeacoffee.com/schneehertz')">buy me a coffee</a>
+            </el-descriptions-item>
+          </el-descriptions>
+          <img src="icon.png" class="about-logo">
+          <el-row>
+            <el-col :span="4" :offset="10">
+              <div class="setting-line">
+                <el-button class="function-button" type="primary" plain @click="autoCheckUpdates(true)">{{$t('m.checkUpdates')}}</el-button>
+              </div>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
       </el-tabs>
-    </el-dialog>
-    <el-dialog v-model="dialogVisibleInfo"
-      width="30em"
-    >
-      <template #header><p class="setting-title">{{$t('m.about')}}</p></template>
-      <el-descriptions :column="1">
-        <el-descriptions-item :label="$t('m.appName')+':'">exhentai-manga-manager</el-descriptions-item>
-        <el-descriptions-item :label="$t('m.version')+':'">
-          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/releases')">{{version}}</a>
-        </el-descriptions-item>
-        <el-descriptions-item :label="$t('m.appPage')+':'">
-          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager')">github</a>
-        </el-descriptions-item>
-        <el-descriptions-item :label="$t('m.help')+':'">
-          <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki')">github wiki</a>
-        </el-descriptions-item>
-        <el-descriptions-item :label="$t('m.donation')+':'">
-          <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://afdian.net/a/SeldonHorizon')">爱发电</a>
-          <a v-else href="#" @click="openLink('https://www.buymeacoffee.com/schneehertz')">buy me a coffee</a>
-        </el-descriptions-item>
-      </el-descriptions>
-      <template #footer>
-        <el-button type="primary" @click="dialogVisibleInfo = false">{{$t('m.close')}}</el-button>
-      </template>
     </el-dialog>
   </el-config-provider>
 </template>
@@ -876,7 +871,6 @@ export default defineComponent({
       drawerVisibleViewer: false,
       drawerVisibleCollection: false,
       dialogVisibleEhSearch: false,
-      dialogVisibleInfo: false,
       // home
       bookList: [],
       displayBookList: [],
@@ -1517,7 +1511,7 @@ export default defineComponent({
       if (queryString) {
         let keywords = queryString.match(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
         if (keywords) {
-          if (keywords[1][0] === '-') {
+          if (keywords[1][0] === '-' || keywords[1][0] === '~') {
             result = _.filter(this.tagList, str=>{
               return _.includes(str.value.toLowerCase(), keywords[1].slice(1).toLowerCase())
               || _.includes(str.label.toLowerCase(), keywords[1].slice(1).toLowerCase())
@@ -1529,7 +1523,7 @@ export default defineComponent({
             })
           }
         } else {
-          if (queryString[0] === '-') {
+          if (queryString[0] === '-' || queryString[0] === '~') {
             result = _.filter(this.tagList, str=>{
               return _.includes(str.value.toLowerCase(), queryString.slice(1).toLowerCase())
               || _.includes(str.label.toLowerCase(), queryString.slice(1).toLowerCase())
@@ -1574,12 +1568,16 @@ export default defineComponent({
       if (keywordIndex !== -1) {
         if (this.searchString[keywordIndex+1] === '-') {
           this.searchString = this.searchString.slice(0, keywordIndex) + ' -' + item.value
-        } else {
+        } else if (this.searchString[keywordIndex+1] === '~') {
+          this.searchString = this.searchString.slice(0, keywordIndex) + ' ~' + item.value
+        }else {
           this.searchString = this.searchString.slice(0, keywordIndex) + ' ' + item.value
         }
       } else {
         if (this.searchString[0] === '-') {
           this.searchString = '-' + item.value
+        } else if (this.searchString[0] === '~') {
+          this.searchString = '~' + item.value
         } else {
           this.searchString = item.value
         }
@@ -1600,11 +1598,19 @@ export default defineComponent({
             }
           )
         ).toLowerCase()
-        return _.every(searchStringArray, (str)=>{
-          if (_.startsWith(str, '-')) {
-            return !bookString.includes(str.slice(1).replace(/["'$]/g, '').toLowerCase())
+        let orCondition = _.filter(searchStringArray, str=>str.startsWith('~'))
+        let andCondition = _.filter(searchStringArray, str=>!str.startsWith('~'))
+        return _.some([andCondition, ...orCondition], (condition)=>{
+          if (_.isArray(condition)) {
+            return _.every(condition, (str)=>{
+              if (_.startsWith(str, '-')) {
+                return !bookString.includes(str.slice(1).replace(/["'$]/g, '').toLowerCase())
+              } else {
+                return bookString.includes(str.replace(/["'$]/g, '').toLowerCase())
+              }
+            })
           } else {
-            return bookString.includes(str.replace(/["'$]/g, '').toLowerCase())
+            return bookString.includes(condition.slice(1).replace(/["'$]/g, '').toLowerCase())
           }
         })
       })
@@ -2730,6 +2736,9 @@ body
   .search-result-ind:hover
     background-color: var(--el-fill-color-dark)
 
+.setting-dialog
+  .el-dialog__body
+    padding: 5px 20px 16px
 .setting-title
   margin:0
 .setting-line
@@ -2749,6 +2758,11 @@ body
     border-left: solid 1px var(--el-border-color)
     .el-select
       width: 100%
+.about-logo
+  width: 160px
+  position: absolute
+  right: 40px
+  top: 10px
 
 .el-drawer__body
   padding-top: 0

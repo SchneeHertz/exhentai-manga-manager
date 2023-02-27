@@ -147,7 +147,7 @@
         </el-badge>
       </el-col>
       <el-col :span="6" v-show="editCollectionView" class="book-collection">
-        <el-select v-model="selectCollection" class="book-collection-select" @change="handleSelectCollectionChange">
+        <el-select v-model="selectCollection" class="book-collection-select" filterable @change="handleSelectCollectionChange">
           <el-option v-for="collection in collectionList" :key="collection.id" :value="collection.id" :label="collection.title"></el-option>
         </el-select>
         <div>
@@ -176,10 +176,11 @@
         v-model:page-size="setting.pageSize"
         :page-sizes="[10, 12, 16, 24, 60, 600, 6000]"
         :small="true"
-        layout="sizes, prev, pager, next, total"
+        layout="total, sizes, prev, pager, next, jumper"
         :total="displayBookCount"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
+        background
       />
     </el-row>
     <el-drawer v-model="drawerVisibleViewer"
@@ -2833,6 +2834,8 @@ body
   text-align: center
   font-size: 11px
 
+.el-autocomplete-suggestion__wrap, .el-select-dropdown__wrap
+  max-height: 490px!important
 
 .mx-menu-ghost-host
   z-index: 3000!important

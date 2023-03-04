@@ -103,9 +103,9 @@
     "mtimeAscend": "修改时间正序",
     "mtimeDescend": "修改时间倒序",
     "about": "关于",
-    "appName": "应用名",
+    "appName": "应用",
     "version": "版本",
-    "appPage": "应用网址",
+    "appPage": "主页",
     "help": "帮助",
     "donation": "捐赠",
     "close": "关闭"
@@ -129,6 +129,6 @@
     "downloadUpdate": "下载更新",
     "proxyWorking": "代理服务器连接正常",
     "proxyNotWorking": "连接错误，检查代理服务器是否工作，设置是否正确",
-    "confirmDelete": "确定删除？"
+    "confirmDelete": "将漫画从软件中移除并删除本地文件，确定？"
   }
 }

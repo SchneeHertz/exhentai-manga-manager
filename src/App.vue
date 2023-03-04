@@ -466,8 +466,9 @@
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select v-model="bookDetail.tags[key]" :placeholder="key" filterable allow-create multiple>
-                  <el-option v-for="tag in arr" :key="tag" :value="tag">{{tag}}</el-option>
+                <el-select v-model="bookDetail.tags[key]" :placeholder="key"
+                  filterable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
+                  <el-option v-for="tag in editTagOptions" :key="tag.value" :value="tag.value" >{{tag.label}}</el-option>
                 </el-select>
               </div>
               <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
@@ -816,7 +817,7 @@
               <a v-else href="#" @click="openLink('https://www.buymeacoffee.com/schneehertz')">buy me a coffee</a>
             </el-descriptions-item>
           </el-descriptions>
-          <img src="icon.png" class="about-logo">
+          <img src="/icon.png" class="about-logo">
           <el-row>
             <el-col :span="4" :offset="10">
               <div class="setting-line">
@@ -901,6 +902,7 @@ export default defineComponent({
       searchTypeDialog: 'exsearch',
       disabledSearchString: false,
       ehSearchResultList: [],
+      editTagOptions: [],
       // viewer
       viewerImageList: [],
       viewerImageWidth: 1280,
@@ -2061,8 +2063,12 @@ export default defineComponent({
             }
           })
         })
+        let showTranslation = this.setting.showTranslation
         _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.uniq(tagArray)
+          tempTagGroup[tagCat] = _.sortBy(_.uniq(tagArray)).map(tag=>({
+            value: tag,
+            label: `${showTranslation ? (this.resolvedTranslation[tag]?.name || tag ) + ' || ' : ''}${tag}`
+          }))
         })
         this.tagGroup = tempTagGroup
       } else {
@@ -2083,6 +2089,18 @@ export default defineComponent({
       .catch(() => {
         this.printMessage('info', this.$t('c.canceled'))
       })
+    },
+    editTagsFetch (arr) {
+      return (str) => {
+        if (str) {
+          this.editTagOptions = _.filter(arr, tag=>tag.label.includes(str))
+        } else {
+          this.editTagOptions = arr
+        }
+      }
+    },
+    editTagFocus (e, arr) {
+      setTimeout(this.editTagsFetch(arr), 200)
     },
 
     // copy and paste tag

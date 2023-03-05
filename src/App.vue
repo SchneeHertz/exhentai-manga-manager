@@ -95,8 +95,8 @@
             <p class="book-title"
               @click="openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
-              :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title"
-            >{{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
+              :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title"
+            >{{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
             <img
               class="book-cover"
               :src="book.coverPath"
@@ -119,7 +119,7 @@
               :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)"
             >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
+            <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBookList"/>
           </div>
           <div class="book-card" v-if="book.collection && !book.folderHide">
             <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
@@ -140,8 +140,8 @@
           v-show="!book.collection && !book.folderHide"
         >
           <div class="book-collect-card">
-            <p class="book-collect-title" :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title">
-              {{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
+            <p class="book-collect-title" :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title">
+              {{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
             <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
         </el-badge>
@@ -161,8 +161,8 @@
                 <img class="book-collection-cover" :src="element.coverPath" />
                 <p
                   class="book-collection-title"
-                  :title="setting.filenameAsTitle ? returnFileName(element.filepath) : element.title_jpn || element.title"
-                >{{setting.filenameAsTitle ? returnFileName(element.filepath) : element.title_jpn || element.title}}</p>
+                  :title="setting.filenameAsTitle ? returnFileName(element) : element.title_jpn || element.title"
+                >{{setting.filenameAsTitle ? returnFileName(element) : element.title_jpn || element.title}}</p>
                 <el-icon :size="20" color="#FF0000" class="book-collection-remove" @click="handleClickCollectBadge(element)"><IosRemoveCircleOutline /></el-icon>
               </div>
             </template>
@@ -357,8 +357,8 @@
           class="book-title"
           @click="openBookDetail(book)"
           @contextmenu="onMangaTitleContextMenu($event, book)"
-          :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title"
-        >{{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
+          :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title"
+        >{{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
         <img
           class="book-cover"
           :src="book.coverPath"
@@ -382,7 +382,7 @@
           :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
           @click="searchFromTag(book.status)"
         >{{book.status}}</el-tag>
-        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
+        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBookList"/>
       </div>
     </el-drawer>
     <el-dialog v-model="dialogVisibleBookDetail"
@@ -392,7 +392,7 @@
       <template #header>
         <p class="detail-book-title">
           <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">
-            {{setting.filenameAsTitle ? returnFileName(bookDetail.filepath) : bookDetail.title_jpn || bookDetail.title}}</span>
+            {{setting.filenameAsTitle ? returnFileName(bookDetail) : bookDetail.title_jpn || bookDetail.title}}</span>
         </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
@@ -1129,9 +1129,13 @@ export default defineComponent({
       })
       return result
     },
-    returnFileName (filepath) {
+    returnFileName (book) {
       // Windows only
-      return filepath.replace(/^.*\\|\.[^.]*$/g, '')
+      if (book.type === 'folder') {
+        return book.filepath.replace(/^.*\\/g, '')
+      } else {
+        return book.filepath.replace(/^.*\\|\.[^.]*$/g, '')
+      }
     },
     returnFileNameWithExt (filepath) {
       // Windows only
@@ -1251,7 +1255,7 @@ export default defineComponent({
     openSearchDialog (book, server) {
       this.dialogVisibleEhSearch = true
       this.ehSearchResultList = []
-      this.searchStringDialog = this.returnFileName(book.filepath)
+      this.searchStringDialog = this.returnFileName(book)
       this.bookDetail = book
       if (server) {
         this.getBookListFromEh(book, server)

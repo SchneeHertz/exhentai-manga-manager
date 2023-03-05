@@ -2208,7 +2208,7 @@ export default defineComponent({
       event.stopPropagation()
       this.releaseSendImageLock()
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
-      this.viewManga(_.sample(activeBookList))
+      setTimeout(()=>this.viewManga(_.sample(activeBookList)), 500)
     },
     toNextManga (event) {
       event.stopPropagation()
@@ -2218,7 +2218,7 @@ export default defineComponent({
       if (indexNow === activeBookList.length - 1) {
         this.printMessage('warning', this.$t('c.lastManga'))
       } else {
-        this.viewManga(activeBookList[indexNow + 1])
+        setTimeout(()=>this.viewManga(activeBookList[indexNow + 1]), 500)
       }
     },
 

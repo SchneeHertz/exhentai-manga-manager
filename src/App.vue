@@ -693,6 +693,14 @@
               </div>
             </el-col>
             <el-col :span="24">
+              <NameFormItem class="setting-line" prependWidth="110px">
+                <template #prepend>{{$t('m.customOptions')}}</template>
+                <template #default>
+                  <el-input v-model="setting.customOptions" :placeholder="$t('m.customOptionsPlaceholder')" @change="saveSetting" :rows="2" type="textarea"></el-input>
+                </template>
+              </NameFormItem>
+            </el-col>
+            <el-col :span="24">
               <div class="setting-line">
                 <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
@@ -851,11 +859,14 @@ import en from 'element-plus/lib/locale/lang/en'
 
 import { version } from '../package.json'
 
+import NameFormItem from './components/NameFormItem.vue'
+
 export default defineComponent({
   components: {
     draggable,
     BookmarkTwotone,
-    IosRemoveCircleOutline
+    IosRemoveCircleOutline,
+    NameFormItem
   },
   setup () {
     return {
@@ -983,6 +994,10 @@ export default defineComponent({
         }
       })
       .value()
+    },
+    customOptions () {
+      return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
+        .map(str=>({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
     },
     thumbnailList () {
       if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
@@ -1515,47 +1530,50 @@ export default defineComponent({
     // home search
     querySearch (queryString, callback) {
       let result = []
+      let options = this.customOptions.concat(this.tagList)
       if (queryString) {
-        let keywords = queryString.match(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
-        if (keywords) {
-          if (keywords[1][0] === '-' || keywords[1][0] === '~') {
-            result = _.filter(this.tagList, str=>{
-              return _.includes(str.value.toLowerCase(), keywords[1].slice(1).toLowerCase())
-              || _.includes(str.label.toLowerCase(), keywords[1].slice(1).toLowerCase())
+        let keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
+        if (!_.isEmpty(keywords)) {
+          let nextKeyword = queryString.slice(_.last(keywords).index).trim()
+          if (nextKeyword[0] === '-' || nextKeyword[0] === '~') {
+            result = _.filter(options, str=>{
+              return _.includes(str.value.toLowerCase(), nextKeyword.slice(1).toLowerCase())
+              || _.includes(str.label.toLowerCase(), nextKeyword.slice(1).toLowerCase())
             })
           } else {
-            result = _.filter(this.tagList, str=>{
-              return _.includes(str.value.toLowerCase(), keywords[1].toLowerCase())
-              || _.includes(str.label.toLowerCase(), keywords[1].toLowerCase())
+            result = _.filter(options, str=>{
+              return _.includes(str.value.toLowerCase(), nextKeyword.toLowerCase())
+              || _.includes(str.label.toLowerCase(), nextKeyword.toLowerCase())
             })
           }
         } else {
           if (queryString[0] === '-' || queryString[0] === '~') {
-            result = _.filter(this.tagList, str=>{
+            result = _.filter(options, str=>{
               return _.includes(str.value.toLowerCase(), queryString.slice(1).toLowerCase())
               || _.includes(str.label.toLowerCase(), queryString.slice(1).toLowerCase())
             })
           } else {
-            result = _.filter(this.tagList, str=>{
+            result = _.filter(options, str=>{
               return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
               || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
             })
           }
         }
       } else {
-        result = this.tagList
+        result = options
       }
       callback(result)
     },
     querySearchLegacy (queryString, callback) {
       let result = []
+      let options = this.customOptions.concat(this.tagList)
       if (queryString) {
-        result = _.filter(this.tagList, str=>{
+        result = _.filter(options, str=>{
           return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
           || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
         })
       } else {
-        result = this.tagList
+        result = options
       }
       callback(result)
     },
@@ -1571,8 +1589,9 @@ export default defineComponent({
       }
     },
     handleSearchBoxSelect (item) {
-      let keywordIndex = this.searchString.search(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
-      if (keywordIndex !== -1) {
+      let keywords = [...this.searchString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
+      if (!_.isEmpty(keywords)) {
+        let keywordIndex = _.last(keywords).index
         if (this.searchString[keywordIndex+1] === '-') {
           this.searchString = this.searchString.slice(0, keywordIndex) + ' -' + item.value
         } else if (this.searchString[keywordIndex+1] === '~') {
@@ -1589,9 +1608,10 @@ export default defineComponent({
           this.searchString = item.value
         }
       }
+      this.searchString = this.searchString.replace(/\|{3}/, ' ')
     },
     searchBook () {
-      let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
+      let searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
       this.displayBookList = _.filter(this.bookList, (book)=>{
         let bookString = JSON.stringify(
           _.assign(

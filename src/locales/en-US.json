@@ -108,7 +108,9 @@
     "appPage": "App Website",
     "help": "Help",
     "donation": "Donation",
-    "close": "Close"
+    "close": "Close",
+    "customOptions": "Custom Options",
+    "customOptionsPlaceholder": "Custom Options, one per line"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

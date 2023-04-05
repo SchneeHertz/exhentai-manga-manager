@@ -1575,6 +1575,7 @@ export default defineComponent({
       } else {
         result = options
       }
+      result.map(obj=>obj.value = obj.value.replace(/\|{3}/, ' '))
       callback(result)
     },
     handleSearchStringChange (val) {

@@ -95,8 +95,8 @@
             <p class="book-title"
               @click="openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
-              :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title"
-            >{{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
+              :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title"
+            >{{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
             <img
               class="book-cover"
               :src="book.coverPath"
@@ -119,7 +119,7 @@
               :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)"
             >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
+            <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBookList"/>
           </div>
           <div class="book-card" v-if="book.collection && !book.folderHide">
             <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
@@ -140,8 +140,8 @@
           v-show="!book.collection && !book.folderHide"
         >
           <div class="book-collect-card">
-            <p class="book-collect-title" :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title">
-              {{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
+            <p class="book-collect-title" :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title">
+              {{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
             <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
         </el-badge>
@@ -161,8 +161,8 @@
                 <img class="book-collection-cover" :src="element.coverPath" />
                 <p
                   class="book-collection-title"
-                  :title="setting.filenameAsTitle ? returnFileName(element.filepath) : element.title_jpn || element.title"
-                >{{setting.filenameAsTitle ? returnFileName(element.filepath) : element.title_jpn || element.title}}</p>
+                  :title="setting.filenameAsTitle ? returnFileName(element) : element.title_jpn || element.title"
+                >{{setting.filenameAsTitle ? returnFileName(element) : element.title_jpn || element.title}}</p>
                 <el-icon :size="20" color="#FF0000" class="book-collection-remove" @click="handleClickCollectBadge(element)"><IosRemoveCircleOutline /></el-icon>
               </div>
             </template>
@@ -357,8 +357,8 @@
           class="book-title"
           @click="openBookDetail(book)"
           @contextmenu="onMangaTitleContextMenu($event, book)"
-          :title="setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title"
-        >{{setting.filenameAsTitle ? returnFileName(book.filepath) : book.title_jpn || book.title}}</p>
+          :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title"
+        >{{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
         <img
           class="book-cover"
           :src="book.coverPath"
@@ -382,7 +382,7 @@
           :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
           @click="searchFromTag(book.status)"
         >{{book.status}}</el-tag>
-        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half/>
+        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBookList"/>
       </div>
     </el-drawer>
     <el-dialog v-model="dialogVisibleBookDetail"
@@ -392,7 +392,7 @@
       <template #header>
         <p class="detail-book-title">
           <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">
-            {{setting.filenameAsTitle ? returnFileName(bookDetail.filepath) : bookDetail.title_jpn || bookDetail.title}}</span>
+            {{setting.filenameAsTitle ? returnFileName(bookDetail) : bookDetail.title_jpn || bookDetail.title}}</span>
         </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
@@ -693,6 +693,14 @@
               </div>
             </el-col>
             <el-col :span="24">
+              <NameFormItem class="setting-line" prependWidth="110px">
+                <template #prepend>{{$t('m.customOptions')}}</template>
+                <template #default>
+                  <el-input v-model="setting.customOptions" :placeholder="$t('m.customOptionsPlaceholder')" @change="saveSetting" :rows="2" type="textarea"></el-input>
+                </template>
+              </NameFormItem>
+            </el-col>
+            <el-col :span="24">
               <div class="setting-line">
                 <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
@@ -851,11 +859,14 @@ import en from 'element-plus/lib/locale/lang/en'
 
 import { version } from '../package.json'
 
+import NameFormItem from './components/NameFormItem.vue'
+
 export default defineComponent({
   components: {
     draggable,
     BookmarkTwotone,
-    IosRemoveCircleOutline
+    IosRemoveCircleOutline,
+    NameFormItem
   },
   setup () {
     return {
@@ -983,6 +994,10 @@ export default defineComponent({
         }
       })
       .value()
+    },
+    customOptions () {
+      return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
+        .map(str=>({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
     },
     thumbnailList () {
       if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
@@ -1129,9 +1144,13 @@ export default defineComponent({
       })
       return result
     },
-    returnFileName (filepath) {
+    returnFileName (book) {
       // Windows only
-      return filepath.replace(/^.*\\|\.[^.]*$/g, '')
+      if (book.type === 'folder') {
+        return book.filepath.replace(/^.*\\/g, '')
+      } else {
+        return book.filepath.replace(/^.*\\|\.[^.]*$/g, '')
+      }
     },
     returnFileNameWithExt (filepath) {
       // Windows only
@@ -1251,7 +1270,7 @@ export default defineComponent({
     openSearchDialog (book, server) {
       this.dialogVisibleEhSearch = true
       this.ehSearchResultList = []
-      this.searchStringDialog = this.returnFileName(book.filepath)
+      this.searchStringDialog = this.returnFileName(book)
       this.bookDetail = book
       if (server) {
         this.getBookListFromEh(book, server)
@@ -1511,47 +1530,50 @@ export default defineComponent({
     // home search
     querySearch (queryString, callback) {
       let result = []
+      let options = this.customOptions.concat(this.tagList)
       if (queryString) {
-        let keywords = queryString.match(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
-        if (keywords) {
-          if (keywords[1][0] === '-' || keywords[1][0] === '~') {
-            result = _.filter(this.tagList, str=>{
-              return _.includes(str.value.toLowerCase(), keywords[1].slice(1).toLowerCase())
-              || _.includes(str.label.toLowerCase(), keywords[1].slice(1).toLowerCase())
+        let keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
+        if (!_.isEmpty(keywords)) {
+          let nextKeyword = queryString.slice(_.last(keywords).index).trim()
+          if (nextKeyword[0] === '-' || nextKeyword[0] === '~') {
+            result = _.filter(options, str=>{
+              return _.includes(str.value.toLowerCase(), nextKeyword.slice(1).toLowerCase())
+              || _.includes(str.label.toLowerCase(), nextKeyword.slice(1).toLowerCase())
             })
           } else {
-            result = _.filter(this.tagList, str=>{
-              return _.includes(str.value.toLowerCase(), keywords[1].toLowerCase())
-              || _.includes(str.label.toLowerCase(), keywords[1].toLowerCase())
+            result = _.filter(options, str=>{
+              return _.includes(str.value.toLowerCase(), nextKeyword.toLowerCase())
+              || _.includes(str.label.toLowerCase(), nextKeyword.toLowerCase())
             })
           }
         } else {
           if (queryString[0] === '-' || queryString[0] === '~') {
-            result = _.filter(this.tagList, str=>{
+            result = _.filter(options, str=>{
               return _.includes(str.value.toLowerCase(), queryString.slice(1).toLowerCase())
               || _.includes(str.label.toLowerCase(), queryString.slice(1).toLowerCase())
             })
           } else {
-            result = _.filter(this.tagList, str=>{
+            result = _.filter(options, str=>{
               return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
               || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
             })
           }
         }
       } else {
-        result = this.tagList
+        result = options
       }
       callback(result)
     },
     querySearchLegacy (queryString, callback) {
       let result = []
+      let options = this.customOptions.concat(this.tagList)
       if (queryString) {
-        result = _.filter(this.tagList, str=>{
+        result = _.filter(options, str=>{
           return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
           || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
         })
       } else {
-        result = this.tagList
+        result = options
       }
       callback(result)
     },
@@ -1567,8 +1589,9 @@ export default defineComponent({
       }
     },
     handleSearchBoxSelect (item) {
-      let keywordIndex = this.searchString.search(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)(\S+)$/)
-      if (keywordIndex !== -1) {
+      let keywords = [...this.searchString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
+      if (!_.isEmpty(keywords)) {
+        let keywordIndex = _.last(keywords).index
         if (this.searchString[keywordIndex+1] === '-') {
           this.searchString = this.searchString.slice(0, keywordIndex) + ' -' + item.value
         } else if (this.searchString[keywordIndex+1] === '~') {
@@ -1585,9 +1608,10 @@ export default defineComponent({
           this.searchString = item.value
         }
       }
+      this.searchString = this.searchString.replace(/\|{3}/, ' ')
     },
     searchBook () {
-      let searchStringArray = this.searchString ? this.searchString.split(/ (?=(?:[^"']*["'][^"']*["'])*[^"']*$)/) : []
+      let searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
       this.displayBookList = _.filter(this.bookList, (book)=>{
         let bookString = JSON.stringify(
           _.assign(
@@ -2204,7 +2228,7 @@ export default defineComponent({
       event.stopPropagation()
       this.releaseSendImageLock()
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
-      this.viewManga(_.sample(activeBookList))
+      setTimeout(()=>this.viewManga(_.sample(activeBookList)), 500)
     },
     toNextManga (event) {
       event.stopPropagation()
@@ -2214,7 +2238,7 @@ export default defineComponent({
       if (indexNow === activeBookList.length - 1) {
         this.printMessage('warning', this.$t('c.lastManga'))
       } else {
-        this.viewManga(activeBookList[indexNow + 1])
+        setTimeout(()=>this.viewManga(activeBookList[indexNow + 1]), 500)
       }
     },
 

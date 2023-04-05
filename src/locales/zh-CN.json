@@ -108,7 +108,9 @@
     "appPage": "主页",
     "help": "帮助",
     "donation": "捐赠",
-    "close": "关闭"
+    "close": "关闭",
+    "customOptions": "预定义搜索项",
+    "customOptionsPlaceholder": "预定义搜索项, 每行一个"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

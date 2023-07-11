@@ -1031,6 +1031,8 @@ export default defineComponent({
         }
         if (frame.page.length > 0) result.push(_.clone(frame))
         return result
+      } else {
+        return []
       }
     },
     cookie () {

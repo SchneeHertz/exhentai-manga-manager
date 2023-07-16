@@ -160,8 +160,8 @@
                 <img class="book-collection-cover" :src="element.coverPath" />
                 <p
                   class="book-collection-title"
-                  :title="getDisplayTitle(book)"
-                >{{getDisplayTitle(book)}}</p>
+                  :title="getDisplayTitle(element)"
+                >{{getDisplayTitle(element)}}</p>
                 <el-icon :size="20" color="#FF0000" class="book-collection-remove" @click="handleClickCollectBadge(element)"><IosRemoveCircleOutline /></el-icon>
               </div>
             </template>
@@ -238,7 +238,7 @@
               />
               <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
             </div>
-            <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </div>
         <div v-else-if="imageStyleType === 'single'">
@@ -258,7 +258,7 @@
                 @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex]?.filepath)"
               />
             </div>
-            <div class="viewer-image-page">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
             <img
               :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
               class="viewer-image-preload"
@@ -292,7 +292,7 @@
             <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page">
               <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
             </div>
-            <div class="viewer-image-page">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
           </div>
         </div>
         <el-button size="large" type="success" class="next-manga-button" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
@@ -390,7 +390,7 @@
     >
       <template #header>
         <p class="detail-book-title">
-          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">{{getDisplayTitle(book)}}</span>
+          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">{{getDisplayTitle(bookDetail)}}</span>
         </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
@@ -655,6 +655,13 @@
                 </el-input>
               </div>
             </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.hidePageNumber"
+                :active-text="$t('m.hidePageNumber')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
         <el-tab-pane :label="$t('m.advanced')" name="advanced">
@@ -783,7 +790,7 @@
             <el-col :span="6" class="setting-switch">
               <el-switch
                 v-model="setting.showComment"
-                :active-text="$t('m.comment')"
+                :active-text="$t('m.showComment')"
                 @change="saveSetting"
               />
             </el-col>
@@ -2165,6 +2172,8 @@ export default defineComponent({
       if (image) {
         if (this.imageStyleType === 'scroll') {
           return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px'}
+        } else if (this.setting.hidePageNumber) {
+          return {height: window.innerHeight + 'px', width: (image.width * window.innerHeight / image.height) + 'px'}
         } else {
           // 28 is the height of .viewer-image-page
           return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
@@ -2206,7 +2215,11 @@ export default defineComponent({
         _.forIn(this.viewerImageList, (image)=>{
           if (image.id === id) return false
           // 28 is the height of .viewer-image-page
-          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
+          if (this.setting.hidePageNumber) {
+            scrollTopValue += parseFloat(this.returnImageStyle(image).height)
+          } else {
+            scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
+          }
         })
         this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
       } else if (this.imageStyleType === 'single') {

@@ -41,6 +41,7 @@
     "ehexAddress": "eh/ex web page address",
     "addCategory": "Add Category",
     "englishTitle": "English Title",
+    "japaneseTitle": "Japanese Title",
     "filename": "Filename",
     "category": "Category",
     "setting": "Setting",
@@ -89,7 +90,6 @@
     "nextMangaRandom": "Next Manga (Random)",
     "language": "Language",
     "systemDefault": "System Default",
-    "filenameAsTitle": "FilenameAsTitle",
     "excludeFile": "Exclude File",
     "excludeFileInfo": "Please enter the regular expression for the path of the file to be excluded",
     "folderTreeWidth": "Folder Tree Width",
@@ -110,7 +110,9 @@
     "donation": "Donation",
     "close": "Close",
     "customOptions": "Custom Options",
-    "customOptionsPlaceholder": "Custom Options, one per line"
+    "customOptionsPlaceholder": "Custom Options, one per line",
+    "displayTitle": "Display Title",
+    "displayTitleInfo": "The title displayed on the UI"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

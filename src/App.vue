@@ -95,8 +95,8 @@
             <p class="book-title"
               @click="openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
-              :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title"
-            >{{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
+              :title="getDisplayTitle(book)"
+            >{{getDisplayTitle(book)}}</p>
             <img
               class="book-cover"
               :src="book.coverPath"
@@ -140,8 +140,7 @@
           v-show="!book.collection && !book.folderHide"
         >
           <div class="book-collect-card">
-            <p class="book-collect-title" :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title">
-              {{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
+            <p class="book-collect-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
             <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
         </el-badge>
@@ -161,8 +160,8 @@
                 <img class="book-collection-cover" :src="element.coverPath" />
                 <p
                   class="book-collection-title"
-                  :title="setting.filenameAsTitle ? returnFileName(element) : element.title_jpn || element.title"
-                >{{setting.filenameAsTitle ? returnFileName(element) : element.title_jpn || element.title}}</p>
+                  :title="getDisplayTitle(book)"
+                >{{getDisplayTitle(book)}}</p>
                 <el-icon :size="20" color="#FF0000" class="book-collection-remove" @click="handleClickCollectBadge(element)"><IosRemoveCircleOutline /></el-icon>
               </div>
             </template>
@@ -357,8 +356,8 @@
           class="book-title"
           @click="openBookDetail(book)"
           @contextmenu="onMangaTitleContextMenu($event, book)"
-          :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title"
-        >{{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
+          :title="getDisplayTitle(book)"
+        >{{getDisplayTitle(book)}}</p>
         <img
           class="book-cover"
           :src="book.coverPath"
@@ -391,8 +390,7 @@
     >
       <template #header>
         <p class="detail-book-title">
-          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">
-            {{setting.filenameAsTitle ? returnFileName(bookDetail) : bookDetail.title_jpn || bookDetail.title}}</span>
+          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">{{getDisplayTitle(book)}}</span>
         </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
@@ -478,9 +476,9 @@
             </div>
             <div v-else>
               <el-descriptions :column="1">
-                <el-descriptions-item :label="$t('m.title')+':'" v-if="setting.filenameAsTitle">{{bookDetail.title_jpn}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.title')+':'">{{bookDetail.title_jpn}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.englishTitle')+':'">{{bookDetail.title}}</el-descriptions-item>
-                <el-descriptions-item :label="$t('m.filename')+':'" v-if="!setting.filenameAsTitle">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.category')+':'">
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
@@ -641,6 +639,24 @@
             </el-col>
           </el-row>
         </el-tab-pane>
+        <el-tab-pane :label="$t('m.internalViewer')" name="internalViewer">
+          <el-row :gutter="8">
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.thumbnailColumn')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
         <el-tab-pane :label="$t('m.advanced')" name="advanced">
           <el-row :gutter="8">
             <el-col :span="24">
@@ -679,20 +695,6 @@
               </div>
             </el-col>
             <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.thumbnailColumn')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
               <NameFormItem class="setting-line" prependWidth="110px">
                 <template #prepend>{{$t('m.customOptions')}}</template>
                 <template #default>
@@ -711,6 +713,20 @@
               <div class="setting-line">
                 <el-input v-model="setting.folderTreeWidth" :placeholder="$t('m.folderTreeWidthInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.folderTreeWidth')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input class="label-input">
+                  <template #prepend><span class="setting-label">{{$t('m.displayTitle')}}</span></template>
+                  <template #append>
+                    <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
+                      <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
+                      <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
+                      <el-option :label="$t('m.filename')" value="filename"></el-option>
+                    </el-select>
+                  </template>
                 </el-input>
               </div>
             </el-col>
@@ -775,13 +791,6 @@
               <el-switch
                 v-model="setting.showTranslation"
                 :active-text="$t('m.tagTranslate')"
-                @change="handleTranslationSettingChange"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.filenameAsTitle"
-                :active-text="$t('m.filenameAsTitle')"
                 @change="handleTranslationSettingChange"
               />
             </el-col>
@@ -1264,6 +1273,18 @@ export default defineComponent({
     },
     openLink (link) {
       ipcRenderer['open-url'](link)
+    },
+    getDisplayTitle (book) {
+      switch (this.setting.displayTitle) {
+        case 'englishTitle':
+          return book.title
+        case 'japaneseTitle':
+          return book.title_jpn
+        case 'filename':
+          return this.returnFileName(book)
+        default:
+          return book.title_jpn || book.title || this.returnFileName(book)
+      }
     },
 
     // metadata

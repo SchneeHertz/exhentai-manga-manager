@@ -41,6 +41,7 @@
     "ehexAddress": "eh/ex地址",
     "addCategory": "增加类别",
     "englishTitle": "英文标题",
+    "japaneseTitle": "日文标题",
     "filename": "文件名",
     "category": "类别",
     "setting": "设置",
@@ -89,7 +90,6 @@
     "nextMangaRandom": "下一本(随机)",
     "language": "语言",
     "systemDefault": "系统默认",
-    "filenameAsTitle": "文件名作为标题",
     "excludeFile": "排除文件",
     "excludeFileInfo": "请输入需要排除的文件路径的正则表达式",
     "folderTreeWidth": "文件夹树宽度",
@@ -110,7 +110,9 @@
     "donation": "捐赠",
     "close": "关闭",
     "customOptions": "预定义搜索项",
-    "customOptionsPlaceholder": "预定义搜索项, 每行一个"
+    "customOptionsPlaceholder": "预定义搜索项, 每行一个",
+    "displayTitle": "显示标题",
+    "displayTitleInfo": "用户界面上显示的标题"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

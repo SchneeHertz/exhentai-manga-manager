@@ -30,6 +30,7 @@
     "editTag": "Edit Tag",
     "getMetadata": "Get Metadata",
     "getExMetadata": "Get Ex Metadata",
+    "getChaikaMetadata": "Get Chaika Metadata",
     "deleteManga": "Delete Manga",
     "getMetadataByFilename": "Get Metadata by Filename",
     "openMangaFileLocation": "Open Manga Location",

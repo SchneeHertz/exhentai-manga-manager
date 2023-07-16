@@ -420,23 +420,26 @@
             </el-descriptions>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button>
-            <el-button plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
-            <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
+            <el-button size="small" type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button>
+            <el-button size="small" plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
+            <el-button size="small" type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="openSearchDialog(bookDetail, 'e-hentai')">{{$t('m.getMetadata')}}</el-button>
-            <el-button type="primary" plain @click="openSearchDialog(bookDetail, 'exhentai')">{{$t('m.getExMetadata')}}</el-button>
+            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'e-hentai')">{{$t('m.getMetadata')}}</el-button>
+            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'exhentai')">{{$t('m.getExMetadata')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
-            <el-button type="primary" plain
+            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'chaika')">{{$t('m.getChaikaMetadata')}}</el-button>
+            <el-button size="small" type="primary" plain
               @click="openSearchDialog(bookDetail)"
             >{{$t('m.getMetadataByFilename')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
-            <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
+            <el-button size="small" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
+            <el-button size="small" type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
+          </el-row>
+          <el-row class="book-detail-function">
+            <el-button size="small" plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
         <el-col :span="showComment?10:18">
@@ -527,6 +530,7 @@
           <el-select class="search-type-select" v-model="searchTypeDialog">
             <el-option label="exhentai" value="exsearch" />
             <el-option label="e-hentai" value="e-search" />
+            <el-option label="chaika" value="chaika" />
           </el-select>
         </template>
         <template #append>
@@ -538,7 +542,7 @@
           <p
             v-for="result in ehSearchResultList"
             :key="result.url"
-            @click="resolveSearchResult(bookDetail, result.url)"
+            @click="resolveSearchResult(bookDetail, result.url, result.type)"
             class="search-result-ind"
           >{{result.title}}</p>
         </div>
@@ -1299,6 +1303,7 @@ export default defineComponent({
     // metadata
     openSearchDialog (book, server) {
       this.dialogVisibleEhSearch = true
+      this.searchTypeDialog = server
       this.ehSearchResultList = []
       this.searchStringDialog = this.returnFileName(book)
       this.bookDetail = book
@@ -1325,6 +1330,17 @@ export default defineComponent({
             this.printMessage('error', 'Get tag failed')
           }
         }
+      }
+      let resolveChaikaResult = (htmlString)=>{
+        let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.result-list')
+        this.ehSearchResultList = []
+        resultNodes.forEach((node)=>{
+          this.ehSearchResultList.push({
+            title: node.querySelector('td a').innerHTML,
+            url: node.querySelector('a').getAttribute('href'),
+            type: 'chaika'
+          })
+        })
       }
       this.searchResultLoading = true
       if (server === 'e-hentai') {
@@ -1365,11 +1381,23 @@ export default defineComponent({
         .finally(()=>{
           this.searchResultLoading = false
         })
+      } else if (server === 'chaika') {
+        axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(this.searchStringDialog)}`)
+        .then(res=>{
+          resolveChaikaResult(res.data)
+        })
+        .finally(()=>{
+          this.searchResultLoading = false
+        })
       }
     },
-    resolveSearchResult (book, url) {
+    resolveSearchResult (book, url, type) {
       book.url = url
-      this.getBookInfo(book)
+      if (type === 'chaika') {
+        this.getBookInfoFromChaika(book)
+      } else {
+        this.getBookInfo(book)
+      }
       this.dialogVisibleEhSearch = false
     },
     getBookInfo (book, server = 'e-hentai') {
@@ -1470,6 +1498,43 @@ export default defineComponent({
           })
         }
       }
+    },
+    getBookInfoFromChaika (book) {
+      let archiveNo = /\d+/.exec(book.url)[0]
+      axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
+      .then(res=>{
+        console.log(res.data)
+        _.assign(
+          book,
+          _.pick(res.data, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+        )
+        book.posted = +book.posted
+        book.filecount = +book.filecount
+        book.rating = +book.rating
+        book.title = he.decode(book.title)
+        book.title_jpn = he.decode(book.title_jpn)
+        let tagObject = _.groupBy(book.tags, tag=>{
+          let result = /(.+):/.exec(tag)
+          if (result) {
+            return /(.+):/.exec(tag)[1]
+          } else {
+            return 'misc'
+          }
+        })
+        _.forIn(tagObject, (arr, key)=>{
+          tagObject[key] = arr.map(tag=>{
+            let result = /:(.+)$/.exec(tag)
+            if (result) {
+              return /:(.+)$/.exec(tag)[1].replaceAll('_', ' ')
+            } else {
+              return tag.replaceAll('_', ' ')
+            }
+          })
+        })
+        book.tags = tagObject
+        book.status = 'tagged'
+        this.throttleSaveBookList()
+      })
     },
     getBookListMetadata (server) {
       this.dialogVisibleSetting = false
@@ -2474,6 +2539,12 @@ export default defineComponent({
             label: this.$t('m.getMetadataByFilename'),
             onClick: () => {
               this.openSearchDialog(book)
+            }
+          },
+          {
+            label: this.$t('m.getChaikaMetadata'),
+            onClick: () => {
+              this.openSearchDialog(book, 'chaika')
             }
           },
           {

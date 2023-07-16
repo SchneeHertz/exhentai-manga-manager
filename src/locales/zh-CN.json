@@ -30,6 +30,7 @@
     "editTag": "编辑标签",
     "getMetadata": "获取EH元数据",
     "getExMetadata": "获取EX元数据",
+    "getChaikaMetadata": "获取Chaika元数据",
     "deleteManga": "删除漫画",
     "getMetadataByFilename": "通过文件名获取元数据",
     "openMangaFileLocation": "打开漫画文件所在目录",

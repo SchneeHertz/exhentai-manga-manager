@@ -95,8 +95,8 @@
             <p class="book-title"
               @click="openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
-              :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title"
-            >{{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
+              :title="getDisplayTitle(book)"
+            >{{getDisplayTitle(book)}}</p>
             <img
               class="book-cover"
               :src="book.coverPath"
@@ -140,8 +140,7 @@
           v-show="!book.collection && !book.folderHide"
         >
           <div class="book-collect-card">
-            <p class="book-collect-title" :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title">
-              {{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
+            <p class="book-collect-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
             <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
         </el-badge>
@@ -161,8 +160,8 @@
                 <img class="book-collection-cover" :src="element.coverPath" />
                 <p
                   class="book-collection-title"
-                  :title="setting.filenameAsTitle ? returnFileName(element) : element.title_jpn || element.title"
-                >{{setting.filenameAsTitle ? returnFileName(element) : element.title_jpn || element.title}}</p>
+                  :title="getDisplayTitle(element)"
+                >{{getDisplayTitle(element)}}</p>
                 <el-icon :size="20" color="#FF0000" class="book-collection-remove" @click="handleClickCollectBadge(element)"><IosRemoveCircleOutline /></el-icon>
               </div>
             </template>
@@ -239,7 +238,7 @@
               />
               <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
             </div>
-            <div class="viewer-image-page">{{index + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </div>
         <div v-else-if="imageStyleType === 'single'">
@@ -259,7 +258,7 @@
                 @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex]?.filepath)"
               />
             </div>
-            <div class="viewer-image-page">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
             <img
               :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
               class="viewer-image-preload"
@@ -293,7 +292,7 @@
             <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page">
               <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
             </div>
-            <div class="viewer-image-page">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
           </div>
         </div>
         <el-button size="large" type="success" class="next-manga-button" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
@@ -357,8 +356,8 @@
           class="book-title"
           @click="openBookDetail(book)"
           @contextmenu="onMangaTitleContextMenu($event, book)"
-          :title="setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title"
-        >{{setting.filenameAsTitle ? returnFileName(book) : book.title_jpn || book.title}}</p>
+          :title="getDisplayTitle(book)"
+        >{{getDisplayTitle(book)}}</p>
         <img
           class="book-cover"
           :src="book.coverPath"
@@ -391,8 +390,7 @@
     >
       <template #header>
         <p class="detail-book-title">
-          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">
-            {{setting.filenameAsTitle ? returnFileName(bookDetail) : bookDetail.title_jpn || bookDetail.title}}</span>
+          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">{{getDisplayTitle(bookDetail)}}</span>
         </p>
       </template>
       <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
@@ -422,23 +420,26 @@
             </el-descriptions>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button>
-            <el-button plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
-            <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
+            <el-button size="small" type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button>
+            <el-button size="small" plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
+            <el-button size="small" type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="openSearchDialog(bookDetail, 'e-hentai')">{{$t('m.getMetadata')}}</el-button>
-            <el-button type="primary" plain @click="openSearchDialog(bookDetail, 'exhentai')">{{$t('m.getExMetadata')}}</el-button>
+            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'e-hentai')">{{$t('m.getMetadata')}}</el-button>
+            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'exhentai')">{{$t('m.getExMetadata')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
-            <el-button type="primary" plain
+            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'chaika')">{{$t('m.getChaikaMetadata')}}</el-button>
+            <el-button size="small" type="primary" plain
               @click="openSearchDialog(bookDetail)"
             >{{$t('m.getMetadataByFilename')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
-            <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
+            <el-button size="small" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
+            <el-button size="small" type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
+          </el-row>
+          <el-row class="book-detail-function">
+            <el-button size="small" plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
         <el-col :span="showComment?10:18">
@@ -478,9 +479,9 @@
             </div>
             <div v-else>
               <el-descriptions :column="1">
-                <el-descriptions-item :label="$t('m.title')+':'" v-if="setting.filenameAsTitle">{{bookDetail.title_jpn}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.title')+':'">{{bookDetail.title_jpn}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.englishTitle')+':'">{{bookDetail.title}}</el-descriptions-item>
-                <el-descriptions-item :label="$t('m.filename')+':'" v-if="!setting.filenameAsTitle">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.category')+':'">
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
@@ -529,6 +530,7 @@
           <el-select class="search-type-select" v-model="searchTypeDialog">
             <el-option label="exhentai" value="exsearch" />
             <el-option label="e-hentai" value="e-search" />
+            <el-option label="chaika" value="chaika" />
           </el-select>
         </template>
         <template #append>
@@ -540,7 +542,7 @@
           <p
             v-for="result in ehSearchResultList"
             :key="result.url"
-            @click="resolveSearchResult(bookDetail, result.url)"
+            @click="resolveSearchResult(bookDetail, result.url, result.type)"
             class="search-result-ind"
           >{{result.title}}</p>
         </div>
@@ -641,6 +643,31 @@
             </el-col>
           </el-row>
         </el-tab-pane>
+        <el-tab-pane :label="$t('m.internalViewer')" name="internalViewer">
+          <el-row :gutter="8">
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.thumbnailColumn')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
+                  <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.hidePageNumber"
+                :active-text="$t('m.hidePageNumber')"
+                @change="saveSetting"
+              />
+            </el-col>
+          </el-row>
+        </el-tab-pane>
         <el-tab-pane :label="$t('m.advanced')" name="advanced">
           <el-row :gutter="8">
             <el-col :span="24">
@@ -679,20 +706,6 @@
               </div>
             </el-col>
             <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.thumbnailColumn')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
               <NameFormItem class="setting-line" prependWidth="110px">
                 <template #prepend>{{$t('m.customOptions')}}</template>
                 <template #default>
@@ -711,6 +724,20 @@
               <div class="setting-line">
                 <el-input v-model="setting.folderTreeWidth" :placeholder="$t('m.folderTreeWidthInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.folderTreeWidth')}}</span></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
+                <el-input class="label-input">
+                  <template #prepend><span class="setting-label">{{$t('m.displayTitle')}}</span></template>
+                  <template #append>
+                    <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
+                      <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
+                      <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
+                      <el-option :label="$t('m.filename')" value="filename"></el-option>
+                    </el-select>
+                  </template>
                 </el-input>
               </div>
             </el-col>
@@ -767,7 +794,7 @@
             <el-col :span="6" class="setting-switch">
               <el-switch
                 v-model="setting.showComment"
-                :active-text="$t('m.comment')"
+                :active-text="$t('m.showComment')"
                 @change="saveSetting"
               />
             </el-col>
@@ -775,13 +802,6 @@
               <el-switch
                 v-model="setting.showTranslation"
                 :active-text="$t('m.tagTranslate')"
-                @change="handleTranslationSettingChange"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.filenameAsTitle"
-                :active-text="$t('m.filenameAsTitle')"
                 @change="handleTranslationSettingChange"
               />
             </el-col>
@@ -1031,6 +1051,8 @@ export default defineComponent({
         }
         if (frame.page.length > 0) result.push(_.clone(frame))
         return result
+      } else {
+        return []
       }
     },
     cookie () {
@@ -1265,10 +1287,23 @@ export default defineComponent({
     openLink (link) {
       ipcRenderer['open-url'](link)
     },
+    getDisplayTitle (book) {
+      switch (this.setting.displayTitle) {
+        case 'englishTitle':
+          return book.title
+        case 'japaneseTitle':
+          return book.title_jpn
+        case 'filename':
+          return this.returnFileName(book)
+        default:
+          return book.title_jpn || book.title || this.returnFileName(book)
+      }
+    },
 
     // metadata
     openSearchDialog (book, server) {
       this.dialogVisibleEhSearch = true
+      this.searchTypeDialog = server
       this.ehSearchResultList = []
       this.searchStringDialog = this.returnFileName(book)
       this.bookDetail = book
@@ -1295,6 +1330,17 @@ export default defineComponent({
             this.printMessage('error', 'Get tag failed')
           }
         }
+      }
+      let resolveChaikaResult = (htmlString)=>{
+        let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.result-list')
+        this.ehSearchResultList = []
+        resultNodes.forEach((node)=>{
+          this.ehSearchResultList.push({
+            title: node.querySelector('td a').innerHTML,
+            url: node.querySelector('a').getAttribute('href'),
+            type: 'chaika'
+          })
+        })
       }
       this.searchResultLoading = true
       if (server === 'e-hentai') {
@@ -1335,11 +1381,23 @@ export default defineComponent({
         .finally(()=>{
           this.searchResultLoading = false
         })
+      } else if (server === 'chaika') {
+        axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(this.searchStringDialog)}`)
+        .then(res=>{
+          resolveChaikaResult(res.data)
+        })
+        .finally(()=>{
+          this.searchResultLoading = false
+        })
       }
     },
-    resolveSearchResult (book, url) {
+    resolveSearchResult (book, url, type) {
       book.url = url
-      this.getBookInfo(book)
+      if (type === 'chaika') {
+        this.getBookInfoFromChaika(book)
+      } else {
+        this.getBookInfo(book)
+      }
       this.dialogVisibleEhSearch = false
     },
     getBookInfo (book, server = 'e-hentai') {
@@ -1440,6 +1498,43 @@ export default defineComponent({
           })
         }
       }
+    },
+    getBookInfoFromChaika (book) {
+      let archiveNo = /\d+/.exec(book.url)[0]
+      axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
+      .then(res=>{
+        console.log(res.data)
+        _.assign(
+          book,
+          _.pick(res.data, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+        )
+        book.posted = +book.posted
+        book.filecount = +book.filecount
+        book.rating = +book.rating
+        book.title = he.decode(book.title)
+        book.title_jpn = he.decode(book.title_jpn)
+        let tagObject = _.groupBy(book.tags, tag=>{
+          let result = /(.+):/.exec(tag)
+          if (result) {
+            return /(.+):/.exec(tag)[1]
+          } else {
+            return 'misc'
+          }
+        })
+        _.forIn(tagObject, (arr, key)=>{
+          tagObject[key] = arr.map(tag=>{
+            let result = /:(.+)$/.exec(tag)
+            if (result) {
+              return /:(.+)$/.exec(tag)[1].replaceAll('_', ' ')
+            } else {
+              return tag.replaceAll('_', ' ')
+            }
+          })
+        })
+        book.tags = tagObject
+        book.status = 'tagged'
+        this.throttleSaveBookList()
+      })
     },
     getBookListMetadata (server) {
       this.dialogVisibleSetting = false
@@ -1575,6 +1670,7 @@ export default defineComponent({
       } else {
         result = options
       }
+      result.map(obj=>obj.value = obj.value.replace(/\|{3}/, ' '))
       callback(result)
     },
     handleSearchStringChange (val) {
@@ -2141,6 +2237,8 @@ export default defineComponent({
       if (image) {
         if (this.imageStyleType === 'scroll') {
           return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px'}
+        } else if (this.setting.hidePageNumber) {
+          return {height: window.innerHeight + 'px', width: (image.width * window.innerHeight / image.height) + 'px'}
         } else {
           // 28 is the height of .viewer-image-page
           return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
@@ -2182,7 +2280,11 @@ export default defineComponent({
         _.forIn(this.viewerImageList, (image)=>{
           if (image.id === id) return false
           // 28 is the height of .viewer-image-page
-          scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
+          if (this.setting.hidePageNumber) {
+            scrollTopValue += parseFloat(this.returnImageStyle(image).height)
+          } else {
+            scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
+          }
         })
         this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
       } else if (this.imageStyleType === 'single') {
@@ -2437,6 +2539,12 @@ export default defineComponent({
             label: this.$t('m.getMetadataByFilename'),
             onClick: () => {
               this.openSearchDialog(book)
+            }
+          },
+          {
+            label: this.$t('m.getChaikaMetadata'),
+            onClick: () => {
+              this.openSearchDialog(book, 'chaika')
             }
           },
           {

@@ -744,13 +744,13 @@ ipcMain.handle('import-sqlite', async(event, bookList)=>{
           let metadata = await db.get('SELECT * FROM gallery WHERE thumb LIKE ?', `%${book.coverHash}%`)
           if (metadata) {
             metadata.tags = {
-              artist: metadata.artist ? JSON.parse(metadata.artist.replace(re, '\"')) : undefined,
-              group: metadata.group ? JSON.parse(metadata.group.replace(re, '\"')) : undefined,
+              language: metadata.language ? JSON.parse(metadata.language.replace(re, '\"')) : undefined,
               parody: metadata.parody ? JSON.parse(metadata.parody.replace(re, '\"')) : undefined,
               character: metadata.character ? JSON.parse(metadata.character.replace(re, '\"')) : undefined,
-              female: metadata.female ? JSON.parse(metadata.female.replace(re, '\"')) : undefined,
+              group: metadata.group ? JSON.parse(metadata.group.replace(re, '\"')) : undefined,
+              artist: metadata.artist ? JSON.parse(metadata.artist.replace(re, '\"')) : undefined,
               male: metadata.male ? JSON.parse(metadata.male.replace(re, '\"')) : undefined,
-              language: metadata.language ? JSON.parse(metadata.language.replace(re, '\"')) : undefined,
+              female: metadata.female ? JSON.parse(metadata.female.replace(re, '\"')) : undefined,
               mixed: metadata.mixed ? JSON.parse(metadata.mixed.replace(re, '\"')) : undefined,
               other: metadata.other ? JSON.parse(metadata.other.replace(re, '\"')) : undefined,
               cosplayer: metadata.cosplayer ? JSON.parse(metadata.cosplayer.replace(re, '\"')) : undefined,

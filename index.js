@@ -778,8 +778,15 @@ ipcMain.handle('import-sqlite', async(event, bookList)=>{
       console.log(e)
       await db.close()
     }
+    return {
+      success: true,
+      bookList
+    }
+  } else {
+    return {
+      success: false
+    }
   }
-  return bookList
 })
 
 ipcMain.handle('set-progress-bar', async(event, progress)=>{

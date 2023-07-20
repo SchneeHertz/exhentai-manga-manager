@@ -2473,46 +2473,55 @@ export default defineComponent({
     importDatabase () {
       ipcRenderer['load-import-database']()
       .then(database=>{
-        _.forIn(this.bookList, (book, index)=>{
-          let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
-          if (findData) {
-            _.assign(book, _.omit(findData, 'hash'))
-            if (book.url){
-              book.status = 'tagged'
-            } else {
-              book.status = 'tag-failed'
-            }
-            if (book.collectionInfo) {
-              let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
-              if (foundCollection) {
-                foundCollection.list = _.uniq([...foundCollection.list, book.id])
+        if (!_.isEmpty(database)) {
+          _.forIn(this.bookList, (book, index)=>{
+            let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
+            if (findData) {
+              _.assign(book, _.omit(findData, 'hash'))
+              if (book.url){
+                book.status = 'tagged'
               } else {
-                this.collectionList.push({
-                  id: book.collectionInfo.id,
-                  title: book.collectionInfo.title,
-                  list: [book.id]
-                })
+                book.status = 'tag-failed'
               }
-              delete book.collectionInfo
+              if (book.collectionInfo) {
+                let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
+                if (foundCollection) {
+                  foundCollection.list = _.uniq([...foundCollection.list, book.id])
+                } else {
+                  this.collectionList.push({
+                    id: book.collectionInfo.id,
+                    title: book.collectionInfo.title,
+                    list: [book.id]
+                  })
+                }
+                delete book.collectionInfo
+              }
             }
-          }
-          if (+index === this.bookList.length - 1) {
-            this.dialogVisibleSetting = false
-            this.printMessage('success', this.$t('c.importMessage'))
-          }
-        })
-        this.saveBookList()
+            if (+index === this.bookList.length - 1) {
+              this.dialogVisibleSetting = false
+              this.printMessage('success', this.$t('c.importMessage'))
+            }
+          })
+          this.saveBookList()
+        } else {
+          this.printMessage('info', this.$t('c.canceled'))
+        }
       })
     },
     importDatabasefromSqlite () {
       ipcRenderer['import-sqlite'](_.cloneDeep(this.bookList))
-      .then(bookList=>{
-        this.bookList = bookList
-        this.saveBookList()
-        .then(()=>{
-          this.printMessage('success', this.$t('c.importMessage'))
-          this.handleSortChange(this.sortValue)
-        })
+      .then(result=>{
+        let {success, bookList} = result
+        if (success) {
+          this.bookList = bookList
+          this.saveBookList()
+          .then(()=>{
+            this.printMessage('success', this.$t('c.importMessage'))
+            this.handleSortChange(this.sortValue)
+          })
+        } else {
+          this.printMessage('info', this.$t('c.canceled'))
+        }
       })
     },
 

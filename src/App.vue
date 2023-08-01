@@ -1252,15 +1252,17 @@ export default defineComponent({
           let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
           let category = collectBook.map(book=>book.category).join(',')
           let status = collectBook.map(book=>book.status).join(',')
-          this.bookList.push({
-            title: collection.title,
-            id: collection.id,
-            coverPath: collectBook[0].coverPath,
-            date, posted, rating, mark, tags, title_jpn, category, status,
-            list: collection.list,
-            filepath: collectBook[0].filepath,
-            collection: true
-          })
+          if (!_.isEmpty(collectBook)) {
+            this.bookList.push({
+              title: collection.title,
+              id: collection.id,
+              coverPath: collectBook[0].coverPath,
+              date, posted, rating, mark, tags, title_jpn, category, status,
+              list: collection.list,
+              filepath: collectBook[0].filepath,
+              collection: true
+            })
+          }
         })
         this.handleSortChange(this.sortValue)
       })

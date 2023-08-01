@@ -1,6 +1,5 @@
 const path = require('path')
-const glob = require('glob')
-const { promisify } = require('util')
+const { globIterate, globSync } = require('glob')
 const { nanoid } = require('nanoid')
 const _ = require('lodash')
 const { readdir, stat } = require('fs/promises')
@@ -19,17 +18,21 @@ const dirSize = async dir => {
 }
 
 let getFolderlist = async (libraryPath)=>{
-  let imageList = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
+  let imageList = globIterate('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: libraryPath,
     nocase: true
   })
-  let list = _.uniq(imageList.map(filepath=>path.dirname(filepath)))
+  let list = new Set()
+  for await (image of imageList) {
+    list.add(path.dirname(image))
+  }
+  list = [...list]
   list = list.map(filepath=>path.join(libraryPath, filepath))
   return list
 }
 
 let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
-  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif|gif)', {
+  let list = globSync('*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: folderpath,
     nocase: true
   })
@@ -48,7 +51,7 @@ let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
 }
 
 let getImageListFromFolder = async (folderpath, VIEWER_PATH)=>{
-  let list = await promisify(glob)('*.@(jpg|jpeg|png|webp|avif|gif)', {
+  let list = globSync('*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: folderpath,
     nocase: true
   })

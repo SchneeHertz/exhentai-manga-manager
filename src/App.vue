@@ -2232,6 +2232,7 @@ export default defineComponent({
     pasteTagClipboard (book) {
       let text = electronFunction['read-text-from-clipboard']()
       _.assign(book, JSON.parse(text))
+      this.saveBookList()
     },
 
     // internal viewer

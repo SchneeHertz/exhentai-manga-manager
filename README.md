@@ -39,10 +39,10 @@
 - 展示库文件夹结构，按文件夹查看漫画
 - 支持导入exhentai整体元数据数据库备份
 - 内置双页浏览
+- 从ExHentai页面复制元数据的[脚本](https://sleazyfork.org/zh-CN/scripts/472321-%E6%8F%90%E5%8F%96e-hentai%E7%94%BB%E5%BB%8A%E5%85%83%E6%95%B0%E6%8D%AE)
 
 ## TODO
 - 根据规则重命名和移动漫画文件
-- 使用sqlite存储漫画元数据，优化对大型库的支持
 
 ## Thanks
 本项目受到了诸多开源项目的帮助

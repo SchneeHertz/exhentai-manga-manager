@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, dialog, shell, screen } = require('electron')
+const { app, BrowserWindow, ipcMain, session, dialog, shell, screen, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const process = require('process')
@@ -106,6 +106,77 @@ function createWindow () {
     win.loadURL('http://localhost:3000')
   }
   win.setMenuBarVisibility(false)
+  win.setAutoHideMenuBar(true)
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Setting',
+          click: async () => {
+            win.webContents.send('send-action', {
+              action: 'setting'
+            })
+          }
+        },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Shortcut',
+      submenu: [
+        {
+          label: 'Focus SearchBar',
+          accelerator: 'CommandOrControl+L',
+          click: () => {
+            win.webContents.send('send-action', {
+              action: 'focus-search'
+            })
+          }
+        },
+        {
+          label: 'Focus SearchBar (invisible)',
+          accelerator: 'F6',
+          visible: false,
+          click: () => {
+            win.webContents.send('send-action', {
+              action: 'focus-search'
+            })
+          }
+        },
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'About',
+          accelerator: 'F1',
+          click: async () => {
+            win.webContents.send('send-action', {
+              action: 'about'
+            })
+          }
+        }
+      ]
+    }
+  ]
+  let menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
   win.webContents.on('did-finish-load', ()=>{
     let name = require('./package.json').name
     let version = require('./package.json').version

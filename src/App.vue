@@ -1108,6 +1108,20 @@ export default defineComponent({
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     this.sortValue = localStorage.getItem('sortValue')
     window.addEventListener('keydown', this.resolveKey)
+    ipcRenderer['send-action']((event, arg)=>{
+      switch (arg.action) {
+        case 'setting':
+          this.dialogVisibleSetting = true
+          break
+        case 'about':
+          this.dialogVisibleSetting = true
+          this.activeSettingPanel = 'about'
+          break
+        case 'focus-search':
+          document.querySelector('.search-input .el-input__inner').select()
+          break
+      }
+    })
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
@@ -1296,7 +1310,7 @@ export default defineComponent({
         case 'englishTitle':
           return book.title
         case 'japaneseTitle':
-          return book.title_jpn
+          return book.title_jpn || book.title
         case 'filename':
           return this.returnFileName(book)
         default:

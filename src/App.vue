@@ -1120,6 +1120,7 @@ export default defineComponent({
       switch (arg.action) {
         case 'setting':
           this.dialogVisibleSetting = true
+          this.activeSettingPanel = 'general'
           break
         case 'about':
           this.dialogVisibleSetting = true
@@ -1127,6 +1128,9 @@ export default defineComponent({
           break
         case 'focus-search':
           document.querySelector('.search-input .el-input__inner').select()
+          break
+        case 'shuffle-manga':
+          this.shuffleBook()
           break
       }
     })

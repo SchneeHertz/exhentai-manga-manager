@@ -113,6 +113,7 @@ function createWindow () {
       submenu: [
         {
           label: 'Setting',
+          accelerator: 'CommandOrControl+E',
           click: async () => {
             win.webContents.send('send-action', {
               action: 'setting'
@@ -120,7 +121,10 @@ function createWindow () {
           }
         },
         { type: 'separator' },
-        { role: 'quit' }
+        {
+          role: 'quit',
+          accelerator: 'CommandOrControl+Q'
+        }
       ]
     },
     {
@@ -128,11 +132,17 @@ function createWindow () {
       submenu: [
         { role: 'reload' },
         { role: 'toggleDevTools' },
+        {
+          role: 'toggleDevTools',
+          accelerator: 'F12',
+          visible: false
+        },
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
         { role: 'zoomOut' },
         { type: 'separator' },
+        { role: 'minimize' },
         { role: 'togglefullscreen' }
       ]
     },
@@ -155,6 +165,15 @@ function createWindow () {
           click: () => {
             win.webContents.send('send-action', {
               action: 'focus-search'
+            })
+          }
+        },
+        {
+          label: 'Shuffle Manga',
+          accelerator: 'CommandOrControl+S',
+          click: () => {
+            win.webContents.send('send-action', {
+              action: 'shuffle-manga'
             })
           }
         },

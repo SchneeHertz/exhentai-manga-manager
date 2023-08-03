@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'delete-local-book': (filepath)=>ipcRenderer.invoke('delete-local-book', filepath),
   // 'get-cover-hash': (filepath)=>ipcRenderer.invoke('get-cover-hash', filepath),
   'save-book-list': (list)=>ipcRenderer.invoke('save-book-list', list),
+  'save-book': (book)=>ipcRenderer.invoke('save-book', book),
   'load-setting': ()=>ipcRenderer.invoke('load-setting'),
   'save-setting': (receiveSetting)=>ipcRenderer.invoke('save-setting', receiveSetting),
   'select-folder': ()=>ipcRenderer.invoke('select-folder'),

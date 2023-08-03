@@ -14,6 +14,7 @@ const { open } = require('sqlite')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
 const windowStateKeeper = require('electron-window-state')
+const { Manga } = require('./fileLoader/database')
 
 const {getFolderlist, solveBookTypeFolder, getImageListFromFolder} = require('./fileLoader/folder')
 const {getArchivelist, solveBookTypeArchive, getImageListFromArchive} = require('./fileLoader/archive')
@@ -155,17 +156,55 @@ let loadBookListFromBrFile = async ()=>{
   try {
     let buffer = await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json.br'))
     let decodeBuffer = await promisify(brotliDecompress)(buffer)
-    fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), decodeBuffer.toString(), {encoding: 'utf-8'})
+    await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), decodeBuffer.toString(), {encoding: 'utf-8'})
     return JSON.parse(decodeBuffer.toString())
   } catch {
     return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), {encoding: 'utf-8'}))
   }
 }
 
+const loadBookListFromDatabase = async ()=>{
+  let bookList = await Manga.findAll({raw: true})
+  if (_.isEmpty(bookList)) {
+    bookList = await loadLegecyBookListFromFile()
+    await Manga.bulkCreate(bookList)
+  }
+  _.forEach(bookList, (book)=>{
+    try{
+      book.tags = JSON.parse(book.tags)
+    } catch {
+      book.tags = {}
+    }
+  })
+  return bookList
+}
+
+const loadLegecyBookListFromFile = async ()=>{
+  let bookList = await loadBookListFromBrFile()
+  try {
+    shell.trashItem(path.join(STORE_PATH, 'bookList.json.br'))
+    shell.trashItem(path.join(STORE_PATH, 'bookList.json'))
+  } catch {
+    console.log('Remove Legecy BookList Failed')
+  }
+  return bookList
+}
+
 let saveBookListToBrFile = async (data)=>{
   console.log('Saved BookList')
   let buffer = await promisify(brotliCompress)(JSON.stringify(data))
   return await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json.br'), buffer)
+}
+
+const saveBookListToDatabase = async (data)=>{
+  console.log('Empty Exist BookList and Saved New BookList')
+  await Manga.destroy({truncate: true})
+  await Manga.bulkCreate(data)
+}
+
+const saveBookToDatabase = async (book)=>{
+  await Manga.update(book, {where: {id: book.id}})
+  console.log(`Saved ${book.title}`)
 }
 
 let getBookFilelist = async ()=>{
@@ -224,22 +263,7 @@ let geneCover = async (filepath, type)=>{
 // library and metadata
 ipcMain.handle('load-book-list', async (event, scan)=>{
   if (scan) {
-
-    let existData
-    try {
-      existData = await loadBookListFromBrFile()
-      _.forIn(existData, book=>{
-        if (!book.hash && !book.url) {
-          try {
-            book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
-          } catch {
-            book.filepath = undefined
-          }
-        }
-      })
-    } catch {
-      existData = []
-    }
+    await Manga.update({exist: false}, {where: {}})
 
     sendMessageToWebContents('start loading library')
     let list = await getBookFilelist()
@@ -255,19 +279,17 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
     let listLength = list.length
     sendMessageToWebContents(`load ${listLength} book from library`)
 
-    let foundNewBook = false
     for (let i = 0; i < listLength; i++) {
       try {
         let {filepath, type} = list[i]
-        let foundData = _.find(existData, {filepath: filepath})
-        if (!foundData) {
+        let foundData = await Manga.findOne({where: {filepath: filepath}})
+        if (foundData === null) {
           sendMessageToWebContents(`load ${filepath}, ${i+1} of ${listLength}`)
-          foundNewBook = true
           let id = nanoid()
           let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
           if (targetFilePath && coverPath){
             let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-            existData.push({
+            await Manga.create({
               title: path.basename(filepath),
               coverPath,
               hash,
@@ -287,20 +309,15 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
         } else {
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
+          await foundData.save()
         }
         if ((i+1) % 100 === 0) {
           sendMessageToWebContents(`load ${i+1} of ${listLength}`)
-          if (foundNewBook) {
-            let tempExistData = _.cloneDeep(existData)
-            _.forIn(tempExistData, b=>b.exist = undefined)
-            await saveBookListToBrFile(tempExistData)
-            foundNewBook = false
-            try {
-              await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
-              await fs.promises.mkdir(TEMP_PATH, {recursive: true})
-            } catch (err) {
-              console.log(err)
-            }
+          try {
+            await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+            await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+          } catch (err) {
+            console.log(err)
           }
         }
       } catch (e) {
@@ -314,7 +331,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
       console.log(err)
     }
 
-    existData = _.filter(existData, {exist: true})
+    let existData = await Manga.findAll({where: {exist: true}, raw: true})
     try {
       let coverList = await fs.promises.readdir(COVER_PATH)
       let existCoverList = existData.map(b=>b.coverPath)
@@ -325,16 +342,14 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
     } catch (err) {
       console.log(err)
     }
-    _.forIn(existData, b=>b.exist = undefined)
-    await saveBookListToBrFile(existData)
+    await Manga.destroy({where: {exist: false}})
     mainWindow.setProgressBar(-1)
-    return existData
-  } else {
-    return await loadBookListFromBrFile()
   }
+  return await loadBookListFromDatabase()
 })
 
 ipcMain.handle('force-gene-book-list', async (event, arg)=>{
+  await Manga.destroy({truncate: true})
   try {
     await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
     await fs.promises.mkdir(TEMP_PATH, {recursive: true})
@@ -356,7 +371,6 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
   }
   let listLength = list.length
   sendMessageToWebContents(`load ${listLength} book from library`)
-  let data = []
   for (let i = 0; i < listLength; i++) {
     try {
       let {filepath, type} = list[i]
@@ -365,7 +379,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
       let {targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash} = await geneCover(filepath, type)
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-        data.push({
+        await Manga.create({
           title: path.basename(filepath),
           coverPath,
           hash,
@@ -381,9 +395,6 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
         })
       }
       mainWindow.setProgressBar(i/listLength)
-      if ((i+1) % 100 === 0) {
-        await saveBookListToBrFile(data)
-      }
     } catch (e) {
       sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${listLength}`)
     }
@@ -395,13 +406,12 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
     console.log(err)
   }
 
-  await saveBookListToBrFile(data)
   mainWindow.setProgressBar(-1)
-  return data
+  return await loadBookListFromDatabase()
 })
 
 ipcMain.handle('patch-local-metadata', async(event, arg)=>{
-  let bookList = await loadBookListFromBrFile()
+  let bookList = await loadBookListFromDatabase()
   let bookListLength = bookList.length
   try {
     await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
@@ -421,14 +431,12 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
       if (targetFilePath && coverPath){
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         _.assign(book, {type, coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash})
+        await Manga.update(book, {where: {id: book.id}})
         sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookListLength}`)
         mainWindow.setProgressBar(i/bookListLength)
       }
     } catch (e) {
       sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)
-    }
-    if ((i+1) % 100 === 0) {
-      await saveBookListToBrFile(bookList)
     }
   }
 
@@ -438,8 +446,6 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
   } catch (err) {
     console.log(err)
   }
-
-  await saveBookListToBrFile(bookList)
   mainWindow.setProgressBar(-1)
   return bookList
 })
@@ -495,7 +501,11 @@ ipcMain.handle('post-data-ex', async (event, {url, data, cookie})=>{
 })
 
 ipcMain.handle('save-book-list', async (event, list)=>{
-  return await saveBookListToBrFile(list)
+  return await saveBookListToDatabase(list)
+})
+
+ipcMain.handle('save-book', async (event, book)=>{
+  return await saveBookToDatabase(book)
 })
 
 // home
@@ -573,6 +583,7 @@ ipcMain.handle('open-local-book', async (event, filepath)=>{
 })
 
 ipcMain.handle('delete-local-book', async (event, filepath)=>{
+  await Manga.destroy({where: {filepath: filepath}})
   return shell.trashItem(filepath)
 })
 
@@ -684,7 +695,7 @@ ipcMain.handle('save-setting', async (event, receiveSetting)=>{
 })
 
 ipcMain.handle('export-database', async (event, arg)=>{
-  let bookList = await loadBookListFromBrFile()
+  let bookList = await loadBookListFromDatabase()
   let collectionList = []
   try {
     collectionList = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'collectionList.json'), {encoding: 'utf-8'}))
@@ -707,7 +718,7 @@ ipcMain.handle('export-database', async (event, arg)=>{
       if (!book.hash) {
         book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
       }
-      return _.pick(book, ['hash', 'tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url', 'collectionInfo'])
+      return _.pick(book, ['hash', 'tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url', 'collectionInfo', 'mark'])
     } catch {
       return {}
     }
@@ -762,14 +773,12 @@ ipcMain.handle('import-sqlite', async(event, bookList)=>{
             metadata.filesize = +metadata.filesize
             metadata.url = `https://exhentai.org/g/${metadata.gid}/${metadata.token}/`
             _.assign(book, _.pick(metadata, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url']), {status: 'tagged'})
+            await Manga.update(book, {where: {id: book.id}})
             sendMessageToWebContents(`${i+1} of ${bookListLength}, found metadata for ${book.filepath}`)
             mainWindow.setProgressBar(i/bookListLength)
           } else {
             sendMessageToWebContents(`${i+1} of ${bookListLength}, metadata not found for ${book.filepath}`)
           }
-        }
-        if ((i+1) % 100 === 0) {
-          await saveBookListToBrFile(bookList)
         }
       }
       await db.close()
@@ -778,8 +787,15 @@ ipcMain.handle('import-sqlite', async(event, bookList)=>{
       console.log(e)
       await db.close()
     }
+    return {
+      success: true,
+      bookList
+    }
+  } else {
+    return {
+      success: false
+    }
   }
-  return bookList
 })
 
 ipcMain.handle('set-progress-bar', async(event, progress)=>{

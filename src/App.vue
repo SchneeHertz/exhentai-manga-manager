@@ -119,7 +119,7 @@
               :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)"
             >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBookList"/>
+            <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBook(book)"/>
           </div>
           <div class="book-card" v-if="book.collection && !book.folderHide">
             <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
@@ -381,7 +381,7 @@
           :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
           @click="searchFromTag(book.status)"
         >{{book.status}}</el-tag>
-        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBookList"/>
+        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBook(book)"/>
       </div>
     </el-drawer>
     <el-dialog v-model="dialogVisibleBookDetail"
@@ -1108,7 +1108,6 @@ export default defineComponent({
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     this.sortValue = localStorage.getItem('sortValue')
     window.addEventListener('keydown', this.resolveKey)
-    this.throttleSaveBookList = _.throttle(this.saveBookList, 10000)
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
@@ -1228,6 +1227,9 @@ export default defineComponent({
       })
       return ipcRenderer['save-book-list'](bookList)
     },
+    saveBook (book) {
+      return ipcRenderer['save-book'](_.cloneDeep(book))
+    },
     loadCollectionList () {
       ipcRenderer['load-collection-list']()
       .then(res=>{
@@ -1252,15 +1254,17 @@ export default defineComponent({
           let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
           let category = collectBook.map(book=>book.category).join(',')
           let status = collectBook.map(book=>book.status).join(',')
-          this.bookList.push({
-            title: collection.title,
-            id: collection.id,
-            coverPath: collectBook[0].coverPath,
-            date, posted, rating, mark, tags, title_jpn, category, status,
-            list: collection.list,
-            filepath: collectBook[0].filepath,
-            collection: true
-          })
+          if (!_.isEmpty(collectBook)) {
+            this.bookList.push({
+              title: collection.title,
+              id: collection.id,
+              coverPath: collectBook[0].coverPath,
+              date, posted, rating, mark, tags, title_jpn, category, status,
+              list: collection.list,
+              filepath: collectBook[0].filepath,
+              collection: true
+            })
+          }
         })
         this.handleSortChange(this.sortValue)
       })
@@ -1400,8 +1404,8 @@ export default defineComponent({
       }
       this.dialogVisibleEhSearch = false
     },
-    getBookInfo (book, server = 'e-hentai') {
-      let getTag = (book, url) => {
+    async getBookInfo (book, server = 'e-hentai') {
+      let getTag = async (book, url) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
         ipcRenderer['post-data-ex']({
           url: 'https://api.e-hentai.org/api.php',
@@ -1414,7 +1418,7 @@ export default defineComponent({
           },
           cookie: this.cookie
         })
-        .then(res=>{
+        .then(async res=>{
           try {
             _.assign(
               book,
@@ -1446,55 +1450,55 @@ export default defineComponent({
             })
             book.tags = tagObject
             book.status = 'tagged'
-            this.throttleSaveBookList()
+            await this.saveBook(book)
           } catch (e) {
             console.log(e)
             if (_.includes(res, 'Your IP address has been')) {
               book.status = 'non-tag'
               this.printMessage('error', 'Your IP address has been temporarily banned')
-              this.saveBookList()
+              await this.saveBook(book)
               this.serviceAvailable = false
             } else {
               book.status = 'tag-failed'
               this.printMessage('error', 'Get tag failed')
-              this.saveBookList()
+              await this.saveBook(book)
             }
           }
         })
       }
-      let resolveWebPage = (book, htmlString)=>{
+      let resolveWebPage = async (book, htmlString)=>{
         try {
           let bookUrl = new DOMParser().parseFromString(htmlString, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-          getTag(book, bookUrl)
+          await getTag(book, bookUrl)
         } catch (e) {
           console.log(e)
           if (htmlString.includes('Your IP address has been')) {
             book.status = 'non-tag'
             this.printMessage('error', 'Your IP address has been temporarily banned')
-            this.saveBookList()
+            await this.saveBook(book)
             this.serviceAvailable = false
           } else {
             book.status = 'tag-failed'
             this.printMessage('error', 'Get tag failed')
-            this.saveBookList()
+            await this.saveBook(book)
           }
         }
       }
       if (book.url) {
-        getTag(book, book.url)
+        await getTag(book, book.url)
       } else {
         if (server === 'e-hentai') {
           axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
-          .then(res=>{
-            resolveWebPage(book, res.data)
+          .then(async res=>{
+            await resolveWebPage(book, res.data)
           })
         } else if (server === 'exhentai') {
           ipcRenderer['get-ex-webpage']({
             url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
             cookie: this.cookie
           })
-          .then(res=>{
-            resolveWebPage(book, res)
+          .then(async res=>{
+            await resolveWebPage(book, res)
           })
         }
       }
@@ -1502,7 +1506,7 @@ export default defineComponent({
     getBookInfoFromChaika (book) {
       let archiveNo = /\d+/.exec(book.url)[0]
       axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
-      .then(res=>{
+      .then(async res=>{
         console.log(res.data)
         _.assign(
           book,
@@ -1533,7 +1537,7 @@ export default defineComponent({
         })
         book.tags = tagObject
         book.status = 'tagged'
-        this.throttleSaveBookList()
+        await this.saveBook(book)
       })
     },
     getBookListMetadata (server) {
@@ -1548,7 +1552,7 @@ export default defineComponent({
             || (this.setting.batchTagfailedBook && this.bookList[i].status === 'tag-failed'))
             && this.serviceAvailable
           ) {
-            this.getBookInfo(this.bookList[i], server)
+            await this.getBookInfo(this.bookList[i], server)
             this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
           }
@@ -1772,7 +1776,7 @@ export default defineComponent({
     },
     switchMark (book) {
       book.mark = !book.mark
-      this.saveBookList()
+      this.saveBook(book)
     },
     isChineseTranslatedManga (book) {
       return _.includes(book?.tags?.language, 'chinese') ? true : false
@@ -2080,7 +2084,7 @@ export default defineComponent({
     },
     triggerHiddenBook (book) {
       book.hiddenBook = !book.hiddenBook
-      this.saveBookList()
+      this.saveBook(book)
     },
     showFile(filepath) {
       ipcRenderer['show-file'](filepath)
@@ -2106,12 +2110,9 @@ export default defineComponent({
             })
             this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
           }
-          this.saveBookList()
-          .then(()=>{
-            this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
-            if (book.hidden) this.saveCollection()
-            this.dialogVisibleBookDetail = false
-          })
+          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
+          if (book.hidden) this.saveCollection()
+          this.dialogVisibleBookDetail = false
         })
       })
     },
@@ -2197,7 +2198,7 @@ export default defineComponent({
             delete this.bookDetail.tags[tagCat]
           }
         })
-        this.saveBookList()
+        this.saveBook(this.bookDetail)
       }
     },
     addTagCat () {
@@ -2230,6 +2231,7 @@ export default defineComponent({
     pasteTagClipboard (book) {
       let text = electronFunction['read-text-from-clipboard']()
       _.assign(book, JSON.parse(text))
+      this.saveBook(book)
     },
 
     // internal viewer
@@ -2472,47 +2474,53 @@ export default defineComponent({
     },
     importDatabase () {
       ipcRenderer['load-import-database']()
-      .then(database=>{
-        _.forIn(this.bookList, (book, index)=>{
-          let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
-          if (findData) {
-            _.assign(book, _.omit(findData, 'hash'))
-            if (book.url){
-              book.status = 'tagged'
-            } else {
-              book.status = 'tag-failed'
-            }
-            if (book.collectionInfo) {
-              let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
-              if (foundCollection) {
-                foundCollection.list = _.uniq([...foundCollection.list, book.id])
+      .then(async database=>{
+        if (!_.isEmpty(database)) {
+          _.forEach(this.bookList, async (book, index)=>{
+            let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
+            if (findData) {
+              _.assign(book, _.omit(findData, 'hash'))
+              if (book.url){
+                book.status = 'tagged'
               } else {
-                this.collectionList.push({
-                  id: book.collectionInfo.id,
-                  title: book.collectionInfo.title,
-                  list: [book.id]
-                })
+                book.status = 'tag-failed'
               }
-              delete book.collectionInfo
+              if (book.collectionInfo) {
+                let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
+                if (foundCollection) {
+                  foundCollection.list = _.uniq([...foundCollection.list, book.id])
+                } else {
+                  this.collectionList.push({
+                    id: book.collectionInfo.id,
+                    title: book.collectionInfo.title,
+                    list: [book.id]
+                  })
+                }
+                delete book.collectionInfo
+              }
             }
-          }
-          if (+index === this.bookList.length - 1) {
-            this.dialogVisibleSetting = false
-            this.printMessage('success', this.$t('c.importMessage'))
-          }
-        })
-        this.saveBookList()
+            if (index === this.bookList.length - 1) {
+              this.dialogVisibleSetting = false
+              this.printMessage('success', this.$t('c.importMessage'))
+            }
+            await this.saveBook(book)
+          })
+        } else {
+          this.printMessage('info', this.$t('c.canceled'))
+        }
       })
     },
     importDatabasefromSqlite () {
       ipcRenderer['import-sqlite'](_.cloneDeep(this.bookList))
-      .then(bookList=>{
-        this.bookList = bookList
-        this.saveBookList()
-        .then(()=>{
+      .then(result=>{
+        let {success, bookList} = result
+        if (success) {
+          this.bookList = bookList
           this.printMessage('success', this.$t('c.importMessage'))
           this.handleSortChange(this.sortValue)
-        })
+        } else {
+          this.printMessage('info', this.$t('c.canceled'))
+        }
       })
     },
 
@@ -2604,7 +2612,7 @@ export default defineComponent({
               ipcRenderer['use-new-cover'](filepath)
               .then((coverPath)=>{
                 this.bookDetail.coverPath = coverPath
-                this.saveBookList()
+                this.saveBook(this.bookDetail)
               })
             }
           },

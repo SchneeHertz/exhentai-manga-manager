@@ -1,7 +1,7 @@
 {
   "name": "exhentai-manga-manager",
   "private": true,
-  "version": "1.4.11",
+  "version": "1.5.0",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -43,13 +43,14 @@
   "dependencies": {
     "adm-zip": "^0.5.9",
     "electron-window-state": "^5.0.3",
-    "glob": "^7.2.0",
+    "glob": "^10.3.3",
     "iconv-lite": "^0.6.3",
     "lodash": "^4.17.21",
     "nanoid": "^3.3.2",
+    "sequelize": "^6.32.1",
     "sharp": "^0.30.3",
     "sqlite": "^4.1.2",
-    "sqlite3": "^5.1.0",
+    "sqlite3": "^5.1.6",
     "superagent": "^7.1.2",
     "superagent-proxy": "^3.0.0"
   },

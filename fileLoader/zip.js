@@ -1,13 +1,12 @@
 const fs = require('fs')
 const path = require('path')
-const glob = require('glob')
-const {promisify} = require('util')
+const { globSync } = require('glob')
 const AdmZip = require('adm-zip')
 const { nanoid } = require('nanoid')
 const _ = require('lodash')
 
 let getZipFilelist = async (libraryPath)=>{
-  let list = await promisify(glob)('**/*.@(zip|cbz)', {
+  let list = globSync('**/*.@(zip|cbz)', {
     cwd: libraryPath,
     nocase: true
   })
@@ -60,7 +59,7 @@ let getImageListFromZip = async (filepath, VIEWER_PATH)=>{
   let zip = new AdmZip(filepath)
   let tempFolder = path.join(VIEWER_PATH, nanoid(6))
   zip.extractAllTo(tempFolder, true)
-  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
+  let list = globSync('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: tempFolder,
     nocase: true
   })

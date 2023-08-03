@@ -1,7 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const glob = require('glob')
-const { promisify } = require('util')
+const { globSync } = require('glob')
 const { nanoid } = require('nanoid')
 const { spawn } = require('child_process')
 const _ = require('lodash')
@@ -10,7 +9,7 @@ const iconv = require('iconv-lite')
 const _7z = path.join(process.cwd(), 'resources/extraResources/7z.exe')
 
 let getArchivelist = async (libraryPath)=>{
-  let list = await promisify(glob)('**/*.@(rar|7z|cb7|cbr)', {
+  let list = globSync('**/*.@(rar|7z|cb7|cbr)', {
     cwd: libraryPath,
     nocase: true
   })
@@ -61,7 +60,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
 let getImageListFromArchive = async (filepath, VIEWER_PATH)=>{
   let tempFolder = path.join(VIEWER_PATH, nanoid(6))
   await spawnPromise(_7z, ['x', filepath, '-o' + tempFolder, '-p123456'])
-  let list = await promisify(glob)('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
+  let list = globSync('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: tempFolder,
     nocase: true
   })

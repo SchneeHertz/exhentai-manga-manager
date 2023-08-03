@@ -1,5 +1,6 @@
-const { Sequelize, DataTypes} = require('sequelize')
+const { Sequelize, DataTypes } = require('sequelize')
 const path = require('node:path')
+const fs = require('node:fs')
 const { app } = require('electron')
 
 let STORE_PATH

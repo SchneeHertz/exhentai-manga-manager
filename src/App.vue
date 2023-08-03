@@ -550,8 +550,9 @@
       </div>
     </el-dialog>
     <el-dialog v-model="dialogVisibleSetting"
-      width="45em"
+      width="50em"
       :modal="false"
+      append-to-body
       custom-class="setting-dialog"
     >
       <template #header><p class="setting-title">{{$t('m.setting')}}</p></template>
@@ -823,6 +824,13 @@
               <el-switch
                 v-model="setting.batchTagfailedBook"
                 :active-text="$t('m.batchTagfailedBook')"
+                @change="saveSetting"
+              />
+            </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.deleteConfirm"
+                :active-text="$t('m.deleteConfirm')"
                 @change="saveSetting"
               />
             </el-col>
@@ -2108,12 +2116,7 @@ export default defineComponent({
       ipcRenderer['open-local-book'](this.bookDetail.filepath)
     },
     deleteLocalBook (book) {
-      ElMessageBox.confirm(
-        this.$t('c.confirmDelete'),
-        '',
-        {}
-      )
-      .then(()=>{
+      const deleteBook = ()=>{
         ipcRenderer['delete-local-book'](book.filepath)
         .then(()=>{
           this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
@@ -2128,7 +2131,16 @@ export default defineComponent({
           if (book.hidden) this.saveCollection()
           this.dialogVisibleBookDetail = false
         })
-      })
+      }
+      if (this.setting.deleteConfirm) {
+        deleteBook()
+      } else {
+        ElMessageBox.confirm(
+          this.$t('c.confirmDelete'),
+          '',
+          {}
+        ).then(deleteBook).catch(()=>({}))
+      }
     },
     viewManga (book) {
       this.bookDetail = book
@@ -2914,6 +2926,7 @@ body
     padding: 5px 20px 16px
 .setting-title
   margin:0
+  text-align: center
 .setting-line
   margin: 6px 0
   .el-input-group__prepend

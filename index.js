@@ -83,7 +83,7 @@ let sendMessageToWebContents = (message)=>{
 let mainWindow
 let screenWidth
 let sendImageLock = false
-function createWindow () {
+const createWindow = ()=>{
   let mainWindowState = windowStateKeeper({
     defaultWidth: 1560,
     defaultHeight: 1000
@@ -208,7 +208,8 @@ function createWindow () {
 }
 
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
-app.whenReady().then(()=>{
+app.whenReady().then(async ()=>{
+  await Manga.sync({ alter: true })
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor
   mainWindow = createWindow()

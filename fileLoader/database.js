@@ -56,7 +56,7 @@ const Manga = sequelize.define('Manga', {
 })
 
 ;(async()=>{
-  await Manga.sync({ alter: true })
+  // await Manga.sync({ alter: true })
 })()
 
 module.exports = {

@@ -115,7 +115,7 @@
     "displayTitle": "Display Title",
     "displayTitleInfo": "The title displayed on the UI",
     "hidePageNumber": "Hide Page Number",
-    "deleteConfirm": "Skip Delete Confirm"
+    "skipDeleteConfirm": "Skip Delete Confirm"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

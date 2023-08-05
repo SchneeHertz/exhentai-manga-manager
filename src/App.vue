@@ -829,8 +829,8 @@
             </el-col>
             <el-col :span="6" class="setting-switch">
               <el-switch
-                v-model="setting.deleteConfirm"
-                :active-text="$t('m.deleteConfirm')"
+                v-model="setting.skipDeleteConfirm"
+                :active-text="$t('m.skipDeleteConfirm')"
                 @change="saveSetting"
               />
             </el-col>
@@ -2136,7 +2136,7 @@ export default defineComponent({
           this.dialogVisibleBookDetail = false
         })
       }
-      if (this.setting.deleteConfirm) {
+      if (this.setting.skipDeleteConfirm) {
         deleteBook()
       } else {
         ElMessageBox.confirm(

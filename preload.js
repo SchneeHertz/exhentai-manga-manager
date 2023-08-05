@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   'manga-content': (func)=>ipcRenderer.on('manga-content', func),
   'release-sendimagelock': ()=>ipcRenderer.invoke('release-sendimagelock'),
   'import-sqlite': (bookList)=>ipcRenderer.invoke('import-sqlite', bookList),
+  'send-action': (func)=>ipcRenderer.on('send-action', func),
 })
 
 contextBridge.exposeInMainWorld('electronFunction', {

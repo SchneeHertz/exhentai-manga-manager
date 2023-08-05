@@ -1,5 +1,6 @@
-const { Sequelize, DataTypes} = require('sequelize')
+const { Sequelize, DataTypes } = require('sequelize')
 const path = require('node:path')
+const fs = require('node:fs')
 const { app } = require('electron')
 
 let STORE_PATH
@@ -53,10 +54,6 @@ const Manga = sequelize.define('Manga', {
     defaultValue: true
   }
 })
-
-;(async()=>{
-  await Manga.sync({ alter: true })
-})()
 
 module.exports = {
   Manga

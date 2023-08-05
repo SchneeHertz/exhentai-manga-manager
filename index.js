@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, dialog, shell, screen } = require('electron')
+const { app, BrowserWindow, ipcMain, session, dialog, shell, screen, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const process = require('process')
@@ -83,7 +83,7 @@ let sendMessageToWebContents = (message)=>{
 let mainWindow
 let screenWidth
 let sendImageLock = false
-function createWindow () {
+const createWindow = ()=>{
   let mainWindowState = windowStateKeeper({
     defaultWidth: 1560,
     defaultHeight: 1000
@@ -106,6 +106,96 @@ function createWindow () {
     win.loadURL('http://localhost:3000')
   }
   win.setMenuBarVisibility(false)
+  win.setAutoHideMenuBar(true)
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Setting',
+          accelerator: 'CommandOrControl+E',
+          click: async () => {
+            win.webContents.send('send-action', {
+              action: 'setting'
+            })
+          }
+        },
+        { type: 'separator' },
+        {
+          role: 'quit',
+          accelerator: 'CommandOrControl+Q'
+        }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'toggleDevTools' },
+        {
+          role: 'toggleDevTools',
+          accelerator: 'F12',
+          visible: false
+        },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'minimize' },
+        { role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Shortcut',
+      submenu: [
+        {
+          label: 'Focus SearchBar',
+          accelerator: 'CommandOrControl+L',
+          click: () => {
+            win.webContents.send('send-action', {
+              action: 'focus-search'
+            })
+          }
+        },
+        {
+          label: 'Focus SearchBar (invisible)',
+          accelerator: 'F6',
+          visible: false,
+          click: () => {
+            win.webContents.send('send-action', {
+              action: 'focus-search'
+            })
+          }
+        },
+        {
+          label: 'Shuffle Manga',
+          accelerator: 'CommandOrControl+S',
+          click: () => {
+            win.webContents.send('send-action', {
+              action: 'shuffle-manga'
+            })
+          }
+        },
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'About',
+          accelerator: 'F1',
+          click: async () => {
+            win.webContents.send('send-action', {
+              action: 'about'
+            })
+          }
+        }
+      ]
+    }
+  ]
+  let menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
   win.webContents.on('did-finish-load', ()=>{
     let name = require('./package.json').name
     let version = require('./package.json').version
@@ -118,7 +208,8 @@ function createWindow () {
 }
 
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
-app.whenReady().then(()=>{
+app.whenReady().then(async ()=>{
+  await Manga.sync({ alter: true })
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor
   mainWindow = createWindow()

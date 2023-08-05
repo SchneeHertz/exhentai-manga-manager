@@ -114,7 +114,8 @@
     "customOptionsPlaceholder": "预定义搜索项, 每行一个",
     "displayTitle": "显示标题",
     "displayTitleInfo": "用户界面上显示的标题",
-    "hidePageNumber": "隐藏页码"
+    "hidePageNumber": "隐藏页码",
+    "skipDeleteConfirm": "跳过删除确认"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

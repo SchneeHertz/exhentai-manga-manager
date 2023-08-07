@@ -327,7 +327,7 @@
     >
       <el-tree
         :data="folderTreeData"
-        default-expand-all
+        :default-expand-all="setting.defaultExpandTree"
         :expand-on-click-node="false"
         @current-change="selectFolderTreeNode"
       ></el-tree>
@@ -701,6 +701,20 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
+                <el-input class="label-input">
+                  <template #prepend><span class="setting-label">{{$t('m.displayTitle')}}</span></template>
+                  <template #append>
+                    <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
+                      <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
+                      <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
+                      <el-option :label="$t('m.filename')" value="filename"></el-option>
+                    </el-select>
+                  </template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
                 <el-input v-model.number="setting.requireGap" :placeholder="$t('m.requireGapInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
                 </el-input>
@@ -725,20 +739,6 @@
               <div class="setting-line">
                 <el-input v-model="setting.folderTreeWidth" :placeholder="$t('m.folderTreeWidthInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.folderTreeWidth')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input class="label-input">
-                  <template #prepend><span class="setting-label">{{$t('m.displayTitle')}}</span></template>
-                  <template #append>
-                    <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
-                      <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
-                      <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
-                      <el-option :label="$t('m.filename')" value="filename"></el-option>
-                    </el-select>
-                  </template>
                 </el-input>
               </div>
             </el-col>
@@ -831,6 +831,13 @@
               <el-switch
                 v-model="setting.skipDeleteConfirm"
                 :active-text="$t('m.skipDeleteConfirm')"
+                @change="saveSetting"
+              />
+            </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.defaultExpandTree"
+                :active-text="$t('m.defaultExpandTree')"
                 @change="saveSetting"
               />
             </el-col>

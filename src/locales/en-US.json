@@ -81,7 +81,7 @@
     "getTagbyUrl": "Get Tag by Url",
     "copyTagClipboard": "Copy Tag to Clipboard",
     "pasteTagClipboard": "Paste Tag from Clipboard",
-    "directEnter": "Act when Click Cover",
+    "directEnter": "Click Cover To",
     "detailPage": "Detail Page",
     "internalViewer": "Internal Viewer",
     "externalViewer": "External Viewer",
@@ -97,7 +97,7 @@
     "folderTreeWidthInfo": "Default is 20%, accept valid css values, like 400px, 30%, 25vw etc.",
     "advancedSearch": "Advanced Search",
     "checkUpdates": "Check Updates",
-    "autoCheckUpdates": "Auto Check Updates",
+    "autoCheckUpdates": "Auto Check Update",
     "batchTagfailedBook": "Also batch get metadata of tag-failed book",
     "test": "Test",
     "mtime": "Modify Time",
@@ -118,7 +118,8 @@
     "skipDeleteConfirm": "Skip Delete Confirm",
     "fitWidth": "fit width",
     "fitHeight": "fit height",
-    "fitWindow": "fit window"
+    "fitWindow": "fit window",
+    "defaultExpandTree": "Default Expand Tree"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

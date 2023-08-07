@@ -68,10 +68,10 @@
     "onStartScan": "Scan on Start",
     "comment": "Comment",
     "tagTranslate": "Tag Translate",
-    "scrolling": "scroll",
-    "singlePage": "single",
-    "doublePage": "double",
-    "thumbnail": "thumb",
+    "scrolling": "scrolling",
+    "singlePage": "single page",
+    "doublePage": "double page",
+    "thumbnail": "thumbnail",
     "content": "content",
     "tagAnalysis": "Tag Analysis",
     "searchLocal": "Search Local",
@@ -115,7 +115,10 @@
     "displayTitle": "Display Title",
     "displayTitleInfo": "The title displayed on the UI",
     "hidePageNumber": "Hide Page Number",
-    "skipDeleteConfirm": "Skip Delete Confirm"
+    "skipDeleteConfirm": "Skip Delete Confirm",
+    "fitWidth": "fit width",
+    "fitHeight": "fit height",
+    "fitWindow": "fit window"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

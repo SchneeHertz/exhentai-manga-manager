@@ -115,7 +115,10 @@
     "displayTitle": "显示标题",
     "displayTitleInfo": "用户界面上显示的标题",
     "hidePageNumber": "隐藏页码",
-    "skipDeleteConfirm": "跳过删除确认"
+    "skipDeleteConfirm": "跳过删除确认",
+    "fitWidth": "适应宽度",
+    "fitHeight": "适应高度",
+    "fitWindow": "适应窗口"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

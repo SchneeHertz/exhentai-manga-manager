@@ -188,28 +188,44 @@
       :with-header="false"
       destroy-on-close
       @closed="releaseSendImageLock"
+      custom-class="viewer-drawer"
     >
       <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
-      <el-select
-        v-model="imageStyleType"
-        size="small"
-        @change="saveImageStyleType"
-        class="viewer-mode"
-        ref="viewermode"
-      >
-        <el-option value="scroll" :label="$t('m.scrolling')" />
-        <el-option value="single" :label="$t('m.singlePage')" />
-        <el-option value="double" :label="$t('m.doublePage')" />
-      </el-select>
-      <el-select
-        v-model="showThumbnail"
-        size="small"
-        @change="switchThumbnail"
-        class="viewer-thumbnail-select"
-      >
-        <el-option :value="true" :label="$t('m.thumbnail')" />
-        <el-option :value="false" :label="$t('m.content')" />
-      </el-select>
+      <div class="viewer-mode-setting">
+        <el-select
+          v-model="showThumbnail"
+          size="small"
+          @change="switchThumbnail"
+          class="viewer-thumbnail-select"
+        >
+          <el-option :value="true" :label="$t('m.thumbnail')" />
+          <el-option :value="false" :label="$t('m.content')" />
+        </el-select>
+        <el-select
+          v-model="imageStyleType"
+          size="small"
+          @change="saveImageStyleType"
+          class="viewer-mode"
+          ref="viewer-mode"
+          v-show="showThumbnail === false"
+        >
+          <el-option value="scroll" :label="$t('m.scrolling')" />
+          <el-option value="single" :label="$t('m.singlePage')" />
+          <el-option value="double" :label="$t('m.doublePage')" />
+        </el-select>
+        <el-select
+          v-model="imageStyleFit"
+          size="small"
+          @change="saveImageStyleType"
+          class="viewer-image-fit"
+          ref="viewer-image-fit"
+          v-show="imageStyleType !== 'scroll' && showThumbnail === false"
+        >
+          <el-option value="width" :label="$t('m.fitWidth')" />
+          <el-option value="height" :label="$t('m.fitHeight')" />
+          <el-option value="window" :label="$t('m.fitWindow')" />
+        </el-select>
+      </div>
       <div
         class="drawer-image-content"
         @click="scrollPage"
@@ -223,13 +239,8 @@
             v-for="(image, index) in viewerImageList"
             :key="image.id"
             class="image-frame"
-            :style="returnImageFrameStyle()"
           >
-            <div
-              class="viewer-image-frame"
-              :id="image.id"
-              :style="returnImageStyle(image)"
-            >
+            <div class="viewer-image-frame viewer-image-frame-scroll" :style="returnImageStyle(image)">
               <img
                 :src="`${image.filepath}?id=${image.id}`"
                 class="viewer-image"
@@ -242,15 +253,8 @@
           </div>
         </div>
         <div v-else-if="imageStyleType === 'single'">
-          <div
-            class="image-frame"
-            :style="returnImageFrameStyle()"
-          >
-            <div
-              class="viewer-image-frame"
-              :id="viewerImageList[currentImageIndex]?.id"
-              :style="returnImageStyle(viewerImageList[currentImageIndex])"
-            >
+          <div class="image-frame">
+            <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
               <img
                 :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
                 class="viewer-image"
@@ -269,17 +273,11 @@
             />
           </div>
         </div>
-        <div v-else>
-          <div
-            class="image-frame"
-            :style="returnImageFrameStyle()"
-          >
-            <div
-              class="viewer-image-frame viewer-image-frame-double"
-              v-for="image in viewerImageListDouble[currentImageIndex]?.page"
-              :style="returnImageStyle(image)"
-            >
+        <div v-else-if="imageStyleType === 'double'">
+          <div class="image-frame">
+            <div class="viewer-image-frame viewer-image-frame-double">
               <img
+                v-for="image in viewerImageListDouble[currentImageIndex]?.page"
                 :src="`${image.filepath}?id=${image.id}`"
                 class="viewer-image"
                 :style="{height: returnImageStyle(image).height}"
@@ -295,8 +293,10 @@
             <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
           </div>
         </div>
-        <el-button size="large" type="success" class="next-manga-button" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" class="next-manga-button" @click="toNextManga">{{$t('m.nextManga')}}</el-button>
+      </div>
+      <div class="next-manga-button">
+        <el-button size="large" type="success" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
+        <el-button size="large" type="success" @click="toNextManga">{{$t('m.nextManga')}}</el-button>
       </div>
       <div
         class="drawer-thumbnail-content"
@@ -946,6 +946,7 @@ export default defineComponent({
       viewerImageList: [],
       viewerImageWidth: 1280,
       imageStyleType: 'scroll',
+      imageStyleFit: 'window',
       _currentImageIndex: 0,
       storeDrawerScrollTop: undefined,
       insertEmptyPage: false,
@@ -1042,20 +1043,20 @@ export default defineComponent({
         let pageNumber = 0
         for (let image of this.viewerImageList) {
           pageNumber += 1
-          if (image.width > image.height) {
-            if (frame.page.length > 0) {
-              result.push(_.clone(frame))
-              frame = {page: [], pageNumber: []}
-            }
-            result.push({page: [image], pageNumber: [pageNumber]})
-          } else {
+          // if (image.width > image.height) {
+          //   if (frame.page.length > 0) {
+          //     result.push(_.clone(frame))
+          //     frame = {page: [], pageNumber: []}
+          //   }
+          //   result.push({page: [image], pageNumber: [pageNumber]})
+          // } else {
             frame.page.push(image)
             frame.pageNumber.push(pageNumber)
             if ((this.insertEmptyPage && result.length === this.insertEmptyPageIndex) || frame.page.length >= 2) {
               result.push(_.clone(frame))
               frame = {page: [], pageNumber: []}
             }
-          }
+          // }
         }
         if (frame.page.length > 0) result.push(_.clone(frame))
         return result
@@ -1114,6 +1115,7 @@ export default defineComponent({
     })
     this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
+    this.imageStyleFit = localStorage.getItem('imageStyleFit') || 'window'
     this.sortValue = localStorage.getItem('sortValue')
     window.addEventListener('keydown', this.resolveKey)
     ipcRenderer['send-action']((event, arg)=>{
@@ -2266,14 +2268,71 @@ export default defineComponent({
 
     // internal viewer
     returnImageStyle(image) {
+      const returnImageStyleObject = ({width, height})=>{
+        if (width) {
+          return { width: width + 'px', height: (image.height * (width / image.width)) + 'px' }
+        }
+        if (height) {
+          return { width: (image.width * (height / image.height)) + 'px', height: height + 'px' }
+        }
+      }
       if (image) {
-        if (this.imageStyleType === 'scroll') {
-          return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px'}
-        } else if (this.setting.hidePageNumber) {
-          return {height: window.innerHeight + 'px', width: (image.width * window.innerHeight / image.height) + 'px'}
-        } else {
-          // 28 is the height of .viewer-image-page
-          return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
+        const windowRatio = window.innerWidth / window.innerHeight
+        switch (this.imageStyleType) {
+          case 'scroll':
+            return returnImageStyleObject({width: this.viewerImageWidth})
+          case 'double': {
+            switch (this.imageStyleFit) {
+              case 'height': {
+                if (this.setting.hidePageNumber) {
+                  return returnImageStyleObject({height: window.innerHeight - 1})
+                } else {
+                  // 28,30 is the height of .viewer-image-page
+                  return returnImageStyleObject({height: window.innerHeight - 30})
+                }
+              }
+              case 'width': {
+                // 18 is the width of scrollbar
+                return returnImageStyleObject({width: (window.innerWidth - 18) / 2})
+              }
+              case 'window': {
+                if (image.width * 2 / image.height > windowRatio) {
+                  return returnImageStyleObject({width: (window.innerWidth - 18) / 2 })
+                } else {
+                  if (this.setting.hidePageNumber) {
+                    return returnImageStyleObject({height: window.innerHeight - 1})
+                  } else {
+                    return returnImageStyleObject({height: window.innerHeight - 30})
+                  }
+                }
+              }
+            }
+          }
+          case 'single': {
+            switch (this.imageStyleFit) {
+              case 'height': {
+                if (this.setting.hidePageNumber) {
+                  return returnImageStyleObject({height: window.innerHeight})
+                } else {
+                  return returnImageStyleObject({height: window.innerHeight - 30})
+                }
+              }
+              case 'width': {
+                return returnImageStyleObject({width: window.innerWidth - 18})
+              }
+              case 'window': {
+                if (image.width / image.height > windowRatio) {
+                  return returnImageStyleObject({width: window.innerWidth - 18})
+                } else {
+                  if (this.setting.hidePageNumber) {
+                    return returnImageStyleObject({height: window.innerHeight})
+                  } else {
+                    return returnImageStyleObject({height: window.innerHeight - 30})
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2284,11 +2343,12 @@ export default defineComponent({
         return {height: '100vh'}
       }
     },
-    saveImageStyleType (val) {
+    saveImageStyleType () {
       this.currentImageIndex = 0
       setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
-      localStorage.setItem('imageStyleType', val)
-      if (val === 'double') this.printMessage('info', this.$t('c.insertEmptyPageInfo'))
+      localStorage.setItem('imageStyleType', this.imageStyleType)
+      localStorage.setItem('imageStyleFit', this.imageStyleFit)
+      if (this.imageStyleType === 'double') this.printMessage('info', this.$t('c.insertEmptyPageInfo'))
     },
     switchThumbnail (val) {
       setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
@@ -2334,8 +2394,10 @@ export default defineComponent({
       if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
         if(event.clientX > window.innerWidth / 2) {
           this.currentImageIndex += 1
+          document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
         } else {
           this.currentImageIndex -= 1
+          document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
         }
       }
     },
@@ -2954,11 +3016,14 @@ body
   right: 40px
   top: 10px
 
-.el-drawer__body
-  padding-top: 0
-  padding-bottom: 0
-.drawer-image-content
-  height: 100vh
+.viewer-drawer
+  .el-drawer__body
+    padding: 0
+    display: flex
+    justify-content: center
+    align-items: center
+    flex-wrap: wrap
+
 .viewer-close-button
   position: absolute
   top: 16px
@@ -2971,50 +3036,60 @@ body
       width: 32px
 .viewer-close-button:hover
   color: var(--el-color-primary) !important
-.viewer-mode
+
+.viewer-mode-setting
+  opacity: 0.1
   position: absolute
-  top: 1em
-  left: 1em
+  width: 100px
+  top: 8px
+  left: 8px
   z-index: 10
-  width: 76px
-.viewer-thumbnail-select
-  position: absolute
-  top: 3em
-  left: 1em
-  z-index: 10
-  width: 76px
+  transition-delay: 0.2s
+.viewer-mode-setting:hover
+  opacity: 1
+.viewer-mode, .viewer-image-fit, .viewer-thumbnail-select
+  width: 100px
+  margin: 4px 8px
+
 .image-frame
-  overflow-y: hidden
-  display: table
-  margin: auto
-  .viewer-image-frame
+  display: flex
+  flex-wrap: wrap
+  .viewer-image-frame-scroll
     position: relative
-    margin: 0 auto
-    max-width: 96vw
+  .viewer-image-frame
+    margin: auto
     .viewer-image
-      position: absolute
-      right: 0
       user-select: none
     .viewer-image-bar
       position: absolute
       height: 100%
       width: 6px
+      top: 0
       right: -3px
       cursor: ew-resize
     .viewer-image-bar:hover
       background-color: var(--el-color-primary)
-  .viewer-image-frame-double
+  .viewer-image-frame-double .viewer-image
     float: right
   .viewer-image-page
     line-height: 18px
     margin-top: 3px
     margin-bottom: 7px
+    width: 98vw
   .viewer-image-preload
     display: none
+
 .next-manga-button
-  margin: 30px 0 60px
+  opacity: 0
+  position: fixed
+  bottom:1em
+  z-index: 10
+  transition-delay: 0.2s
+.next-manga-button:hover
+  opacity: 1
+
 .drawer-thumbnail-content
-  margin-top: 5em
+  margin: 1em
   height: 100vh
   text-align: left
 .viewer-thumbnail

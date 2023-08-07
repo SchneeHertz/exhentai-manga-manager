@@ -140,6 +140,11 @@ const createWindow = ()=>{
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
+        {
+          role: 'zoomIn',
+          accelerator: 'CommandOrControl+=',
+          visible: false
+        },
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'minimize' },

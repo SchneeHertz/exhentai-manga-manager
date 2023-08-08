@@ -225,6 +225,21 @@
           <el-option value="height" :label="$t('m.fitHeight')" />
           <el-option value="window" :label="$t('m.fitWindow')" />
         </el-select>
+        <el-select
+          v-model="viewerImageWidth"
+          size="small"
+          class="viewer-image-width"
+          ref="viewer-image-width"
+          v-show="imageStyleType === 'scroll' && showThumbnail === false"
+        >
+          <el-option :value="0.5" label="50vw" />
+          <el-option :value="0.75" label="75vw" />
+          <el-option :value="0.9" label="90vw" />
+          <el-option :value="20" label="20%" />
+          <el-option :value="50" label="50%" />
+          <el-option :value="75" label="75%" />
+          <el-option :value="100" label="100%" />
+        </el-select>
       </div>
       <div
         class="drawer-image-content"
@@ -240,14 +255,14 @@
             :key="image.id"
             class="image-frame"
           >
-            <div class="viewer-image-frame viewer-image-frame-scroll" :style="returnImageStyle(image)">
+            <div class="viewer-image-frame viewer-image-frame-scroll" :id="image.id" :style="returnImageStyle(image)">
               <img
                 :src="`${image.filepath}?id=${image.id}`"
                 class="viewer-image"
                 :style="{height: returnImageStyle(image).height}"
                 @contextmenu="onMangaImageContextMenu($event, image.filepath)"
               />
-              <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
+              <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
             </div>
             <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
@@ -951,7 +966,7 @@ export default defineComponent({
       editTagOptions: [],
       // viewer
       viewerImageList: [],
-      viewerImageWidth: 1280,
+      viewerImageWidth: 0.9,
       imageStyleType: 'scroll',
       imageStyleFit: 'window',
       _currentImageIndex: 0,
@@ -1120,7 +1135,7 @@ export default defineComponent({
       if (this.setting.autoCheckUpdates) this.autoCheckUpdates(false)
       this.handleLanguageChange(this.setting.language)
     })
-    this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
+    this.viewerImageWidth = +localStorage.getItem('viewerImageWidth') || 0.9
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     this.imageStyleFit = localStorage.getItem('imageStyleFit') || 'window'
     this.sortValue = localStorage.getItem('sortValue')
@@ -2287,7 +2302,11 @@ export default defineComponent({
         const windowRatio = window.innerWidth / window.innerHeight
         switch (this.imageStyleType) {
           case 'scroll':
-            return returnImageStyleObject({width: this.viewerImageWidth})
+            if (this.viewerImageWidth <= 1) {
+              return returnImageStyleObject({width: this.viewerImageWidth * window.innerWidth})
+            } else {
+              return returnImageStyleObject({width: this.viewerImageWidth / 100 * image.width})
+            }
           case 'double': {
             switch (this.imageStyleFit) {
               case 'height': {
@@ -2408,11 +2427,15 @@ export default defineComponent({
         }
       }
     },
-    initResize (id) {
+    initResize (id, originWidth) {
       if (this.imageStyleType === 'scroll') {
         let element = document.getElementById(id)
         let Resize = (e)=>{
-          this.viewerImageWidth = e.clientX - element.offsetLeft
+          if (this.viewerImageWidth <= 1) {
+            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / window.innerWidth, 2)
+          } else {
+            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / originWidth * 100, 0)
+          }
         }
         let stopResize = (e)=>{
           window.removeEventListener('mousemove', Resize, false)
@@ -3054,13 +3077,14 @@ body
   transition-delay: 0.2s
 .viewer-mode-setting:hover
   opacity: 1
-.viewer-mode, .viewer-image-fit, .viewer-thumbnail-select
+.viewer-mode, .viewer-image-fit, .viewer-thumbnail-select, .viewer-image-width
   width: 100px
   margin: 4px 8px
 
 .image-frame
   display: flex
-  flex-wrap: wrap
+  flex-direction: column
+  align-items: center
   .viewer-image-frame-scroll
     position: relative
   .viewer-image-frame

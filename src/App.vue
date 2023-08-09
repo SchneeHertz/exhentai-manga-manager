@@ -2302,10 +2302,10 @@ export default defineComponent({
         const windowRatio = window.innerWidth / window.innerHeight
         switch (this.imageStyleType) {
           case 'scroll':
-            if (this.viewerImageWidth <= 1) {
+            if (this.viewerImageWidth <= 2) {
               return returnImageStyleObject({width: this.viewerImageWidth * window.innerWidth})
             } else {
-              return returnImageStyleObject({width: this.viewerImageWidth / 100 * image.width})
+              return returnImageStyleObject({width: this.viewerImageWidth / 100 * image.width / window.devicePixelRatio})
             }
           case 'double': {
             switch (this.imageStyleFit) {
@@ -2431,10 +2431,10 @@ export default defineComponent({
       if (this.imageStyleType === 'scroll') {
         let element = document.getElementById(id)
         let Resize = (e)=>{
-          if (this.viewerImageWidth <= 1) {
-            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / window.innerWidth, 2)
+          if (this.viewerImageWidth <= 2) {
+            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / window.innerWidth , 2)
           } else {
-            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / originWidth * 100, 0)
+            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / originWidth * 100 * window.devicePixelRatio, 0)
           }
         }
         let stopResize = (e)=>{

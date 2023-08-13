@@ -944,7 +944,6 @@ export default defineComponent({
       sortValue: undefined,
       currentPage: 1,
       folderTreeData: [],
-      storeBookList: [],
       tagNodeData: [],
       version: version,
       // collection
@@ -1857,7 +1856,7 @@ export default defineComponent({
     geneFolderTree () {
       this.sideVisibleFolderTree = !this.sideVisibleFolderTree
       if (this.sideVisibleFolderTree) {
-        let bookList = _.isEmpty(this.storeBookList) ? _.cloneDeep(this.bookList) : _.cloneDeep(this.storeBookList)
+        let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.collection)
         ipcRenderer['get-folder-tree'](bookList)
         .then(data=>{
           this.folderTreeData = data

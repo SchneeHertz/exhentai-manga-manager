@@ -188,28 +188,59 @@
       :with-header="false"
       destroy-on-close
       @closed="releaseSendImageLock"
+      custom-class="viewer-drawer"
     >
       <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
-      <el-select
-        v-model="imageStyleType"
-        size="small"
-        @change="saveImageStyleType"
-        class="viewer-mode"
-        ref="viewermode"
-      >
-        <el-option value="scroll" :label="$t('m.scrolling')" />
-        <el-option value="single" :label="$t('m.singlePage')" />
-        <el-option value="double" :label="$t('m.doublePage')" />
-      </el-select>
-      <el-select
-        v-model="showThumbnail"
-        size="small"
-        @change="switchThumbnail"
-        class="viewer-thumbnail-select"
-      >
-        <el-option :value="true" :label="$t('m.thumbnail')" />
-        <el-option :value="false" :label="$t('m.content')" />
-      </el-select>
+      <div class="viewer-mode-setting">
+        <el-select
+          v-model="showThumbnail"
+          size="small"
+          @change="switchThumbnail"
+          class="viewer-thumbnail-select"
+        >
+          <el-option :value="true" :label="$t('m.thumbnail')" />
+          <el-option :value="false" :label="$t('m.content')" />
+        </el-select>
+        <el-select
+          v-model="imageStyleType"
+          size="small"
+          @change="saveImageStyleType"
+          class="viewer-mode"
+          ref="viewer-mode"
+          v-show="showThumbnail === false"
+        >
+          <el-option value="scroll" :label="$t('m.scrolling')" />
+          <el-option value="single" :label="$t('m.singlePage')" />
+          <el-option value="double" :label="$t('m.doublePage')" />
+        </el-select>
+        <el-select
+          v-model="imageStyleFit"
+          size="small"
+          @change="saveImageStyleType"
+          class="viewer-image-fit"
+          ref="viewer-image-fit"
+          v-show="imageStyleType !== 'scroll' && showThumbnail === false"
+        >
+          <el-option value="width" :label="$t('m.fitWidth')" />
+          <el-option value="height" :label="$t('m.fitHeight')" />
+          <el-option value="window" :label="$t('m.fitWindow')" />
+        </el-select>
+        <el-select
+          v-model="viewerImageWidth"
+          size="small"
+          class="viewer-image-width"
+          ref="viewer-image-width"
+          v-show="imageStyleType === 'scroll' && showThumbnail === false"
+        >
+          <el-option :value="0.5" label="50vw" />
+          <el-option :value="0.75" label="75vw" />
+          <el-option :value="0.9" label="90vw" />
+          <el-option :value="20" label="20%" />
+          <el-option :value="50" label="50%" />
+          <el-option :value="75" label="75%" />
+          <el-option :value="100" label="100%" />
+        </el-select>
+      </div>
       <div
         class="drawer-image-content"
         @click="scrollPage"
@@ -223,34 +254,22 @@
             v-for="(image, index) in viewerImageList"
             :key="image.id"
             class="image-frame"
-            :style="returnImageFrameStyle()"
           >
-            <div
-              class="viewer-image-frame"
-              :id="image.id"
-              :style="returnImageStyle(image)"
-            >
+            <div class="viewer-image-frame viewer-image-frame-scroll" :id="image.id" :style="returnImageStyle(image)">
               <img
                 :src="`${image.filepath}?id=${image.id}`"
                 class="viewer-image"
                 :style="{height: returnImageStyle(image).height}"
                 @contextmenu="onMangaImageContextMenu($event, image.filepath)"
               />
-              <div class="viewer-image-bar" @mousedown="initResize(image.id)"></div>
+              <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
             </div>
             <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </div>
         <div v-else-if="imageStyleType === 'single'">
-          <div
-            class="image-frame"
-            :style="returnImageFrameStyle()"
-          >
-            <div
-              class="viewer-image-frame"
-              :id="viewerImageList[currentImageIndex]?.id"
-              :style="returnImageStyle(viewerImageList[currentImageIndex])"
-            >
+          <div class="image-frame">
+            <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
               <img
                 :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
                 class="viewer-image"
@@ -269,17 +288,11 @@
             />
           </div>
         </div>
-        <div v-else>
-          <div
-            class="image-frame"
-            :style="returnImageFrameStyle()"
-          >
-            <div
-              class="viewer-image-frame viewer-image-frame-double"
-              v-for="image in viewerImageListDouble[currentImageIndex]?.page"
-              :style="returnImageStyle(image)"
-            >
+        <div v-else-if="imageStyleType === 'double'">
+          <div class="image-frame">
+            <div class="viewer-image-frame viewer-image-frame-double">
               <img
+                v-for="image in viewerImageListDouble[currentImageIndex]?.page"
                 :src="`${image.filepath}?id=${image.id}`"
                 class="viewer-image"
                 :style="{height: returnImageStyle(image).height}"
@@ -295,8 +308,10 @@
             <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
           </div>
         </div>
-        <el-button size="large" type="success" class="next-manga-button" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" class="next-manga-button" @click="toNextManga">{{$t('m.nextManga')}}</el-button>
+      </div>
+      <div class="next-manga-button">
+        <el-button size="large" type="success" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
+        <el-button size="large" type="success" @click="toNextManga">{{$t('m.nextManga')}}</el-button>
       </div>
       <div
         class="drawer-thumbnail-content"
@@ -327,7 +342,7 @@
     >
       <el-tree
         :data="folderTreeData"
-        default-expand-all
+        :default-expand-all="setting.defaultExpandTree"
         :expand-on-click-node="false"
         @current-change="selectFolderTreeNode"
       ></el-tree>
@@ -701,6 +716,20 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
+                <el-input class="label-input">
+                  <template #prepend><span class="setting-label">{{$t('m.displayTitle')}}</span></template>
+                  <template #append>
+                    <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
+                      <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
+                      <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
+                      <el-option :label="$t('m.filename')" value="filename"></el-option>
+                    </el-select>
+                  </template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
                 <el-input v-model.number="setting.requireGap" :placeholder="$t('m.requireGapInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
                 </el-input>
@@ -725,20 +754,6 @@
               <div class="setting-line">
                 <el-input v-model="setting.folderTreeWidth" :placeholder="$t('m.folderTreeWidthInfo')" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.folderTreeWidth')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input class="label-input">
-                  <template #prepend><span class="setting-label">{{$t('m.displayTitle')}}</span></template>
-                  <template #append>
-                    <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
-                      <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
-                      <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
-                      <el-option :label="$t('m.filename')" value="filename"></el-option>
-                    </el-select>
-                  </template>
                 </el-input>
               </div>
             </el-col>
@@ -834,6 +849,13 @@
                 @change="saveSetting"
               />
             </el-col>
+            <el-col :span="6" class="setting-switch">
+              <el-switch
+                v-model="setting.defaultExpandTree"
+                :active-text="$t('m.defaultExpandTree')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
         <el-tab-pane :label="$t('m.about')" name="about">
@@ -922,7 +944,6 @@ export default defineComponent({
       sortValue: undefined,
       currentPage: 1,
       folderTreeData: [],
-      storeBookList: [],
       tagNodeData: [],
       version: version,
       // collection
@@ -944,8 +965,9 @@ export default defineComponent({
       editTagOptions: [],
       // viewer
       viewerImageList: [],
-      viewerImageWidth: 1280,
+      viewerImageWidth: 0.9,
       imageStyleType: 'scroll',
+      imageStyleFit: 'window',
       _currentImageIndex: 0,
       storeDrawerScrollTop: undefined,
       insertEmptyPage: false,
@@ -1112,8 +1134,9 @@ export default defineComponent({
       if (this.setting.autoCheckUpdates) this.autoCheckUpdates(false)
       this.handleLanguageChange(this.setting.language)
     })
-    this.viewerImageWidth = localStorage.getItem('viewerImageWidth') || 1280
+    this.viewerImageWidth = +localStorage.getItem('viewerImageWidth') || 0.9
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
+    this.imageStyleFit = localStorage.getItem('imageStyleFit') || 'window'
     this.sortValue = localStorage.getItem('sortValue')
     window.addEventListener('keydown', this.resolveKey)
     ipcRenderer['send-action']((event, arg)=>{
@@ -1266,9 +1289,10 @@ export default defineComponent({
           }))
           collection.list = collectBook.map(book=>book.id)
           collectBook.map(book=>book.hidden = true)
-          let date = _.reverse(_.sortBy(collectBook.map(book=>book.date)))[0]
-          let posted = _.reverse(_.sortBy(collectBook.map(book=>book.posted)))[0]
-          let rating = _.reverse(_.sortBy(collectBook.map(book=>book.rating)))[0]
+          let date = _.last(_.compact(_.sortBy(collectBook.map(book=>book.date))))
+          let posted = _.last(_.compact(_.sortBy(collectBook.map(book=>book.posted))))
+          let rating = _.last(_.compact(_.sortBy(collectBook.map(book=>book.rating))))
+          let mtime = _.last(_.compact(_.sortBy(collectBook.map(book=>book.mtime))))
           let mark = _.some(collectBook, 'mark')
           let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
             if (_.isArray(obj) && _.isArray(src)) {
@@ -1278,16 +1302,17 @@ export default defineComponent({
             }
           })
           let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
-          let category = collectBook.map(book=>book.category).join(',')
-          let status = collectBook.map(book=>book.status).join(',')
+          let filepath = collectBook.map(book=>book.filepath).join(',')
+          let category = _.uniq(collectBook.map(book=>book.category)).join(',')
+          let status = _.uniq(collectBook.map(book=>book.status)).join(',')
           if (!_.isEmpty(collectBook)) {
             this.bookList.push({
               title: collection.title,
               id: collection.id,
               coverPath: collectBook[0].coverPath,
-              date, posted, rating, mark, tags, title_jpn, category, status,
+              date, posted, rating, mtime, mark, tags, title_jpn, category, status,
               list: collection.list,
-              filepath: collectBook[0].filepath,
+              filepath,
               collection: true
             })
           }
@@ -1831,7 +1856,7 @@ export default defineComponent({
     geneFolderTree () {
       this.sideVisibleFolderTree = !this.sideVisibleFolderTree
       if (this.sideVisibleFolderTree) {
-        let bookList = _.isEmpty(this.storeBookList) ? _.cloneDeep(this.bookList) : _.cloneDeep(this.storeBookList)
+        let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.collection)
         ipcRenderer['get-folder-tree'](bookList)
         .then(data=>{
           this.folderTreeData = data
@@ -2266,14 +2291,89 @@ export default defineComponent({
 
     // internal viewer
     returnImageStyle(image) {
+      const returnImageStyleObject = ({width, height})=>{
+        if (width) {
+          return { width: width + 'px', height: (image.height * (width / image.width)) + 'px' }
+        }
+        if (height) {
+          return { width: (image.width * (height / image.height)) + 'px', height: height + 'px' }
+        }
+      }
       if (image) {
-        if (this.imageStyleType === 'scroll') {
-          return {width: this.viewerImageWidth + 'px', height: (image.height * (this.viewerImageWidth / image.width)) + 'px'}
-        } else if (this.setting.hidePageNumber) {
-          return {height: window.innerHeight + 'px', width: (image.width * window.innerHeight / image.height) + 'px'}
-        } else {
-          // 28 is the height of .viewer-image-page
-          return {height: (window.innerHeight - 28) + 'px', width: (image.width * (window.innerHeight - 28) / image.height) + 'px'}
+        const windowRatio = window.innerWidth / window.innerHeight
+        switch (this.imageStyleType) {
+          case 'scroll':
+            if (this.viewerImageWidth <= 2) {
+              return returnImageStyleObject({width: this.viewerImageWidth * window.innerWidth})
+            } else {
+              return returnImageStyleObject({width: this.viewerImageWidth / 100 * image.width / window.devicePixelRatio})
+            }
+          case 'double': {
+            switch (this.imageStyleFit) {
+              case 'height': {
+                if (this.setting.hidePageNumber) {
+                  return returnImageStyleObject({height: window.innerHeight - 1})
+                } else {
+                  // 28,30 is the height of .viewer-image-page
+                  return returnImageStyleObject({height: window.innerHeight - 30})
+                }
+              }
+              case 'width': {
+                // 18 is the width of scrollbar
+                if (image.width > image.height) {
+                  return returnImageStyleObject({width: window.innerWidth - 18})
+                } else {
+                  return returnImageStyleObject({width: (window.innerWidth - 18) / 2})
+                }
+              }
+              case 'window': {
+                if (image.width > image.height) {
+                  if (image.width / image.height > windowRatio) {
+                    return returnImageStyleObject({width: window.innerWidth - 18})
+                  } else {
+                    if (this.setting.hidePageNumber) {
+                      return returnImageStyleObject({height: window.innerHeight})
+                    } else {
+                      return returnImageStyleObject({height: window.innerHeight - 30})
+                    }
+                  }
+                } else if (image.width * 2 / image.height > windowRatio) {
+                  return returnImageStyleObject({width: (window.innerWidth - 18) / 2 })
+                } else {
+                  if (this.setting.hidePageNumber) {
+                    return returnImageStyleObject({height: window.innerHeight - 1})
+                  } else {
+                    return returnImageStyleObject({height: window.innerHeight - 30})
+                  }
+                }
+              }
+            }
+          }
+          case 'single': {
+            switch (this.imageStyleFit) {
+              case 'height': {
+                if (this.setting.hidePageNumber) {
+                  return returnImageStyleObject({height: window.innerHeight})
+                } else {
+                  return returnImageStyleObject({height: window.innerHeight - 30})
+                }
+              }
+              case 'width': {
+                return returnImageStyleObject({width: window.innerWidth - 18})
+              }
+              case 'window': {
+                if (image.width / image.height > windowRatio) {
+                  return returnImageStyleObject({width: window.innerWidth - 18})
+                } else {
+                  if (this.setting.hidePageNumber) {
+                    return returnImageStyleObject({height: window.innerHeight})
+                  } else {
+                    return returnImageStyleObject({height: window.innerHeight - 30})
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2284,11 +2384,12 @@ export default defineComponent({
         return {height: '100vh'}
       }
     },
-    saveImageStyleType (val) {
+    saveImageStyleType () {
       this.currentImageIndex = 0
       setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
-      localStorage.setItem('imageStyleType', val)
-      if (val === 'double') this.printMessage('info', this.$t('c.insertEmptyPageInfo'))
+      localStorage.setItem('imageStyleType', this.imageStyleType)
+      localStorage.setItem('imageStyleFit', this.imageStyleFit)
+      if (this.imageStyleType === 'double') this.printMessage('info', this.$t('c.insertEmptyPageInfo'))
     },
     switchThumbnail (val) {
       setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
@@ -2334,16 +2435,22 @@ export default defineComponent({
       if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
         if(event.clientX > window.innerWidth / 2) {
           this.currentImageIndex += 1
+          document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
         } else {
           this.currentImageIndex -= 1
+          document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
         }
       }
     },
-    initResize (id) {
+    initResize (id, originWidth) {
       if (this.imageStyleType === 'scroll') {
         let element = document.getElementById(id)
         let Resize = (e)=>{
-          this.viewerImageWidth = e.clientX - element.offsetLeft
+          if (this.viewerImageWidth <= 2) {
+            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / window.innerWidth , 2)
+          } else {
+            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / originWidth * 100 * window.devicePixelRatio, 0)
+          }
         }
         let stopResize = (e)=>{
           window.removeEventListener('mousemove', Resize, false)
@@ -2954,11 +3061,14 @@ body
   right: 40px
   top: 10px
 
-.el-drawer__body
-  padding-top: 0
-  padding-bottom: 0
-.drawer-image-content
-  height: 100vh
+.viewer-drawer
+  .el-drawer__body
+    padding: 0
+    display: flex
+    justify-content: center
+    align-items: center
+    flex-wrap: wrap
+
 .viewer-close-button
   position: absolute
   top: 16px
@@ -2971,50 +3081,61 @@ body
       width: 32px
 .viewer-close-button:hover
   color: var(--el-color-primary) !important
-.viewer-mode
+
+.viewer-mode-setting
+  opacity: 0.1
   position: absolute
-  top: 1em
-  left: 1em
+  width: 100px
+  top: 8px
+  left: 8px
   z-index: 10
-  width: 76px
-.viewer-thumbnail-select
-  position: absolute
-  top: 3em
-  left: 1em
-  z-index: 10
-  width: 76px
+  transition-delay: 0.2s
+.viewer-mode-setting:hover
+  opacity: 1
+.viewer-mode, .viewer-image-fit, .viewer-thumbnail-select, .viewer-image-width
+  width: 100px
+  margin: 4px 8px
+
 .image-frame
-  overflow-y: hidden
-  display: table
-  margin: auto
-  .viewer-image-frame
+  display: flex
+  flex-direction: column
+  align-items: center
+  .viewer-image-frame-scroll
     position: relative
-    margin: 0 auto
-    max-width: 96vw
+  .viewer-image-frame
+    margin: auto
     .viewer-image
-      position: absolute
-      right: 0
       user-select: none
     .viewer-image-bar
       position: absolute
       height: 100%
       width: 6px
+      top: 0
       right: -3px
       cursor: ew-resize
     .viewer-image-bar:hover
       background-color: var(--el-color-primary)
-  .viewer-image-frame-double
+  .viewer-image-frame-double .viewer-image
     float: right
   .viewer-image-page
     line-height: 18px
     margin-top: 3px
     margin-bottom: 7px
+    width: 98vw
   .viewer-image-preload
     display: none
+
 .next-manga-button
-  margin: 30px 0 60px
+  opacity: 0.05
+  position: fixed
+  bottom:1em
+  z-index: 10
+  transition-delay: 0.2s
+.next-manga-button:hover
+  opacity: 1
+
 .drawer-thumbnail-content
-  margin-top: 5em
+  margin: 1em
   height: 100vh
   text-align: left
 .viewer-thumbnail

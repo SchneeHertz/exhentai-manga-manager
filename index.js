@@ -140,6 +140,11 @@ const createWindow = ()=>{
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
+        {
+          role: 'zoomIn',
+          accelerator: 'CommandOrControl+=',
+          visible: false
+        },
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'minimize' },
@@ -222,7 +227,7 @@ app.on('activate', () => {
 
 app.on('ready', async () => {
   if (!app.isPackaged) {
-    // await session.defaultSession.loadExtension(path.resolve(__dirname,'./6.0.12_0'))
+    // await session.defaultSession.loadExtension(path.resolve(__dirname,'./devtools'))
   }
   if (setting.proxy) {
     await session.defaultSession.setProxy({

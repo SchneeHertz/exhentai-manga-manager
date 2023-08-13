@@ -9,6 +9,7 @@
 ![cover.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/cover.jpg)
 ![detail.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/detail.jpg)
 ![viewer.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/viewer.jpg)
+![viewer2.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/viewer2.jpg)
 ![thumbnails.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/thumbnails.jpg)
 
 使用说明见 [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明)
@@ -38,7 +39,7 @@
 - 支持自定义封面
 - 展示库文件夹结构，按文件夹查看漫画
 - 支持导入exhentai整体元数据数据库备份
-- 内置双页浏览
+- 内置图片浏览器支持单页，双页，卷轴式浏览
 - 从ExHentai页面复制元数据的[脚本](https://sleazyfork.org/zh-CN/scripts/472321-%E6%8F%90%E5%8F%96e-hentai%E7%94%BB%E5%BB%8A%E5%85%83%E6%95%B0%E6%8D%AE)
 
 ## TODO
@@ -56,8 +57,3 @@ https://afdian.net/@SeldonHorizon
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/schneehertz)
 If this software helps you, you can buy me a cup of coffee
-
-
-## Recommended IDE Setup
-
-- [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar)

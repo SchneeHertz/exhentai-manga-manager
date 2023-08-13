@@ -9,6 +9,7 @@ Manage or read manga downloaded from ExHentai
 ![cover.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/cover.jpg)
 ![detail.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/detail.jpg)
 ![viewer.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/viewer.jpg)
+![viewer2.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/viewer2.jpg)
 ![thumbnails.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/thumbnails.jpg)
 
 Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)
@@ -38,7 +39,8 @@ Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/E
 - Custom cover support
 - Show library folder structure, view mangas by folder
 - Support importing exhentai overall metadata database backup
-- Built-in double page view
+- Built-in image viewer supports single page, double page, and scroll browsing.
+- Copy Metadata from ExHentai Page[Script](https://sleazyfork.org/zh-CN/scripts/472321-%E6%8F%90%E5%8F%96e-hentai%E7%94%BB%E5%BB%8A%E5%85%83%E6%95%B0%E6%8D%AE)
 
 ## TODO
 - Rename and move manga files according to rules
@@ -52,7 +54,3 @@ This project has been helped by many open source projects
 ## Funding
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/schneehertz)
 If this software helps you, you can buy me a cup of coffee
-
-## Recommended IDE Setup
-
-- [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar)

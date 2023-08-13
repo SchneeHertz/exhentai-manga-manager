@@ -1065,20 +1065,20 @@ export default defineComponent({
         let pageNumber = 0
         for (let image of this.viewerImageList) {
           pageNumber += 1
-          // if (image.width > image.height) {
-          //   if (frame.page.length > 0) {
-          //     result.push(_.clone(frame))
-          //     frame = {page: [], pageNumber: []}
-          //   }
-          //   result.push({page: [image], pageNumber: [pageNumber]})
-          // } else {
+          if (image.width > image.height) {
+            if (frame.page.length > 0) {
+              result.push(_.clone(frame))
+              frame = {page: [], pageNumber: []}
+            }
+            result.push({page: [image], pageNumber: [pageNumber]})
+          } else {
             frame.page.push(image)
             frame.pageNumber.push(pageNumber)
             if ((this.insertEmptyPage && result.length === this.insertEmptyPageIndex) || frame.page.length >= 2) {
               result.push(_.clone(frame))
               frame = {page: [], pageNumber: []}
             }
-          // }
+          }
         }
         if (frame.page.length > 0) result.push(_.clone(frame))
         return result
@@ -1290,9 +1290,10 @@ export default defineComponent({
           }))
           collection.list = collectBook.map(book=>book.id)
           collectBook.map(book=>book.hidden = true)
-          let date = _.reverse(_.sortBy(collectBook.map(book=>book.date)))[0]
-          let posted = _.reverse(_.sortBy(collectBook.map(book=>book.posted)))[0]
-          let rating = _.reverse(_.sortBy(collectBook.map(book=>book.rating)))[0]
+          let date = _.last(_.compact(_.sortBy(collectBook.map(book=>book.date))))
+          let posted = _.last(_.compact(_.sortBy(collectBook.map(book=>book.posted))))
+          let rating = _.last(_.compact(_.sortBy(collectBook.map(book=>book.rating))))
+          let mtime = _.last(_.compact(_.sortBy(collectBook.map(book=>book.mtime))))
           let mark = _.some(collectBook, 'mark')
           let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
             if (_.isArray(obj) && _.isArray(src)) {
@@ -1302,16 +1303,17 @@ export default defineComponent({
             }
           })
           let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
-          let category = collectBook.map(book=>book.category).join(',')
-          let status = collectBook.map(book=>book.status).join(',')
+          let filepath = collectBook.map(book=>book.filepath).join(',')
+          let category = _.uniq(collectBook.map(book=>book.category)).join(',')
+          let status = _.uniq(collectBook.map(book=>book.status)).join(',')
           if (!_.isEmpty(collectBook)) {
             this.bookList.push({
               title: collection.title,
               id: collection.id,
               coverPath: collectBook[0].coverPath,
-              date, posted, rating, mark, tags, title_jpn, category, status,
+              date, posted, rating, mtime, mark, tags, title_jpn, category, status,
               list: collection.list,
-              filepath: collectBook[0].filepath,
+              filepath,
               collection: true
             })
           }
@@ -2319,10 +2321,24 @@ export default defineComponent({
               }
               case 'width': {
                 // 18 is the width of scrollbar
-                return returnImageStyleObject({width: (window.innerWidth - 18) / 2})
+                if (image.width > image.height) {
+                  return returnImageStyleObject({width: window.innerWidth - 18})
+                } else {
+                  return returnImageStyleObject({width: (window.innerWidth - 18) / 2})
+                }
               }
               case 'window': {
-                if (image.width * 2 / image.height > windowRatio) {
+                if (image.width > image.height) {
+                  if (image.width / image.height > windowRatio) {
+                    return returnImageStyleObject({width: window.innerWidth - 18})
+                  } else {
+                    if (this.setting.hidePageNumber) {
+                      return returnImageStyleObject({height: window.innerHeight})
+                    } else {
+                      return returnImageStyleObject({height: window.innerHeight - 30})
+                    }
+                  }
+                } else if (image.width * 2 / image.height > windowRatio) {
                   return returnImageStyleObject({width: (window.innerWidth - 18) / 2 })
                 } else {
                   if (this.setting.hidePageNumber) {
@@ -3111,7 +3127,7 @@ body
     display: none
 
 .next-manga-button
-  opacity: 0
+  opacity: 0.05
   position: fixed
   bottom:1em
   z-index: 10

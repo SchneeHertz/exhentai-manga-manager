@@ -1,8 +1,8 @@
 <div align="center">
 
-# exhentai-manga-manager
-
 <img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="128"/>
+
+# exhentai-manga-manager
 
 **标签化管理, 阅读从ExHentai下载的短篇漫画**
 

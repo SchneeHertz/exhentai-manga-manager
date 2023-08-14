@@ -1,14 +1,12 @@
 <div align="center">
 
-# exhentai-manga-manager
-
 <img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="128"/>
 
-[中文介绍](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README.md) | English Readme
+# exhentai-manga-manager
 
 **Tag-based management, reading manga downloaded from ExHentai**
 
-<!-- <img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="256"/> -->
+[中文介绍](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README.md) | English Readme
 
 </div>
 

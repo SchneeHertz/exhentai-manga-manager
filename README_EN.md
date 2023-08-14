@@ -1,10 +1,16 @@
+<div align="center">
+
 # exhentai-manga-manager
+
+<img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="128"/>
 
 [中文介绍](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README.md) | English Readme
 
-<img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="256"/>
+**Tag-based management, reading manga downloaded from ExHentai**
 
-Manage or read manga downloaded from ExHentai
+<!-- <img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="256"/> -->
+
+</div>
 
 ![cover.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/cover.jpg)
 ![detail.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/detail.jpg)
@@ -12,7 +18,7 @@ Manage or read manga downloaded from ExHentai
 ![viewer2.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/viewer2.jpg)
 ![thumbnails.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/thumbnails.jpg)
 
-Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)
+**Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)**
 
 ## Features
 - Create a manga library from a folder
@@ -24,7 +30,7 @@ Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/E
 
 ## More Features
 - Export and import of library metadata
-- Portable version available, data files can be transferred
+- Portable version available
 - Favorite manga
 - Sort by upload time, add time, rating
 - Show comments on ExHentai
@@ -33,7 +39,6 @@ Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/E
 - Management of multi-chapter manga collections
 - Hide specified manga
 - Translation of tags into Chinese
-- Search history
 - Themes
 - Tag analysis
 - Custom cover support

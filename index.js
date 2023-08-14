@@ -679,8 +679,10 @@ ipcMain.handle('open-local-book', async (event, filepath)=>{
 })
 
 ipcMain.handle('delete-local-book', async (event, filepath)=>{
-  await Manga.destroy({where: {filepath: filepath}})
-  return shell.trashItem(filepath)
+  if (filepath.startsWith(setting.library)) {
+    await Manga.destroy({where: {filepath: filepath}})
+    return shell.trashItem(filepath)
+  }
 })
 
 // viewer

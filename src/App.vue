@@ -310,8 +310,8 @@
         </div>
       </div>
       <div class="next-manga-button">
-        <el-button size="large" type="success" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" @click="toNextManga">{{$t('m.nextManga')}}</el-button>
+        <el-button size="large" type="success" plain @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
+        <el-button size="large" type="success" plain @click="toNextManga">{{$t('m.nextManga')}}</el-button>
       </div>
       <div
         class="drawer-thumbnail-content"

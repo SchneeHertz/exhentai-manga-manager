@@ -326,7 +326,7 @@
             <img
               :src="`${image.thumbnailPath}?id=${image.id}`"
               class="viewer-thumbnail"
-              :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
+              :style="{width: `calc((100vw - 50px) / ${thumbnailColumn} - 16px)`}"
               @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image.filepath)"
             />

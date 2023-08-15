@@ -310,8 +310,8 @@
         </div>
       </div>
       <div class="next-manga-button">
-        <el-button size="large" type="success" @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" @click="toNextManga">{{$t('m.nextManga')}}</el-button>
+        <el-button size="large" type="success" plain @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
+        <el-button size="large" type="success" plain @click="toNextManga">{{$t('m.nextManga')}}</el-button>
       </div>
       <div
         class="drawer-thumbnail-content"
@@ -326,7 +326,7 @@
             <img
               :src="`${image.thumbnailPath}?id=${image.id}`"
               class="viewer-thumbnail"
-              :style="{width: `calc((100vw - 40px) / ${thumbnailColumn} - 16px)`}"
+              :style="{width: `calc((100vw - 50px) / ${thumbnailColumn} - 16px)`}"
               @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image.filepath)"
             />
@@ -1110,7 +1110,7 @@ export default defineComponent({
     }
   },
   mounted () {
-    ipcRenderer['send-message']((event, arg)=>{
+    ipcRenderer.on('send-message', (event, arg)=>{
       this.printMessage('info', arg)
       if (arg.includes('failed')) {
         console.error(arg)
@@ -1118,10 +1118,10 @@ export default defineComponent({
         console.log(arg)
       }
     })
-    ipcRenderer['manga-content']((event, arg)=>{
+    ipcRenderer.on('manga-content', (event, arg)=>{
       this.viewerImageList.push(arg)
     })
-    ipcRenderer['load-setting']()
+    ipcRenderer.invoke('load-setting')
     .then(res=>{
       this.setting = res
       this.loadBookList(this.setting.loadOnStart)
@@ -1139,7 +1139,7 @@ export default defineComponent({
     this.imageStyleFit = localStorage.getItem('imageStyleFit') || 'window'
     this.sortValue = localStorage.getItem('sortValue')
     window.addEventListener('keydown', this.resolveKey)
-    ipcRenderer['send-action']((event, arg)=>{
+    ipcRenderer.on('send-action', (event, arg)=>{
       switch (arg.action) {
         case 'setting':
           this.dialogVisibleSetting = true
@@ -1256,7 +1256,7 @@ export default defineComponent({
       })
     },
     loadBookList (scan) {
-      ipcRenderer['load-book-list'](scan)
+      ipcRenderer.invoke('load-book-list', scan)
       .then(res=>{
         if (this.sortValue) {
           this.bookList = res
@@ -1274,13 +1274,13 @@ export default defineComponent({
         delete book.hidden
         delete book.folderHide
       })
-      return ipcRenderer['save-book-list'](bookList)
+      return ipcRenderer.invoke('save-book-list', bookList)
     },
     saveBook (book) {
-      return ipcRenderer['save-book'](_.cloneDeep(book))
+      return ipcRenderer.invoke('save-book', _.cloneDeep(book))
     },
     loadCollectionList () {
-      ipcRenderer['load-collection-list']()
+      ipcRenderer.invoke('load-collection-list')
       .then(res=>{
         this.collectionList = res
         _.forIn(this.collectionList, collection=>{
@@ -1340,7 +1340,7 @@ export default defineComponent({
       })
     },
     openLink (link) {
-      ipcRenderer['open-url'](link)
+      ipcRenderer.invoke('open-url', link)
     },
     getDisplayTitle (book) {
       switch (this.setting.displayTitle) {
@@ -1407,7 +1407,7 @@ export default defineComponent({
           this.searchResultLoading = false
         })
       } else if (server === 'exhentai') {
-        ipcRenderer['get-ex-webpage']({
+        ipcRenderer.invoke('get-ex-webpage', {
           url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
           cookie: this.cookie
         })
@@ -1426,7 +1426,7 @@ export default defineComponent({
           this.searchResultLoading = false
         })
       } else if (server === 'exsearch') {
-        ipcRenderer['get-ex-webpage']({
+        ipcRenderer.invoke('get-ex-webpage', {
           url: `https://exhentai.org/?f_search=${encodeURI(this.searchStringDialog)}&f_cats=689`,
           cookie: this.cookie
         })
@@ -1458,7 +1458,7 @@ export default defineComponent({
     async getBookInfo (book, server = 'e-hentai') {
       let getTag = async (book, url) => {
         let match = /(\d+)\/([a-z0-9]+)/.exec(url)
-        ipcRenderer['post-data-ex']({
+        ipcRenderer.invoke('post-data-ex', {
           url: 'https://api.e-hentai.org/api.php',
           data: {
             'method': 'gdata',
@@ -1544,7 +1544,7 @@ export default defineComponent({
             await resolveWebPage(book, res.data)
           })
         } else if (server === 'exhentai') {
-          ipcRenderer['get-ex-webpage']({
+          ipcRenderer.invoke('get-ex-webpage', {
             url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
             cookie: this.cookie
           })
@@ -1597,7 +1597,7 @@ export default defineComponent({
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let load = async (gap) => {
         for (let i = 0; i < this.bookList.length; i++) {
-          ipcRenderer['set-progress-bar'](i/this.bookList.length)
+          ipcRenderer.invoke('set-progress-bar', i/this.bookList.length)
           if (
             (this.bookList[i].status === 'non-tag'
             || (this.setting.batchTagfailedBook && this.bookList[i].status === 'tag-failed'))
@@ -1608,7 +1608,7 @@ export default defineComponent({
             await timer(gap)
           }
         }
-        ipcRenderer['set-progress-bar'](-1)
+        ipcRenderer.invoke('set-progress-bar', -1)
       }
       load(this.setting.requireGap || 10000)
     },
@@ -1857,7 +1857,7 @@ export default defineComponent({
       this.sideVisibleFolderTree = !this.sideVisibleFolderTree
       if (this.sideVisibleFolderTree) {
         let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.collection)
-        ipcRenderer['get-folder-tree'](bookList)
+        ipcRenderer.invoke('get-folder-tree', bookList)
         .then(data=>{
           this.folderTreeData = data
         })
@@ -2045,7 +2045,7 @@ export default defineComponent({
       let tagGroup2 = _.filter(this.tagNodeData, n=>n.size >= 200)
       let tagGroup3 = tagGroup2
       if (type === 'exhentai') {
-        ipcRenderer['open-url'](`https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
+        ipcRenderer.invoke('open-url', `https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
       } else {
         this.dialogVisibleGraph = false
         this.searchString = `${tagGroup3.map(n=>n.shortName).join(' ')}`
@@ -2092,7 +2092,7 @@ export default defineComponent({
     },
     saveCollection () {
       this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(_.compact(c.list)))
-      ipcRenderer['save-collection-list'](_.cloneDeep(this.collectionList))
+      ipcRenderer.invoke('save-collection-list', _.cloneDeep(this.collectionList))
       .then(()=>{
         this.loadBookList(false)
         this.selectCollection = undefined,
@@ -2131,34 +2131,35 @@ export default defineComponent({
 
     // detail view function
     openUrl (url) {
-      ipcRenderer['open-url'](url)
+      ipcRenderer.invoke('open-url', url)
     },
     triggerHiddenBook (book) {
       book.hiddenBook = !book.hiddenBook
       this.saveBook(book)
     },
     showFile(filepath) {
-      ipcRenderer['show-file'](filepath)
+      ipcRenderer.invoke('show-file', filepath)
     },
     openLocalBook (book) {
       this.bookDetail = book
-      ipcRenderer['open-local-book'](this.bookDetail.filepath)
+      ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
     },
     deleteLocalBook (book) {
       const deleteBook = ()=>{
-        ipcRenderer['delete-local-book'](book.filepath)
+        ipcRenderer.invoke('delete-local-book', book.filepath)
         .then(()=>{
-          this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
-          this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
+          this.dialogVisibleBookDetail = false
           if (book.hidden) {
             _.forIn(this.collectionList, collection=>{
               collection.list = _.filter(collection.list, id=>id !== book.id)
             })
             this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
+            this.saveCollection()
+          } else {
+            this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
+            this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
+            this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
           }
-          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
-          if (book.hidden) this.saveCollection()
-          this.dialogVisibleBookDetail = false
         })
       }
       if (this.setting.skipDeleteConfirm) {
@@ -2179,7 +2180,7 @@ export default defineComponent({
         text: 'Loading',
         background: _.includes(this.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
       })
-      ipcRenderer['load-manga-image-list'](_.cloneDeep(this.bookDetail))
+      ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(this.bookDetail))
       .then(list=>{
         // this.viewerImageList = list
         this.drawerVisibleViewer = true
@@ -2202,7 +2203,7 @@ export default defineComponent({
     getComments (url) {
       this.comments = []
       if (url) {
-        ipcRenderer['get-ex-webpage']({
+        ipcRenderer.invoke('get-ex-webpage', {
           url,
           cookie: this.cookie
         })
@@ -2463,7 +2464,7 @@ export default defineComponent({
     },
     releaseSendImageLock () {
       this.currentImageIndex = 0
-      ipcRenderer['release-sendimagelock']()
+      ipcRenderer.invoke('release-sendimagelock')
     },
     toNextMangaRandom (event) {
       event.stopPropagation()
@@ -2500,25 +2501,25 @@ export default defineComponent({
       document.documentElement.setAttribute('class', classValue)
     },
     selectLibraryPath () {
-      ipcRenderer['select-folder']()
+      ipcRenderer.invoke('select-folder')
       .then(res=>{
         this.setting.library = res
         this.saveSetting()
       })
     },
     selectImageExplorerPath () {
-      ipcRenderer['select-file']()
+      ipcRenderer.invoke('select-file')
       .then(res=>{
         this.setting.imageExplorer = `"${res}"`
         this.saveSetting()
       })
     },
     saveSetting () {
-      ipcRenderer['save-setting'](_.cloneDeep(this.setting))
+      ipcRenderer.invoke('save-setting', _.cloneDeep(this.setting))
     },
     forceGeneBookList () {
       this.dialogVisibleSetting = false
-      ipcRenderer['force-gene-book-list']()
+      ipcRenderer.invoke('force-gene-book-list')
       .then(res=>{
         if (this.sortValue) {
           this.bookList = res
@@ -2530,11 +2531,11 @@ export default defineComponent({
       })
     },
     patchLocalMetadata () {
-      ipcRenderer['patch-local-metadata']()
+      ipcRenderer.invoke('patch-local-metadata')
       .then(()=>this.loadBookList())
     },
     handleLanguageChange (val) {
-      ipcRenderer['get-locale']().then(localeString=>{
+      ipcRenderer.invoke('get-locale').then(localeString=>{
         let languageCode
         if (!val || (val === 'default')) {
           languageCode = localeString
@@ -2572,7 +2573,7 @@ export default defineComponent({
             }
           )
           .then(()=>{
-            ipcRenderer['open-url'](html_url)
+            ipcRenderer.invoke('open-url', html_url)
           })
         } else if (forceShowDialog) {
           ElMessageBox.confirm(
@@ -2598,7 +2599,7 @@ export default defineComponent({
 
     // import/export
     exportDatabase () {
-      ipcRenderer['export-database']()
+      ipcRenderer.invoke('export-database')
       .then(database=>{
         let dataStr = JSON.stringify(database, null, '  ')
         let dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
@@ -2610,7 +2611,7 @@ export default defineComponent({
       })
     },
     importDatabase () {
-      ipcRenderer['load-import-database']()
+      ipcRenderer.invoke('load-import-database')
       .then(async database=>{
         if (!_.isEmpty(database)) {
           _.forEach(this.bookList, async (book, index)=>{
@@ -2648,7 +2649,7 @@ export default defineComponent({
       })
     },
     importDatabasefromSqlite () {
-      ipcRenderer['import-sqlite'](_.cloneDeep(this.bookList))
+      ipcRenderer.invoke('import-sqlite', _.cloneDeep(this.bookList))
       .then(result=>{
         let {success, bookList} = result
         if (success) {
@@ -2746,7 +2747,7 @@ export default defineComponent({
           {
             label: this.$t('c.designateAsCover'),
             onClick: () => {
-              ipcRenderer['use-new-cover'](filepath)
+              ipcRenderer.invoke('use-new-cover', filepath)
               .then((coverPath)=>{
                 this.bookDetail.coverPath = coverPath
                 this.saveBook(this.bookDetail)
@@ -2784,7 +2785,7 @@ export default defineComponent({
         let items = foundLink.map(l=>({
           label: `${this.$t('c.redirect')} ${l.href}`,
           onClick: ()=>{
-            ipcRenderer['open-url'](l.href)
+            ipcRenderer.invoke('open-url', l.href)
           }
         }))
         this.$contextmenu({

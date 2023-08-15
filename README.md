@@ -1,10 +1,26 @@
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="128"/>
+
 # exhentai-manga-manager
+
+**标签化管理, 阅读从ExHentai下载的短篇漫画**
+
+<p>
+  <a href="https://www.electronjs.org/">
+    <img src="https://img.shields.io/badge/Electron-blue?style=flat-square" alt="Electron" />
+  </a>
+  <a href="https://github.com/SchneeHertz/exhentai-manga-manager/stargazers">
+    <img src="https://img.shields.io/github/stars/SchneeHertz/exhentai-manga-manager?style=flat-square&color=cornflowerblue" alt="Github Stars" />
+  </a>
+  <a href="https://github.com/SchneeHertz/exhentai-manga-manager/releases/latest">
+    <img src="https://img.shields.io/github/v/release/SchneeHertz/exhentai-manga-manager?label=latest&style=flat-square&color=cornflowerblue" alt="Github Stable Release" />
+  </a>
+</p>
 
 中文介绍 | [English Readme](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README_EN.md)
 
-<img src="https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/public/icon.png" alt="icon.png" width="256"/>
-
-管理或阅读从ExHentai下载的短篇漫画
+</div>
 
 ![cover.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/cover.jpg)
 ![detail.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/detail.jpg)
@@ -12,7 +28,7 @@
 ![viewer2.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/viewer2.jpg)
 ![thumbnails.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/thumbnails.jpg)
 
-使用说明见 [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明)
+**使用说明见 [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明)**
 
 ## 功能
 - 从一个文件夹建立漫画库
@@ -24,7 +40,7 @@
 
 ## 更多功能
 - 库元数据的导出和导入
-- 提供免安装版，数据文件可转移
+- 可选免安装版
 - 收藏漫画
 - 按上传时间，添加时间，评分排序
 - 显示ExHentai上的评论
@@ -33,7 +49,6 @@
 - 多章节漫画的合集管理
 - 隐藏指定漫画
 - 标签翻译为中文
-- 搜索历史
 - 可选的多个配色主题
 - 标签分析
 - 支持自定义封面

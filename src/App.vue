@@ -440,12 +440,16 @@
             <el-button size="small" type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'e-hentai')">{{$t('m.getMetadata')}}</el-button>
-            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'exhentai')">{{$t('m.getExMetadata')}}</el-button>
+            <el-button size="small" type="primary" plain
+              @click="openSearchDialog(bookDetail, 'exhentai')"
+              @contextmenu="onMangeDetailFunctionButtonContextMenu($event, bookDetail)"
+            >{{$t('m.getExMetadata')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'chaika')">{{$t('m.getChaikaMetadata')}}</el-button>
-            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'exsearch')">{{$t('m.getMetadataByFilename')}}</el-button>
+            <el-button size="small" type="primary" plain
+              @click="openSearchDialog(bookDetail, 'exsearch')"
+              @contextmenu="onMangeDetailFunctionButtonContextMenu($event, bookDetail)"
+            >{{$t('m.getExMetadataF')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
             <el-button size="small" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
@@ -533,7 +537,7 @@
       </el-row>
     </el-dialog>
     <el-dialog v-model="dialogVisibleEhSearch"
-      width="40%"
+      width="60%"
       :title="$t('m.search')"
       destroy-on-close
       custom-class="dialog-search"
@@ -541,9 +545,11 @@
       <el-input v-model="searchStringDialog" :disabled="disabledSearchString" @keyup.enter="getBookListFromEh(bookDetail, searchTypeDialog)">
         <template #prepend>
           <el-select class="search-type-select" v-model="searchTypeDialog">
-            <el-option label="exhentai" value="exsearch" />
-            <el-option label="e-hentai" value="e-search" />
-            <el-option label="chaika" value="chaika" />
+            <el-option label="exhentai(sha1)" value="exhentai" />
+            <el-option label="e-hentai(sha1)" value="e-hentai" />
+            <el-option label="exhentai(keyword)" value="exsearch" />
+            <el-option label="e-hentai(keyword)" value="e-search" />
+            <el-option label="chaika(keyword)" value="chaika" />
           </el-select>
         </template>
         <template #append>
@@ -1360,9 +1366,7 @@ export default defineComponent({
       this.ehSearchResultList = []
       this.searchStringDialog = this.returnFileName(book)
       this.bookDetail = book
-      if (server) {
-        this.getBookListFromEh(book, server)
-      }
+      this.getBookListFromEh(book, server)
     },
     getBookListFromEh (book, server = 'e-hentai') {
       let resolveWebPage = (book, htmlString)=>{
@@ -2680,13 +2684,19 @@ export default defineComponent({
             }
           },
           {
-            label: this.$t('m.getMetadataByFilename'),
+            label: this.$t('m.getMetadataF'),
+            onClick: () => {
+              this.openSearchDialog(book, 'e-search')
+            }
+          },
+          {
+            label: this.$t('m.getExMetadataF'),
             onClick: () => {
               this.openSearchDialog(book, 'exsearch')
             }
           },
           {
-            label: this.$t('m.getChaikaMetadata'),
+            label: this.$t('m.getChaikaMetadataF'),
             onClick: () => {
               this.openSearchDialog(book, 'chaika')
             }
@@ -2792,6 +2802,45 @@ export default defineComponent({
           items
         })
       }
+    },
+    onMangeDetailFunctionButtonContextMenu (e, book) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: this.$t('m.getMetadata'),
+            onClick: () => {
+              this.openSearchDialog(book, 'e-hentai')
+            }
+          },
+          {
+            label: this.$t('m.getExMetadata'),
+            onClick: () => {
+              this.openSearchDialog(book, 'exhentai')
+            }
+          },
+          {
+            label: this.$t('m.getMetadataF'),
+            onClick: () => {
+              this.openSearchDialog(book, 'e-search')
+            }
+          },
+          {
+            label: this.$t('m.getExMetadataF'),
+            onClick: () => {
+              this.openSearchDialog(book, 'exsearch')
+            }
+          },
+          {
+            label: this.$t('m.getChaikaMetadataF'),
+            onClick: () => {
+              this.openSearchDialog(book, 'chaika')
+            }
+          },
+        ]
+      })
     },
 
   }
@@ -3023,7 +3072,7 @@ body
   .el-dialog__body
     padding: 5px 20px 16px
   .search-type-select
-    width: 100px
+    width: 160px
   .search-result-ind
     cursor: pointer
     text-align: left

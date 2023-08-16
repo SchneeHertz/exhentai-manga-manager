@@ -435,28 +435,28 @@
             </el-descriptions>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button size="small" type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button>
-            <el-button size="small" plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
-            <el-button size="small" type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
+            <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button>
+            <el-button plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
+            <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button size="small" type="primary" plain
+            <el-button type="primary" plain
               @click="openSearchDialog(bookDetail, 'exhentai')"
               @contextmenu="onMangeDetailFunctionButtonContextMenu($event, bookDetail)"
             >{{$t('m.getExMetadata')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button size="small" type="primary" plain
+            <el-button type="primary" plain
               @click="openSearchDialog(bookDetail, 'exsearch')"
               @contextmenu="onMangeDetailFunctionButtonContextMenu($event, bookDetail)"
             >{{$t('m.getExMetadataF')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button size="small" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
-            <el-button size="small" type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
+            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
+            <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button size="small" plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
+            <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
         <el-col :span="showComment?10:18">

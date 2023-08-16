@@ -445,9 +445,7 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'chaika')">{{$t('m.getChaikaMetadata')}}</el-button>
-            <el-button size="small" type="primary" plain
-              @click="openSearchDialog(bookDetail)"
-            >{{$t('m.getMetadataByFilename')}}</el-button>
+            <el-button size="small" type="primary" plain @click="openSearchDialog(bookDetail, 'exsearch')">{{$t('m.getMetadataByFilename')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
             <el-button size="small" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
@@ -2684,7 +2682,7 @@ export default defineComponent({
           {
             label: this.$t('m.getMetadataByFilename'),
             onClick: () => {
-              this.openSearchDialog(book)
+              this.openSearchDialog(book, 'exsearch')
             }
           },
           {

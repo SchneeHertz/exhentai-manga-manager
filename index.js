@@ -407,7 +407,7 @@ ipcMain.handle('load-book-list', async (event, scan)=>{
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
           await foundData.save()
         }
-        if ((i+1) % 100 === 0) {
+        if ((i+1) % 50 === 0) {
           sendMessageToWebContents(`load ${i+1} of ${listLength}`)
           try {
             await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
@@ -490,6 +490,14 @@ ipcMain.handle('force-gene-book-list', async (event, arg)=>{
           date: Date.now()
         })
       }
+      if ((i+1) % 50 === 0) {
+        try {
+          await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+          await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+        } catch (err) {
+          console.log(err)
+        }
+      }
       mainWindow.setProgressBar(i/listLength)
     } catch (e) {
       sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i+1} of ${listLength}`)
@@ -530,6 +538,14 @@ ipcMain.handle('patch-local-metadata', async(event, arg)=>{
         await Manga.update(book, {where: {id: book.id}})
         sendMessageToWebContents(`patch ${filepath}, ${i+1} of ${bookListLength}`)
         mainWindow.setProgressBar(i/bookListLength)
+      }
+      if ((i+1) % 50 === 0) {
+        try {
+          await fs.promises.rm(TEMP_PATH, {recursive: true, force: true})
+          await fs.promises.mkdir(TEMP_PATH, {recursive: true})
+        } catch (err) {
+          console.log(err)
+        }
       }
     } catch (e) {
       sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)

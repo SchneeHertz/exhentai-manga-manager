@@ -219,7 +219,7 @@ app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
 app.whenReady().then(async () => {
   await Manga.sync({ alter: true })
   const primaryDisplay = screen.getPrimaryDisplay()
-  screenWidth = primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor
+  screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
   mainWindow = createWindow()
 })
 app.on('activate', () => {
@@ -733,7 +733,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
   ;(async () => {
     // 384 is the default 4K screen width divided by the default number of thumbnail columns
     let thumbnailWidth = _.isFinite(screenWidth / setting.thumbnailColumn) ? Math.floor(screenWidth / setting.thumbnailColumn) : 384
-    let widthLimit = setting.widthLimit || screenWidth
+    let widthLimit = Math.floor(setting.widthLimit) || screenWidth
     for (let index = 1; index <= list.length; index++) {
       if (sendImageLock) {
         let filepath = list[index - 1]
@@ -744,9 +744,11 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
         }
         let { width, height } = await sharp(filepath).metadata()
         if (width > widthLimit) {
+          height = Math.floor(height * (widthLimit / width))
+          width = widthLimit
           let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(6)}_${path.basename(filepath)}`)
           await sharp(filepath)
-            .resize({ width: widthLimit })
+            .resize({ width })
             .toFile(resizedFilepath)
           filepath = resizedFilepath
         }

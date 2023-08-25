@@ -75,6 +75,15 @@ console.log = (...message)=>{
   logStdout.write(format(...message) + '\n')
 }
 
+process
+  .on('unhandledRejection', (reason, promise) => {
+    console.log('Unhandled Rejection at:', promise, 'reason:', reason)
+  })
+  .on('uncaughtException', err => {
+    console.log(err, 'Uncaught Exception thrown')
+    process.exit(1)
+  })
+
 let sendMessageToWebContents = (message)=>{
   console.log(message)
   mainWindow.webContents.send('send-message', message)

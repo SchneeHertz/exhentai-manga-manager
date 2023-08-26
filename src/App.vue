@@ -1159,6 +1159,12 @@ export default defineComponent({
         case 'shuffle-manga':
           this.shuffleBook()
           break
+        case 'previous-manga-detail':
+          this.jumpMangeDetail(-1)
+          break
+        case 'next-manga-detail':
+          this.jumpMangeDetail(1)
+          break
       }
     })
   },
@@ -2842,7 +2848,18 @@ export default defineComponent({
         ]
       })
     },
-
+    jumpMangeDetail (step) {
+      if (this.dialogVisibleBookDetail) {
+        let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>!book.hidden && !book.folderHide && !book.collection)
+        let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
+        let indexNext = indexNow + step
+        if (indexNext >= 0 && indexNext < activeBookList.length) {
+          this.openBookDetail(activeBookList[indexNext])
+        } else {
+          this.printMessage('info', 'out of range')
+        }
+      }
+    },
   }
 })
 </script>

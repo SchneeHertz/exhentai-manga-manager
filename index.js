@@ -151,7 +151,20 @@ const createWindow = () => {
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'minimize' },
-        { role: 'togglefullscreen' }
+        { role: 'togglefullscreen' },
+        { type: 'separator' },
+        { label: 'Previous Manga Detail',
+          accelerator: 'PageUp',
+          click: async () => {
+            win.webContents.send('send-action', { action: 'previous-manga-detail' })
+          }
+        },
+        { label: 'Next Manga Detail',
+          accelerator: 'PageDown',
+          click: async () => {
+            win.webContents.send('send-action', { action: 'next-manga-detail' })
+          }
+        },
       ]
     },
     {

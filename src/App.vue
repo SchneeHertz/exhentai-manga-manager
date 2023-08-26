@@ -2849,7 +2849,7 @@ export default defineComponent({
 <style lang='stylus'>
 body
   margin: auto
-  width: 98vw
+  width: calc(100vw - 20px)
 #app
   font-family: Avenir, Helvetica, Arial, sans-serif
   text-align: center

@@ -62,6 +62,8 @@
           <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
           <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
           <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
+          <el-option :label="$t('m.artistAscend')" value="artistAscend"></el-option>
+          <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
         </el-select>
       </el-col>
       <el-col :span="4">
@@ -1241,17 +1243,17 @@ export default defineComponent({
     },
     sortList(label) {
       return (a, b)=>{
-        if (a[label] && b[label]) {
-          if (a[label] > b[label]) {
+        if (_.get(a, label) && _.get(b, label)) {
+          if (_.get(a, label) > _.get(b, label)) {
             return -1
-          } else if (a[label] < b[label]) {
+          } else if (_.get(a, label) < _.get(b, label)) {
             return 1
           } else {
             return 0
           }
-        } else if (a[label]) {
+        } else if (_.get(a, label)) {
           return -1
-        } else if (b[label]) {
+        } else if (_.get(b, label)) {
           return 1
         } else {
           return 0
@@ -1676,6 +1678,14 @@ export default defineComponent({
           break
         case 'scoreDescend':
           this.displayBookList = bookList.sort(this.sortList('rating'))
+          this.chunkList()
+          break
+        case 'artistAscend':
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('tags.artist')))
+          this.chunkList()
+          break
+        case 'artistDescend':
+          this.displayBookList = bookList.sort(this.sortList('tags.artist'))
           this.chunkList()
           break
         default:

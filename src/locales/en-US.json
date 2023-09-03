@@ -13,6 +13,8 @@
     "postTimeDescend": "PostTime Descend",
     "ratingAscend": "Rating Ascend",
     "ratingDescend": "Rating Descend",
+    "artistAscend": "Artist Ascend",
+    "artistDescend": "Artist Descend",
     "manageCollection": "EditCollection",
     "addCollection": "Add Collection",
     "renameCollection": "Rename Collection",

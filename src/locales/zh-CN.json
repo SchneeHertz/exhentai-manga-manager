@@ -13,6 +13,8 @@
     "postTimeDescend": "上传时间倒序",
     "ratingAscend": "评分正序",
     "ratingDescend": "评分倒序",
+    "artistAscend": "作者正序",
+    "artistDescend": "作者倒序",
     "manageCollection": "编辑合集",
     "addCollection": "新增合集",
     "renameCollection": "重命名合集",

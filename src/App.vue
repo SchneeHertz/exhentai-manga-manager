@@ -1,5 +1,6 @@
 <template>
   <el-config-provider :locale="locale">
+    <div id="progressbar" :style="{ width: progress + '%' }"></div>
     <el-row :gutter="20" class="book-search-bar">
       <el-col :span="1" :offset="2">
         <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
@@ -952,6 +953,7 @@ export default defineComponent({
       folderTreeData: [],
       tagNodeData: [],
       version: version,
+      progress: 0,
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -1166,6 +1168,9 @@ export default defineComponent({
           break
         case 'next-manga-detail':
           this.jumpMangeDetail(1)
+          break
+        case 'send-progress':
+          this.progress = +arg.progress > 1 ? 100 : +arg.progress < 0 ? 0 : +arg.progress * 100
           break
       }
     })
@@ -2881,6 +2886,13 @@ body
   font-family: Avenir, Helvetica, Arial, sans-serif
   text-align: center
   margin-top: 20px
+
+#progressbar
+  position: fixed
+  top: 0
+  left: 0
+  height: 3px
+  background-color: #67C23A
 
 .search-input,
 .function-button

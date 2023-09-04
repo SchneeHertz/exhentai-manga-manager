@@ -371,6 +371,14 @@ let geneCover = async (filepath, type) => {
 
 }
 
+let setProgressBar = (progress) => {
+  mainWindow.setProgressBar(progress)
+  mainWindow.webContents.send('send-action', {
+    action: 'send-progress',
+    progress
+  })
+}
+
 
 // library and metadata
 ipcMain.handle('load-book-list', async (event, scan) => {
@@ -416,13 +424,13 @@ ipcMain.handle('load-book-list', async (event, scan) => {
               exist: true,
               date: Date.now()
             })
-            mainWindow.setProgressBar(i / listLength)
           }
         } else {
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
           await foundData.save()
         }
+        setProgressBar(i / listLength)
         if ((i + 1) % 50 === 0) {
           sendMessageToWebContents(`load ${i + 1} of ${listLength}`)
           try {
@@ -455,7 +463,7 @@ ipcMain.handle('load-book-list', async (event, scan) => {
       console.log(err)
     }
     await Manga.destroy({ where: { exist: false } })
-    mainWindow.setProgressBar(-1)
+    setProgressBar(-1)
   }
   return await loadBookListFromDatabase()
 })
@@ -514,7 +522,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
           console.log(err)
         }
       }
-      mainWindow.setProgressBar(i / listLength)
+      setProgressBar(i / listLength)
     } catch (e) {
       sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
     }
@@ -526,7 +534,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
     console.log(err)
   }
 
-  mainWindow.setProgressBar(-1)
+  setProgressBar(-1)
   return await loadBookListFromDatabase()
 })
 
@@ -553,7 +561,6 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
         _.assign(book, { type, coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
         await Manga.update(book, { where: { id: book.id } })
         sendMessageToWebContents(`patch ${filepath}, ${i + 1} of ${bookListLength}`)
-        mainWindow.setProgressBar(i / bookListLength)
       }
       if ((i + 1) % 50 === 0) {
         try {
@@ -563,6 +570,7 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
           console.log(err)
         }
       }
+      setProgressBar(i / bookListLength)
     } catch (e) {
       sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)
     }
@@ -574,7 +582,7 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
   } catch (err) {
     console.log(err)
   }
-  mainWindow.setProgressBar(-1)
+  setProgressBar(-1)
   return bookList
 })
 
@@ -907,14 +915,14 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
             _.assign(book, _.pick(metadata, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url']), { status: 'tagged' })
             await Manga.update(book, { where: { id: book.id } })
             sendMessageToWebContents(`${i + 1} of ${bookListLength}, found metadata for ${book.filepath}`)
-            mainWindow.setProgressBar(i / bookListLength)
           } else {
             sendMessageToWebContents(`${i + 1} of ${bookListLength}, metadata not found for ${book.filepath}`)
           }
+          setProgressBar(i / bookListLength)
         }
       }
       await db.close()
-      mainWindow.setProgressBar(-1)
+      setProgressBar(-1)
     } catch (e) {
       console.log(e)
       await db.close()
@@ -931,7 +939,7 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
 })
 
 ipcMain.handle('set-progress-bar', async (event, progress) => {
-  mainWindow.setProgressBar(progress)
+  setProgressBar(progress)
 })
 
 ipcMain.handle('get-locale', async (event, arg) => {

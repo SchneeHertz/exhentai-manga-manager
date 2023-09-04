@@ -65,6 +65,8 @@
           <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
           <el-option :label="$t('m.artistAscend')" value="artistAscend"></el-option>
           <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
+          <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
+          <el-option :label="$t('m.titleDescend')" value="titleDescend"></el-option>
         </el-select>
       </el-col>
       <el-col :span="4">
@@ -1699,6 +1701,14 @@ export default defineComponent({
           break
         case 'artistDescend':
           this.displayBookList = bookList.sort(this.sortList('tags.artist'))
+          this.chunkList()
+          break
+        case 'titleAscend':
+          this.displayBookList = _.reverse(bookList.sort((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a))))
+          this.chunkList()
+          break
+        case 'titleDescend':
+          this.displayBookList = bookList.sort((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a)))
           this.chunkList()
           break
         default:

@@ -15,6 +15,8 @@
     "ratingDescend": "评分倒序",
     "artistAscend": "作者正序",
     "artistDescend": "作者倒序",
+    "titleAscend": "标题正序",
+    "titleDescend": "标题倒序",
     "manageCollection": "编辑合集",
     "addCollection": "新增合集",
     "renameCollection": "重命名合集",

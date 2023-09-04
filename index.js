@@ -198,6 +198,14 @@ const createWindow = () => {
             })
           }
         },
+        {
+          label: 'Tag-fail Non-tag Book',
+          click: () => {
+            win.webContents.send('send-action', {
+              action: 'tag-fail-non-tag-book'
+            })
+          }
+        },
       ]
     },
     {

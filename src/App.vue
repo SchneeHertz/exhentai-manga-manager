@@ -1172,6 +1172,14 @@ export default defineComponent({
         case 'send-progress':
           this.progress = +arg.progress > 1 ? 100 : +arg.progress < 0 ? 0 : +arg.progress * 100
           break
+        case 'tag-fail-non-tag-book':
+          this.displayBookList.forEach(book => {
+            if (book.status === 'non-tag' && !book.folderHide) {
+              book.status = 'tag-failed'
+            }
+          })
+          this.saveBookList()
+          break
       }
     })
   },

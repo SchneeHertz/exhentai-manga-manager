@@ -468,28 +468,28 @@
           <el-scrollbar class="book-tag-frame">
             <div v-if="editingTag">
               <div class="edit-line">
-                <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')"></el-input>
+                <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')" @change="saveBook(bookDetail)"></el-input>
               </div>
               <div class="edit-line">
-                <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')"></el-input>
+                <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')" @change="saveBook(bookDetail)"></el-input>
               </div>
               <div class="edit-line">
-                <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')">
+                <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')" @change="saveBook(bookDetail)">
                   <el-option value="non-tag">non-tag</el-option>
                   <el-option value="tagged">tagged</el-option>
                   <el-option value="tag-failed">tag-failed</el-option>
                 </el-select>
               </div>
               <div class="edit-line">
-                <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')"></el-input>
+                <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')" @change="saveBook(bookDetail)"></el-input>
               </div>
               <div class="edit-line">
-                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')">
+                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)">
                   <el-option v-for="cat in categoryOption" :value="cat" :key="cat">{{cat}}</el-option>
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select v-model="bookDetail.tags[key]" :placeholder="key"
+                <el-select v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBook(bookDetail)"
                   filterable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
                   <el-option v-for="tag in editTagOptions" :key="tag.value" :value="tag.value" >{{tag.label}}</el-option>
                 </el-select>
@@ -1620,15 +1620,17 @@ export default defineComponent({
       this.dialogVisibleSetting = false
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
+      let bookList
+      if (this.setting.batchTagfailedBook) {
+        bookList = this.bookList.filter(book=>book.status === 'tag-failed' || book.status === 'non-tag')
+      } else {
+        bookList = this.bookList.filter(book=>book.status === 'non-tag')
+      }
       let load = async (gap) => {
-        for (let i = 0; i < this.bookList.length; i++) {
-          ipcRenderer.invoke('set-progress-bar', i/this.bookList.length)
-          if (
-            (this.bookList[i].status === 'non-tag'
-            || (this.setting.batchTagfailedBook && this.bookList[i].status === 'tag-failed'))
-            && this.serviceAvailable
-          ) {
-            await this.getBookInfo(this.bookList[i], server)
+        for (let i = 0; i < bookList.length; i++) {
+          ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
+          if (this.serviceAvailable) {
+            await this.getBookInfo(bookList[i], server)
             // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
           }
@@ -1640,6 +1642,7 @@ export default defineComponent({
 
     // home header
     shuffleBook () {
+      this.sortValue = 'shuffle'
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },

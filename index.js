@@ -412,7 +412,7 @@ ipcMain.handle('load-book-list', async (event, scan) => {
         let { filepath, type } = list[i]
         let foundData = await Manga.findOne({ where: { filepath: filepath } })
         if (foundData === null) {
-          sendMessageToWebContents(`load ${filepath}, ${i + 1} of ${listLength}`)
+          // sendMessageToWebContents(`load ${filepath}, ${i + 1} of ${listLength}`)
           let id = nanoid()
           let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
           if (targetFilePath && coverPath) {
@@ -440,7 +440,7 @@ ipcMain.handle('load-book-list', async (event, scan) => {
         }
         setProgressBar(i / listLength)
         if ((i + 1) % 50 === 0) {
-          sendMessageToWebContents(`load ${i + 1} of ${listLength}`)
+          // sendMessageToWebContents(`load ${i + 1} of ${listLength}`)
           try {
             await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
             await fs.promises.mkdir(TEMP_PATH, { recursive: true })
@@ -502,7 +502,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
   for (let i = 0; i < listLength; i++) {
     try {
       let { filepath, type } = list[i]
-      sendMessageToWebContents(`load ${filepath}, ${i + 1} of ${listLength}`)
+      // sendMessageToWebContents(`load ${filepath}, ${i + 1} of ${listLength}`)
       let id = nanoid()
       let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
       if (targetFilePath && coverPath) {
@@ -568,7 +568,7 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         _.assign(book, { type, coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
         await Manga.update(book, { where: { id: book.id } })
-        sendMessageToWebContents(`patch ${filepath}, ${i + 1} of ${bookListLength}`)
+        // sendMessageToWebContents(`patch ${filepath}, ${i + 1} of ${bookListLength}`)
       }
       if ((i + 1) % 50 === 0) {
         try {
@@ -922,9 +922,9 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
             metadata.url = `https://exhentai.org/g/${metadata.gid}/${metadata.token}/`
             _.assign(book, _.pick(metadata, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url']), { status: 'tagged' })
             await Manga.update(book, { where: { id: book.id } })
-            sendMessageToWebContents(`${i + 1} of ${bookListLength}, found metadata for ${book.filepath}`)
+            // sendMessageToWebContents(`${i + 1} of ${bookListLength}, found metadata for ${book.filepath}`)
           } else {
-            sendMessageToWebContents(`${i + 1} of ${bookListLength}, metadata not found for ${book.filepath}`)
+            // sendMessageToWebContents(`${i + 1} of ${bookListLength}, metadata not found for ${book.filepath}`)
           }
           setProgressBar(i / bookListLength)
         }

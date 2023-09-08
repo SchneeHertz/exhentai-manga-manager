@@ -125,7 +125,8 @@
     "fitWidth": "fit width",
     "fitHeight": "fit height",
     "fitWindow": "fit window",
-    "defaultExpandTree": "Default Expand Tree"
+    "defaultExpandTree": "Default Expand Tree",
+    "keepReadingProgress": "Keep Reading Progress"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

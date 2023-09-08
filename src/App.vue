@@ -192,7 +192,7 @@
       size="100%"
       :with-header="false"
       destroy-on-close
-      @closed="releaseSendImageLock"
+      @close="releaseSendImageLock"
       custom-class="viewer-drawer"
     >
       <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
@@ -685,10 +685,17 @@
                 </el-input>
               </div>
             </el-col>
-            <el-col :span="6" class="setting-switch">
+            <el-col :span="24" class="setting-switch">
               <el-switch
                 v-model="setting.hidePageNumber"
                 :active-text="$t('m.hidePageNumber')"
+                @change="saveSetting"
+              />
+            </el-col>
+            <el-col :span="24" class="setting-switch">
+              <el-switch
+                v-model="setting.keepReadingProgress"
+                :active-text="$t('m.keepReadingProgress')"
                 @change="saveSetting"
               />
             </el-col>
@@ -983,6 +990,7 @@ export default defineComponent({
       storeDrawerScrollTop: undefined,
       insertEmptyPage: false,
       insertEmptyPageIndex: 1,
+      viewerReadingProgress: [],
       // setting
       setting: {},
       activeSettingPanel: 'general',
@@ -1149,6 +1157,7 @@ export default defineComponent({
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     this.imageStyleFit = localStorage.getItem('imageStyleFit') || 'window'
     this.sortValue = localStorage.getItem('sortValue')
+    this.viewerReadingProgress = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
     window.addEventListener('keydown', this.resolveKey)
     ipcRenderer.on('send-action', (event, arg)=>{
       switch (arg.action) {
@@ -2235,14 +2244,14 @@ export default defineComponent({
         background: _.includes(this.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
       })
       ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(this.bookDetail))
-      .then(list=>{
-        // this.viewerImageList = list
+      .then(() => {
         this.drawerVisibleViewer = true
+        if (this.setting.keepReadingProgress) this.handleJumpToReadingProgress(book)
       })
-      .catch(err=>{
+      .catch(err => {
         console.log(err)
       })
-      .finally(()=>{
+      .finally(() => {
         loading.close()
       })
     },
@@ -2517,6 +2526,7 @@ export default defineComponent({
       }
     },
     releaseSendImageLock () {
+      if (this.setting.keepReadingProgress) this.saveReadingProgress()
       this.currentImageIndex = 0
       this.insertEmptyPage = false
       this.insertEmptyPageIndex = 1
@@ -2538,7 +2548,6 @@ export default defineComponent({
         this.printMessage('info', 'out of range')
       }
     },
-
     jumpMangeDetail (step) {
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>!book.hidden && !book.folderHide && !book.collection)
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
@@ -2547,6 +2556,51 @@ export default defineComponent({
         this.openBookDetail(activeBookList[indexNext])
       } else {
         this.printMessage('info', 'out of range')
+      }
+    },
+    saveReadingProgress () {
+      let currentImageId
+      if (this.imageStyleType === 'scroll') {
+        let scrollTopValue = document.getElementsByClassName('el-drawer__body')[0].scrollTop
+        _.forIn(this.viewerImageList, (image)=>{
+          if (scrollTopValue < 0) {
+            currentImageId = image.id
+            return false
+          }
+          // 28 is the height of .viewer-image-page
+          if (this.setting.hidePageNumber) {
+            scrollTopValue -= parseFloat(this.returnImageStyle(image).height)
+          } else {
+            scrollTopValue -= parseFloat(this.returnImageStyle(image).height) + 28
+          }
+        })
+      } else if (this.imageStyleType === 'single') {
+        currentImageId = this.viewerImageList[this.currentImageIndex].id
+      } else if (this.imageStyleType === 'double') {
+        currentImageId = this.viewerImageListDouble[this.currentImageIndex].page[0].id
+      }
+      this.viewerReadingProgress.unshift({bookId: this.bookDetail.id, pageId: currentImageId})
+      localStorage.setItem('viewerReadingProgress', JSON.stringify(this.viewerReadingProgress.slice(0, 1000)))
+    },
+    async handleJumpToReadingProgress (book) {
+      let findProgress = this.viewerReadingProgress.find(progress=>progress.bookId === book.id)
+      if (findProgress) {
+        const timer = ms => new Promise(res => setTimeout(res, ms))
+        while (true) {
+          if (this.imageStyleType === 'scroll' || this.imageStyleType === 'single') {
+            if (this.viewerImageList.findIndex(image=>image.id === findProgress.pageId) >= 0) {
+              this.handleClickThumbnail(findProgress.pageId)
+              break
+            }
+          } else if (this.imageStyleType === 'double') {
+            if (this.viewerImageListDouble.findIndex(imageGroup=>imageGroup.page.findIndex(page=>page.id === findProgress.pageId) >= 0) >= 0) {
+              this.handleClickThumbnail(findProgress.pageId)
+              break
+            }
+          }
+          if (this.viewerImageList.length > book.pageCount - 5 || this.bookDetail.id !== book.id) break
+          await timer(500)
+        }
       }
     },
 
@@ -2585,6 +2639,7 @@ export default defineComponent({
     },
     forceGeneBookList () {
       this.dialogVisibleSetting = false
+      localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
       ipcRenderer.invoke('force-gene-book-list')
       .then(res=>{
         if (this.sortValue) {

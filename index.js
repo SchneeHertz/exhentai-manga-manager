@@ -69,7 +69,8 @@ try {
     defaultExpandTree: true,
     hidePageNumber: false,
     skipDeleteConfirm: false,
-    displayTitle: 'japaneseTitle'
+    displayTitle: 'japaneseTitle',
+    keepReadingProgress: true,
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 }
@@ -754,7 +755,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
   } catch (err) {
     console.log(err)
   }
-  let { filepath, type } = book
+  let { filepath, type, id: bookId } = book
 
   let list
   //fileLoader: get imageList from file
@@ -799,7 +800,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           .resize({ width: thumbnailWidth })
           .toFile(thumbnailPath)
         mainWindow.webContents.send('manga-content', {
-          id: nanoid(),
+          id: `${bookId}_${index}`,
           index,
           filepath,
           thumbnailPath,

@@ -50,13 +50,26 @@ try {
     imageExplorer: '\"C:\\Windows\\explorer.exe\"',
     pageSize: 10,
     loadOnStart: false,
+    igneous: '',
+    ipb_pass_hash: '',
+    ipb_member_id: '',
+    star: '',
+    showComment: true,
     requireGap: 10000,
     thumbnailColumn: 10,
     showTranslation: false,
+    theme: 'dark',
     widthLimit: undefined,
     directEnter: 'detail',
     language: 'default',
-    advancedSearch: true
+    folderTreeWidth: '',
+    advancedSearch: true,
+    autoCheckUpdates: false,
+    customOptions: '',
+    defaultExpandTree: true,
+    hidePageNumber: false,
+    skipDeleteConfirm: false,
+    displayTitle: 'japaneseTitle'
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 }
@@ -153,16 +166,16 @@ const createWindow = () => {
         { role: 'minimize' },
         { role: 'togglefullscreen' },
         { type: 'separator' },
-        { label: 'Previous Manga Detail',
+        { label: 'Previous Manga',
           accelerator: 'PageUp',
           click: async () => {
-            win.webContents.send('send-action', { action: 'previous-manga-detail' })
+            win.webContents.send('send-action', { action: 'previous-manga' })
           }
         },
-        { label: 'Next Manga Detail',
+        { label: 'Next Manga',
           accelerator: 'PageDown',
           click: async () => {
-            win.webContents.send('send-action', { action: 'next-manga-detail' })
+            win.webContents.send('send-action', { action: 'next-manga' })
           }
         },
       ]

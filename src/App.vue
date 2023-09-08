@@ -315,8 +315,9 @@
         </div>
       </div>
       <div class="next-manga-button">
+        <el-button size="large" type="success" plain @click="toNextManga(-1)">{{$t('m.previousManga')}}</el-button>
         <el-button size="large" type="success" plain @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" plain @click="toNextManga">{{$t('m.nextManga')}}</el-button>
+        <el-button size="large" type="success" plain @click="toNextManga(1)">{{$t('m.nextManga')}}</el-button>
       </div>
       <div
         class="drawer-thumbnail-content"
@@ -1165,11 +1166,19 @@ export default defineComponent({
         case 'shuffle-manga':
           this.shuffleBook()
           break
-        case 'previous-manga-detail':
-          this.jumpMangeDetail(-1)
+        case 'previous-manga':
+          if (this.drawerVisibleViewer) {
+            this.toNextManga(-1)
+          } else if (this.dialogVisibleBookDetail) {
+            this.jumpMangeDetail(-1)
+          }
           break
-        case 'next-manga-detail':
-          this.jumpMangeDetail(1)
+        case 'next-manga':
+          if (this.drawerVisibleViewer) {
+            this.toNextManga(1)
+          } else if (this.dialogVisibleBookDetail) {
+            this.jumpMangeDetail(1)
+          }
           break
         case 'send-progress':
           this.progress = +arg.progress > 1 ? 100 : +arg.progress < 0 ? 0 : +arg.progress * 100
@@ -2218,6 +2227,7 @@ export default defineComponent({
     },
     viewManga (book) {
       this.bookDetail = book
+      if (this.showComment) this.getComments(book.url)
       this.viewerImageList = []
       const loading = ElLoading.service({
         lock: true,
@@ -2508,23 +2518,35 @@ export default defineComponent({
     },
     releaseSendImageLock () {
       this.currentImageIndex = 0
+      this.insertEmptyPage = false
+      this.insertEmptyPageIndex = 1
       ipcRenderer.invoke('release-sendimagelock')
     },
-    toNextMangaRandom (event) {
-      event.stopPropagation()
+    toNextMangaRandom () {
       this.releaseSendImageLock()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide && !book.collection))
       setTimeout(()=>this.viewManga(_.sample(activeBookList)), 500)
     },
-    toNextManga (event) {
-      event.stopPropagation()
+    toNextManga (step) {
       this.releaseSendImageLock()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide && !book.collection))
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
-      if (indexNow === activeBookList.length - 1) {
-        this.printMessage('warning', this.$t('c.lastManga'))
+      let indexNext = indexNow + step
+      if (indexNext >= 0 && indexNext < activeBookList.length) {
+        setTimeout(()=>this.viewManga(activeBookList[indexNext]), 500)
       } else {
-        setTimeout(()=>this.viewManga(activeBookList[indexNow + 1]), 500)
+        this.printMessage('info', 'out of range')
+      }
+    },
+
+    jumpMangeDetail (step) {
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>!book.hidden && !book.folderHide && !book.collection)
+      let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
+      let indexNext = indexNow + step
+      if (indexNext >= 0 && indexNext < activeBookList.length) {
+        this.openBookDetail(activeBookList[indexNext])
+      } else {
+        this.printMessage('info', 'out of range')
       }
     },
 
@@ -2884,18 +2906,6 @@ export default defineComponent({
         ]
       })
     },
-    jumpMangeDetail (step) {
-      if (this.dialogVisibleBookDetail) {
-        let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>!book.hidden && !book.folderHide && !book.collection)
-        let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
-        let indexNext = indexNow + step
-        if (indexNext >= 0 && indexNext < activeBookList.length) {
-          this.openBookDetail(activeBookList[indexNext])
-        } else {
-          this.printMessage('info', 'out of range')
-        }
-      }
-    },
   }
 })
 </script>
@@ -3247,9 +3257,11 @@ body
 .next-manga-button
   opacity: 0.05
   position: fixed
-  bottom:1em
+  bottom: 1em
   z-index: 10
   transition-delay: 0.2s
+  .el-button
+    --el-button-bg-color: #f0f9eb66
 .next-manga-button:hover
   opacity: 1
 

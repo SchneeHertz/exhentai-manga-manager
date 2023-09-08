@@ -2579,6 +2579,10 @@ export default defineComponent({
       } else if (this.imageStyleType === 'double') {
         currentImageId = this.viewerImageListDouble[this.currentImageIndex].page[0].id
       }
+      let currentImageIndex = this.viewerImageList.findIndex(image=>image.id === currentImageId)
+      if (currentImageIndex > this.bookDetail.pageCount - 6) {
+        currentImageId = this.viewerImageList[0].id
+      }
       this.viewerReadingProgress.unshift({bookId: this.bookDetail.id, pageId: currentImageId})
       localStorage.setItem('viewerReadingProgress', JSON.stringify(this.viewerReadingProgress.slice(0, 1000)))
     },

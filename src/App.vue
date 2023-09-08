@@ -193,7 +193,7 @@
       :with-header="false"
       destroy-on-close
       @close="releaseSendImageLock"
-      custom-class="viewer-drawer"
+      class="viewer-drawer"
     >
       <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
       <div class="viewer-mode-setting">
@@ -407,7 +407,7 @@
     </el-drawer>
     <el-dialog v-model="dialogVisibleBookDetail"
       fullscreen
-      custom-class="dialog-detail"
+      class="dialog-detail"
     >
       <template #header>
         <p class="detail-book-title">
@@ -546,7 +546,7 @@
       width="60%"
       :title="$t('m.search')"
       destroy-on-close
-      custom-class="dialog-search"
+      class="dialog-search"
     >
       <el-input v-model="searchStringDialog" :disabled="disabledSearchString" @keyup.enter="getBookListFromEh(bookDetail, searchTypeDialog)">
         <template #prepend>
@@ -578,7 +578,7 @@
       width="50em"
       :modal="false"
       append-to-body
-      custom-class="setting-dialog"
+      class="setting-dialog"
     >
       <template #header><p class="setting-title">{{$t('m.setting')}}</p></template>
       <el-tabs v-model="activeSettingPanel" class="setting-tabs">
@@ -921,8 +921,8 @@ import draggable from 'vuedraggable'
 import * as linkify from 'linkifyjs'
 import G6 from '@antv/g6'
 
-import zhCn from 'element-plus/lib/locale/lang/zh-cn'
-import en from 'element-plus/lib/locale/lang/en'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import en from 'element-plus/dist/locale/en.mjs'
 
 import { version } from '../package.json'
 

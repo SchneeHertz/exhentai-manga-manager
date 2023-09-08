@@ -1,5 +1,6 @@
 <template>
   <el-config-provider :locale="locale">
+    <div id="progressbar" :style="{ width: progress + '%' }"></div>
     <el-row :gutter="20" class="book-search-bar">
       <el-col :span="1" :offset="2">
         <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
@@ -62,6 +63,10 @@
           <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
           <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
           <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
+          <el-option :label="$t('m.artistAscend')" value="artistAscend"></el-option>
+          <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
+          <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
+          <el-option :label="$t('m.titleDescend')" value="titleDescend"></el-option>
         </el-select>
       </el-col>
       <el-col :span="4">
@@ -187,7 +192,7 @@
       size="100%"
       :with-header="false"
       destroy-on-close
-      @closed="releaseSendImageLock"
+      @close="releaseSendImageLock"
       custom-class="viewer-drawer"
     >
       <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
@@ -310,8 +315,9 @@
         </div>
       </div>
       <div class="next-manga-button">
+        <el-button size="large" type="success" plain @click="toNextManga(-1)">{{$t('m.previousManga')}}</el-button>
         <el-button size="large" type="success" plain @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" plain @click="toNextManga">{{$t('m.nextManga')}}</el-button>
+        <el-button size="large" type="success" plain @click="toNextManga(1)">{{$t('m.nextManga')}}</el-button>
       </div>
       <div
         class="drawer-thumbnail-content"
@@ -463,28 +469,28 @@
           <el-scrollbar class="book-tag-frame">
             <div v-if="editingTag">
               <div class="edit-line">
-                <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')"></el-input>
+                <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')" @change="saveBook(bookDetail)"></el-input>
               </div>
               <div class="edit-line">
-                <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')"></el-input>
+                <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')" @change="saveBook(bookDetail)"></el-input>
               </div>
               <div class="edit-line">
-                <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')">
+                <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')" @change="saveBook(bookDetail)">
                   <el-option value="non-tag">non-tag</el-option>
                   <el-option value="tagged">tagged</el-option>
                   <el-option value="tag-failed">tag-failed</el-option>
                 </el-select>
               </div>
               <div class="edit-line">
-                <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')"></el-input>
+                <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')" @change="saveBook(bookDetail)"></el-input>
               </div>
               <div class="edit-line">
-                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')">
+                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)">
                   <el-option v-for="cat in categoryOption" :value="cat" :key="cat">{{cat}}</el-option>
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select v-model="bookDetail.tags[key]" :placeholder="key"
+                <el-select v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBook(bookDetail)"
                   filterable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
                   <el-option v-for="tag in editTagOptions" :key="tag.value" :value="tag.value" >{{tag.label}}</el-option>
                 </el-select>
@@ -679,10 +685,17 @@
                 </el-input>
               </div>
             </el-col>
-            <el-col :span="6" class="setting-switch">
+            <el-col :span="24" class="setting-switch">
               <el-switch
                 v-model="setting.hidePageNumber"
                 :active-text="$t('m.hidePageNumber')"
+                @change="saveSetting"
+              />
+            </el-col>
+            <el-col :span="24" class="setting-switch">
+              <el-switch
+                v-model="setting.keepReadingProgress"
+                :active-text="$t('m.keepReadingProgress')"
                 @change="saveSetting"
               />
             </el-col>
@@ -950,6 +963,7 @@ export default defineComponent({
       folderTreeData: [],
       tagNodeData: [],
       version: version,
+      progress: 0,
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -976,6 +990,7 @@ export default defineComponent({
       storeDrawerScrollTop: undefined,
       insertEmptyPage: false,
       insertEmptyPageIndex: 1,
+      viewerReadingProgress: [],
       // setting
       setting: {},
       activeSettingPanel: 'general',
@@ -1142,6 +1157,7 @@ export default defineComponent({
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
     this.imageStyleFit = localStorage.getItem('imageStyleFit') || 'window'
     this.sortValue = localStorage.getItem('sortValue')
+    this.viewerReadingProgress = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
     window.addEventListener('keydown', this.resolveKey)
     ipcRenderer.on('send-action', (event, arg)=>{
       switch (arg.action) {
@@ -1158,6 +1174,31 @@ export default defineComponent({
           break
         case 'shuffle-manga':
           this.shuffleBook()
+          break
+        case 'previous-manga':
+          if (this.drawerVisibleViewer) {
+            this.toNextManga(-1)
+          } else if (this.dialogVisibleBookDetail) {
+            this.jumpMangeDetail(-1)
+          }
+          break
+        case 'next-manga':
+          if (this.drawerVisibleViewer) {
+            this.toNextManga(1)
+          } else if (this.dialogVisibleBookDetail) {
+            this.jumpMangeDetail(1)
+          }
+          break
+        case 'send-progress':
+          this.progress = +arg.progress > 1 ? 100 : +arg.progress < 0 ? 0 : +arg.progress * 100
+          break
+        case 'tag-fail-non-tag-book':
+          this.displayBookList.forEach(book => {
+            if (book.status === 'non-tag' && !book.folderHide) {
+              book.status = 'tag-failed'
+            }
+          })
+          this.saveBookList()
           break
       }
     })
@@ -1235,17 +1276,17 @@ export default defineComponent({
     },
     sortList(label) {
       return (a, b)=>{
-        if (a[label] && b[label]) {
-          if (a[label] > b[label]) {
+        if (_.get(a, label) && _.get(b, label)) {
+          if (_.get(a, label) > _.get(b, label)) {
             return -1
-          } else if (a[label] < b[label]) {
+          } else if (_.get(a, label) < _.get(b, label)) {
             return 1
           } else {
             return 0
           }
-        } else if (a[label]) {
+        } else if (_.get(a, label)) {
           return -1
-        } else if (b[label]) {
+        } else if (_.get(b, label)) {
           return 1
         } else {
           return 0
@@ -1597,16 +1638,18 @@ export default defineComponent({
       this.dialogVisibleSetting = false
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
+      let bookList
+      if (this.setting.batchTagfailedBook) {
+        bookList = this.bookList.filter(book=>book.status === 'tag-failed' || book.status === 'non-tag')
+      } else {
+        bookList = this.bookList.filter(book=>book.status === 'non-tag')
+      }
       let load = async (gap) => {
-        for (let i = 0; i < this.bookList.length; i++) {
-          ipcRenderer.invoke('set-progress-bar', i/this.bookList.length)
-          if (
-            (this.bookList[i].status === 'non-tag'
-            || (this.setting.batchTagfailedBook && this.bookList[i].status === 'tag-failed'))
-            && this.serviceAvailable
-          ) {
-            await this.getBookInfo(this.bookList[i], server)
-            this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
+        for (let i = 0; i < bookList.length; i++) {
+          ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
+          if (this.serviceAvailable) {
+            await this.getBookInfo(bookList[i], server)
+            // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
           }
         }
@@ -1617,6 +1660,7 @@ export default defineComponent({
 
     // home header
     shuffleBook () {
+      this.sortValue = 'shuffle'
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
@@ -1670,6 +1714,22 @@ export default defineComponent({
           break
         case 'scoreDescend':
           this.displayBookList = bookList.sort(this.sortList('rating'))
+          this.chunkList()
+          break
+        case 'artistAscend':
+          this.displayBookList = _.reverse(bookList.sort(this.sortList('tags.artist')))
+          this.chunkList()
+          break
+        case 'artistDescend':
+          this.displayBookList = bookList.sort(this.sortList('tags.artist'))
+          this.chunkList()
+          break
+        case 'titleAscend':
+          this.displayBookList = _.reverse(bookList.sort((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a))))
+          this.chunkList()
+          break
+        case 'titleDescend':
+          this.displayBookList = bookList.sort((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a)))
           this.chunkList()
           break
         default:
@@ -2176,6 +2236,7 @@ export default defineComponent({
     },
     viewManga (book) {
       this.bookDetail = book
+      if (this.showComment) this.getComments(book.url)
       this.viewerImageList = []
       const loading = ElLoading.service({
         lock: true,
@@ -2183,14 +2244,14 @@ export default defineComponent({
         background: _.includes(this.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
       })
       ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(this.bookDetail))
-      .then(list=>{
-        // this.viewerImageList = list
+      .then(() => {
         this.drawerVisibleViewer = true
+        if (this.setting.keepReadingProgress) this.handleJumpToReadingProgress(book)
       })
-      .catch(err=>{
+      .catch(err => {
         console.log(err)
       })
-      .finally(()=>{
+      .finally(() => {
         loading.close()
       })
     },
@@ -2465,24 +2526,81 @@ export default defineComponent({
       }
     },
     releaseSendImageLock () {
+      if (this.setting.keepReadingProgress) this.saveReadingProgress()
       this.currentImageIndex = 0
+      this.insertEmptyPage = false
+      this.insertEmptyPageIndex = 1
       ipcRenderer.invoke('release-sendimagelock')
     },
-    toNextMangaRandom (event) {
-      event.stopPropagation()
+    toNextMangaRandom () {
       this.releaseSendImageLock()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide && !book.collection))
       setTimeout(()=>this.viewManga(_.sample(activeBookList)), 500)
     },
-    toNextManga (event) {
-      event.stopPropagation()
+    toNextManga (step) {
       this.releaseSendImageLock()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide))
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide && !book.collection))
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
-      if (indexNow === activeBookList.length - 1) {
-        this.printMessage('warning', this.$t('c.lastManga'))
+      let indexNext = indexNow + step
+      if (indexNext >= 0 && indexNext < activeBookList.length) {
+        setTimeout(()=>this.viewManga(activeBookList[indexNext]), 500)
       } else {
-        setTimeout(()=>this.viewManga(activeBookList[indexNow + 1]), 500)
+        this.printMessage('info', 'out of range')
+      }
+    },
+    jumpMangeDetail (step) {
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>!book.hidden && !book.folderHide && !book.collection)
+      let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
+      let indexNext = indexNow + step
+      if (indexNext >= 0 && indexNext < activeBookList.length) {
+        this.openBookDetail(activeBookList[indexNext])
+      } else {
+        this.printMessage('info', 'out of range')
+      }
+    },
+    saveReadingProgress () {
+      let currentImageId
+      if (this.imageStyleType === 'scroll') {
+        let scrollTopValue = document.getElementsByClassName('el-drawer__body')[0].scrollTop
+        _.forIn(this.viewerImageList, (image)=>{
+          if (scrollTopValue < 0) {
+            currentImageId = image.id
+            return false
+          }
+          // 28 is the height of .viewer-image-page
+          if (this.setting.hidePageNumber) {
+            scrollTopValue -= parseFloat(this.returnImageStyle(image).height)
+          } else {
+            scrollTopValue -= parseFloat(this.returnImageStyle(image).height) + 28
+          }
+        })
+      } else if (this.imageStyleType === 'single') {
+        currentImageId = this.viewerImageList[this.currentImageIndex].id
+      } else if (this.imageStyleType === 'double') {
+        currentImageId = this.viewerImageListDouble[this.currentImageIndex].page[0].id
+      }
+      this.viewerReadingProgress.unshift({bookId: this.bookDetail.id, pageId: currentImageId})
+      localStorage.setItem('viewerReadingProgress', JSON.stringify(this.viewerReadingProgress.slice(0, 1000)))
+    },
+    async handleJumpToReadingProgress (book) {
+      let findProgress = this.viewerReadingProgress.find(progress=>progress.bookId === book.id)
+      if (findProgress) {
+        const timer = ms => new Promise(res => setTimeout(res, ms))
+        while (true) {
+          if (this.imageStyleType === 'scroll' || this.imageStyleType === 'single') {
+            if (this.viewerImageList.findIndex(image=>image.id === findProgress.pageId) >= 0) {
+              this.handleClickThumbnail(findProgress.pageId)
+              break
+            }
+          } else if (this.imageStyleType === 'double') {
+            if (this.viewerImageListDouble.findIndex(imageGroup=>imageGroup.page.findIndex(page=>page.id === findProgress.pageId) >= 0) >= 0) {
+              this.handleClickThumbnail(findProgress.pageId)
+              break
+            }
+          }
+          if (this.viewerImageList.length > book.pageCount - 5 || this.bookDetail.id !== book.id) break
+          await timer(500)
+        }
       }
     },
 
@@ -2521,6 +2639,7 @@ export default defineComponent({
     },
     forceGeneBookList () {
       this.dialogVisibleSetting = false
+      localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
       ipcRenderer.invoke('force-gene-book-list')
       .then(res=>{
         if (this.sortValue) {
@@ -2842,18 +2961,35 @@ export default defineComponent({
         ]
       })
     },
-
   }
 })
 </script>
 <style lang='stylus'>
 body
   margin: auto
-  width: 98vw
+  width: calc(100vw - 20px)
 #app
   font-family: Avenir, Helvetica, Arial, sans-serif
   text-align: center
   margin-top: 20px
+
+@keyframes striped-flow
+  0%
+    background-position: -100%
+  to
+    background-position: 100%
+
+#progressbar
+  position: fixed
+  top: 0
+  left: 0
+  height: 4px
+  background-color: #67C23A
+  background-image: linear-gradient(45deg,rgba(0,0,0,.1) 25%,transparent 25%,transparent 50%,rgba(0,0,0,.1) 50%,rgba(0,0,0,.1) 75%,transparent 75%,transparent)
+  background-size: 2em 2em
+  animation: striped-flow 3s linear infinite
+  animation-duration: 30s
+  border-radius: 2px
 
 .search-input,
 .function-button
@@ -3176,9 +3312,11 @@ body
 .next-manga-button
   opacity: 0.05
   position: fixed
-  bottom:1em
+  bottom: 1em
   z-index: 10
   transition-delay: 0.2s
+  .el-button
+    --el-button-bg-color: #f0f9eb66
 .next-manga-button:hover
   opacity: 1
 

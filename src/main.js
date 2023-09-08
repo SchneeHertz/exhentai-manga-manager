@@ -24,6 +24,7 @@ app.use(ContextMenu)
 app.use(createI18n({
   locale: 'zh-CN',
   fallbackLocale: 'zh-CN',
+  globalInjection: true,
   messages
 }))
 app.mount('#app')

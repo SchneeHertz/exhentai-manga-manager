@@ -13,6 +13,10 @@
     "postTimeDescend": "上传时间倒序",
     "ratingAscend": "评分正序",
     "ratingDescend": "评分倒序",
+    "artistAscend": "作者正序",
+    "artistDescend": "作者倒序",
+    "titleAscend": "标题正序",
+    "titleDescend": "标题倒序",
     "manageCollection": "编辑合集",
     "addCollection": "新增合集",
     "renameCollection": "重命名合集",
@@ -88,6 +92,7 @@
     "externalViewer": "外置阅读器",
     "general": "常用",
     "advanced": "高级",
+    "previousManga": "上一本",
     "nextManga": "下一本",
     "nextMangaRandom": "下一本(随机)",
     "language": "语言",
@@ -120,7 +125,8 @@
     "fitWidth": "适应宽度",
     "fitHeight": "适应高度",
     "fitWindow": "适应窗口",
-    "defaultExpandTree": "默认展开文件树"
+    "defaultExpandTree": "默认展开文件树",
+    "keepReadingProgress": "保持阅读进度"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",
@@ -134,7 +140,6 @@
     "copyLinkToClipboard": "复制链接到剪贴板",
     "redirect": "转到",
     "inputCategoryName": "请输入类别名",
-    "lastManga": "已经是最后一本",
     "insertEmptyPageInfo": "按/键调整双页排序",
     "notNewVersion": "已是最新版本",
     "newVersion": "新版本: ",

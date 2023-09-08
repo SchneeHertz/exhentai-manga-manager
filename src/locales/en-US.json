@@ -13,6 +13,10 @@
     "postTimeDescend": "PostTime Descend",
     "ratingAscend": "Rating Ascend",
     "ratingDescend": "Rating Descend",
+    "artistAscend": "Artist Ascend",
+    "artistDescend": "Artist Descend",
+    "titleAscend": "Title Ascend",
+    "titleDescend": "Title Descend",
     "manageCollection": "EditCollection",
     "addCollection": "Add Collection",
     "renameCollection": "Rename Collection",
@@ -88,6 +92,7 @@
     "externalViewer": "External Viewer",
     "general": "General",
     "advanced": "Advanced",
+    "previousManga": "Previous Manga",
     "nextManga": "Next Manga",
     "nextMangaRandom": "Next Manga (Random)",
     "language": "Language",
@@ -120,7 +125,8 @@
     "fitWidth": "fit width",
     "fitHeight": "fit height",
     "fitWindow": "fit window",
-    "defaultExpandTree": "Default Expand Tree"
+    "defaultExpandTree": "Default Expand Tree",
+    "keepReadingProgress": "Keep Reading Progress"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
@@ -134,7 +140,6 @@
     "copyLinkToClipboard": "Copy Link to Clipboard",
     "redirect": "Redirect",
     "inputCategoryName": "Please input category name",
-    "lastManga": "This is the last manga",
     "insertEmptyPageInfo": "Press / key to adjust the double page order",
     "notNewVersion": "Not update is available",
     "newVersion": "New Version: ",

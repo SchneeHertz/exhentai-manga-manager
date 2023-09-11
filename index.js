@@ -290,7 +290,6 @@ let loadBookListFromBrFile = async () => {
   try {
     let buffer = await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json.br'))
     let decodeBuffer = await promisify(brotliDecompress)(buffer)
-    await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json'), decodeBuffer.toString(), { encoding: 'utf-8' })
     return JSON.parse(decodeBuffer.toString())
   } catch {
     return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), { encoding: 'utf-8' }))
@@ -298,19 +297,12 @@ let loadBookListFromBrFile = async () => {
 }
 
 const loadBookListFromDatabase = async () => {
-  let bookList = await Manga.findAll({ raw: true })
+  let bookList = await Manga.findAll()
   if (_.isEmpty(bookList)) {
     bookList = await loadLegecyBookListFromFile()
     await Manga.bulkCreate(bookList)
   }
-  _.forEach(bookList, (book) => {
-    try {
-      book.tags = JSON.parse(book.tags)
-    } catch {
-      book.tags = {}
-    }
-  })
-  return bookList
+  return bookList.map(b=>b.toJSON())
 }
 
 const loadLegecyBookListFromFile = async () => {

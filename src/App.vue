@@ -1027,12 +1027,12 @@ export default defineComponent({
   },
   computed: {
     displayBookCount () {
-      return _.sumBy(this.displayBookList, book=>this.isVisibleBook(book) ? 0 : 1)
+      return _.sumBy(this.displayBookList, book=>this.isVisibleBook(book) ? 1 : 0)
     },
     displaySelectCollectionList: {
       get () {
-        let list = this.selectCollectionObject.list.map(id=>{
-          let findBook = _.find(this.bookList, {id})
+        let list = this.selectCollectionObject.list.map(hash_id=>{
+          let findBook = _.find(this.bookList, book => book.hash === hash_id || book.id === hash_id)
           if (findBook) {
             return findBook
           } else {
@@ -1042,7 +1042,7 @@ export default defineComponent({
         return _.compact(list)
       },
       set (val) {
-        let list = val.map(b=>b.id)
+        let list = val.map(b=>b.hash)
         this.selectCollectionObject.list = list
       }
     },

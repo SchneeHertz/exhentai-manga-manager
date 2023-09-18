@@ -320,14 +320,18 @@ const loadBookListFromDatabase = async () => {
   }
   let metadataList = await Metadata.findAll()
   metadataList = metadataList.map(m=>m.toJSON())
-  bookList.forEach(async book => {
+  let bookListLength = bookList.length
+  for (let i = 0; i < bookListLength; i++) {
+    let book = bookList[i]
     let findMetadata = metadataList.find(m=>m.hash === book.hash)
     if (findMetadata) {
       Object.assign(book, findMetadata)
     } else {
-      await Metadata.create(book)
+      setProgressBar((i + 1) / bookListLength)
+      await Metadata.upsert(book)
     }
-  })
+  }
+  setProgressBar(-1)
   return bookList
 }
 

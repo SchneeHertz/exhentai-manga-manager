@@ -131,7 +131,7 @@
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><BookmarkTwotone /></el-icon>
-            <el-rate v-model="book.rating" allow-half/>
+            <el-rate v-model="book.rating" allow-half disabled/>
           </div>
         </div>
       </el-col>
@@ -1248,7 +1248,7 @@ export default defineComponent({
       let result = []
       let count = 0
       let countIndex = 0
-      _.forIn(list, book=>{
+      _.forEach(list, book=>{
         if (countIndex === index) result.push(book)
         if (this.isVisibleBook(book)) count++
         if (count >= size) {
@@ -1311,10 +1311,10 @@ export default defineComponent({
         this.loadCollectionList()
       })
     },
-    saveBookList () {
+    saveBookList () { // shouldn't use
       let bookList = _.cloneDeep(this.bookList)
       bookList = _.filter(bookList, book=>!book.isCollection)
-      _.forIn(bookList, book=>{
+      _.forEach(bookList, book=>{
         delete book.collected
         delete book.collectionHide
         delete book.folderHide
@@ -1323,47 +1323,6 @@ export default defineComponent({
     },
     saveBook (book) {
       return ipcRenderer.invoke('save-book', _.cloneDeep(book))
-    },
-    loadCollectionList () {
-      ipcRenderer.invoke('load-collection-list')
-      .then(res=>{
-        this.collectionList = res
-        _.forIn(this.collectionList, collection=>{
-          let collectBook = _.compact(collection.list.map(id=>{
-            return _.find(this.bookList, {id})
-          }))
-          collection.list = collectBook.map(book=>book.id)
-          collectBook.map(book=>book.collectionHide = true)
-          let date = _.last(_.compact(_.sortBy(collectBook.map(book=>book.date))))
-          let posted = _.last(_.compact(_.sortBy(collectBook.map(book=>book.posted))))
-          let rating = _.last(_.compact(_.sortBy(collectBook.map(book=>book.rating))))
-          let mtime = _.last(_.compact(_.sortBy(collectBook.map(book=>book.mtime))))
-          let mark = _.some(collectBook, 'mark')
-          let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
-            if (_.isArray(obj) && _.isArray(src)) {
-              return _.uniq(obj.concat(src))
-            } else {
-              return src
-            }
-          })
-          let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
-          let filepath = collectBook.map(book=>book.filepath).join(',')
-          let category = _.uniq(collectBook.map(book=>book.category)).join(',')
-          let status = _.uniq(collectBook.map(book=>book.status)).join(',')
-          if (!_.isEmpty(collectBook)) {
-            this.bookList.push({
-              title: collection.title,
-              id: collection.id,
-              coverPath: collectBook[0].coverPath,
-              date, posted, rating, mtime, mark, tags, title_jpn, category, status,
-              list: collection.list,
-              filepath,
-              isCollection: true
-            })
-          }
-        })
-        this.handleSortChange(this.sortValue)
-      })
     },
     loadTranslationFromEhTagTranslation () {
       let resultObject = {}
@@ -1948,7 +1907,7 @@ export default defineComponent({
     // tag analysis and recommand search
     displayTagGraph () {
       let nodes = []
-      _.forIn(this.bookList, book=>{
+      _.forEach(this.bookList, book=>{
         let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
         let tempNodes = []
         _.forIn(tags, (list, cat)=>{
@@ -1982,11 +1941,11 @@ export default defineComponent({
       this.tagNodeData = _.shuffle(this.tagNodeData)
       let edges = []
       let tempTagGroup = []
-      _.forIn(this.bookList, book=>{
+      _.forEach(this.bookList, book=>{
         let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
         let tempTags = []
         _.forIn(tags, (list, cat)=>{
-          _.forIn(list, tag=>{
+          _.forEach(list, tag=>{
             let foundNode = _.find(this.tagNodeData, {oriLabel: `${cat}##${tag}`})
             if (foundNode) {
               tempTags.push(foundNode.id)
@@ -2129,6 +2088,47 @@ export default defineComponent({
     },
 
     // collection view function
+    loadCollectionList () {
+      ipcRenderer.invoke('load-collection-list')
+      .then(res=>{
+        this.collectionList = res
+        _.forEach(this.collectionList, collection=>{
+          let collectBook = _.compact(collection.list.map(hash_id=>{
+            return _.find(this.bookList, book=>book.id === hash_id || book.hash === hash_id)
+          }))
+          collection.list = collectBook.map(book=>book.hash)
+          collectBook.map(book=>book.collectionHide = true)
+          let date = _.last(_.compact(_.sortBy(collectBook.map(book=>book.date))))
+          let posted = _.last(_.compact(_.sortBy(collectBook.map(book=>book.posted))))
+          let rating = _.last(_.compact(_.sortBy(collectBook.map(book=>book.rating))))
+          let mtime = _.last(_.compact(_.sortBy(collectBook.map(book=>book.mtime))))
+          let mark = _.some(collectBook, 'mark')
+          let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
+            if (_.isArray(obj) && _.isArray(src)) {
+              return _.uniq(obj.concat(src))
+            } else {
+              return src
+            }
+          })
+          let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
+          let filepath = collectBook.map(book=>book.filepath).join(',')
+          let category = _.uniq(collectBook.map(book=>book.category)).join(',')
+          let status = _.uniq(collectBook.map(book=>book.status)).join(',')
+          if (!_.isEmpty(collectBook)) {
+            this.bookList.push({
+              title: collection.title,
+              id: collection.id,
+              coverPath: collectBook?.[0]?.coverPath,
+              date, posted, rating, mtime, mark, tags, title_jpn, category, status,
+              list: collection.list,
+              filepath,
+              isCollection: true
+            })
+          }
+        })
+        this.handleSortChange(this.sortValue)
+      })
+    },
     createCollection () {
       this.editCollectionView = true
       if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
@@ -2174,9 +2174,9 @@ export default defineComponent({
     },
     handleSelectCollectionChange (val) {
       this.selectCollectionObject= _.find(this.collectionList, {id: val})
-      _.forIn(this.bookList, book=>{
+      _.forEach(this.bookList, book=>{
         if (!book.isCollection) {
-          if (this.selectCollectionObject.list.includes(book.id)) {
+          if (this.selectCollectionObject.list.includes(book.id) || this.selectCollectionObject.list.includes(book.hash)) {
             book.collected = true
           } else {
             book.collected = false
@@ -2187,18 +2187,18 @@ export default defineComponent({
     handleClickCollectBadge (book) {
       if (book.collected) {
         book.collected = false
-        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id !== book.id)
+        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id !== book.id || id !== book.hash)
       } else {
-        this.selectCollectionObject.list.push(book.id)
+        this.selectCollectionObject.list.push(book.hash)
         book.collected = true
       }
     },
-    openCollection (book) {
+    openCollection (collection) {
       this.drawerVisibleCollection = true
-      this.openCollectionBookList = _.compact(book.list.map(id=>{
-        return _.find(this.bookList, {id})
+      this.openCollectionBookList = _.compact(collection.list.map(hash_id=>{
+        return _.find(this.bookList, book => book.id === hash_id || book.hash === hash_id)
       }))
-      this.openCollectionTitle = book.title
+      this.openCollectionTitle = collection.title
     },
 
     // detail view function
@@ -2222,10 +2222,12 @@ export default defineComponent({
         .then(()=>{
           this.dialogVisibleBookDetail = false
           if (book.collectionHide) {
-            _.forIn(this.collectionList, collection=>{
-              collection.list = _.filter(collection.list, id=>id !== book.id)
+            _.forEach(this.collectionList, collection=>{
+              collection.list = _.filter(collection.list, hash_id => hash_id !== book.id && hash_id !== book.hash)
             })
-            this.openCollectionBookList = _.filter(this.openCollectionBookList, b=>b.id !== book.id)
+            this.openCollectionBookList = _.filter(this.openCollectionBookList, bookOfCollection => {
+              return bookOfCollection.id !== book.id && bookOfCollection.id !== book.hash
+            })
             this.saveCollection()
           } else {
             this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
@@ -2302,7 +2304,7 @@ export default defineComponent({
       if (this.editingTag) {
         if (!_.has(this.bookDetail, 'tags')) this.bookDetail.tags = {}
         let tempTagGroup = {}
-        _.forIn(this.bookList.map(b=>b.tags), (tagObject)=>{
+        _.forEach(this.bookList.map(b=>b.tags), (tagObject)=>{
           _.forIn(tagObject, (tagArray, tagCat)=>{
             if (_.isArray(tagArray)) {
               if (_.has(tempTagGroup, tagCat)) {
@@ -2484,7 +2486,7 @@ export default defineComponent({
       this.showThumbnail = false
       let scrollTopValue = 0
       if (this.imageStyleType === 'scroll') {
-        _.forIn(this.viewerImageList, (image)=>{
+        _.forEach(this.viewerImageList, (image)=>{
           if (image.id === id) return false
           // 28 is the height of .viewer-image-page
           if (this.setting.hidePageNumber) {
@@ -2497,9 +2499,9 @@ export default defineComponent({
       } else if (this.imageStyleType === 'single') {
         this.currentImageIndex = _.findIndex(this.viewerImageList, {id: id})
       } else if (this.imageStyleType === 'double') {
-        _.forIn(this.viewerImageListDouble, (imageGroup, index)=>{
+        _.forEach(this.viewerImageListDouble, (imageGroup, index)=>{
           if (_.find(imageGroup.page, {id: id})) {
-            this.currentImageIndex = +index
+            this.currentImageIndex = index
             return false
           }
         })
@@ -2572,7 +2574,7 @@ export default defineComponent({
       let currentImageId
       if (this.imageStyleType === 'scroll') {
         let scrollTopValue = document.getElementsByClassName('el-drawer__body')[0].scrollTop
-        _.forIn(this.viewerImageList, (image)=>{
+        _.forEach(this.viewerImageList, (image)=>{
           if (scrollTopValue < 0) {
             currentImageId = image.id
             return false
@@ -2761,13 +2763,23 @@ export default defineComponent({
               if (book.collectionInfo) {
                 let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
                 if (foundCollection) {
-                  foundCollection.list = _.uniq([...foundCollection.list, book.id])
+                  if (_.isNumber(book.collectionInfo.index)) {
+                    foundCollection.list[book.collectionInfo.index] = book.hash
+                  } else {
+                    foundCollection.list.push(book.hash)
+                  }
                 } else {
-                  this.collectionList.push({
+                  let collection = {
                     id: book.collectionInfo.id,
                     title: book.collectionInfo.title,
-                    list: [book.id]
-                  })
+                    list: []
+                  }
+                  if (_.isNumber(book.collectionInfo.index)) {
+                    collection.list[book.collectionInfo.index] = book.hash
+                  } else {
+                    collection.list.push(book.hash)
+                  }
+                  this.collectionList.push(collection)
                 }
                 delete book.collectionInfo
               }
@@ -2778,6 +2790,7 @@ export default defineComponent({
             }
             await this.saveBook(book)
           })
+          this.saveCollection()
         } else {
           this.printMessage('info', this.$t('c.canceled'))
         }

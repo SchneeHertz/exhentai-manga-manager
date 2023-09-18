@@ -14,7 +14,7 @@ const { open } = require('sqlite')
 const superagent = require('superagent')
 require('superagent-proxy')(superagent)
 const windowStateKeeper = require('electron-window-state')
-const { Manga } = require('./fileLoader/database')
+const { prepareMangaModel, prepareMetadataModel } = require('./fileLoader/database')
 
 const { getFolderlist, solveBookTypeFolder, getImageListFromFolder } = require('./fileLoader/folder')
 const { getArchivelist, solveBookTypeArchive, getImageListFromArchive } = require('./fileLoader/archive')
@@ -74,6 +74,9 @@ try {
   }
   fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 }
+
+const Manga = prepareMangaModel(path.join(STORE_PATH, './database.sqlite'))
+let Metadata = prepareMetadataModel(path.join(setting.library, './metadata.sqlite'))
 
 let logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
 let logStdout = process.stdout
@@ -253,6 +256,7 @@ const createWindow = () => {
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
 app.whenReady().then(async () => {
   await Manga.sync({ alter: true })
+  await Metadata.sync({ alter: true })
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
   mainWindow = createWindow()
@@ -296,15 +300,6 @@ let loadBookListFromBrFile = async () => {
   }
 }
 
-const loadBookListFromDatabase = async () => {
-  let bookList = await Manga.findAll()
-  if (_.isEmpty(bookList)) {
-    bookList = await loadLegecyBookListFromFile()
-    await Manga.bulkCreate(bookList)
-  }
-  return bookList.map(b=>b.toJSON())
-}
-
 const loadLegecyBookListFromFile = async () => {
   let bookList = await loadBookListFromBrFile()
   try {
@@ -316,7 +311,28 @@ const loadLegecyBookListFromFile = async () => {
   return bookList
 }
 
-let saveBookListToBrFile = async (data) => {
+const loadBookListFromDatabase = async () => {
+  let bookList = await Manga.findAll()
+  bookList = bookList.map(b=>b.toJSON())
+  if (_.isEmpty(bookList)) {
+    bookList = await loadLegecyBookListFromFile()
+    await saveBookListToDatabase(bookList)
+  }
+  let metadataList = await Metadata.findAll()
+  metadataList = metadataList.map(m=>m.toJSON())
+  bookList.forEach(async book => {
+    let findMetadata = metadataList.find(m=>m.hash === book.hash)
+    if (findMetadata) {
+      Object.assign(book, findMetadata)
+    } else {
+      await Metadata.create(book)
+    }
+  })
+  return bookList
+}
+
+
+const saveBookListToBrFile = async (data) => {
   console.log('Saved BookList')
   let buffer = await promisify(brotliCompress)(JSON.stringify(data))
   return await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json.br'), buffer)
@@ -330,6 +346,7 @@ const saveBookListToDatabase = async (data) => {
 
 const saveBookToDatabase = async (book) => {
   await Manga.update(book, { where: { id: book.id } })
+  await Metadata.update(book, { where: { hash: book.hash } })
   console.log(`Saved ${book.title}`)
 }
 
@@ -573,7 +590,7 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
       if (targetFilePath && coverPath) {
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         _.assign(book, { type, coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
-        await Manga.update(book, { where: { id: book.id } })
+        await saveBookToDatabase(book)
         // sendMessageToWebContents(`patch ${filepath}, ${i + 1} of ${bookListLength}`)
       }
       if ((i + 1) % 50 === 0) {
@@ -650,6 +667,7 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
   }
 })
 
+// shouldn't use
 ipcMain.handle('save-book-list', async (event, list) => {
   return await saveBookListToDatabase(list)
 })
@@ -838,13 +856,17 @@ ipcMain.handle('load-setting', async (event, arg) => {
 })
 
 ipcMain.handle('save-setting', async (event, receiveSetting) => {
-  setting = receiveSetting
-  if (setting.proxy) {
+  if (receiveSetting.proxy) {
     await session.defaultSession.setProxy({
       mode: 'fixed_servers',
-      proxyRules: setting.proxy
+      proxyRules: receiveSetting.proxy
     })
   }
+  if (receiveSetting.library !== setting.library) {
+    Metadata = prepareMetadataModel(path.join(receiveSetting.library, './metadata.sqlite'))
+    await Metadata.sync({ alter: true })
+  }
+  setting = receiveSetting
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 })
 
@@ -856,13 +878,14 @@ ipcMain.handle('export-database', async (event, arg) => {
   } catch (err) {
     console.log(err)
   }
-  _.forIn(collectionList, collection => {
-    _.forIn(collection.list, id => {
-      let foundBook = _.find(bookList, { id })
+  _.forEach(collectionList, collection => {
+    _.forEach(collection.list, (hash_id, index) => {
+      let foundBook = _.find(bookList, book => book.id === hash_id || book.hash === hash_id)
       if (foundBook) {
         foundBook.collectionInfo = {
           id: collection.id,
-          title: collection.title
+          title: collection.title,
+          index
         }
       }
     })
@@ -927,7 +950,7 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
             metadata.filesize = +metadata.filesize
             metadata.url = `https://exhentai.org/g/${metadata.gid}/${metadata.token}/`
             _.assign(book, _.pick(metadata, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url']), { status: 'tagged' })
-            await Manga.update(book, { where: { id: book.id } })
+            await saveBookToDatabase(book)
             // sendMessageToWebContents(`${i + 1} of ${bookListLength}, found metadata for ${book.filepath}`)
           } else {
             // sendMessageToWebContents(`${i + 1} of ${bookListLength}, metadata not found for ${book.filepath}`)

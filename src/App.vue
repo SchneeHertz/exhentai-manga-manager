@@ -1196,9 +1196,9 @@ export default defineComponent({
           this.displayBookList.forEach(book => {
             if (book.status === 'non-tag' && !book.folderHide) {
               book.status = 'tag-failed'
+              this.saveBook(book)
             }
           })
-          this.saveBookList()
           break
       }
     })

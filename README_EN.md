@@ -7,6 +7,12 @@
 **Tag-based management, reading manga downloaded from ExHentai**
 
 <p>
+  <a href="https://discord.gg/BS6HU3ZE">
+    <img src="https://img.shields.io/badge/Discord-purple?style=flat-square" alt="Discord" />
+  </a>
+</p>
+
+<p>
   <a href="https://www.electronjs.org/">
     <img src="https://img.shields.io/badge/Electron-blue?style=flat-square" alt="Electron" />
   </a>

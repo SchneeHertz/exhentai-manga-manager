@@ -16,6 +16,9 @@
   },
   "build": {
     "appId": "electron.e-hentai.tagger",
+    "directories": {
+      "output": "out"
+    },
     "files": [
       "dist/index.html",
       "dist/assets/*",
@@ -35,7 +38,8 @@
     ],
     "win": {
       "target": [
-        "nsis"
+        "nsis",
+        "zip"
       ],
       "icon": "public/icon.png"
     },

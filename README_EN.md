@@ -35,6 +35,7 @@
 ![thumbnails.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/thumbnails.jpg)
 
 **Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)**
+
 **Welcome to the [Discord](https://discord.gg/BS6HU3ZE)**
 
 ## Features

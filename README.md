@@ -7,6 +7,12 @@
 **标签化管理, 阅读从ExHentai下载的短篇漫画**
 
 <p>
+  <a href="https://discord.gg/BS6HU3ZE">
+    <img src="https://img.shields.io/badge/Discord-purple?style=flat-square" alt="Discord" />
+  </a>
+</p>
+
+<p>
   <a href="https://www.electronjs.org/">
     <img src="https://img.shields.io/badge/Electron-blue?style=flat-square" alt="Electron" />
   </a>
@@ -29,6 +35,8 @@
 ![thumbnails.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/thumbnails.jpg)
 
 **使用说明见 [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明)**
+
+**欢迎加入[Discord讨论组](https://discord.gg/BS6HU3ZE)**
 
 ## 功能
 - 从一个文件夹建立漫画库

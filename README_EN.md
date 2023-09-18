@@ -7,6 +7,12 @@
 **Tag-based management, reading manga downloaded from ExHentai**
 
 <p>
+  <a href="https://discord.gg/BS6HU3ZE">
+    <img src="https://img.shields.io/badge/Discord-purple?style=flat-square" alt="Discord" />
+  </a>
+</p>
+
+<p>
   <a href="https://www.electronjs.org/">
     <img src="https://img.shields.io/badge/Electron-blue?style=flat-square" alt="Electron" />
   </a>
@@ -29,6 +35,8 @@
 ![thumbnails.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/thumbnails.jpg)
 
 **Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)**
+
+**Welcome to the [Discord](https://discord.gg/BS6HU3ZE)**
 
 ## Features
 - Create a manga library from a folder

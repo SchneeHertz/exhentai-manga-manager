@@ -96,7 +96,7 @@
           <!-- show book card when book isn't a collection, book isn't hidden because collected,
             and book isn't hidden by user except sorting by onlyHiddenBook
             and book isn't hidden by folder select -->
-          <div class="book-card" v-if="!book.collection && !book.hidden && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide">
+          <div class="book-card" v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide">
             <p class="book-title"
               @click="openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
@@ -124,9 +124,9 @@
               :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)"
             >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBook(book)"/>
+            <el-rate v-model="book.rating"  v-if="!book.isCollection" allow-half @change="saveBook(book)"/>
           </div>
-          <div class="book-card" v-if="book.collection && !book.folderHide">
+          <div class="book-card" v-if="book.isCollection && !book.folderHide">
             <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
@@ -142,7 +142,7 @@
           v-for="book in chunkDisplayBookList" :key="book.id"
           class="book-add-badge"
           @click="handleClickCollectBadge(book)"
-          v-show="!book.collection && !book.folderHide"
+          v-show="!book.isCollection && !book.folderHide && !book.hiddenBook"
         >
           <div class="book-collect-card">
             <p class="book-collect-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
@@ -402,7 +402,7 @@
           :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
           @click="searchFromTag(book.status)"
         >{{book.status}}</el-tag>
-        <el-rate v-model="book.rating"  v-if="!book.collection" allow-half @change="saveBook(book)"/>
+        <el-rate v-model="book.rating"  v-if="!book.isCollection" allow-half @change="saveBook(book)"/>
       </div>
     </el-drawer>
     <el-dialog v-model="dialogVisibleBookDetail"
@@ -1027,7 +1027,7 @@ export default defineComponent({
   },
   computed: {
     displayBookCount () {
-      return _.sumBy(this.displayBookList, book=>(book.hidden || book.folderHide) ? 0 : 1)
+      return _.sumBy(this.displayBookList, book=>this.isVisibleBook(book) ? 0 : 1)
     },
     displaySelectCollectionList: {
       get () {
@@ -1194,7 +1194,7 @@ export default defineComponent({
           break
         case 'tag-fail-non-tag-book':
           this.displayBookList.forEach(book => {
-            if (book.status === 'non-tag' && !book.folderHide) {
+            if (book.status === 'non-tag' && this.isBook(book) && this.isVisibleBook(book)) {
               book.status = 'tag-failed'
               this.saveBook(book)
             }
@@ -1248,9 +1248,9 @@ export default defineComponent({
       let result = []
       let count = 0
       let countIndex = 0
-      _.forIn(list, element=>{
-        if (countIndex === index) result.push(element)
-        if (!element.hidden && !element.folderHide) count++
+      _.forIn(list, book=>{
+        if (countIndex === index) result.push(book)
+        if (this.isVisibleBook(book)) count++
         if (count >= size) {
           countIndex++
           count = 0
@@ -1313,10 +1313,10 @@ export default defineComponent({
     },
     saveBookList () {
       let bookList = _.cloneDeep(this.bookList)
-      bookList = _.filter(bookList, book=>!book.collection)
+      bookList = _.filter(bookList, book=>!book.isCollection)
       _.forIn(bookList, book=>{
         delete book.collected
-        delete book.hidden
+        delete book.collectionHide
         delete book.folderHide
       })
       return ipcRenderer.invoke('save-book-list', bookList)
@@ -1333,7 +1333,7 @@ export default defineComponent({
             return _.find(this.bookList, {id})
           }))
           collection.list = collectBook.map(book=>book.id)
-          collectBook.map(book=>book.hidden = true)
+          collectBook.map(book=>book.collectionHide = true)
           let date = _.last(_.compact(_.sortBy(collectBook.map(book=>book.date))))
           let posted = _.last(_.compact(_.sortBy(collectBook.map(book=>book.posted))))
           let rating = _.last(_.compact(_.sortBy(collectBook.map(book=>book.rating))))
@@ -1358,7 +1358,7 @@ export default defineComponent({
               date, posted, rating, mtime, mark, tags, title_jpn, category, status,
               list: collection.list,
               filepath,
-              collection: true
+              isCollection: true
             })
           }
         })
@@ -1398,6 +1398,16 @@ export default defineComponent({
         default:
           return book.title_jpn || book.title || this.returnFileName(book)
       }
+    },
+    isBook (book) {
+      // isCollection mean book is collection
+      return !book.isCollection
+    },
+    isVisibleBook (book) {
+      // folderHide mean book hide by not selecting at folder tree
+      // collectionHide mean book hide because book in collection
+      // hiddenBook mean book hide by user operation
+      return !book.folderHide && !book.collectionHide && !book.hiddenBook
     },
 
     // metadata
@@ -1673,7 +1683,7 @@ export default defineComponent({
           this.chunkList()
           break
         case 'collection':
-          this.displayBookList = _.filter(bookList, 'collection')
+          this.displayBookList = _.filter(bookList, 'isCollection')
           this.chunkList()
           break
         case 'hidden':
@@ -1918,7 +1928,7 @@ export default defineComponent({
     geneFolderTree () {
       this.sideVisibleFolderTree = !this.sideVisibleFolderTree
       if (this.sideVisibleFolderTree) {
-        let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.collection)
+        let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.isCollection)
         ipcRenderer.invoke('get-folder-tree', bookList)
         .then(data=>{
           this.folderTreeData = data
@@ -2165,7 +2175,7 @@ export default defineComponent({
     handleSelectCollectionChange (val) {
       this.selectCollectionObject= _.find(this.collectionList, {id: val})
       _.forIn(this.bookList, book=>{
-        if (!book.collection) {
+        if (!book.isCollection) {
           if (this.selectCollectionObject.list.includes(book.id)) {
             book.collected = true
           } else {
@@ -2211,7 +2221,7 @@ export default defineComponent({
         ipcRenderer.invoke('delete-local-book', book.filepath)
         .then(()=>{
           this.dialogVisibleBookDetail = false
-          if (book.hidden) {
+          if (book.collectionHide) {
             _.forIn(this.collectionList, collection=>{
               collection.list = _.filter(collection.list, id=>id !== book.id)
             })
@@ -2534,12 +2544,12 @@ export default defineComponent({
     },
     toNextMangaRandom () {
       this.releaseSendImageLock()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide && !book.collection))
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>this.isBook(book) && this.isVisibleBook(book))
       setTimeout(()=>this.viewManga(_.sample(activeBookList)), 500)
     },
     toNextManga (step) {
       this.releaseSendImageLock()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>(!book.hidden && !book.folderHide && !book.collection))
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>this.isBook(book) && this.isVisibleBook(book))
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       let indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {
@@ -2549,7 +2559,7 @@ export default defineComponent({
       }
     },
     jumpMangeDetail (step) {
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>!book.hidden && !book.folderHide && !book.collection)
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>book=>this.isBook(book) && this.isVisibleBook(book))
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       let indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {

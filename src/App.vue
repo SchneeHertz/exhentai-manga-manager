@@ -594,6 +594,14 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
+                <el-input v-model="setting.metadataPath" :placeholder="$t('m.metadataPathDefault')">
+                  <template #prepend><span class="setting-label">{{$t('m.metadataPath')}}</span></template>
+                  <template #append><el-button @click="selectMetadataPath">{{$t('m.select')}}</el-button></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
                 <el-input v-model="setting.imageExplorer" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.imageViewer')}}</span></template>
                   <template #append><el-button @click="selectImageExplorerPath">{{$t('m.select')}}</el-button></template>
@@ -2640,6 +2648,13 @@ export default defineComponent({
       ipcRenderer.invoke('select-folder')
       .then(res=>{
         this.setting.library = res
+        this.saveSetting()
+      })
+    },
+    selectMetadataPath () {
+      ipcRenderer.invoke('select-folder')
+      .then(res=>{
+        this.setting.metadataPath = res
         this.saveSetting()
       })
     },

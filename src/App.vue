@@ -1027,7 +1027,10 @@ export default defineComponent({
   },
   computed: {
     displayBookCount () {
-      return _.sumBy(this.displayBookList, book=>this.isVisibleBook(book) ? 1 : 0)
+      if (this.sortValue === 'hidden') {
+        return _.sumBy(this.displayBookList, book => book.hiddenBook ? 1 : 0)
+      }
+      return _.sumBy(this.displayBookList, book => this.isVisibleBook(book) ? 1 : 0)
     },
     displaySelectCollectionList: {
       get () {
@@ -2187,7 +2190,7 @@ export default defineComponent({
     handleClickCollectBadge (book) {
       if (book.collected) {
         book.collected = false
-        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id !== book.id || id !== book.hash)
+        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id !== book.id && id !== book.hash)
       } else {
         this.selectCollectionObject.list.push(book.hash)
         book.collected = true

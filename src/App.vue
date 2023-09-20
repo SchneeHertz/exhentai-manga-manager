@@ -1238,13 +1238,13 @@ export default defineComponent({
             this.currentImageIndex = 100000
           }
         } else {
-          if (event.key === 'ArrowUp') {
+          if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
             if (event.ctrlKey) {
               document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 10)
             } else {
               document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 1.2)
             }
-          } else if (event.key === 'ArrowDown') {
+          } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
             if (event.ctrlKey) {
               document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 10)
             } else {

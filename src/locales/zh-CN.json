@@ -52,6 +52,8 @@
     "category": "类别",
     "setting": "设置",
     "library": "库文件夹",
+    "metadataPath": "元数据存放目录",
+    "metadataPathDefault": "默认为Roaming文件夹",
     "select": "选择",
     "imageViewer": "外置阅读器",
     "requestGap": "请求间隔(毫秒)",

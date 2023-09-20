@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer, clipboard, nativeImage } = require('electron')
+const { contextBridge, ipcRenderer, clipboard, nativeImage, webFrame } = require('electron')
 
 contextBridge.exposeInMainWorld('ipcRenderer', {
   invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
@@ -8,5 +8,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 contextBridge.exposeInMainWorld('electronFunction', {
   'copy-image-to-clipboard': (filepath)=>clipboard.writeImage(nativeImage.createFromPath(filepath)),
   'copy-text-to-clipboard': (text)=>clipboard.writeText(text),
-  'read-text-from-clipboard': ()=>clipboard.readText()
+  'read-text-from-clipboard': ()=>clipboard.readText(),
+  'get-zoom-level': ()=>webFrame.getZoomLevel(),
+  'set-zoom-level': (level)=>webFrame.setZoomLevel(level)
 })

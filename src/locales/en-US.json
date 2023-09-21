@@ -52,6 +52,8 @@
     "category": "Category",
     "setting": "Setting",
     "library": "Library Folder",
+    "metadataPath": "Metadata Path",
+    "metadataPathDefault": "Default as Roaming Folder",
     "select": "Select",
     "imageViewer": "External Viewer",
     "requestGap": "Request Gap(ms)",

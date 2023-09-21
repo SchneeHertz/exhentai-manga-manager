@@ -47,6 +47,7 @@ try {
   setting = {
     proxy: undefined,
     library: app.getPath('downloads'),
+    metadataPath: undefined,
     imageExplorer: '\"C:\\Windows\\explorer.exe\"',
     pageSize: 10,
     loadOnStart: false,
@@ -76,7 +77,13 @@ try {
 }
 
 const Manga = prepareMangaModel(path.join(STORE_PATH, './database.sqlite'))
-let Metadata = prepareMetadataModel(path.join(setting.library, './metadata.sqlite'))
+let metadataSqliteFile
+if (setting.metadataPath) {
+  metadataSqliteFile = path.join(setting.metadataPath, './metadata.sqlite')
+} else {
+  metadataSqliteFile = path.join(STORE_PATH, './metadata.sqlite')
+}
+let Metadata = prepareMetadataModel(metadataSqliteFile)
 
 let logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
 let logStdout = process.stdout
@@ -866,8 +873,8 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
       proxyRules: receiveSetting.proxy
     })
   }
-  if (receiveSetting.library !== setting.library) {
-    Metadata = prepareMetadataModel(path.join(receiveSetting.library, './metadata.sqlite'))
+  if (receiveSetting.metadataPath !== setting.metadataPath) {
+    Metadata = prepareMetadataModel(path.join(receiveSetting.metadataPath, './metadata.sqlite'))
     await Metadata.sync({ alter: true })
   }
   setting = receiveSetting

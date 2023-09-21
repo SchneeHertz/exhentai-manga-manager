@@ -124,7 +124,7 @@
               :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)"
             >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating"  v-if="!book.isCollection" allow-half @change="saveBook(book)"/>
+            <el-rate v-model="book.rating" allow-half @change="saveBook(book)"/>
           </div>
           <div class="book-card" v-if="book.isCollection && !book.folderHide">
             <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
@@ -594,6 +594,14 @@
             </el-col>
             <el-col :span="24">
               <div class="setting-line">
+                <el-input v-model="setting.metadataPath" :placeholder="$t('m.metadataPathDefault')">
+                  <template #prepend><span class="setting-label">{{$t('m.metadataPath')}}</span></template>
+                  <template #append><el-button @click="selectMetadataPath">{{$t('m.select')}}</el-button></template>
+                </el-input>
+              </div>
+            </el-col>
+            <el-col :span="24">
+              <div class="setting-line">
                 <el-input v-model="setting.imageExplorer" @change="saveSetting">
                   <template #prepend><span class="setting-label">{{$t('m.imageViewer')}}</span></template>
                   <template #append><el-button @click="selectImageExplorerPath">{{$t('m.select')}}</el-button></template>
@@ -1027,7 +1035,10 @@ export default defineComponent({
   },
   computed: {
     displayBookCount () {
-      return _.sumBy(this.displayBookList, book=>this.isVisibleBook(book) ? 1 : 0)
+      if (this.sortValue === 'hidden') {
+        return _.sumBy(this.displayBookList, book => book.hiddenBook ? 1 : 0)
+      }
+      return _.sumBy(this.displayBookList, book => this.isVisibleBook(book) ? 1 : 0)
     },
     displaySelectCollectionList: {
       get () {
@@ -1159,6 +1170,8 @@ export default defineComponent({
     this.sortValue = localStorage.getItem('sortValue')
     this.viewerReadingProgress = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
     window.addEventListener('keydown', this.resolveKey)
+    window.addEventListener('wheel', this.resolveWheel)
+    window.addEventListener('mousedown', this.resolveMouseDown)
     ipcRenderer.on('send-action', (event, arg)=>{
       switch (arg.action) {
         case 'setting':
@@ -1205,6 +1218,7 @@ export default defineComponent({
   },
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
+    window.removeEventListener('wheel', this.resolveWheel)
   },
   methods: {
     // base function
@@ -1224,17 +1238,17 @@ export default defineComponent({
             this.currentImageIndex = 100000
           }
         } else {
-          if (event.key === 'ArrowUp') {
+          if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
             if (event.ctrlKey) {
-              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 100)
-            } else {
               document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 10)
-            }
-          } else if (event.key === 'ArrowDown') {
-            if (event.ctrlKey) {
-              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 100)
             } else {
+              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 1.2)
+            }
+          } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+            if (event.ctrlKey) {
               document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 10)
+            } else {
+              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 1.2)
             }
           } else if (event.key === 'Home') {
             document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
@@ -1242,6 +1256,21 @@ export default defineComponent({
             document.getElementsByClassName('el-drawer__body')[0].scrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollHeight
           }
         }
+      }
+    },
+    resolveWheel (event) {
+      if (event.ctrlKey) {
+        let level = electronFunction['get-zoom-level']()
+        if (event.deltaY > 0) {
+          electronFunction['set-zoom-level'](level - 1)
+        } else {
+          electronFunction['set-zoom-level'](level + 1)
+        }
+      }
+    },
+    resolveMouseDown (event) {
+      if (event.button === 3) {
+        document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
       }
     },
     customChunk (list, size, index) {
@@ -2187,7 +2216,7 @@ export default defineComponent({
     handleClickCollectBadge (book) {
       if (book.collected) {
         book.collected = false
-        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id !== book.id || id !== book.hash)
+        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id !== book.id && id !== book.hash)
       } else {
         this.selectCollectionObject.list.push(book.hash)
         book.collected = true
@@ -2640,6 +2669,13 @@ export default defineComponent({
       ipcRenderer.invoke('select-folder')
       .then(res=>{
         this.setting.library = res
+        this.saveSetting()
+      })
+    },
+    selectMetadataPath () {
+      ipcRenderer.invoke('select-folder')
+      .then(res=>{
+        this.setting.metadataPath = res
         this.saveSetting()
       })
     },
@@ -3283,7 +3319,7 @@ body
 .viewer-close-button
   position: absolute
   top: 16px
-  right: 27px
+  right: 44px
   z-index: 10
   .el-icon
     width: 32px

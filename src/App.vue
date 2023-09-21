@@ -3318,8 +3318,8 @@ body
 
 .viewer-close-button
   position: absolute
-  top: 16px
-  right: 44px
+  top: 28px
+  right: 25px
   z-index: 10
   .el-icon
     width: 32px

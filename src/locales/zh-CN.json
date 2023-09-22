@@ -70,7 +70,7 @@
     "batchGetExMetadata": "批量获取EX元数据",
     "exportMetadata": "导出元数据",
     "importMetadata": "导入元数据",
-    "importMetadatafromSqlite": "从Sqlite导入",
+    "importMetadatafromSqlite": "导入api_dump.sqlite",
     "manualScan": "手动扫描",
     "onStartScan": "启动时扫描",
     "comment": "评论",

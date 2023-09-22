@@ -70,7 +70,7 @@
     "batchGetExMetadata": "BatchGetExMetadata",
     "exportMetadata": "Export Metadata",
     "importMetadata": "Import Metadata",
-    "importMetadatafromSqlite": "Import from Sqlite",
+    "importMetadatafromSqlite": "Import api_dump.sqlite",
     "manualScan": "Manual Scan",
     "onStartScan": "Scan on Start",
     "comment": "Comment",

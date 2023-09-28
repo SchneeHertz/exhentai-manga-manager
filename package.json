@@ -56,9 +56,9 @@
     "iconv-lite": "^0.6.3",
     "lodash": "^4.17.21",
     "nanoid": "^3.3.2",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.7.0",
     "sequelize": "^6.32.1",
-    "sharp": "^0.30.3",
+    "sharp": "^0.32.6",
     "sqlite": "^4.1.2",
     "sqlite3": "^5.1.6"
   },

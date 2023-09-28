@@ -209,6 +209,7 @@
         <el-select
           v-model="imageStyleType"
           size="small"
+          @focus="getCurrentImageId"
           @change="saveImageStyleType"
           class="viewer-mode"
           ref="viewer-mode"
@@ -221,7 +222,7 @@
         <el-select
           v-model="imageStyleFit"
           size="small"
-          @change="saveImageStyleType"
+          @change="saveImageStyleFit"
           class="viewer-image-fit"
           ref="viewer-image-fit"
           v-show="imageStyleType !== 'scroll' && showThumbnail === false"
@@ -420,7 +421,7 @@
             <img
               class="book-detail-cover"
               :src="bookDetail.coverPath" @click="viewManga(bookDetail)"
-              @contextmenu="onMangaImageContextMenu($event, bookDetail.coverPath)"
+              @contextmenu="openThumbnailView(bookDetail)"
             />
             <el-icon
               :size="30"
@@ -995,6 +996,7 @@ export default defineComponent({
       imageStyleType: 'scroll',
       imageStyleFit: 'window',
       _currentImageIndex: 0,
+      currentImageId: undefined,
       storeDrawerScrollTop: undefined,
       insertEmptyPage: false,
       insertEmptyPageIndex: 1,
@@ -1129,12 +1131,14 @@ export default defineComponent({
         } else {
           listLength = this.viewerImageListDouble.length
         }
-        if (val < 0) {
-          this._currentImageIndex = 0
-        } else if (val > listLength - 1 && listLength >= 1) {
-          this._currentImageIndex = listLength - 1
-        } else {
-          this._currentImageIndex = val
+        if (Number.isInteger(val)) {
+          if (val < 0) {
+            this._currentImageIndex = 0
+          } else if (val > listLength - 1 && listLength >= 1) {
+            this._currentImageIndex = listLength - 1
+          } else {
+            this._currentImageIndex = val
+          }
         }
       }
     }
@@ -2287,7 +2291,7 @@ export default defineComponent({
       ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(this.bookDetail))
       .then(() => {
         this.drawerVisibleViewer = true
-        if (this.setting.keepReadingProgress) this.handleJumpToReadingProgress(book)
+        if (this.setting.keepReadingProgress && !this.showThumbnail) this.handleJumpToReadingProgress(book)
       })
       .catch(err => {
         console.log(err)
@@ -2295,6 +2299,10 @@ export default defineComponent({
       .finally(() => {
         loading.close()
       })
+    },
+    openThumbnailView (book) {
+      this.showThumbnail = true
+      this.viewManga(book)
     },
     triggerShowComment () {
       if (this.showComment) {
@@ -2490,11 +2498,16 @@ export default defineComponent({
       }
     },
     saveImageStyleType () {
-      this.currentImageIndex = 0
-      setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
-      localStorage.setItem('imageStyleType', this.imageStyleType)
-      localStorage.setItem('imageStyleFit', this.imageStyleFit)
       if (this.imageStyleType === 'double') this.printMessage('info', this.$t('c.insertEmptyPageInfo'))
+      localStorage.setItem('imageStyleType', this.imageStyleType)
+      setTimeout(()=>{
+        this.handleClickThumbnail(this.currentImageId)
+        document.querySelector('.viewer-close-button').focus()
+      }, 500)
+    },
+    saveImageStyleFit () {
+      localStorage.setItem('imageStyleFit', this.imageStyleFit)
+      setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
     },
     switchThumbnail (val) {
       setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
@@ -2516,7 +2529,10 @@ export default defineComponent({
       let scrollTopValue = 0
       if (this.imageStyleType === 'scroll') {
         _.forEach(this.viewerImageList, (image)=>{
-          if (image.id === id) return false
+          if (image.id === id) {
+            this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
+            return false
+          }
           // 28 is the height of .viewer-image-page
           if (this.setting.hidePageNumber) {
             scrollTopValue += parseFloat(this.returnImageStyle(image).height)
@@ -2524,7 +2540,6 @@ export default defineComponent({
             scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
           }
         })
-        this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
       } else if (this.imageStyleType === 'single') {
         this.currentImageIndex = _.findIndex(this.viewerImageList, {id: id})
       } else if (this.imageStyleType === 'double') {
@@ -2599,7 +2614,7 @@ export default defineComponent({
         this.printMessage('info', 'out of range')
       }
     },
-    saveReadingProgress () {
+    getCurrentImageId () {
       let currentImageId
       if (this.imageStyleType === 'scroll') {
         let scrollTopValue = document.getElementsByClassName('el-drawer__body')[0].scrollTop
@@ -2620,6 +2635,11 @@ export default defineComponent({
       } else if (this.imageStyleType === 'double') {
         currentImageId = this.viewerImageListDouble[this.currentImageIndex].page[0].id
       }
+      this.currentImageId = currentImageId
+      return currentImageId
+    },
+    saveReadingProgress () {
+      let currentImageId = this.getCurrentImageId()
       let currentImageIndex = this.viewerImageList.findIndex(image=>image.id === currentImageId)
       if (currentImageIndex > this.bookDetail.pageCount - 6) {
         currentImageId = this.viewerImageList[0].id
@@ -2899,12 +2919,6 @@ export default defineComponent({
             label: this.$t('m.hideManga') + "/" + this.$t('m.showManga'),
             onClick: () => {
               this.triggerHiddenBook(book)
-            }
-          },
-          {
-            label: this.$t('c.copyImageToClipboard'),
-            onClick: () => {
-              electronFunction['copy-image-to-clipboard'](book.coverPath)
             }
           },
           {
@@ -3318,8 +3332,8 @@ body
 
 .viewer-close-button
   position: absolute
-  top: 16px
-  right: 44px
+  top: 28px
+  right: 25px
   z-index: 10
   .el-icon
     width: 32px

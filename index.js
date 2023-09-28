@@ -11,8 +11,8 @@ const { exec } = require('child_process')
 const { createHash } = require('crypto')
 const sqlite3 = require('sqlite3')
 const { open } = require('sqlite')
-const superagent = require('superagent')
-require('superagent-proxy')(superagent)
+const fetch = require('node-fetch')
+const { HttpsProxyAgent } = require('https-proxy-agent')
 const windowStateKeeper = require('electron-window-state')
 const { prepareMangaModel, prepareMetadataModel } = require('./fileLoader/database')
 
@@ -630,22 +630,26 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
 
 ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
   if (setting.proxy) {
-    return await superagent
-      .get(url)
-      .set('Cookie', cookie)
-      .proxy(setting.proxy)
-      .then(res => {
-        return res.text
+    return await fetch(url, {
+      headers: {
+        Cookie: cookie
+      },
+      agent: new HttpsProxyAgent(setting.proxy)
+    })
+      .then(res=>{
+        return res.text()
       })
       .catch(e => {
         sendMessageToWebContents(`get ex page failed because ${e}`)
       })
   } else {
-    return await superagent
-      .get(url)
-      .set('Cookie', cookie)
-      .then(res => {
-        return res.text
+    return await fetch(url, {
+      headers: {
+        Cookie: cookie
+      }
+    })
+      .then(res=>{
+        return res.text()
       })
       .catch(e => {
         sendMessageToWebContents(`get ex page failed because ${e}`)
@@ -655,22 +659,30 @@ ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
 
 ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
   if (setting.proxy) {
-    return await superagent
-      .post(url, data)
-      .set('Cookie', cookie)
-      .proxy(setting.proxy)
-      .then(res => {
-        return res.text
+    return await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        Cookie: cookie
+      },
+      agent: new HttpsProxyAgent(setting.proxy)
+    })
+      .then(res=>{
+        return res.text()
       })
       .catch(e => {
         sendMessageToWebContents(`get ex data failed because ${e}`)
       })
   } else {
-    return await superagent
-      .post(url, data)
-      .set('Cookie', cookie)
-      .then(res => {
-        return res.text
+    return await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        Cookie: cookie
+      }
+    })
+      .then(res=>{
+        return res.text()
       })
       .catch(e => {
         sendMessageToWebContents(`get ex data failed because ${e}`)

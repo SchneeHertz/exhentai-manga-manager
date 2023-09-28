@@ -60,9 +60,7 @@
     "sequelize": "^6.32.1",
     "sharp": "^0.30.3",
     "sqlite": "^4.1.2",
-    "sqlite3": "^5.1.6",
-    "superagent": "^7.1.2",
-    "superagent-proxy": "^3.0.0"
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "@antv/g6": "^4.6.15",

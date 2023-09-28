@@ -421,7 +421,7 @@
             <img
               class="book-detail-cover"
               :src="bookDetail.coverPath" @click="viewManga(bookDetail)"
-              @contextmenu="onMangaImageContextMenu($event, bookDetail.coverPath)"
+              @contextmenu="openThumbnailView(bookDetail)"
             />
             <el-icon
               :size="30"
@@ -2291,7 +2291,7 @@ export default defineComponent({
       ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(this.bookDetail))
       .then(() => {
         this.drawerVisibleViewer = true
-        if (this.setting.keepReadingProgress) this.handleJumpToReadingProgress(book)
+        if (this.setting.keepReadingProgress && !this.showThumbnail) this.handleJumpToReadingProgress(book)
       })
       .catch(err => {
         console.log(err)
@@ -2299,6 +2299,10 @@ export default defineComponent({
       .finally(() => {
         loading.close()
       })
+    },
+    openThumbnailView (book) {
+      this.showThumbnail = true
+      this.viewManga(book)
     },
     triggerShowComment () {
       if (this.showComment) {
@@ -2915,12 +2919,6 @@ export default defineComponent({
             label: this.$t('m.hideManga') + "/" + this.$t('m.showManga'),
             onClick: () => {
               this.triggerHiddenBook(book)
-            }
-          },
-          {
-            label: this.$t('c.copyImageToClipboard'),
-            onClick: () => {
-              electronFunction['copy-image-to-clipboard'](book.coverPath)
             }
           },
           {

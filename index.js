@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, dialog, shell, screen, Menu } = require('electron')
+const { app, BrowserWindow, ipcMain, session, dialog, shell, screen, Menu, clipboard, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const process = require('process')
@@ -1004,4 +1004,16 @@ ipcMain.handle('set-progress-bar', async (event, progress) => {
 
 ipcMain.handle('get-locale', async (event, arg) => {
   return app.getLocale()
+})
+
+ipcMain.handle('copy-image-to-clipboard', async (event, filepath) => {
+  clipboard.writeImage(nativeImage.createFromPath(filepath))
+})
+
+ipcMain.handle('copy-text-to-clipboard', async (event, text) => {
+  clipboard.writeText(text)
+})
+
+ipcMain.handle('read-text-from-clipboard', async () => {
+  return clipboard.readText()
 })

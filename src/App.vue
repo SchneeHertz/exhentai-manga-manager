@@ -2394,10 +2394,10 @@ export default defineComponent({
 
     // copy and paste tag
     copyTagClipboard (book) {
-      electronFunction['copy-text-to-clipboard'](JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
+      ipcRenderer.invoke('copy-text-to-clipboard', JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
     },
-    pasteTagClipboard (book) {
-      let text = electronFunction['read-text-from-clipboard']()
+    async pasteTagClipboard (book) {
+      let text = await ipcRenderer.invoke('read-text-from-clipboard')
       _.assign(book, JSON.parse(text))
       this.saveBook(book)
     },
@@ -2945,7 +2945,7 @@ export default defineComponent({
           {
             label: this.$t('c.copyImageToClipboard'),
             onClick: () => {
-              electronFunction['copy-image-to-clipboard'](filepath)
+              ipcRenderer.invoke('copy-image-to-clipboard', filepath)
             }
           },
           {
@@ -2970,13 +2970,13 @@ export default defineComponent({
           {
             label: this.$t('c.copyTitleToClipboard'),
             onClick: () => {
-              electronFunction['copy-text-to-clipboard'](book.title_jpn || book.title)
+              ipcRenderer.invoke('copy-text-to-clipboard', book.title_jpn || book.title)
             }
           },
           {
             label: this.$t('c.copyLinkToClipboard'),
             onClick: () => {
-              electronFunction['copy-text-to-clipboard'](book.url)
+              ipcRenderer.invoke('copy-text-to-clipboard', book.url)
             }
           },
         ]

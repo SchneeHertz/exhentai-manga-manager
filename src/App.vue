@@ -2282,7 +2282,6 @@ export default defineComponent({
     },
     viewManga (book) {
       this.bookDetail = book
-      if (this.showComment) this.getComments(book.url)
       this.viewerImageList = []
       const loading = ElLoading.service({
         lock: true,
@@ -2596,7 +2595,11 @@ export default defineComponent({
     toNextMangaRandom () {
       this.releaseSendImageLock()
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>this.isBook(book) && this.isVisibleBook(book))
-      setTimeout(()=>this.viewManga(_.sample(activeBookList)), 500)
+      let selectBook = _.sample(activeBookList)
+      setTimeout(()=>{
+        this.viewManga(selectBook)
+        if (this.showComment) this.getComments(selectBook.url)
+      }, 500)
     },
     toNextManga (step) {
       this.releaseSendImageLock()
@@ -2604,7 +2607,11 @@ export default defineComponent({
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       let indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {
-        setTimeout(()=>this.viewManga(activeBookList[indexNext]), 500)
+        let selectBook = activeBookList[indexNext]
+        setTimeout(()=>{
+          this.viewManga(selectBook)
+          if (this.showComment) this.getComments(selectBook.url)
+        }, 500)
       } else {
         this.printMessage('info', 'out of range')
       }

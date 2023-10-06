@@ -36,7 +36,7 @@
 
 **使用说明见 [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明)**
 
-**欢迎加入[Discord讨论组](https://discord.gg/BS6HU3ZE)**
+**欢迎加入[Discord讨论组](https://discord.gg/pS9jR8C8f6)**
 
 ## 功能
 - 从一个文件夹建立漫画库

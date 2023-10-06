@@ -7,7 +7,7 @@
 **标签化管理, 阅读从ExHentai下载的短篇漫画**
 
 <p>
-  <a href="https://discord.gg/BS6HU3ZE">
+  <a href="https://discord.gg/pS9jR8C8f6">
     <img src="https://img.shields.io/badge/Discord-purple?style=flat-square" alt="Discord" />
   </a>
 </p>

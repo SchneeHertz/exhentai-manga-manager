@@ -7,7 +7,7 @@
 **Tag-based management, reading manga downloaded from ExHentai**
 
 <p>
-  <a href="https://discord.gg/BS6HU3ZE">
+  <a href="hhttps://discord.gg/pS9jR8C8f6">
     <img src="https://img.shields.io/badge/Discord-purple?style=flat-square" alt="Discord" />
   </a>
 </p>

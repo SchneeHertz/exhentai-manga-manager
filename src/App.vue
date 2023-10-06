@@ -1453,11 +1453,19 @@ export default defineComponent({
       let resultList = data.works.slice(0, 10)
       this.ehSearchResultList = []
       resultList.forEach((result)=>{
-        this.ehSearchResultList.push({
-          title: result.title,
-          url: `https://hentag.com/vault/${result.id}`,
-          type: 'hentag'
-        })
+        let findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))
+        if (findExUrl) {
+          this.ehSearchResultList.push({
+            title: result.title,
+            url: findExUrl
+          })
+        } else {
+          this.ehSearchResultList.push({
+            title: result.title,
+            url: `https://hentag.com/vault/${result.id}`,
+            type: 'hentag'
+          })
+        }
       })
     },
     getBookListFromWeb (book, server = 'e-hentai') {
@@ -1903,7 +1911,7 @@ export default defineComponent({
         let bookString = JSON.stringify(
           _.assign(
             {},
-            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath']),
+            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url']),
             {
               tags: _.map(book.tags, (tags, cat)=>{
                 let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
@@ -2409,6 +2417,12 @@ export default defineComponent({
             })
           })
         })
+        .catch(err => {
+          this.comments = []
+          console.log(err)
+        })
+      } else {
+        this.comments = []
       }
     },
     editTags () {

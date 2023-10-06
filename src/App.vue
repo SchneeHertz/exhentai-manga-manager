@@ -558,6 +558,7 @@
             <el-option label="exhentai(keyword)" value="exsearch" />
             <el-option label="e-hentai(keyword)" value="e-search" />
             <el-option label="chaika(keyword)" value="chaika" />
+            <el-option label="hentag(keyword)" value="hentag" />
           </el-select>
         </template>
         <template #append>
@@ -1027,9 +1028,9 @@ export default defineComponent({
         'Manga',
         'Artist CG',
         'Game CG',
-        'Western',
         'Non-H',
         'Image Set',
+        'Western',
         'Cosplay',
         'Asian Porn',
         'Misc',
@@ -1077,6 +1078,21 @@ export default defineComponent({
         }
       })
       .value()
+    },
+    tag2cat () {
+      let temp = {}
+      _(this.bookList.map(b=>{
+        return _.map(b.tags, (tags, cat)=>{
+          return _.map(tags, tag=>`${cat}##${tag}`)
+        })
+      }))
+      .flattenDeep().uniq().sort()
+      .value()
+      .forEach(combinedTag=>{
+        let tagArray = _.split(combinedTag, '##')
+        temp[tagArray[1]] = tagArray[0]
+      })
+      return temp
     },
     customOptions () {
       return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
@@ -1442,6 +1458,17 @@ export default defineComponent({
         })
       })
     },
+    resolveHentagResult (data) {
+      let resultList = data.works.slice(0, 10)
+      this.ehSearchResultList = []
+      resultList.forEach((result)=>{
+        this.ehSearchResultList.push({
+          title: result.title,
+          url: `https://hentag.com/public/api/vault/${result.id}`,
+          type: 'hentag'
+        })
+      })
+    },
     getBookListFromWeb (book, server = 'e-hentai') {
       this.searchResultLoading = true
       if (server === 'e-hentai') {
@@ -1490,20 +1517,31 @@ export default defineComponent({
         .finally(()=>{
           this.searchResultLoading = false
         })
+      } else if (server === 'hentag') {
+        axios.get(`https://hentag.com/public/api/vault-search?t=${encodeURI(this.searchStringDialog)}`)
+        .then(res=>{
+          this.resolveHentagResult(res.data)
+        })
+        .finally(()=>{
+          this.searchResultLoading = false
+        })
       }
     },
     resolveSearchResult (book, url, type) {
       if (type === 'chaika') {
         book.url = `https://panda.chaika.moe${url}`
         this.getBookInfoFromChaika(book)
+      } else if (type === 'hentag') {
+        book.url = url
+        this.getBookInfoFromHentag(book)
       } else {
         book.url = url
         this.getBookInfoFromEh(book)
       }
       this.dialogVisibleEhSearch = false
     },
-    async getBookInfoFromEh (book, url) {
-      let match = /(\d+)\/([a-z0-9]+)/.exec(url)
+    async getBookInfoFromEh (book) {
+      let match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
       ipcRenderer.invoke('post-data-ex', {
         url: 'https://api.e-hentai.org/api.php',
         data: {
@@ -1520,7 +1558,6 @@ export default defineComponent({
           _.assign(
             book,
             _.pick(JSON.parse(res).gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
-            {url: url}
           )
           book.posted = +book.posted
           book.filecount = +book.filecount
@@ -1567,7 +1604,6 @@ export default defineComponent({
       let archiveNo = /\d+/.exec(book.url)[0]
       axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
       .then(async res=>{
-        console.log(res.data)
         _.assign(
           book,
           _.pick(res.data, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
@@ -1600,9 +1636,48 @@ export default defineComponent({
         await this.saveBook(book)
       })
     },
+    async getBookInfoFromHentag (book) {
+      let { data } = await axios.get(book.url)
+      let tags = {}
+      data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
+      data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody=>parody.name) : ''
+      data.characters.length > 0 ? tags['character'] = data.characters.map(character=>character.name) : ''
+      data.circles.length > 0 ? tags['group'] = data.circles.map(circle=>circle.name) : ''
+      data.artists.length > 0 ? tags['artist'] = data.artists.map(artist=>artist.name) : ''
+      data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag=>maleTag.name) : ''
+      data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag=>femaleTag.name) : ''
+      if (data.otherTags.length > 0) {
+        data.otherTags.forEach(({ name }) => {
+          let cat = this.tag2cat[name]
+          if (cat) {
+            if (tags[cat]) {
+              tags[cat].push(name)
+            } else {
+              tags[cat] = [name]
+            }
+          } else {
+            if (tags['misc']) {
+              tags['misc'].push(name)
+            } else {
+              tags['misc'] = [name]
+            }
+          }
+        })
+      }
+      _.assign(book, {
+        title: data.title,
+        posted: Math.floor(data.createdAt / 1000),
+        category: this.categoryOption[data.category],
+        tags
+      })
+      book.status = 'tagged'
+      await this.saveBook(book)
+    },
     getBookInfo (book) {
       if (book.url.startsWith('https://panda.chaika.moe')) {
         this.getBookInfoFromChaika(book)
+      } else if (book.url.startsWith('https://hentag.com')) {
+        this.getBookInfoFromHentag(book)
       } else {
         this.getBookInfoFromEh(book)
       }
@@ -1611,7 +1686,8 @@ export default defineComponent({
       let resolveEhFirstResult = async (book, htmlString)=>{
         try {
           let bookUrl = new DOMParser().parseFromString(htmlString, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-          await this.getBookInfoFromEh(book, bookUrl)
+          book.url = bookUrl
+          await this.getBookInfoFromEh(book)
         } catch (e) {
           console.log(e)
           if (htmlString.includes('Your IP address has been')) {

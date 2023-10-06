@@ -420,7 +420,8 @@
           <el-row class="book-detail-function book-detail-cover-frame">
             <img
               class="book-detail-cover"
-              :src="bookDetail.coverPath" @click="viewManga(bookDetail)"
+              :src="bookDetail.coverPath"
+              @click="openContentView(bookDetail)"
               @contextmenu="openThumbnailView(bookDetail)"
             />
             <el-icon
@@ -2300,6 +2301,10 @@ export default defineComponent({
         loading.close()
       })
     },
+    openContentView (book) {
+      this.showThumbnail = false
+      this.viewManga(book)
+    },
     openThumbnailView (book) {
       this.showThumbnail = true
       this.viewManga(book)
@@ -2313,13 +2318,13 @@ export default defineComponent({
       }
     },
     getComments (url) {
-      this.comments = []
       if (url) {
         ipcRenderer.invoke('get-ex-webpage', {
           url,
           cookie: this.cookie
         })
         .then(res=>{
+          this.comments = []
           let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
           commentElements.forEach(e=>{
             let author = e.querySelector('.c2 .c3').textContent

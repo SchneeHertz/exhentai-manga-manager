@@ -449,21 +449,12 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="primary" plain
-              @click="openSearchDialog(bookDetail, 'exhentai')"
-              @contextmenu="onMangeDetailFunctionButtonContextMenu($event, bookDetail)"
-            >{{$t('m.getExMetadata')}}</el-button>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-button type="primary" plain
-              @click="openSearchDialog(bookDetail, 'exsearch')"
-              @contextmenu="onMangeDetailFunctionButtonContextMenu($event, bookDetail)"
-            >{{$t('m.getExMetadataF')}}</el-button>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
+              @click="openSearchDialog(bookDetail)"
+            >{{$t('m.getMetadata')}}</el-button>
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
+            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
             <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
@@ -988,7 +979,7 @@ export default defineComponent({
       editingTag: false,
       searchResultLoading: false,
       searchStringDialog: undefined,
-      searchTypeDialog: 'exsearch',
+      searchTypeDialog: 'exhentai',
       disabledSearchString: false,
       ehSearchResultList: [],
       editTagOptions: [],
@@ -1426,7 +1417,7 @@ export default defineComponent({
       this.ehSearchResultList = []
       this.searchStringDialog = this.returnFileName(book)
       this.bookDetail = book
-      this.getBookListFromWeb(book, server)
+      this.getBookListFromWeb(book, this.searchTypeDialog)
     },
     resolveEhentaiResult (htmlString) {
       try {
@@ -2968,31 +2959,7 @@ export default defineComponent({
           {
             label: this.$t('m.getMetadata'),
             onClick: () => {
-              this.openSearchDialog(book, 'e-hentai')
-            }
-          },
-          {
-            label: this.$t('m.getExMetadata'),
-            onClick: () => {
-              this.openSearchDialog(book, 'exhentai')
-            }
-          },
-          {
-            label: this.$t('m.getMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'e-search')
-            }
-          },
-          {
-            label: this.$t('m.getExMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'exsearch')
-            }
-          },
-          {
-            label: this.$t('m.getChaikaMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'chaika')
+              this.openSearchDialog(book)
             }
           },
           {
@@ -3090,45 +3057,6 @@ export default defineComponent({
           items
         })
       }
-    },
-    onMangeDetailFunctionButtonContextMenu (e, book) {
-      e.preventDefault()
-      this.$contextmenu({
-        x: e.x,
-        y: e.y,
-        items: [
-          {
-            label: this.$t('m.getMetadata'),
-            onClick: () => {
-              this.openSearchDialog(book, 'e-hentai')
-            }
-          },
-          {
-            label: this.$t('m.getExMetadata'),
-            onClick: () => {
-              this.openSearchDialog(book, 'exhentai')
-            }
-          },
-          {
-            label: this.$t('m.getMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'e-search')
-            }
-          },
-          {
-            label: this.$t('m.getExMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'exsearch')
-            }
-          },
-          {
-            label: this.$t('m.getChaikaMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'chaika')
-            }
-          },
-        ]
-      })
     },
   }
 })

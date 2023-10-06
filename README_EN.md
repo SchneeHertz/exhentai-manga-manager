@@ -36,7 +36,7 @@
 
 **Instruction: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)**
 
-**Welcome to the [Discord](https://discord.gg/BS6HU3ZE)**
+**Welcome to the [Discord](https://discord.gg/pS9jR8C8f6)**
 
 ## Features
 - Create a manga library from a folder

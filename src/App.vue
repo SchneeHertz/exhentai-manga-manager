@@ -420,7 +420,8 @@
           <el-row class="book-detail-function book-detail-cover-frame">
             <img
               class="book-detail-cover"
-              :src="bookDetail.coverPath" @click="viewManga(bookDetail)"
+              :src="bookDetail.coverPath"
+              @click="openContentView(bookDetail)"
               @contextmenu="openThumbnailView(bookDetail)"
             />
             <el-icon
@@ -448,21 +449,12 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="primary" plain
-              @click="openSearchDialog(bookDetail, 'exhentai')"
-              @contextmenu="onMangeDetailFunctionButtonContextMenu($event, bookDetail)"
-            >{{$t('m.getExMetadata')}}</el-button>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-button type="primary" plain
-              @click="openSearchDialog(bookDetail, 'exsearch')"
-              @contextmenu="onMangeDetailFunctionButtonContextMenu($event, bookDetail)"
-            >{{$t('m.getExMetadataF')}}</el-button>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
+              @click="openSearchDialog(bookDetail)"
+            >{{$t('m.getMetadata')}}</el-button>
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
+            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
             <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
@@ -549,7 +541,7 @@
       destroy-on-close
       class="dialog-search"
     >
-      <el-input v-model="searchStringDialog" :disabled="disabledSearchString" @keyup.enter="getBookListFromEh(bookDetail, searchTypeDialog)">
+      <el-input v-model="searchStringDialog" :disabled="disabledSearchString" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)">
         <template #prepend>
           <el-select class="search-type-select" v-model="searchTypeDialog">
             <el-option label="exhentai(sha1)" value="exhentai" />
@@ -557,10 +549,11 @@
             <el-option label="exhentai(keyword)" value="exsearch" />
             <el-option label="e-hentai(keyword)" value="e-search" />
             <el-option label="chaika(keyword)" value="chaika" />
+            <el-option label="hentag(keyword)" value="hentag" />
           </el-select>
         </template>
         <template #append>
-          <el-button :icon="Search32Filled" @click="getBookListFromEh(bookDetail, searchTypeDialog)"/>
+          <el-button :icon="Search32Filled" @click="getBookListFromWeb(bookDetail, searchTypeDialog)"/>
         </template>
       </el-input>
       <div v-loading="searchResultLoading">
@@ -986,7 +979,7 @@ export default defineComponent({
       editingTag: false,
       searchResultLoading: false,
       searchStringDialog: undefined,
-      searchTypeDialog: 'exsearch',
+      searchTypeDialog: 'exhentai',
       disabledSearchString: false,
       ehSearchResultList: [],
       editTagOptions: [],
@@ -1026,9 +1019,9 @@ export default defineComponent({
         'Manga',
         'Artist CG',
         'Game CG',
-        'Western',
         'Non-H',
         'Image Set',
+        'Western',
         'Cosplay',
         'Asian Porn',
         'Misc',
@@ -1076,6 +1069,21 @@ export default defineComponent({
         }
       })
       .value()
+    },
+    tag2cat () {
+      let temp = {}
+      _(this.bookList.map(b=>{
+        return _.map(b.tags, (tags, cat)=>{
+          return _.map(tags, tag=>`${cat}##${tag}`)
+        })
+      }))
+      .flattenDeep().uniq().sort()
+      .value()
+      .forEach(combinedTag=>{
+        let tagArray = _.split(combinedTag, '##')
+        temp[tagArray[1]] = tagArray[0]
+      })
+      return temp
     },
     customOptions () {
       return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
@@ -1405,48 +1413,67 @@ export default defineComponent({
     // metadata
     openSearchDialog (book, server) {
       this.dialogVisibleEhSearch = true
-      this.searchTypeDialog = server
+      if (server) this.searchTypeDialog = server
       this.ehSearchResultList = []
       this.searchStringDialog = this.returnFileName(book)
       this.bookDetail = book
-      this.getBookListFromEh(book, server)
+      this.getBookListFromWeb(book, this.searchTypeDialog)
     },
-    getBookListFromEh (book, server = 'e-hentai') {
-      let resolveWebPage = (book, htmlString)=>{
-        try {
-          let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.gl3c.glname')
-          this.ehSearchResultList = []
-          resultNodes.forEach((node)=>{
-            this.ehSearchResultList.push({
-              title: node.querySelector('.glink').innerHTML,
-              url: node.querySelector('a').getAttribute('href')
-            })
-          })
-        } catch (e) {
-          console.log(e)
-          if (htmlString.includes('Your IP address has been')) {
-            this.printMessage('error', 'Your IP address has been temporarily banned')
-          } else {
-            this.printMessage('error', 'Get tag failed')
-          }
-        }
-      }
-      let resolveChaikaResult = (htmlString)=>{
-        let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.result-list')
+    resolveEhentaiResult (htmlString) {
+      try {
+        let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.gl3c.glname')
         this.ehSearchResultList = []
         resultNodes.forEach((node)=>{
           this.ehSearchResultList.push({
-            title: node.querySelector('td a').innerHTML,
-            url: node.querySelector('a').getAttribute('href'),
-            type: 'chaika'
+            title: node.querySelector('.glink').innerHTML,
+            url: node.querySelector('a').getAttribute('href')
           })
         })
+      } catch (e) {
+        console.log(e)
+        if (htmlString.includes('Your IP address has been')) {
+          this.printMessage('error', 'Your IP address has been temporarily banned')
+        } else {
+          this.printMessage('error', 'Get tag failed')
+        }
       }
+    },
+    resolveChaikaResult (htmlString) {
+      let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.result-list')
+      this.ehSearchResultList = []
+      resultNodes.forEach((node)=>{
+        this.ehSearchResultList.push({
+          title: node.querySelector('td a').innerHTML,
+          url: node.querySelector('a').getAttribute('href'),
+          type: 'chaika'
+        })
+      })
+    },
+    resolveHentagResult (data) {
+      let resultList = data.works.slice(0, 10)
+      this.ehSearchResultList = []
+      resultList.forEach((result)=>{
+        let findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))
+        if (findExUrl) {
+          this.ehSearchResultList.push({
+            title: result.title,
+            url: findExUrl
+          })
+        } else {
+          this.ehSearchResultList.push({
+            title: result.title,
+            url: `https://hentag.com/vault/${result.id}`,
+            type: 'hentag'
+          })
+        }
+      })
+    },
+    getBookListFromWeb (book, server = 'e-hentai') {
       this.searchResultLoading = true
       if (server === 'e-hentai') {
         axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
         .then(res=>{
-          resolveWebPage(book, res.data)
+          this.resolveEhentaiResult(res.data)
         })
         .finally(()=>{
           this.searchResultLoading = false
@@ -1457,7 +1484,7 @@ export default defineComponent({
           cookie: this.cookie
         })
         .then(res=>{
-          resolveWebPage(book, res)
+          this.resolveEhentaiResult(res)
         })
         .finally(()=>{
           this.searchResultLoading = false
@@ -1465,7 +1492,7 @@ export default defineComponent({
       } else if (server === 'e-search') {
         axios.get(`https://e-hentai.org/?f_search=${encodeURI(this.searchStringDialog)}&f_cats=689`)
         .then(res=>{
-          resolveWebPage(book, res.data)
+          this.resolveEhentaiResult(res.data)
         })
         .finally(()=>{
           this.searchResultLoading = false
@@ -1476,7 +1503,7 @@ export default defineComponent({
           cookie: this.cookie
         })
         .then(res=>{
-          resolveWebPage(book, res)
+          this.resolveEhentaiResult(res)
         })
         .finally(()=>{
           this.searchResultLoading = false
@@ -1484,7 +1511,15 @@ export default defineComponent({
       } else if (server === 'chaika') {
         axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(this.searchStringDialog)}`)
         .then(res=>{
-          resolveChaikaResult(res.data)
+          this.resolveChaikaResult(res.data)
+        })
+        .finally(()=>{
+          this.searchResultLoading = false
+        })
+      } else if (server === 'hentag') {
+        axios.get(`https://hentag.com/public/api/vault-search?t=${encodeURI(this.searchStringDialog)}`)
+        .then(res=>{
+          this.resolveHentagResult(res.data)
         })
         .finally(()=>{
           this.searchResultLoading = false
@@ -1492,83 +1527,66 @@ export default defineComponent({
       }
     },
     resolveSearchResult (book, url, type) {
-      book.url = url
       if (type === 'chaika') {
+        book.url = `https://panda.chaika.moe${url}`
         this.getBookInfoFromChaika(book)
+      } else if (type === 'hentag') {
+        book.url = url
+        this.getBookInfoFromHentag(book)
       } else {
-        this.getBookInfo(book)
+        book.url = url
+        this.getBookInfoFromEh(book)
       }
       this.dialogVisibleEhSearch = false
     },
-    async getBookInfo (book, server = 'e-hentai') {
-      let getTag = async (book, url) => {
-        let match = /(\d+)\/([a-z0-9]+)/.exec(url)
-        ipcRenderer.invoke('post-data-ex', {
-          url: 'https://api.e-hentai.org/api.php',
-          data: {
-            'method': 'gdata',
-            'gidlist': [
-                [+match[1], match[2]]
-            ],
-            'namespace': 1
-          },
-          cookie: this.cookie
-        })
-        .then(async res=>{
-          try {
-            _.assign(
-              book,
-              _.pick(JSON.parse(res).gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
-              {url: url}
-            )
-            book.posted = +book.posted
-            book.filecount = +book.filecount
-            book.rating = +book.rating
-            book.title = he.decode(book.title)
-            book.title_jpn = he.decode(book.title_jpn)
-            let tagObject = _.groupBy(book.tags, tag=>{
-              let result = /(.+):/.exec(tag)
+    async getBookInfoFromEh (book) {
+      let match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
+      ipcRenderer.invoke('post-data-ex', {
+        url: 'https://api.e-hentai.org/api.php',
+        data: {
+          'method': 'gdata',
+          'gidlist': [
+              [+match[1], match[2]]
+          ],
+          'namespace': 1
+        },
+        cookie: this.cookie
+      })
+      .then(async res=>{
+        try {
+          _.assign(
+            book,
+            _.pick(JSON.parse(res).gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+          )
+          book.posted = +book.posted
+          book.filecount = +book.filecount
+          book.rating = +book.rating
+          book.title = he.decode(book.title)
+          book.title_jpn = he.decode(book.title_jpn)
+          let tagObject = _.groupBy(book.tags, tag=>{
+            let result = /(.+):/.exec(tag)
+            if (result) {
+              return /(.+):/.exec(tag)[1]
+            } else {
+              return 'misc'
+            }
+          })
+          _.forIn(tagObject, (arr, key)=>{
+            tagObject[key] = arr.map(tag=>{
+              let result = /:(.+)$/.exec(tag)
               if (result) {
-                return /(.+):/.exec(tag)[1]
+                return /:(.+)$/.exec(tag)[1]
               } else {
-                return 'misc'
+                return tag
               }
             })
-            _.forIn(tagObject, (arr, key)=>{
-              tagObject[key] = arr.map(tag=>{
-                let result = /:(.+)$/.exec(tag)
-                if (result) {
-                  return /:(.+)$/.exec(tag)[1]
-                } else {
-                  return tag
-                }
-              })
-            })
-            book.tags = tagObject
-            book.status = 'tagged'
-            await this.saveBook(book)
-          } catch (e) {
-            console.log(e)
-            if (_.includes(res, 'Your IP address has been')) {
-              book.status = 'non-tag'
-              this.printMessage('error', 'Your IP address has been temporarily banned')
-              await this.saveBook(book)
-              this.serviceAvailable = false
-            } else {
-              book.status = 'tag-failed'
-              this.printMessage('error', 'Get tag failed')
-              await this.saveBook(book)
-            }
-          }
-        })
-      }
-      let resolveWebPage = async (book, htmlString)=>{
-        try {
-          let bookUrl = new DOMParser().parseFromString(htmlString, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-          await getTag(book, bookUrl)
+          })
+          book.tags = tagObject
+          book.status = 'tagged'
+          await this.saveBook(book)
         } catch (e) {
           console.log(e)
-          if (htmlString.includes('Your IP address has been')) {
+          if (_.includes(res, 'Your IP address has been')) {
             book.status = 'non-tag'
             this.printMessage('error', 'Your IP address has been temporarily banned')
             await this.saveBook(book)
@@ -1579,31 +1597,12 @@ export default defineComponent({
             await this.saveBook(book)
           }
         }
-      }
-      if (book.url) {
-        await getTag(book, book.url)
-      } else {
-        if (server === 'e-hentai') {
-          axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
-          .then(async res=>{
-            await resolveWebPage(book, res.data)
-          })
-        } else if (server === 'exhentai') {
-          ipcRenderer.invoke('get-ex-webpage', {
-            url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
-            cookie: this.cookie
-          })
-          .then(async res=>{
-            await resolveWebPage(book, res)
-          })
-        }
-      }
+      })
     },
     getBookInfoFromChaika (book) {
       let archiveNo = /\d+/.exec(book.url)[0]
       axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
       .then(async res=>{
-        console.log(res.data)
         _.assign(
           book,
           _.pick(res.data, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
@@ -1636,6 +1635,87 @@ export default defineComponent({
         await this.saveBook(book)
       })
     },
+    async getBookInfoFromHentag (book) {
+      let { data } = await axios.get(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
+      let tags = {}
+      data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
+      data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody=>parody.name) : ''
+      data.characters.length > 0 ? tags['character'] = data.characters.map(character=>character.name) : ''
+      data.circles.length > 0 ? tags['group'] = data.circles.map(circle=>circle.name) : ''
+      data.artists.length > 0 ? tags['artist'] = data.artists.map(artist=>artist.name) : ''
+      data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag=>maleTag.name) : ''
+      data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag=>femaleTag.name) : ''
+      if (data.otherTags.length > 0) {
+        data.otherTags.forEach(({ name }) => {
+          let cat = this.tag2cat[name]
+          if (cat) {
+            if (tags[cat]) {
+              tags[cat].push(name)
+            } else {
+              tags[cat] = [name]
+            }
+          } else {
+            if (tags['misc']) {
+              tags['misc'].push(name)
+            } else {
+              tags['misc'] = [name]
+            }
+          }
+        })
+      }
+      _.assign(book, {
+        title: data.title,
+        posted: Math.floor(data.createdAt / 1000),
+        category: this.categoryOption[data.category],
+        tags
+      })
+      book.status = 'tagged'
+      await this.saveBook(book)
+    },
+    getBookInfo (book) {
+      if (book.url.startsWith('https://panda.chaika.moe')) {
+        this.getBookInfoFromChaika(book)
+      } else if (book.url.startsWith('https://hentag.com')) {
+        this.getBookInfoFromHentag(book)
+      } else {
+        this.getBookInfoFromEh(book)
+      }
+    },
+    async getBookInfoFromEhFirstResult (book, server = 'e-hentai') {
+      let resolveEhFirstResult = async (book, htmlString)=>{
+        try {
+          let bookUrl = new DOMParser().parseFromString(htmlString, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
+          book.url = bookUrl
+          await this.getBookInfoFromEh(book)
+        } catch (e) {
+          console.log(e)
+          if (htmlString.includes('Your IP address has been')) {
+            book.status = 'non-tag'
+            this.printMessage('error', 'Your IP address has been temporarily banned')
+            await this.saveBook(book)
+            this.serviceAvailable = false
+          } else {
+            book.status = 'tag-failed'
+            this.printMessage('error', 'Get tag failed')
+            await this.saveBook(book)
+          }
+        }
+      }
+      if (server === 'e-hentai') {
+        axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
+        .then(async res=>{
+          await resolveEhFirstResult(book, res.data)
+        })
+      } else if (server === 'exhentai') {
+        ipcRenderer.invoke('get-ex-webpage', {
+          url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
+          cookie: this.cookie
+        })
+        .then(async res=>{
+          await resolveEhFirstResult(book, res)
+        })
+      }
+    },
     getBookListMetadata (server) {
       this.dialogVisibleSetting = false
       this.serviceAvailable = true
@@ -1650,7 +1730,7 @@ export default defineComponent({
         for (let i = 0; i < bookList.length; i++) {
           ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
           if (this.serviceAvailable) {
-            await this.getBookInfo(bookList[i], server)
+            await this.getBookInfoFromEhFirstResult(bookList[i], server)
             // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
             await timer(gap)
           }
@@ -1831,7 +1911,7 @@ export default defineComponent({
         let bookString = JSON.stringify(
           _.assign(
             {},
-            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath']),
+            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url']),
             {
               tags: _.map(book.tags, (tags, cat)=>{
                 let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
@@ -2281,7 +2361,6 @@ export default defineComponent({
     },
     viewManga (book) {
       this.bookDetail = book
-      if (this.showComment) this.getComments(book.url)
       this.viewerImageList = []
       const loading = ElLoading.service({
         lock: true,
@@ -2300,6 +2379,10 @@ export default defineComponent({
         loading.close()
       })
     },
+    openContentView (book) {
+      this.showThumbnail = false
+      this.viewManga(book)
+    },
     openThumbnailView (book) {
       this.showThumbnail = true
       this.viewManga(book)
@@ -2313,13 +2396,13 @@ export default defineComponent({
       }
     },
     getComments (url) {
-      this.comments = []
       if (url) {
         ipcRenderer.invoke('get-ex-webpage', {
           url,
           cookie: this.cookie
         })
         .then(res=>{
+          this.comments = []
           let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
           commentElements.forEach(e=>{
             let author = e.querySelector('.c2 .c3').textContent
@@ -2334,6 +2417,12 @@ export default defineComponent({
             })
           })
         })
+        .catch(err => {
+          this.comments = []
+          console.log(err)
+        })
+      } else {
+        this.comments = []
       }
     },
     editTags () {
@@ -2394,10 +2483,10 @@ export default defineComponent({
 
     // copy and paste tag
     copyTagClipboard (book) {
-      electronFunction['copy-text-to-clipboard'](JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
+      ipcRenderer.invoke('copy-text-to-clipboard', JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
     },
-    pasteTagClipboard (book) {
-      let text = electronFunction['read-text-from-clipboard']()
+    async pasteTagClipboard (book) {
+      let text = await ipcRenderer.invoke('read-text-from-clipboard')
       _.assign(book, JSON.parse(text))
       this.saveBook(book)
     },
@@ -2591,7 +2680,11 @@ export default defineComponent({
     toNextMangaRandom () {
       this.releaseSendImageLock()
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>this.isBook(book) && this.isVisibleBook(book))
-      setTimeout(()=>this.viewManga(_.sample(activeBookList)), 500)
+      let selectBook = _.sample(activeBookList)
+      setTimeout(()=>{
+        this.viewManga(selectBook)
+        if (this.showComment) this.getComments(selectBook.url)
+      }, 500)
     },
     toNextManga (step) {
       this.releaseSendImageLock()
@@ -2599,7 +2692,11 @@ export default defineComponent({
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       let indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {
-        setTimeout(()=>this.viewManga(activeBookList[indexNext]), 500)
+        let selectBook = activeBookList[indexNext]
+        setTimeout(()=>{
+          this.viewManga(selectBook)
+          if (this.showComment) this.getComments(selectBook.url)
+        }, 500)
       } else {
         this.printMessage('info', 'out of range')
       }
@@ -2876,31 +2973,7 @@ export default defineComponent({
           {
             label: this.$t('m.getMetadata'),
             onClick: () => {
-              this.openSearchDialog(book, 'e-hentai')
-            }
-          },
-          {
-            label: this.$t('m.getExMetadata'),
-            onClick: () => {
-              this.openSearchDialog(book, 'exhentai')
-            }
-          },
-          {
-            label: this.$t('m.getMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'e-search')
-            }
-          },
-          {
-            label: this.$t('m.getExMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'exsearch')
-            }
-          },
-          {
-            label: this.$t('m.getChaikaMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'chaika')
+              this.openSearchDialog(book)
             }
           },
           {
@@ -2945,7 +3018,7 @@ export default defineComponent({
           {
             label: this.$t('c.copyImageToClipboard'),
             onClick: () => {
-              electronFunction['copy-image-to-clipboard'](filepath)
+              ipcRenderer.invoke('copy-image-to-clipboard', filepath)
             }
           },
           {
@@ -2970,13 +3043,13 @@ export default defineComponent({
           {
             label: this.$t('c.copyTitleToClipboard'),
             onClick: () => {
-              electronFunction['copy-text-to-clipboard'](book.title_jpn || book.title)
+              ipcRenderer.invoke('copy-text-to-clipboard', book.title_jpn || book.title)
             }
           },
           {
             label: this.$t('c.copyLinkToClipboard'),
             onClick: () => {
-              electronFunction['copy-text-to-clipboard'](book.url)
+              ipcRenderer.invoke('copy-text-to-clipboard', book.url)
             }
           },
         ]
@@ -2998,45 +3071,6 @@ export default defineComponent({
           items
         })
       }
-    },
-    onMangeDetailFunctionButtonContextMenu (e, book) {
-      e.preventDefault()
-      this.$contextmenu({
-        x: e.x,
-        y: e.y,
-        items: [
-          {
-            label: this.$t('m.getMetadata'),
-            onClick: () => {
-              this.openSearchDialog(book, 'e-hentai')
-            }
-          },
-          {
-            label: this.$t('m.getExMetadata'),
-            onClick: () => {
-              this.openSearchDialog(book, 'exhentai')
-            }
-          },
-          {
-            label: this.$t('m.getMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'e-search')
-            }
-          },
-          {
-            label: this.$t('m.getExMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'exsearch')
-            }
-          },
-          {
-            label: this.$t('m.getChaikaMetadataF'),
-            onClick: () => {
-              this.openSearchDialog(book, 'chaika')
-            }
-          },
-        ]
-      })
     },
   }
 })

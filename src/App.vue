@@ -1455,7 +1455,7 @@ export default defineComponent({
       resultList.forEach((result)=>{
         this.ehSearchResultList.push({
           title: result.title,
-          url: `https://hentag.com/public/api/vault/${result.id}`,
+          url: `https://hentag.com/vault/${result.id}`,
           type: 'hentag'
         })
       })
@@ -1628,7 +1628,7 @@ export default defineComponent({
       })
     },
     async getBookInfoFromHentag (book) {
-      let { data } = await axios.get(book.url)
+      let { data } = await axios.get(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
       let tags = {}
       data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
       data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody=>parody.name) : ''

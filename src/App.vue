@@ -529,7 +529,7 @@
           <el-scrollbar class="book-comment-frame">
             <div class="book-comment" v-for="comment in comments" :key="comment.id">
               <div class="book-comment-postby">{{comment.author}}<span class="book-comment-score">{{comment.score}}</span></div>
-              <p class="book-comment-content" @contextmenu="onMangaCommentContextMenu ($event, comment.content)">{{comment.content}}</p>
+              <p class="book-comment-content" @contextmenu="onMangaCommentContextMenu($event, comment.content)">{{comment.content}}</p>
             </div>
           </el-scrollbar>
         </el-col>

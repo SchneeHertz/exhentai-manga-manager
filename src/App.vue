@@ -1164,9 +1164,8 @@ export default defineComponent({
       this.viewerImageList.push(arg)
     })
     ipcRenderer.invoke('load-setting')
-    .then(res=>{
+    .then(async (res) => {
       this.setting = res
-      this.loadBookList(this.setting.loadOnStart)
       if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
       if (this.setting.theme) this.changeTheme(this.setting.theme)
       if (this.setting.autoCheckUpdates === undefined) {
@@ -1175,6 +1174,10 @@ export default defineComponent({
       }
       if (this.setting.autoCheckUpdates) this.autoCheckUpdates(false)
       this.handleLanguageChange(this.setting.language)
+      if (this.setting.loadOnStart) {
+        await this.loadBookList()
+        this.loadBookList(true)
+      }
     })
     this.viewerImageWidth = +localStorage.getItem('viewerImageWidth') || 0.9
     this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
@@ -1341,16 +1344,16 @@ export default defineComponent({
         offset: 50
       })
     },
-    loadBookList (scan) {
-      ipcRenderer.invoke('load-book-list', scan)
-      .then(res=>{
-        if (this.sortValue) {
-          this.bookList = res
-        } else {
-          this.bookList = res.sort(this.sortList('date'))
-        }
-        this.loadCollectionList()
-      })
+    async loadBookList (scan) {
+      return await ipcRenderer.invoke('load-book-list', scan)
+        .then(res => {
+          if (this.sortValue) {
+            this.bookList = res
+          } else {
+            this.bookList = res.sort(this.sortList('date'))
+          }
+          this.loadCollectionList()
+        })
     },
     saveBookList () { // shouldn't use
       let bookList = _.cloneDeep(this.bookList)

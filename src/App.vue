@@ -1282,20 +1282,20 @@ export default defineComponent({
         } else {
           if (event.key === prev || event.key === 'ArrowUp') {
             if (event.ctrlKey) {
-              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 10)
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 10)
             } else {
-              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 1.2)
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 1.2)
             }
           } else if (event.key === next || event.key === 'ArrowDown') {
             if (event.ctrlKey) {
-              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 10)
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 10)
             } else {
-              document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 1.2)
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 1.2)
             }
           } else if (event.key === 'Home') {
-            document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
+            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
           } else if (event.key === 'End') {
-            document.getElementsByClassName('el-drawer__body')[0].scrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollHeight
+            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollHeight
           }
         }
       }
@@ -1310,9 +1310,11 @@ export default defineComponent({
         }
       } else if (this.drawerVisibleViewer && !this.showThumbnail) {
         if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
-          if (event.deltaY > 0) {
+          let element = document.querySelector('.viewer-drawer .el-drawer__body')
+          if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
             this.currentImageIndex += 1
-          } else {
+            element.scrollTop = 0
+          } else if (event.deltaY < 0 && element.scrollTop <= 0) {
             this.currentImageIndex += -1
           }
         }
@@ -1334,10 +1336,10 @@ export default defineComponent({
           }
           if(event.clientX > window.innerWidth / 2) {
             this.currentImageIndex += click
-            document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
+            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
           } else {
             this.currentImageIndex += -click
-            document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
+            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
           }
         }
       }
@@ -2661,12 +2663,12 @@ export default defineComponent({
         if (!val) {
           if (this.storeDrawerScrollTop) {
             this.$nextTick(()=>{
-              document.getElementsByClassName('el-drawer__body')[0].scrollTop = this.storeDrawerScrollTop
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = this.storeDrawerScrollTop
               this.storeDrawerScrollTop = undefined
             })
           }
         } else {
-          this.storeDrawerScrollTop = document.getElementsByClassName('el-drawer__body')[0].scrollTop
+          this.storeDrawerScrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
         }
       }
     },
@@ -2676,7 +2678,7 @@ export default defineComponent({
       if (this.imageStyleType === 'scroll') {
         _.forEach(this.viewerImageList, (image)=>{
           if (image.id === id) {
-            this.$nextTick(()=>document.getElementsByClassName('el-drawer__body')[0].scrollTop = scrollTopValue)
+            this.$nextTick(()=>document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = scrollTopValue)
             return false
           }
           // 28 is the height of .viewer-image-page
@@ -2760,7 +2762,7 @@ export default defineComponent({
     getCurrentImageId () {
       let currentImageId
       if (this.imageStyleType === 'scroll') {
-        let scrollTopValue = document.getElementsByClassName('el-drawer__body')[0].scrollTop
+        let scrollTopValue = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
         _.forEach(this.viewerImageList, (image)=>{
           if (scrollTopValue < 0) {
             currentImageId = image.id

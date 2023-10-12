@@ -249,7 +249,7 @@
       </div>
       <div
         class="drawer-image-content"
-        @click="scrollPage"
+        @click="handleViewerAreaClick"
         v-if="!showThumbnail"
         v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"
@@ -701,6 +701,13 @@
                 @change="saveSetting"
               />
             </el-col>
+            <el-col :span="24" class="setting-switch">
+              <el-switch
+                v-model="setting.reverseLeftRight"
+                :active-text="$t('m.reverseLeftRight')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
         <el-tab-pane :label="$t('m.advanced')" name="advanced">
@@ -1025,7 +1032,19 @@ export default defineComponent({
         'Cosplay',
         'Asian Porn',
         'Misc',
-      ]
+      ],
+      keyMap: {
+        normal: {
+          next: 'ArrowRight',
+          prev: 'ArrowLeft',
+          click: 1
+        },
+        reverse: {
+          next: 'ArrowLeft',
+          prev: 'ArrowRight',
+          click: -1
+        }
+      }
     }
   },
   computed: {
@@ -1177,6 +1196,8 @@ export default defineComponent({
       if (this.setting.loadOnStart) {
         await this.loadBookList()
         this.loadBookList(true)
+      } else {
+        this.loadBookList()
       }
     })
     this.viewerImageWidth = +localStorage.getItem('viewerImageWidth') || 0.9
@@ -1238,11 +1259,17 @@ export default defineComponent({
   methods: {
     // base function
     resolveKey (event) {
-      if (this.drawerVisibleViewer) {
+      let next, prev
+      if (this.setting.reverseLeftRight) {
+        ;({ next, prev } = this.keyMap.reverse)
+      } else {
+        ;({ next, prev } = this.keyMap.normal)
+      }
+      if (this.drawerVisibleViewer && !this.showThumbnail) {
         if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
-          if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+          if (event.key === next || event.key === 'ArrowDown') {
             this.currentImageIndex += 1
-          } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+          } else if (event.key === prev || event.key === 'ArrowUp') {
             this.currentImageIndex -= 1
           } else if (event.key === "/") {
             this.insertEmptyPageIndex = this.currentImageIndex
@@ -1253,13 +1280,13 @@ export default defineComponent({
             this.currentImageIndex = 100000
           }
         } else {
-          if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+          if (event.key === prev || event.key === 'ArrowUp') {
             if (event.ctrlKey) {
               document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 10)
             } else {
               document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, - window.innerHeight / 1.2)
             }
-          } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+          } else if (event.key === next || event.key === 'ArrowDown') {
             if (event.ctrlKey) {
               document.getElementsByClassName('el-drawer__body')[0].scrollBy(0, window.innerHeight / 10)
             } else {
@@ -1281,11 +1308,38 @@ export default defineComponent({
         } else {
           electronFunction['set-zoom-level'](level + 1)
         }
+      } else if (this.drawerVisibleViewer && !this.showThumbnail) {
+        if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
+          if (event.deltaY > 0) {
+            this.currentImageIndex += 1
+          } else {
+            this.currentImageIndex += -1
+          }
+        }
       }
     },
     resolveMouseDown (event) {
       if (event.button === 3) {
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
+      }
+    },
+    handleViewerAreaClick (event) {
+      if (this.drawerVisibleViewer && !this.showThumbnail) {
+        if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
+          let click
+          if (this.setting.reverseLeftRight) {
+            ;({ click } = this.keyMap.reverse)
+          } else {
+            ;({ click } = this.keyMap.normal)
+          }
+          if(event.clientX > window.innerWidth / 2) {
+            this.currentImageIndex += click
+            document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
+          } else {
+            this.currentImageIndex += -click
+            document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
+          }
+        }
       }
     },
     customChunk (list, size, index) {
@@ -2641,17 +2695,6 @@ export default defineComponent({
             return false
           }
         })
-      }
-    },
-    scrollPage (event) {
-      if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
-        if(event.clientX > window.innerWidth / 2) {
-          this.currentImageIndex += 1
-          document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
-        } else {
-          this.currentImageIndex -= 1
-          document.getElementsByClassName('el-drawer__body')[0].scrollTop = 0
-        }
       }
     },
     initResize (id, originWidth) {

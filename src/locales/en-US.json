@@ -124,7 +124,8 @@
     "fitHeight": "fit height",
     "fitWindow": "fit window",
     "defaultExpandTree": "Default Expand Tree",
-    "keepReadingProgress": "Keep Reading Progress"
+    "keepReadingProgress": "Keep Reading Progress",
+    "reverseLeftRight": "Reverse the left and right page-turning buttons"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

@@ -192,7 +192,7 @@
       size="100%"
       :with-header="false"
       destroy-on-close
-      @close="releaseSendImageLock"
+      @close="handleStopReadManga"
       class="viewer-drawer"
     >
       <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
@@ -708,6 +708,13 @@
                 @change="saveSetting"
               />
             </el-col>
+            <el-col :span="24" class="setting-switch">
+              <el-switch
+                v-model="setting.autoNextManga"
+                :active-text="$t('m.autoNextManga')"
+                @change="saveSetting"
+              />
+            </el-col>
           </el-row>
         </el-tab-pane>
         <el-tab-pane :label="$t('m.advanced')" name="advanced">
@@ -1163,6 +1170,7 @@ export default defineComponent({
             this._currentImageIndex = 0
           } else if (val > listLength - 1 && listLength >= 1) {
             this._currentImageIndex = listLength - 1
+            if (this.setting.autoNextManga) this.toNextManga(1)
           } else {
             this._currentImageIndex = val
           }
@@ -1255,6 +1263,7 @@ export default defineComponent({
   beforeUnmount () {
     window.removeEventListener('keydown', this.resolveKey)
     window.removeEventListener('wheel', this.resolveWheel)
+    window.removeEventListener('mousedown', this.resolveMouseDown)
   },
   methods: {
     // base function
@@ -1277,7 +1286,11 @@ export default defineComponent({
           } else if (event.key === 'Home') {
             this.currentImageIndex = 0
           } else if (event.key === 'End') {
-            this.currentImageIndex = 100000
+            if (this.imageStyleType === 'single') {
+              this.currentImageIndex = this.viewerImageList.length - 1
+            } else if (this.imageStyleType === 'double') {
+              this.currentImageIndex = this.viewerImageListDouble.length - 1
+            }
           }
         } else {
           if (event.key === prev || event.key === 'ArrowUp') {
@@ -2421,6 +2434,9 @@ export default defineComponent({
     viewManga (book) {
       this.bookDetail = book
       this.viewerImageList = []
+      this.currentImageIndex = 0
+      this.insertEmptyPage = false
+      this.insertEmptyPageIndex = 1
       const loading = ElLoading.service({
         lock: true,
         text: 'Loading',
@@ -2718,15 +2734,12 @@ export default defineComponent({
         window.addEventListener('mouseup', stopResize, false)
       }
     },
-    releaseSendImageLock () {
+    handleStopReadManga () {
       if (this.setting.keepReadingProgress) this.saveReadingProgress()
-      this.currentImageIndex = 0
-      this.insertEmptyPage = false
-      this.insertEmptyPageIndex = 1
       ipcRenderer.invoke('release-sendimagelock')
     },
     toNextMangaRandom () {
-      this.releaseSendImageLock()
+      this.handleStopReadManga()
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>this.isBook(book) && this.isVisibleBook(book))
       let selectBook = _.sample(activeBookList)
       setTimeout(()=>{
@@ -2735,7 +2748,7 @@ export default defineComponent({
       }, 500)
     },
     toNextManga (step) {
-      this.releaseSendImageLock()
+      this.handleStopReadManga()
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>this.isBook(book) && this.isVisibleBook(book))
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       let indexNext = indexNow + step

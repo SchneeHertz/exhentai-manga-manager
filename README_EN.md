@@ -14,7 +14,7 @@
 
 <p>
   <a href="https://www.electronjs.org/">
-    <img src="https://img.shields.io/badge/Electron-blue?style=flat-square" alt="Electron" />
+    <img src="https://img.shields.io/badge/require-Windows_10-blue?style=flat-square" alt="Windows_10" />
   </a>
   <a href="https://github.com/SchneeHertz/exhentai-manga-manager/stargazers">
     <img src="https://img.shields.io/github/stars/SchneeHertz/exhentai-manga-manager?style=flat-square&color=cornflowerblue" alt="Github Stars" />

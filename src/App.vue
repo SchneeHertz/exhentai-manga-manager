@@ -3,7 +3,7 @@
     <div id="progressbar" :style="{ width: progress + '%' }"></div>
     <el-row :gutter="20" class="book-search-bar">
       <el-col :span="1" :offset="2">
-        <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
+        <el-button type="primary" :icon="TreeViewAlt" plain @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
       </el-col>
       <el-col :span="8">
         <el-autocomplete
@@ -38,22 +38,22 @@
         </el-autocomplete>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="Search32Filled" plain class="function-button" @click="searchBook" :title="$t('m.search')"></el-button>
+        <el-button type="primary" :icon="Search32Filled" plain @click="searchBook" :title="$t('m.search')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="MdShuffle" plain class="function-button" @click="shuffleBook" :title="$t('m.shuffle')"></el-button>
+        <el-button :icon="MdShuffle" plain @click="shuffleBook" :title="$t('m.shuffle')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdRefresh" plain class="function-button" @click="loadBookList(true)" :title="$t('m.manualScan')"></el-button>
+        <el-button type="primary" :icon="MdRefresh" plain @click="loadBookList(true)" :title="$t('m.manualScan')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdCodeDownload" plain class="function-button" @click="getBookListMetadata('exhentai')" :title="$t('m.batchGetExMetadata')"></el-button>
+        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata('exhentai')" :title="$t('m.batchGetExMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="MdBulb" plain class="function-button" @click="displayTagGraph" :title="$t('m.tagAnalysis')"></el-button>
+        <el-button :icon="MdBulb" plain @click="displayTagGraph" :title="$t('m.tagAnalysis')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
+        <el-button :icon="Setting" plain @click="dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
       </el-col>
       <el-col :span="3">
         <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
@@ -78,16 +78,16 @@
       <el-col :span="4">
         <el-row :gutter="20">
           <el-col :span="6"  v-if="!editCollectionView">
-            <el-button plain class="function-button" @click="createCollection" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
+            <el-button plain @click="createCollection" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="addCollection" :icon="Collections20Filled" :title="$t('m.addCollection')"></el-button>
+            <el-button type="primary" plain @click="addCollection" :icon="Collections20Filled" :title="$t('m.addCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="renameCollection" :icon="Rename16Regular" :title="$t('m.renameCollection')"></el-button>
+            <el-button type="primary" plain @click="renameCollection" :icon="Rename16Regular" :title="$t('m.renameCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
+            <el-button type="primary" plain @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
           </el-col>
         </el-row>
       </el-col>

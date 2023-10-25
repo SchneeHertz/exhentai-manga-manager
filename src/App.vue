@@ -5,7 +5,7 @@
       <el-col :span="1" :offset="2">
         <el-button type="primary" :icon="TreeViewAlt" plain class="function-button" @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
       </el-col>
-      <el-col :span="9">
+      <el-col :span="8">
         <el-autocomplete
           :model-value="searchString"
           :fetch-suggestions="querySearch"
@@ -41,10 +41,16 @@
         <el-button type="primary" :icon="Search32Filled" plain class="function-button" @click="searchBook" :title="$t('m.search')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdShuffle" plain class="function-button" @click="shuffleBook" :title="$t('m.shuffle')"></el-button>
+        <el-button :icon="MdShuffle" plain class="function-button" @click="shuffleBook" :title="$t('m.shuffle')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdBulb" plain class="function-button" @click="displayTagGraph" :title="$t('m.tagAnalysis')"></el-button>
+        <el-button type="primary" :icon="MdRefresh" plain class="function-button" @click="loadBookList(true)" :title="$t('m.manualScan')"></el-button>
+      </el-col>
+      <el-col :span="1">
+        <el-button type="primary" :icon="MdCodeDownload" plain class="function-button" @click="getBookListMetadata('exhentai')" :title="$t('m.batchGetExMetadata')"></el-button>
+      </el-col>
+      <el-col :span="1">
+        <el-button :icon="MdBulb" plain class="function-button" @click="displayTagGraph" :title="$t('m.tagAnalysis')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="Setting" plain class="function-button" @click="dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
@@ -72,7 +78,7 @@
       <el-col :span="4">
         <el-row :gutter="20">
           <el-col :span="6"  v-if="!editCollectionView">
-            <el-button type="primary" plain class="function-button" @click="createCollection" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
+            <el-button plain class="function-button" @click="createCollection" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain class="function-button" @click="addCollection" :icon="Collections20Filled" :title="$t('m.addCollection')"></el-button>
@@ -928,7 +934,7 @@ import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Close, Setting } from '@element-plus/icons-vue'
 import { Collections20Filled, Search32Filled, Rename16Regular } from '@vicons/fluent'
-import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline } from '@vicons/ionicons4'
+import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
@@ -953,7 +959,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave,
+      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
       TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular
     }
   },

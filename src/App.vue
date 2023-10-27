@@ -1317,6 +1317,18 @@ export default defineComponent({
             document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollHeight
           }
         }
+        if (event.key === 'Backspace') {
+          document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
+        }
+      } else if (this.dialogVisibleBookDetail && !this.drawerVisibleViewer && !this.editingTag && !this.dialogVisibleEhSearch) {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          this.viewManga(this.bookDetail)
+        } else if (event.key === 'Delete') {
+          this.deleteLocalBook(this.bookDetail)
+        } else if (event.key === 'Backspace') {
+          document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
+        }
       }
     },
     resolveWheel (event) {

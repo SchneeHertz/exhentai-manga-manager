@@ -1966,6 +1966,7 @@ export default defineComponent({
       if (!val) {
         this.searchString = ''
         this.handleSortChange(this.sortValue)
+        setTimeout(() => document.querySelector('.search-input .el-input__inner').blur(), 100)
       }
     },
     handleInput (val) {

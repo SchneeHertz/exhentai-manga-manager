@@ -126,7 +126,8 @@
     "defaultExpandTree": "Default Expand Tree",
     "keepReadingProgress": "Keep Reading Progress",
     "reverseLeftRight": "Reverse the left and right page-turning buttons",
-    "autoNextManga": "Auto Next Manga"
+    "autoNextManga": "Auto Next Manga",
+    "accelerator": "Accelerator"
   },
   "c": {
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",

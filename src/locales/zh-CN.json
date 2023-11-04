@@ -126,7 +126,8 @@
     "defaultExpandTree": "默认展开文件树",
     "keepReadingProgress": "保持阅读进度",
     "reverseLeftRight": "翻转左右翻页按键",
-    "autoNextManga": "自动跳转到下一本"
+    "autoNextManga": "自动跳转到下一本",
+    "accelerator": "快捷键"
   },
   "c": {
     "importMessage": "导入完成，如导入数据有合集，需打开编辑合集后手动保存",

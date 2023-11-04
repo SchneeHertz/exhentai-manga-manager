@@ -95,14 +95,18 @@
     <el-row :gutter="20" class="book-card-area">
       <el-col :span="24" v-show="!editCollectionView">
         <div
-          v-for="book in chunkDisplayBookList"
+          v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
           class="book-card-frame"
         >
           <!-- show book card when book isn't a collection, book isn't hidden because collected,
             and book isn't hidden by user except sorting by onlyHiddenBook
             and book isn't hidden by folder select -->
-          <div class="book-card" v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide">
+          <div
+            class="book-card"
+            v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide"
+            :tabindex="index + 1"
+          >
             <p class="book-title"
               @click="openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
@@ -132,7 +136,11 @@
             >{{book.status}}</el-tag>
             <el-rate v-model="book.rating" allow-half @change="saveBook(book)"/>
           </div>
-          <div class="book-card" v-if="book.isCollection && !book.folderHide">
+          <div
+            class="book-card"
+            v-if="book.isCollection && !book.folderHide"
+            :tabindex="index + 1"
+          >
             <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
@@ -189,7 +197,7 @@
         layout="total, sizes, prev, pager, next, jumper"
         :total="displayBookCount"
         @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
+        @current-change="handleCurrentPageChange"
         background
       />
     </el-row>
@@ -377,39 +385,46 @@
       direction="btt"
       size="80vh"
       destroy-on-close
+      class="collection-drawer"
     >
       <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
-      <div class="book-card" v-for="book in openCollectionBookList" :key="book.id">
-        <p
-          class="book-title"
-          @click="openBookDetail(book)"
-          @contextmenu="onMangaTitleContextMenu($event, book)"
-          :title="getDisplayTitle(book)"
-        >{{getDisplayTitle(book)}}</p>
-        <img
-          class="book-cover"
-          :src="book.coverPath"
-          @click="handleClickCover(book)"
-          @contextmenu="onBookContextMenu($event, book)"
-        />
-        <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
-        <el-tag class="book-card-pagecount" size="small" type="info">{{ book.pageCount }}P</el-tag>
-        <el-icon
-          :size="30"
-          :color="book.mark ? '#E6A23C' : '#666666'"
-          class="book-card-star"
-          @click="switchMark(book)"
-        ><BookmarkTwotone /></el-icon>
-        <el-button-group class="outer-read-button-group">
-          <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-          <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
-        </el-button-group>
-        <el-tag
-          class="book-status-tag"
-          :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-          @click="searchFromTag(book.status)"
-        >{{book.status}}</el-tag>
-        <el-rate v-model="book.rating"  v-if="!book.isCollection" allow-half @change="saveBook(book)"/>
+      <div
+        v-for="(book, index) in openCollectionBookList"
+        :key="book.id"
+        class="book-card-frame"
+      >
+        <div class="book-card" :tabindex="index + 1">
+          <p
+            class="book-title"
+            @click="openBookDetail(book)"
+            @contextmenu="onMangaTitleContextMenu($event, book)"
+            :title="getDisplayTitle(book)"
+          >{{getDisplayTitle(book)}}</p>
+          <img
+            class="book-cover"
+            :src="book.coverPath"
+            @click="handleClickCover(book)"
+            @contextmenu="onBookContextMenu($event, book)"
+          />
+          <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+          <el-tag class="book-card-pagecount" size="small" type="info">{{ book.pageCount }}P</el-tag>
+          <el-icon
+            :size="30"
+            :color="book.mark ? '#E6A23C' : '#666666'"
+            class="book-card-star"
+            @click="switchMark(book)"
+          ><BookmarkTwotone /></el-icon>
+          <el-button-group class="outer-read-button-group">
+            <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+            <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
+          </el-button-group>
+          <el-tag
+            class="book-status-tag"
+            :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+            @click="searchFromTag(book.status)"
+          >{{book.status}}</el-tag>
+          <el-rate v-model="book.rating"  v-if="!book.isCollection" allow-half @change="saveBook(book)"/>
+        </div>
       </div>
     </el-drawer>
     <el-dialog v-model="dialogVisibleBookDetail"
@@ -421,7 +436,7 @@
           <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">{{getDisplayTitle(bookDetail)}}</span>
         </p>
       </template>
-      <el-row :gutter="20" class="book-detail-card" @click.middle="dialogVisibleBookDetail = !dialogVisibleBookDetail">
+      <el-row :gutter="20" class="book-detail-card">
         <el-col :span="6">
           <el-row class="book-detail-function book-detail-cover-frame">
             <img
@@ -897,6 +912,8 @@
             </el-col>
           </el-row>
         </el-tab-pane>
+        <el-tab-pane :label="$t('m.accelerator')" name="accelerator">
+        </el-tab-pane>
         <el-tab-pane :label="$t('m.about')" name="about">
           <el-descriptions :column="1">
             <el-descriptions-item :label="$t('m.appName')+':'">exhentai-manga-manager</el-descriptions-item>
@@ -943,6 +960,8 @@ import draggable from 'vuedraggable'
 import * as linkify from 'linkifyjs'
 import G6 from '@antv/g6'
 
+import { getWidth } from './utils.js'
+
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import en from 'element-plus/dist/locale/en.mjs'
 
@@ -981,7 +1000,7 @@ export default defineComponent({
       locale: zhCn,
       searchString: undefined,
       sortValue: undefined,
-      currentPage: 1,
+      _currentPage: 1,
       folderTreeData: [],
       tagNodeData: [],
       version: version,
@@ -1182,6 +1201,26 @@ export default defineComponent({
           }
         }
       }
+    },
+    currentPage: {
+      get () {
+        return this._currentPage
+      },
+      set (val) {
+        let pageLimit = Math.ceil(this.displayBookCount / this.setting.pageSize)
+        if (Number.isInteger(val)) {
+          if (val < 1) {
+            this._currentPage = 1
+          } else if (val > pageLimit) {
+            this._currentPage = pageLimit
+          } else {
+            this._currentPage = val
+          }
+        }
+      }
+    },
+    visibleChunkDisplayBookList () {
+      return this.chunkDisplayBookList.filter(book => !book.collectionHide && (this.sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide)
     }
   },
   mounted () {
@@ -1232,36 +1271,22 @@ export default defineComponent({
           this.dialogVisibleSetting = true
           this.activeSettingPanel = 'about'
           break
-        case 'focus-search':
-          document.querySelector('.search-input .el-input__inner').select()
-          break
-        case 'shuffle-manga':
-          this.shuffleBook()
-          break
-        case 'previous-manga':
-          if (this.drawerVisibleViewer) {
-            this.toNextManga(-1)
-          } else if (this.dialogVisibleBookDetail) {
-            this.jumpMangeDetail(-1)
-          }
-          break
-        case 'next-manga':
-          if (this.drawerVisibleViewer) {
-            this.toNextManga(1)
-          } else if (this.dialogVisibleBookDetail) {
-            this.jumpMangeDetail(1)
-          }
+        case 'accelerator':
+          this.dialogVisibleSetting = true
+          this.activeSettingPanel = 'accelerator'
           break
         case 'send-progress':
           this.progress = +arg.progress > 1 ? 100 : +arg.progress < 0 ? 0 : +arg.progress * 100
           break
         case 'tag-fail-non-tag-book':
-          this.displayBookList.forEach(book => {
-            if (book.status === 'non-tag' && this.isBook(book) && this.isVisibleBook(book)) {
-              book.status = 'tag-failed'
-              this.saveBook(book)
-            }
-          })
+          if (this.currentUI() === 'home') {
+            this.displayBookList.forEach(book => {
+              if (book.status === 'non-tag' && this.isBook(book) && this.isVisibleBook(book)) {
+                book.status = 'tag-failed'
+                this.saveBook(book)
+              }
+            })
+          }
           break
       }
     })
@@ -1273,6 +1298,59 @@ export default defineComponent({
   },
   methods: {
     // base function
+    currentUI () {
+      if (this.dialogVisibleSetting) {
+        return 'setting'
+      }
+      if (this.dialogVisibleEhSearch) {
+        return 'search-dialog'
+      }
+      if (!!document.querySelector('.is-message-box')) {
+        return 'message-box'
+      }
+      if (this.drawerVisibleViewer) {
+        if (this.showThumbnail) {
+          return 'viewer-thumbnail'
+        } else {
+          return 'viewer-content'
+        }
+      }
+      if (this.dialogVisibleBookDetail) {
+        if (this.editingTag) {
+          return 'edit-tag'
+        } else {
+          return 'bookdetail'
+        }
+      }
+      if (this.dialogVisibleGraph) {
+        return 'tag-graph'
+      }
+      if (this.sideVisibleFolderTree) {
+        return 'folder-tree'
+      }
+      if (this.editCollectionView) {
+        return 'edit-collection'
+      }
+      if (this.drawerVisibleCollection) {
+        return 'collection'
+      }
+      return 'home'
+    },
+    jumpBookByTabindex (step, container) {
+      try {
+        let activeElement = document.activeElement
+        if (!document.querySelector(container).contains(activeElement) || !activeElement.classList.contains('book-card')) {
+          throw new Error('active element not in container or not book-card')
+        }
+        let tabIndexNow = activeElement.getAttribute('tabindex')
+        let tabIndexNext = parseInt(tabIndexNow) + step
+        if (!(tabIndexNext >= 1)) throw new Error('detect illegal tabindex')
+        document.querySelector(`${container} div[tabindex="${tabIndexNext}"]`).focus()
+      } catch (error) {
+        console.log(error)
+        document.querySelector(`${container} div[tabindex="1"]`).focus()
+      }
+    },
     resolveKey (event) {
       let next, prev
       if (this.setting.reverseLeftRight) {
@@ -1280,53 +1358,142 @@ export default defineComponent({
       } else {
         ;({ next, prev } = this.keyMap.normal)
       }
-      if (this.drawerVisibleViewer && !this.showThumbnail) {
+      if (this.currentUI() === 'viewer-content') {
         if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
           if (event.key === next || event.key === 'ArrowDown') {
             this.currentImageIndex += 1
-          } else if (event.key === prev || event.key === 'ArrowUp') {
+          }
+          if (event.key === prev || event.key === 'ArrowUp') {
             this.currentImageIndex -= 1
-          } else if (event.key === "/") {
-            this.insertEmptyPageIndex = this.currentImageIndex
-            this.insertEmptyPage = !this.insertEmptyPage
-          } else if (event.key === 'Home') {
+          }
+          if (event.key === 'Home') {
             this.currentImageIndex = 0
-          } else if (event.key === 'End') {
+          }
+          if (event.key === 'End') {
             if (this.imageStyleType === 'single') {
               this.currentImageIndex = this.viewerImageList.length - 1
             } else if (this.imageStyleType === 'double') {
               this.currentImageIndex = this.viewerImageListDouble.length - 1
             }
           }
-        } else {
+        }
+        if (this.imageStyleType === 'double') {
+          if (event.key === "/") {
+            this.insertEmptyPageIndex = this.currentImageIndex
+            this.insertEmptyPage = !this.insertEmptyPage
+          }
+        }
+        if (this.imageStyleType === 'scroll') {
           if (event.key === prev || event.key === 'ArrowUp') {
             if (event.ctrlKey) {
               document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 10)
             } else {
               document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 1.2)
             }
-          } else if (event.key === next || event.key === 'ArrowDown') {
+          }
+          if (event.key === next || event.key === 'ArrowDown') {
             if (event.ctrlKey) {
               document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 10)
             } else {
               document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 1.2)
             }
-          } else if (event.key === 'Home') {
+          }
+          if (event.key === 'Home') {
             document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
-          } else if (event.key === 'End') {
+          }
+          if (event.key === 'End') {
             document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollHeight
           }
         }
-        if (event.key === 'Backspace') {
-          document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
+      }
+      if (this.currentUI() === 'viewer-content' || this.currentUI() === 'viewer-thumbnail') {
+        if (event.key === 'PageDown') {
+          if (event.shiftKey) {
+            this.toNextMangaRandom()
+          } else {
+            this.toNextManga(1)
+          }
         }
-      } else if (this.dialogVisibleBookDetail && !this.drawerVisibleViewer && !this.editingTag && !this.dialogVisibleEhSearch) {
+        if (event.key === 'PageUp') {
+          this.toNextManga(-1)
+        }
+      }
+      if (this.currentUI() === 'bookdetail') {
         if (event.key === 'Enter') {
           event.preventDefault()
           this.viewManga(this.bookDetail)
-        } else if (event.key === 'Delete') {
+        }
+        if (event.key === 'Delete') {
           this.deleteLocalBook(this.bookDetail)
-        } else if (event.key === 'Backspace') {
+        }
+        if (event.key === 'PageDown') {
+          if (event.shiftKey) {
+            this.jumpMangeDetailRandom()
+          } else {
+            this.jumpMangeDetail(1)
+          }
+        }
+        if (event.key === 'PageUp') {
+          this.jumpMangeDetail(-1)
+        }
+      }
+      let bookEachLine = Math.floor(getWidth(document.querySelector('.book-card-area div:first-child'), 'width') / getWidth(document.querySelector('.book-card'), 'full'))
+      if (this.currentUI() === 'home') {
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          document.activeElement.querySelector('.book-cover').click()
+        }
+        if (event.key === 'F6' || (event.ctrlKey && event.key === 'L')) {
+          document.querySelector('.search-input .el-input__inner').select()
+        }
+        if (event.ctrlKey && event.key === 'S') {
+          this.shuffleBook()
+        }
+        if (event.key === 'PageUp') {
+          event.preventDefault()
+          this.currentPage -= 1
+          this.handleCurrentPageChange(this.currentPage)
+        }
+        if (event.key === 'PageDown') {
+          event.preventDefault()
+          this.currentPage += 1
+          this.handleCurrentPageChange(this.currentPage)
+        }
+        if (event.key === 'ArrowDown') {
+          event.preventDefault()
+          this.jumpBookByTabindex(bookEachLine, '.book-card-area')
+        }
+        if (event.key === 'ArrowUp') {
+          event.preventDefault()
+          this.jumpBookByTabindex(-bookEachLine, '.book-card-area')
+        }
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault()
+          this.jumpBookByTabindex(-1, '.book-card-area')
+        }
+        if (event.key === 'ArrowRight') {
+          event.preventDefault()
+          this.jumpBookByTabindex(1, '.book-card-area')
+        }
+      } else if (this.currentUI() === 'collection') {
+        if (event.key === 'Enter') {
+          document.activeElement.querySelector('.book-cover').click()
+        }
+        if (event.key === 'ArrowDown') {
+          this.jumpBookByTabindex(bookEachLine, '.collection-drawer')
+        }
+        if (event.key === 'ArrowUp') {
+          this.jumpBookByTabindex(-bookEachLine, '.collection-drawer')
+        }
+        if (event.key === 'ArrowLeft') {
+          this.jumpBookByTabindex(-1, '.collection-drawer')
+        }
+        if (event.key === 'ArrowRight') {
+          this.jumpBookByTabindex(1, '.collection-drawer')
+        }
+      }
+      if (['viewer-content', 'viewer-thumbnail', 'bookdetail', 'tag-graph', 'folder-tree', 'collection'].includes(this.currentUI())) {
+        if (event.key === 'Backspace') {
           document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
         }
       }
@@ -1339,7 +1506,7 @@ export default defineComponent({
         } else {
           electronFunction['set-zoom-level'](level + 1)
         }
-      } else if (this.drawerVisibleViewer && !this.showThumbnail) {
+      } else if (this.currentUI() === 'viewer-content') {
         if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
           let element = document.querySelector('.viewer-drawer .el-drawer__body')
           if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
@@ -1357,7 +1524,7 @@ export default defineComponent({
       }
     },
     handleViewerAreaClick (event) {
-      if (this.drawerVisibleViewer && !this.showThumbnail) {
+      if (this.currentUI() === 'viewer-content') {
         if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
           let click
           if (this.setting.reverseLeftRight) {
@@ -2078,7 +2245,7 @@ export default defineComponent({
       this.saveSetting()
       this.scrollMainPageTop()
     },
-    handleCurrentChange (currentPage) {
+    handleCurrentPageChange (currentPage) {
       this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, currentPage - 1)
       this.scrollMainPageTop()
     },
@@ -2464,7 +2631,7 @@ export default defineComponent({
       ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(this.bookDetail))
       .then(() => {
         this.drawerVisibleViewer = true
-        if (this.setting.keepReadingProgress && !this.showThumbnail) this.handleJumpToReadingProgress(book)
+        if (this.setting.keepReadingProgress && this.currentUI() === 'viewer-content') this.handleJumpToReadingProgress(book)
       })
       .catch(err => {
         console.log(err)
@@ -2757,23 +2924,14 @@ export default defineComponent({
       if (this.setting.keepReadingProgress) this.saveReadingProgress()
       ipcRenderer.invoke('release-sendimagelock')
     },
-    toNextMangaRandom () {
-      this.handleStopReadManga()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>this.isBook(book) && this.isVisibleBook(book))
-      let selectBook = _.sample(activeBookList)
-      setTimeout(()=>{
-        this.viewManga(selectBook)
-        if (this.showComment) this.getComments(selectBook.url)
-      }, 500)
-    },
     toNextManga (step) {
       this.handleStopReadManga()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>this.isBook(book) && this.isVisibleBook(book))
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       let indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {
         let selectBook = activeBookList[indexNext]
-        setTimeout(()=>{
+        setTimeout(() => {
           this.viewManga(selectBook)
           if (this.showComment) this.getComments(selectBook.url)
         }, 500)
@@ -2781,8 +2939,17 @@ export default defineComponent({
         this.printMessage('info', 'out of range')
       }
     },
+    toNextMangaRandom () {
+      this.handleStopReadManga()
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
+      let selectBook = _.sample(activeBookList)
+      setTimeout(() => {
+        this.viewManga(selectBook)
+        if (this.showComment) this.getComments(selectBook.url)
+      }, 500)
+    },
     jumpMangeDetail (step) {
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book=>book=>this.isBook(book) && this.isVisibleBook(book))
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
       let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       let indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {
@@ -2790,6 +2957,10 @@ export default defineComponent({
       } else {
         this.printMessage('info', 'out of range')
       }
+    },
+    jumpMangeDetailRandom () {
+      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
+      this.openBookDetail(_.sample(activeBookList))
     },
     getCurrentImageId () {
       let currentImageId

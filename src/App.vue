@@ -464,7 +464,11 @@
             </el-descriptions>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button>
+            <el-button-group style="margin-right: 12px;">
+              <el-button type="success" style="padding-right: 0;" plain @click="openLocalBook(bookDetail)">{{$t('m.re')}}</el-button>
+              <el-button type="success" style="padding-left: 0;" plain @click="viewManga(bookDetail)">{{$t('m.ad')}}</el-button>
+            </el-button-group>
+            <!-- <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button> -->
             <el-button plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
@@ -593,6 +597,7 @@
       width="50em"
       :modal="false"
       append-to-body
+      top="60px"
       class="setting-dialog"
     >
       <template #header><p class="setting-title">{{$t('m.setting')}}</p></template>
@@ -913,6 +918,17 @@
           </el-row>
         </el-tab-pane>
         <el-tab-pane :label="$t('m.accelerator')" name="accelerator">
+          <el-descriptions
+            :column="2" size="small"
+            v-for="group in acceleratorInfo" :key="group.group"
+            :title="$t(`ac.${group.group}`)"
+          >
+            <el-descriptions-item
+              v-for="(value, key) in group.accelerators" :key="value"
+              :label="$t(`ac.${group.group}_${key}`)"
+              width="20em"
+            >{{ value }}</el-descriptions-item>
+          </el-descriptions>
         </el-tab-pane>
         <el-tab-pane :label="$t('m.about')" name="about">
           <el-descriptions :column="1">
@@ -960,7 +976,7 @@ import draggable from 'vuedraggable'
 import * as linkify from 'linkifyjs'
 import G6 from '@antv/g6'
 
-import { getWidth } from './utils.js'
+import { getWidth, acceleratorInfo } from './utils.js'
 
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import en from 'element-plus/dist/locale/en.mjs'
@@ -1040,6 +1056,7 @@ export default defineComponent({
       showComment: true,
       showThumbnail: false,
       thumbnailColumn: 10,
+      acceleratorInfo,
       // dict
       cat2letter: {
         language: 'l',
@@ -1442,6 +1459,9 @@ export default defineComponent({
         if (event.key === 'Enter') {
           event.preventDefault()
           document.activeElement.querySelector('.book-cover').click()
+        }
+        if (event.key === 'F5') {
+          this.loadBookList(true)
         }
         if (event.key === 'F6' || (event.ctrlKey && event.key === 'L')) {
           document.querySelector('.search-input .el-input__inner').select()

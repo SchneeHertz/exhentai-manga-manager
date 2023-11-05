@@ -176,52 +176,11 @@ const createWindow = () => {
         { type: 'separator' },
         { role: 'minimize' },
         { role: 'togglefullscreen' },
-        { type: 'separator' },
-        { label: 'Previous Manga',
-          accelerator: 'PageUp',
-          click: async () => {
-            win.webContents.send('send-action', { action: 'previous-manga' })
-          }
-        },
-        { label: 'Next Manga',
-          accelerator: 'PageDown',
-          click: async () => {
-            win.webContents.send('send-action', { action: 'next-manga' })
-          }
-        },
       ]
     },
     {
       label: 'Shortcut',
       submenu: [
-        {
-          label: 'Focus SearchBar',
-          accelerator: 'CommandOrControl+L',
-          click: () => {
-            win.webContents.send('send-action', {
-              action: 'focus-search'
-            })
-          }
-        },
-        {
-          label: 'Focus SearchBar (invisible)',
-          accelerator: 'F6',
-          visible: false,
-          click: () => {
-            win.webContents.send('send-action', {
-              action: 'focus-search'
-            })
-          }
-        },
-        {
-          label: 'Shuffle Manga',
-          accelerator: 'CommandOrControl+S',
-          click: () => {
-            win.webContents.send('send-action', {
-              action: 'shuffle-manga'
-            })
-          }
-        },
         {
           label: 'Tag-fail Non-tag Book',
           click: () => {
@@ -241,6 +200,15 @@ const createWindow = () => {
           click: async () => {
             win.webContents.send('send-action', {
               action: 'about'
+            })
+          }
+        },
+        {
+          label: 'Accelerator',
+          accelerator: 'Shift+F1',
+          click: async () => {
+            win.webContents.send('send-action', {
+              action: 'accelerator'
             })
           }
         }
@@ -275,9 +243,6 @@ app.on('activate', () => {
 })
 
 app.on('ready', async () => {
-  if (!app.isPackaged) {
-    // await session.defaultSession.loadExtension(path.resolve(__dirname,'./devtools'))
-  }
   if (setting.proxy) {
     await session.defaultSession.setProxy({
       mode: 'fixed_servers',

@@ -1463,10 +1463,10 @@ export default defineComponent({
         if (event.key === 'F5') {
           this.loadBookList(true)
         }
-        if (event.key === 'F6' || (event.ctrlKey && event.key === 'L')) {
+        if (event.key === 'F6' || (event.ctrlKey && event.key === 'l')) {
           document.querySelector('.search-input .el-input__inner').select()
         }
-        if (event.ctrlKey && event.key === 'S') {
+        if (event.ctrlKey && event.key === 's') {
           this.shuffleBook()
         }
         if (event.key === 'PageUp') {

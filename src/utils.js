@@ -25,6 +25,7 @@ const acceleratorInfo = [
       'Reload': 'Ctrl+R',
       'ShowAbout': 'F1',
       'ShowAccelerator': 'Shift+F1',
+      'Escape': 'Escape / Backspace / MouseButton3'
     }
   },
   {
@@ -50,7 +51,6 @@ const acceleratorInfo = [
       'NextRandomBook': 'Shift+PageDown',
       'OpenInnerViewer': 'Enter',
       'DeleteBook': 'Delete',
-      'CloseBookDetail': 'Escape / Backspace / MouseButton3',
     }
   },
   {
@@ -59,7 +59,6 @@ const acceleratorInfo = [
       'PreviousBook': 'PageUp',
       'NextBook': 'PageDown',
       'NextRandomBook': 'Shift+PageDown',
-      'CloseInnerViewer': 'Escape / Backspace / MouseButton3',
       'PreviousPage': 'ArrowLeft / ArrowUp / WheelUp',
       'NextPage': 'ArrowRight / ArrowDown / WheelDown',
       'ScrollUp': 'Ctrl+ArrowUp / Ctrl+ArrowLeft',

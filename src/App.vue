@@ -594,7 +594,7 @@
       </div>
     </el-dialog>
     <el-dialog v-model="dialogVisibleSetting"
-      width="50em"
+      width="54em"
       :modal="false"
       append-to-body
       top="60px"
@@ -919,15 +919,14 @@
         </el-tab-pane>
         <el-tab-pane :label="$t('m.accelerator')" name="accelerator">
           <el-descriptions
-            :column="2" size="small"
+            :column="2" size="small" style="margin-top: 16px;"
             v-for="group in acceleratorInfo" :key="group.group"
             :title="$t(`ac.${group.group}`)"
           >
-            <el-descriptions-item
-              v-for="(value, key) in group.accelerators" :key="value"
-              :label="$t(`ac.${group.group}_${key}`)"
-              width="20em"
-            >{{ value }}</el-descriptions-item>
+            <el-descriptions-item v-for="(value, key) in group.accelerators" :key="value" width="22em">
+              <template #label><span style="display: inline-block; min-width: 10em;">{{ $t(`ac.${group.group}_${key}`) }}</span></template>
+              <el-tag>{{ value }}</el-tag>
+            </el-descriptions-item>
           </el-descriptions>
         </el-tab-pane>
         <el-tab-pane :label="$t('m.about')" name="about">
@@ -1316,14 +1315,17 @@ export default defineComponent({
   methods: {
     // base function
     currentUI () {
+      if (document.activeElement.tagName === 'INPUT') {
+        return 'inputing'
+      }
+      if (!!document.querySelector('.is-message-box')) {
+        return 'message-box'
+      }
       if (this.dialogVisibleSetting) {
         return 'setting'
       }
       if (this.dialogVisibleEhSearch) {
         return 'search-dialog'
-      }
-      if (!!document.querySelector('.is-message-box')) {
-        return 'message-box'
       }
       if (this.drawerVisibleViewer) {
         if (this.showThumbnail) {
@@ -1374,6 +1376,11 @@ export default defineComponent({
         ;({ next, prev } = this.keyMap.reverse)
       } else {
         ;({ next, prev } = this.keyMap.normal)
+      }
+      if (this.currentUI() !== 'inputing') {
+        if (event.key === 'Backspace') {
+          document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
+        }
       }
       if (this.currentUI() === 'viewer-content') {
         if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
@@ -1463,10 +1470,10 @@ export default defineComponent({
         if (event.key === 'F5') {
           this.loadBookList(true)
         }
-        if (event.key === 'F6' || (event.ctrlKey && event.key === 'L')) {
+        if (event.key === 'F6' || (event.ctrlKey && event.key === 'l')) {
           document.querySelector('.search-input .el-input__inner').select()
         }
-        if (event.ctrlKey && event.key === 'S') {
+        if (event.ctrlKey && event.key === 's') {
           this.shuffleBook()
         }
         if (event.key === 'PageUp') {
@@ -1510,11 +1517,6 @@ export default defineComponent({
         }
         if (event.key === 'ArrowRight') {
           this.jumpBookByTabindex(1, '.collection-drawer')
-        }
-      }
-      if (['viewer-content', 'viewer-thumbnail', 'bookdetail', 'tag-graph', 'folder-tree', 'collection'].includes(this.currentUI())) {
-        if (event.key === 'Backspace') {
-          document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
         }
       }
     },

@@ -11,7 +11,8 @@ const _7z = path.join(process.cwd(), 'resources/extraResources/7z.exe')
 let getArchivelist = async (libraryPath)=>{
   let list = globSync('**/*.@(rar|7z|cb7|cbr)', {
     cwd: libraryPath,
-    nocase: true
+    nocase: true,
+    follow: true
   })
   list = list.map(filepath=>path.join(libraryPath, filepath))
   return list

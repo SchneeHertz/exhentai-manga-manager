@@ -131,6 +131,7 @@
             </el-button-group>
             <el-tag
               class="book-status-tag"
+              effect="plain"
               :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)"
             >{{book.status}}</el-tag>
@@ -420,6 +421,7 @@
           </el-button-group>
           <el-tag
             class="book-status-tag"
+            effect="plain"
             :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
             @click="searchFromTag(book.status)"
           >{{book.status}}</el-tag>

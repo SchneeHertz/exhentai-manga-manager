@@ -93,7 +93,7 @@
       </el-col>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
-      <el-col :span="24" v-show="!editCollectionView">
+      <el-col :span="24" v-show="!editCollectionView" class="book-card-list">
         <div
           v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
@@ -123,7 +123,7 @@
             <el-icon
               :size="30"
               :color="book.mark ? '#E6A23C' : '#666666'"
-              class="book-card-star" @click="switchMark(book)"
+              class="book-card-mark" @click="switchMark(book)"
             ><BookmarkTwotone /></el-icon>
             <el-button-group class="outer-read-button-group">
               <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
@@ -144,7 +144,7 @@
             <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
-            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-star"><BookmarkTwotone /></el-icon>
+            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
             <el-rate v-model="book.rating" allow-half disabled/>
           </div>
         </div>
@@ -411,7 +411,7 @@
           <el-icon
             :size="30"
             :color="book.mark ? '#E6A23C' : '#666666'"
-            class="book-card-star"
+            class="book-card-mark"
             @click="switchMark(book)"
           ><BookmarkTwotone /></el-icon>
           <el-button-group class="outer-read-button-group">
@@ -3393,31 +3393,27 @@ body
   .book-collect, .book-collection
     height: calc(100vh - 98px)
     overflow-x: auto
+    padding-top: 4px
+  .book-card-list
+    display: flex
+    flex-wrap: wrap
     justify-content: center
 
 .pagination-bar
   margin: 4px 0
   justify-content: center
 
-.book-badge
-  .el-badge__content.is-fixed
-    top: 10px
-    right: calc(32px + 18px / 2)
-.book-add-badge
-  .el-badge__content.is-fixed
-    top: 10px
-    right: calc(10px + 18px / 2)
-    cursor: pointer
+
 
 .book-card-frame
   display: inline-block
 .book-card
   display: inline-block
-  width: 240px
+  width: 220px
   height: 367px
   border: solid 1px var(--el-border-color)
-  border-radius: 8px
-  margin: 6px 10px
+  border-radius: 4px
+  margin: 6px 6px
   position: relative
 .book-collection-tag
   position: absolute
@@ -3426,39 +3422,38 @@ body
 .book-title
   height: 36px
   overflow-y: hidden
-  margin: 8px 2px
+  margin: 8px 6px
   font-size: 14px
   cursor: pointer
   line-height: 18px
-.book-card-star, .book-detail-star, .book-card-language, .book-card-pagecount
+.book-card-mark, .book-detail-star, .book-card-language, .book-card-pagecount
   position: absolute
 .book-card-language
-  left: 19px
-  top: 52px
+  left: 11px
+  top: 53px
 .book-card-pagecount
-  left: 19px
-  top: 315px
-.book-card-star
-  right: 12px
+  left: 11px
+  top: 314px
+.book-card-mark
+  right: 4px
   top: 40px
 .book-detail-star
-  right: -8px
+  right: -6px
   top: -14px
 .book-cover
-  border-radius: 8px
+  border-radius: 4px
   width: 200px
   height: 283px
-  margin: 0 20px
   object-fit: cover
 .outer-read-button-group
-  margin: 0 8px
+  margin: 0 6px
 .outer-read-button:first-child
   padding: 0 0 0 4px
 .outer-read-button + .outer-read-button
   padding: 0 4px 0 0
 .book-status-tag
   padding: 0 2px
-  margin-right: 8px
+  margin-right: 4px
   cursor: pointer
 .el-rate
   display: inline-block
@@ -3472,12 +3467,17 @@ body
   height: calc(100vh - 170px)
 
 .book-collect-card
-  width: 155px
+  width: 138px
   height: 229px
   border: solid 1px var(--el-border-color)
   border-radius: 4px
-  margin: 4px 8px
+  margin: 6px 6px
   position: relative
+.book-add-badge
+  .el-badge__content.is-fixed
+    top: 6px
+    right: 17px
+    cursor: pointer
 .book-collect-title
   height: 38px
   overflow-y: hidden
@@ -3550,6 +3550,7 @@ body
       width: 250px
       height: 354px
       object-fit: cover
+      border-radius: 4px
   .edit-line
     margin: 4px 0
     .el-select

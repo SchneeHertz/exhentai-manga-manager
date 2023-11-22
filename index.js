@@ -362,7 +362,8 @@ let geneCover = async (filepath, type) => {
   let coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
   let imageResizeResult = await sharp(tempCoverPath)
     .resize(500, 707, {
-      fit: 'contain'
+      fit: 'contain',
+      background: '#303133'
     })
     .toFile(coverPath)
     .catch((e) => {
@@ -591,6 +592,16 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
   }
   setProgressBar(-1)
   return bookList
+})
+
+ipcMain.handle('patch-local-metadata-by-book', async (event, book) => {
+  let { filepath, type } = book
+  if (!type) type = 'archive'
+  let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
+  if (targetFilePath && coverPath) {
+    let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+    return { coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash }
+  }
 })
 
 ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {

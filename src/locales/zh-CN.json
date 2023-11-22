@@ -34,7 +34,9 @@
     "editTag": "编辑标签",
     "getMetadata": "手动获取元数据",
     "deleteManga": "删除漫画",
-    "openMangaFileLocation": "打开漫画文件所在目录",
+    "delete": "删除",
+    "rescan": "重扫",
+    "openMangaFileLocation": "打开所在目录",
     "showManga": "显示漫画",
     "hideManga": "隐藏漫画",
     "noResults": "无结果",
@@ -147,7 +149,8 @@
     "downloadUpdate": "下载更新",
     "proxyWorking": "代理服务器连接正常",
     "proxyNotWorking": "连接错误，检查代理服务器是否工作，设置是否正确",
-    "confirmDelete": "将漫画从软件中移除并删除本地文件，确定？"
+    "confirmDelete": "将漫画从软件中移除并删除本地文件，确定？",
+    "rescanSuccess": "重新扫描完成"
   },
   "ac": {
     "Global": "全局",

@@ -479,7 +479,8 @@
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteManga')}}</el-button>
+            <el-button plain type="danger" @click="deleteLocalBook(bookDetail)">{{$t('m.delete')}}</el-button>
+            <el-button plain @click="rescanBook(bookDetail)">{{$t('m.rescan')}}</el-button>
             <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
@@ -2608,6 +2609,14 @@ export default defineComponent({
     openLocalBook (book) {
       this.bookDetail = book
       ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
+    },
+    rescanBook (book) {
+      ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
+      .then((bookInfo)=>{
+        _.assign(book, bookInfo)
+        this.saveBook(book)
+        this.printMessage('success', this.$t('c.rescanSuccess'))
+      })
     },
     deleteLocalBook (book) {
       const deleteBook = ()=>{

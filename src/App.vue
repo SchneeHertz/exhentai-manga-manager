@@ -134,7 +134,7 @@
               :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)"
             >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating" allow-half @change="saveBook(book)"/>
+            <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
           </div>
           <div
             class="book-card"
@@ -145,7 +145,7 @@
             <p class="book-title" :title="book.title">{{book.title}}</p>
             <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
             <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
-            <el-rate v-model="book.rating" allow-half disabled/>
+            <el-rate v-model="book.rating" size="small" allow-half disabled/>
           </div>
         </div>
       </el-col>
@@ -423,7 +423,7 @@
             :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
             @click="searchFromTag(book.status)"
           >{{book.status}}</el-tag>
-          <el-rate v-model="book.rating"  v-if="!book.isCollection" allow-half @change="saveBook(book)"/>
+          <el-rate v-model="book.rating"  v-if="!book.isCollection" size="small" allow-half @change="saveBook(book)"/>
         </div>
       </div>
     </el-drawer>
@@ -3394,6 +3394,10 @@ body
 .side-tree-modal
   background-color: var(--el-mask-color-extra-light)
 
+.pagination-bar
+  margin: 4px 0
+  justify-content: center
+
 .book-card-area
   height: calc(100vh - 98px)
   overflow-x: auto
@@ -3407,12 +3411,7 @@ body
     display: flex
     flex-wrap: wrap
     justify-content: center
-
-.pagination-bar
-  margin: 4px 0
-  justify-content: center
-
-
+    align-content: flex-start
 
 .book-card-frame
   display: inline-block
@@ -3426,8 +3425,8 @@ body
   position: relative
 .book-collection-tag
   position: absolute
-  right: -1px
-  top: -1px
+  right: 1px
+  top: 1px
 .book-title
   height: 36px
   overflow-y: hidden
@@ -3457,13 +3456,14 @@ body
 .outer-read-button-group
   margin: 0 6px
 .outer-read-button:first-child
-  padding: 0 0 0 4px
+  padding: 0 0 0 6px
 .outer-read-button + .outer-read-button
-  padding: 0 4px 0 0
+  padding: 0 6px 0 0
 .book-status-tag
   padding: 0 2px
-  margin-right: 4px
+  margin-right: 6px
   cursor: pointer
+  width: 56px
 .el-rate
   display: inline-block
   height: 18px

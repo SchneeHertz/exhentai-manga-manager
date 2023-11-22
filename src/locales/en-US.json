@@ -34,7 +34,9 @@
     "editTag": "Edit Tag",
     "getMetadata": "Get Metadata Manually",
     "deleteManga": "Delete Manga",
-    "openMangaFileLocation": "Open Manga Location",
+    "delete": "Delete",
+    "rescan": "Rescan",
+    "openMangaFileLocation": "Open Location",
     "showManga": "Show Manga",
     "hideManga": "Hide Manga",
     "noResults": "No Results",
@@ -147,7 +149,8 @@
     "downloadUpdate": "Download Update",
     "proxyWorking": "Proxy server is working",
     "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct",
-    "confirmDelete": "Remove the manga from app and delete the local file, OK??"
+    "confirmDelete": "Remove the manga from app and delete the local file, OK?",
+    "rescanSuccess": "Rescan successful"
   },
   "ac": {
     "Global": "Global",

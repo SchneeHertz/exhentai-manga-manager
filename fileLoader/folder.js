@@ -20,7 +20,8 @@ const dirSize = async dir => {
 let getFolderlist = async (libraryPath)=>{
   let imageList = globIterate('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: libraryPath,
-    nocase: true
+    nocase: true,
+    follow: true
   })
   let list = new Set()
   for await (image of imageList) {

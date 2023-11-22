@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "start": "chcp 65001 && electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "vite build && electron-builder"
   },
   "build": {
     "appId": "electron.e-hentai.tagger",

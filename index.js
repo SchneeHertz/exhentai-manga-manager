@@ -230,8 +230,8 @@ const createWindow = () => {
 
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
 app.whenReady().then(async () => {
-  await Manga.sync({ alter: true })
-  await Metadata.sync({ alter: true })
+  await Manga.sync()
+  await Metadata.sync()
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
   mainWindow = createWindow()
@@ -362,7 +362,8 @@ let geneCover = async (filepath, type) => {
   let coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
   let imageResizeResult = await sharp(tempCoverPath)
     .resize(500, 707, {
-      fit: 'contain'
+      fit: 'contain',
+      background: '#303133'
     })
     .toFile(coverPath)
     .catch((e) => {
@@ -591,6 +592,16 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
   }
   setProgressBar(-1)
   return bookList
+})
+
+ipcMain.handle('patch-local-metadata-by-book', async (event, book) => {
+  let { filepath, type } = book
+  if (!type) type = 'archive'
+  let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
+  if (targetFilePath && coverPath) {
+    let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+    return { coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash }
+  }
 })
 
 ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
@@ -852,7 +863,7 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
   }
   if (receiveSetting.metadataPath !== setting.metadataPath) {
     Metadata = prepareMetadataModel(path.join(receiveSetting.metadataPath, './metadata.sqlite'))
-    await Metadata.sync({ alter: true })
+    await Metadata.sync()
   }
   setting = receiveSetting
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })

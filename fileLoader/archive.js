@@ -11,7 +11,8 @@ const _7z = path.join(process.cwd(), 'resources/extraResources/7z.exe')
 let getArchivelist = async (libraryPath)=>{
   let list = globSync('**/*.@(rar|7z|cb7|cbr)', {
     cwd: libraryPath,
-    nocase: true
+    nocase: true,
+    follow: true
   })
   list = list.map(filepath=>path.join(libraryPath, filepath))
   return list
@@ -78,9 +79,10 @@ let spawnPromise = (commmand, argument)=>{
     })
     spawned.on('exit', code=>{
       if (code === 0) {
-        return resolve(output.join('\r\n'))
+        setTimeout(() => resolve(output.join('\r\n')), 50)
+      } else {
+        reject('close code is ' + code)
       }
-      return reject('close code is ' + code)
     })
     spawned.stdout.on('data', data=>{
       output.push(iconv.decode(data, 'gbk'))

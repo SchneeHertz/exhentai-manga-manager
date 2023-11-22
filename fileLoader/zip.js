@@ -8,7 +8,8 @@ const _ = require('lodash')
 let getZipFilelist = async (libraryPath)=>{
   let list = globSync('**/*.@(zip|cbz)', {
     cwd: libraryPath,
-    nocase: true
+    nocase: true,
+    follow: true
   })
   list = list.map(filepath=>path.join(libraryPath, filepath))
   return list

@@ -203,7 +203,11 @@
       />
     </el-row>
     <InternalViewer
-
+      ref="InternalViewerRef"
+      :setting="setting"
+      :key-map="keyMap"
+      @handle-stop-read-manga="handleStopReadManga"
+      @to-next-manga="toNextManga"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
       direction="ltr"
@@ -538,10 +542,7 @@ export default defineComponent({
       _currentImageIndex: 0,
       currentImageId: undefined,
       storeDrawerScrollTop: undefined,
-      insertEmptyPage: false,
-      insertEmptyPageIndex: 1,
       viewerReadingProgress: [],
-      showThumbnail: false,
       // setting
       setting: {},
       serviceAvailable: true,
@@ -648,59 +649,8 @@ export default defineComponent({
     thumbnailList () {
       return _.chunk(this.viewerImageList, this.setting.thumbnailColumn || 10)
     },
-    viewerImageListDouble () {
-      if (this.imageStyleType === 'double') {
-        let result = []
-        let frame = {page: [], pageNumber: []}
-        let pageNumber = 0
-        for (let image of this.viewerImageList) {
-          pageNumber += 1
-          if (image.width > image.height) {
-            if (frame.page.length > 0) {
-              result.push(_.clone(frame))
-              frame = {page: [], pageNumber: []}
-            }
-            result.push({page: [image], pageNumber: [pageNumber]})
-          } else {
-            frame.page.push(image)
-            frame.pageNumber.push(pageNumber)
-            if ((this.insertEmptyPage && result.length === this.insertEmptyPageIndex) || frame.page.length >= 2) {
-              result.push(_.clone(frame))
-              frame = {page: [], pageNumber: []}
-            }
-          }
-        }
-        if (frame.page.length > 0) result.push(_.clone(frame))
-        return result
-      } else {
-        return []
-      }
-    },
     cookie () {
       return `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id};star=${this.setting.star}`
-    },
-    currentImageIndex: {
-      get () {
-        return this._currentImageIndex
-      },
-      set (val) {
-        let listLength
-        if (this.imageStyleType === 'single') {
-          listLength = this.viewerImageList.length
-        } else {
-          listLength = this.viewerImageListDouble.length
-        }
-        if (Number.isInteger(val)) {
-          if (val < 0) {
-            this._currentImageIndex = 0
-          } else if (val > listLength - 1 && listLength >= 1) {
-            this._currentImageIndex = listLength - 1
-            if (this.setting.autoNextManga) this.toNextManga(1)
-          } else {
-            this._currentImageIndex = val
-          }
-        }
-      }
     },
     currentPage: {
       get () {
@@ -803,8 +753,8 @@ export default defineComponent({
       if (this.dialogVisibleEhSearch) {
         return 'search-dialog'
       }
-      if (this.drawerVisibleViewer) {
-        if (this.showThumbnail) {
+      if (this.$refs.InternalViewerRef.drawerVisibleViewer) {
+        if (this.$refs.InternalViewerRef.showThumbnail) {
           return 'viewer-thumbnail'
         } else {
           return 'viewer-content'
@@ -859,7 +809,7 @@ export default defineComponent({
         }
       }
       if (this.currentUI() === 'viewer-content') {
-        if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
+        if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
           if (event.key === next || event.key === 'ArrowDown') {
             this.currentImageIndex += 1
           }
@@ -870,20 +820,20 @@ export default defineComponent({
             this.currentImageIndex = 0
           }
           if (event.key === 'End') {
-            if (this.imageStyleType === 'single') {
+            if (this.$refs.InternalViewerRef.imageStyleType === 'single') {
               this.currentImageIndex = this.viewerImageList.length - 1
-            } else if (this.imageStyleType === 'double') {
+            } else if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
               this.currentImageIndex = this.viewerImageListDouble.length - 1
             }
           }
         }
-        if (this.imageStyleType === 'double') {
+        if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
           if (event.key === "/") {
-            this.insertEmptyPageIndex = this.currentImageIndex
-            this.insertEmptyPage = !this.insertEmptyPage
+            this.$refs.InternalViewerRef.insertEmptyPageIndex = this.currentImageIndex
+            this.$refs.InternalViewerRef.insertEmptyPage = !this.$refs.InternalViewerRef.insertEmptyPage
           }
         }
-        if (this.imageStyleType === 'scroll') {
+        if (this.$refs.InternalViewerRef.imageStyleType === 'scroll') {
           if (event.key === prev || event.key === 'ArrowUp') {
             if (event.ctrlKey) {
               document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 10)
@@ -1005,7 +955,7 @@ export default defineComponent({
           electronFunction['set-zoom-level'](level + 1)
         }
       } else if (this.currentUI() === 'viewer-content') {
-        if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
+        if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
           let element = document.querySelector('.viewer-drawer .el-drawer__body')
           if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
             this.currentImageIndex += 1
@@ -1019,25 +969,6 @@ export default defineComponent({
     resolveMouseDown (event) {
       if (event.button === 3) {
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
-      }
-    },
-    handleViewerAreaClick (event) {
-      if (this.currentUI() === 'viewer-content') {
-        if (this.imageStyleType === 'single' || this.imageStyleType === 'double') {
-          let click
-          if (this.setting.reverseLeftRight) {
-            ;({ click } = this.keyMap.reverse)
-          } else {
-            ;({ click } = this.keyMap.normal)
-          }
-          if(event.clientX > window.innerWidth / 2) {
-            this.currentImageIndex += click
-            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
-          } else {
-            this.currentImageIndex += -click
-            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
-          }
-        }
       }
     },
     customChunk (list, size, index) {
@@ -1930,7 +1861,7 @@ export default defineComponent({
       })
       ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(this.bookDetail))
       .then(() => {
-        this.drawerVisibleViewer = true
+        this.$refs.InternalViewerRef.drawerVisibleViewer = true
         if (this.setting.keepReadingProgress && this.currentUI() === 'viewer-content') this.handleJumpToReadingProgress(book)
       })
       .catch(err => {
@@ -1941,11 +1872,11 @@ export default defineComponent({
       })
     },
     openContentView (book) {
-      this.showThumbnail = false
+      this.$refs.InternalViewerRef.showThumbnail = false
       this.viewManga(book)
     },
     openThumbnailView (book) {
-      this.showThumbnail = true
+      this.$refs.InternalViewerRef.showThumbnail = true
       this.viewManga(book)
     },
     triggerShowComment () {
@@ -2174,33 +2105,7 @@ export default defineComponent({
         }
       }
     },
-    handleClickThumbnail(id) {
-      this.showThumbnail = false
-      let scrollTopValue = 0
-      if (this.imageStyleType === 'scroll') {
-        _.forEach(this.viewerImageList, (image)=>{
-          if (image.id === id) {
-            this.$nextTick(()=>document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = scrollTopValue)
-            return false
-          }
-          // 28 is the height of .viewer-image-page
-          if (this.setting.hidePageNumber) {
-            scrollTopValue += parseFloat(this.returnImageStyle(image).height)
-          } else {
-            scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
-          }
-        })
-      } else if (this.imageStyleType === 'single') {
-        this.currentImageIndex = _.findIndex(this.viewerImageList, {id: id})
-      } else if (this.imageStyleType === 'double') {
-        _.forEach(this.viewerImageListDouble, (imageGroup, index)=>{
-          if (_.find(imageGroup.page, {id: id})) {
-            this.currentImageIndex = index
-            return false
-          }
-        })
-      }
-    },
+
     initResize (id, originWidth) {
       if (this.imageStyleType === 'scroll') {
         let element = document.getElementById(id)

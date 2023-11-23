@@ -26,6 +26,7 @@
       "dist/assets/*",
       "dist/icon.png",
       "fileLoader/*",
+      "modules/*",
       "index.js",
       "preload.js"
     ],

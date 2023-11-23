@@ -348,11 +348,11 @@
             <img
               :src="`${image.thumbnailPath}?id=${image.id}`"
               class="viewer-thumbnail"
-              :style="{width: `calc((100vw - 50px) / ${thumbnailColumn} - 16px)`}"
+              :style="{width: `calc((100vw - 50px) / ${setting.thumbnailColumn || 10} - 16px)`}"
               @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image.filepath)"
             />
-            <div class="viewer-thunmnail-page">{{chunkIndex * thumbnailColumn + index + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-thunmnail-page">{{chunkIndex * (setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </el-space>
       </div>
@@ -1057,7 +1057,6 @@ export default defineComponent({
       serviceAvailable: true,
       showComment: true,
       showThumbnail: false,
-      thumbnailColumn: 10,
       acceleratorInfo,
       // dict
       cat2letter: {
@@ -1160,12 +1159,7 @@ export default defineComponent({
         .map(str=>({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
     },
     thumbnailList () {
-      if (_.isInteger(this.setting.thumbnailColumn) && this.setting.thumbnailColumn > 0) {
-        this.thumbnailColumn = this.setting.thumbnailColumn
-      } else {
-        this.thumbnailColumn = 10
-      }
-      return _.chunk(this.viewerImageList, this.thumbnailColumn)
+      return _.chunk(this.viewerImageList, this.setting.thumbnailColumn || 10)
     },
     viewerImageListDouble () {
       if (this.imageStyleType === 'double') {
@@ -1633,16 +1627,6 @@ export default defineComponent({
           }
           this.loadCollectionList()
         })
-    },
-    saveBookList () { // shouldn't use
-      let bookList = _.cloneDeep(this.bookList)
-      bookList = _.filter(bookList, book=>!book.isCollection)
-      _.forEach(bookList, book=>{
-        delete book.collected
-        delete book.collectionHide
-        delete book.folderHide
-      })
-      return ipcRenderer.invoke('save-book-list', bookList)
     },
     saveBook (book) {
       return ipcRenderer.invoke('save-book', _.cloneDeep(book))
@@ -2614,7 +2598,7 @@ export default defineComponent({
     },
     rescanBook (book) {
       ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
-      .then((bookInfo)=>{
+      .then((bookInfo) => {
         _.assign(book, bookInfo)
         this.saveBook(book)
         this.printMessage('success', this.$t('c.rescanSuccess'))

@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, session, dialog, shell, screen, Menu, clipb
 const path = require('path')
 const fs = require('fs')
 const process = require('process')
-const { brotliCompress, brotliDecompress } = require('zlib')
+const { brotliDecompress } = require('zlib')
 const { promisify, format } = require('util')
 const _ = require('lodash')
 const { nanoid } = require('nanoid')
@@ -14,67 +14,15 @@ const { open } = require('sqlite')
 const fetch = require('node-fetch')
 const { HttpsProxyAgent } = require('https-proxy-agent')
 const windowStateKeeper = require('electron-window-state')
-const { prepareMangaModel, prepareMetadataModel } = require('./fileLoader/database')
 
-const { getFolderlist, solveBookTypeFolder, getImageListFromFolder } = require('./fileLoader/folder')
-const { getArchivelist, solveBookTypeArchive, getImageListFromArchive } = require('./fileLoader/archive')
-const { getZipFilelist, solveBookTypeZip } = require('./fileLoader/zip')
+const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
+const { getBookFilelist, geneCover, getImageListByBook } = require('./fileLoader/index.js')
 
-let STORE_PATH = app.getPath('userData')
-if (!fs.existsSync(STORE_PATH)) {
-  fs.mkdirSync(STORE_PATH)
-}
+const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, preparePath } = require('./modules/init_folder_setting.js')
+preparePath()
+let setting = prepareSetting()
+const { prepareTemplate } = require('./modules/prepare_menu.js')
 
-try {
-  fs.accessSync(path.join(process.cwd(), 'portable'))
-  STORE_PATH = process.cwd()
-} catch {
-  STORE_PATH = app.getPath('userData')
-}
-
-const TEMP_PATH = path.join(STORE_PATH, 'tmp')
-const COVER_PATH = path.join(STORE_PATH, 'cover')
-const VIEWER_PATH = path.join(STORE_PATH, 'viewer')
-
-fs.mkdirSync(TEMP_PATH, { recursive: true })
-fs.mkdirSync(COVER_PATH, { recursive: true })
-fs.mkdirSync(VIEWER_PATH, { recursive: true })
-
-let setting
-try {
-  setting = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'setting.json'), { encoding: 'utf-8' }))
-} catch {
-  setting = {
-    proxy: undefined,
-    library: app.getPath('downloads'),
-    metadataPath: undefined,
-    imageExplorer: '\"C:\\Windows\\explorer.exe\"',
-    pageSize: 10,
-    loadOnStart: false,
-    igneous: '',
-    ipb_pass_hash: '',
-    ipb_member_id: '',
-    star: '',
-    showComment: true,
-    requireGap: 10000,
-    thumbnailColumn: 10,
-    showTranslation: false,
-    theme: 'dark',
-    widthLimit: undefined,
-    directEnter: 'detail',
-    language: 'default',
-    folderTreeWidth: '',
-    advancedSearch: true,
-    autoCheckUpdates: false,
-    customOptions: '',
-    defaultExpandTree: true,
-    hidePageNumber: false,
-    skipDeleteConfirm: false,
-    displayTitle: 'japaneseTitle',
-    keepReadingProgress: true,
-  }
-  fs.writeFileSync(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
-}
 
 const Manga = prepareMangaModel(path.join(STORE_PATH, './database.sqlite'))
 let metadataSqliteFile
@@ -84,6 +32,7 @@ if (setting.metadataPath) {
   metadataSqliteFile = path.join(STORE_PATH, './metadata.sqlite')
 }
 let Metadata = prepareMetadataModel(metadataSqliteFile)
+
 
 let logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
 let logStdout = process.stdout
@@ -134,88 +83,7 @@ const createWindow = () => {
   }
   win.setMenuBarVisibility(false)
   win.setAutoHideMenuBar(true)
-  const template = [
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'Setting',
-          accelerator: 'CommandOrControl+E',
-          click: async () => {
-            win.webContents.send('send-action', {
-              action: 'setting'
-            })
-          }
-        },
-        { type: 'separator' },
-        {
-          role: 'quit',
-          accelerator: 'CommandOrControl+Q'
-        }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'toggleDevTools' },
-        {
-          role: 'toggleDevTools',
-          accelerator: 'F12',
-          visible: false
-        },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        {
-          role: 'zoomIn',
-          accelerator: 'CommandOrControl+=',
-          visible: false
-        },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'minimize' },
-        { role: 'togglefullscreen' },
-      ]
-    },
-    {
-      label: 'Shortcut',
-      submenu: [
-        {
-          label: 'Tag-fail Non-tag Book',
-          click: () => {
-            win.webContents.send('send-action', {
-              action: 'tag-fail-non-tag-book'
-            })
-          }
-        },
-      ]
-    },
-    {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'About',
-          accelerator: 'F1',
-          click: async () => {
-            win.webContents.send('send-action', {
-              action: 'about'
-            })
-          }
-        },
-        {
-          label: 'Accelerator',
-          accelerator: 'Shift+F1',
-          click: async () => {
-            win.webContents.send('send-action', {
-              action: 'accelerator'
-            })
-          }
-        }
-      ]
-    }
-  ]
-  let menu = Menu.buildFromTemplate(template)
+  let menu = Menu.buildFromTemplate(prepareTemplate(win))
   Menu.setApplicationMenu(menu)
   win.webContents.on('did-finish-load', () => {
     let name = require('./package.json').name
@@ -307,13 +175,6 @@ const loadBookListFromDatabase = async () => {
   return bookList
 }
 
-
-const saveBookListToBrFile = async (data) => {
-  console.log('Saved BookList')
-  let buffer = await promisify(brotliCompress)(JSON.stringify(data))
-  return await fs.promises.writeFile(path.join(STORE_PATH, 'bookList.json.br'), buffer)
-}
-
 const saveBookListToDatabase = async (data) => {
   console.log('Empty Exist BookList and Saved New BookList')
   await Manga.destroy({ truncate: true })
@@ -324,59 +185,6 @@ const saveBookToDatabase = async (book) => {
   await Manga.update(book, { where: { id: book.id } })
   await Metadata.update(book, { where: { hash: book.hash } })
   console.log(`Saved ${book.title}`)
-}
-
-let getBookFilelist = async () => {
-  //fileLoader: get fileList
-  let folderList = await getFolderlist(setting.library)
-  let archiveList = await getArchivelist(setting.library)
-  let zipList = await getZipFilelist(setting.library)
-  return [
-    ...folderList.map(filepath => ({ filepath, type: 'folder' })),
-    ...archiveList.map(filepath => ({ filepath, type: 'archive' })),
-    ...zipList.map(filepath => ({ filepath, type: 'zip' })),
-  ]
-}
-
-let geneCover = async (filepath, type) => {
-  let targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize
-  //fileLoader: get targetFile for hash, get tempCover for cover
-  switch (type) {
-    case 'folder':
-      ;({ targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime } = await solveBookTypeFolder(filepath, TEMP_PATH, COVER_PATH))
-      break
-    case 'zip':
-      try {
-        ;({ targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime } = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
-      } catch (e) {
-        console.log(e)
-        console.log(`reload ${filepath} use adm-zip`)
-        ;({ targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime } = await solveBookTypeZip(filepath, TEMP_PATH, COVER_PATH))
-      }
-      break
-    case 'archive':
-      ;({ targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime } = await solveBookTypeArchive(filepath, TEMP_PATH, COVER_PATH))
-      break
-  }
-
-  let coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
-  let imageResizeResult = await sharp(tempCoverPath)
-    .resize(500, 707, {
-      fit: 'contain',
-      background: '#303133'
-    })
-    .toFile(coverPath)
-    .catch((e) => {
-      sendMessageToWebContents(`get ${filepath} failed because ${e}`)
-      fs.promises.rm(tempCoverPath, { recursive: true })
-      return false
-    })
-  if (imageResizeResult) {
-    return { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash }
-  } else {
-    return { targetFilePath: undefined, coverPath: undefined }
-  }
-
 }
 
 let setProgressBar = (progress) => {
@@ -394,7 +202,7 @@ ipcMain.handle('load-book-list', async (event, scan) => {
     await Manga.update({ exist: false }, { where: {} })
 
     sendMessageToWebContents('start loading library')
-    let list = await getBookFilelist()
+    let list = await getBookFilelist(setting.library)
     if (!_.isEmpty(setting.excludeFile)) {
       let excludeRe
       try {
@@ -487,7 +295,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
     console.log(err)
   }
   sendMessageToWebContents('start loading library')
-  let list = await getBookFilelist()
+  let list = await getBookFilelist(setting.library)
   if (!_.isEmpty(setting.excludeFile)) {
     let excludeRe
     try {
@@ -597,10 +405,15 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
 ipcMain.handle('patch-local-metadata-by-book', async (event, book) => {
   let { filepath, type } = book
   if (!type) type = 'archive'
-  let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
-  if (targetFilePath && coverPath) {
-    let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-    return { coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash }
+  try {
+    let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
+    if (targetFilePath && coverPath) {
+      let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+      return Promise.resolve({ coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
+    }
+  } catch (e) {
+    sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+    return Promise.reject()
   }
 })
 
@@ -666,11 +479,6 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
   }
 })
 
-// shouldn't use
-ipcMain.handle('save-book-list', async (event, list) => {
-  return await saveBookListToDatabase(list)
-})
-
 ipcMain.handle('save-book', async (event, book) => {
   return await saveBookToDatabase(book)
 })
@@ -731,17 +539,15 @@ ipcMain.handle('show-file', async (event, filepath) => {
 
 ipcMain.handle('use-new-cover', async (event, filepath) => {
   let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
-  let imageResizeResult = await sharp(filepath)
+  try {
+    await sharp(filepath)
     .resize(500, 707, {
       fit: 'contain'
     })
     .toFile(coverPath)
-    .catch((e) => {
-      sendMessageToWebContents(`generate cover from ${filepath} failed because ${e}`)
-      return false
-    })
-  if (imageResizeResult) {
     return coverPath
+  } catch (e) {
+    sendMessageToWebContents(`generate cover from ${filepath} failed because ${e}`)
   }
 })
 
@@ -766,20 +572,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
   }
   let { filepath, type, id: bookId } = book
 
-  let list
-  //fileLoader: get imageList from file
-  switch (type) {
-    case 'folder':
-      list = await getImageListFromFolder(filepath, VIEWER_PATH)
-      break
-    case 'zip':
-    case 'archive':
-      list = await getImageListFromArchive(filepath, VIEWER_PATH)
-      break
-    default:
-      list = await getImageListFromArchive(filepath, VIEWER_PATH)
-      break
-  }
+  let list = await getImageListByBook(filepath, type)
 
   sendImageLock = true
   ;(async () => {

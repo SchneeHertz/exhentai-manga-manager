@@ -50,10 +50,10 @@
         <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata('exhentai')" :title="$t('m.batchGetExMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="MdBulb" plain @click="displayTagGraph" :title="$t('m.tagAnalysis')"></el-button>
+        <el-button :icon="MdBulb" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="Setting" plain @click="dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
+        <el-button :icon="SettingIcon" plain @click="$refs.SettingRef.dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
       </el-col>
       <el-col :span="3">
         <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
@@ -202,161 +202,9 @@
         background
       />
     </el-row>
-    <el-drawer v-model="drawerVisibleViewer"
-      direction="ttb"
-      size="100%"
-      :with-header="false"
-      destroy-on-close
-      @close="handleStopReadManga"
-      class="viewer-drawer"
-    >
-      <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
-      <div class="viewer-mode-setting">
-        <el-select
-          v-model="showThumbnail"
-          size="small"
-          @change="switchThumbnail"
-          class="viewer-thumbnail-select"
-        >
-          <el-option :value="true" :label="$t('m.thumbnail')" />
-          <el-option :value="false" :label="$t('m.content')" />
-        </el-select>
-        <el-select
-          v-model="imageStyleType"
-          size="small"
-          @focus="getCurrentImageId"
-          @change="saveImageStyleType"
-          class="viewer-mode"
-          ref="viewer-mode"
-          v-show="showThumbnail === false"
-        >
-          <el-option value="scroll" :label="$t('m.scrolling')" />
-          <el-option value="single" :label="$t('m.singlePage')" />
-          <el-option value="double" :label="$t('m.doublePage')" />
-        </el-select>
-        <el-select
-          v-model="imageStyleFit"
-          size="small"
-          @change="saveImageStyleFit"
-          class="viewer-image-fit"
-          ref="viewer-image-fit"
-          v-show="imageStyleType !== 'scroll' && showThumbnail === false"
-        >
-          <el-option value="width" :label="$t('m.fitWidth')" />
-          <el-option value="height" :label="$t('m.fitHeight')" />
-          <el-option value="window" :label="$t('m.fitWindow')" />
-        </el-select>
-        <el-select
-          v-model="viewerImageWidth"
-          size="small"
-          class="viewer-image-width"
-          ref="viewer-image-width"
-          v-show="imageStyleType === 'scroll' && showThumbnail === false"
-        >
-          <el-option :value="0.5" label="50vw" />
-          <el-option :value="0.75" label="75vw" />
-          <el-option :value="0.9" label="90vw" />
-          <el-option :value="20" label="20%" />
-          <el-option :value="50" label="50%" />
-          <el-option :value="75" label="75%" />
-          <el-option :value="100" label="100%" />
-        </el-select>
-      </div>
-      <div
-        class="drawer-image-content"
-        @click="handleViewerAreaClick"
-        v-if="!showThumbnail"
-        v-loading="viewerImageList.length === 0"
-        element-loading-text="Loading"
-        element-loading-background="transparent"
-      >
-        <div v-if="imageStyleType === 'scroll'">
-          <div
-            v-for="(image, index) in viewerImageList"
-            :key="image.id"
-            class="image-frame"
-          >
-            <div class="viewer-image-frame viewer-image-frame-scroll" :id="image.id" :style="returnImageStyle(image)">
-              <img
-                :src="`${image.filepath}?id=${image.id}`"
-                class="viewer-image"
-                :style="{height: returnImageStyle(image).height}"
-                @contextmenu="onMangaImageContextMenu($event, image.filepath)"
-              />
-              <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
-            </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
-          </div>
-        </div>
-        <div v-else-if="imageStyleType === 'single'">
-          <div class="image-frame">
-            <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
-              <img
-                :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
-                class="viewer-image"
-                :style="{height: returnImageStyle(viewerImageList[currentImageIndex])?.height}"
-                @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex]?.filepath)"
-              />
-            </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
-            <img
-              :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
-              class="viewer-image-preload"
-            />
-            <img
-              :src="`${viewerImageList[currentImageIndex + 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
-              class="viewer-image-preload"
-            />
-          </div>
-        </div>
-        <div v-else-if="imageStyleType === 'double'">
-          <div class="image-frame">
-            <div class="viewer-image-frame viewer-image-frame-double">
-              <img
-                v-for="image in viewerImageListDouble[currentImageIndex]?.page"
-                :src="`${image.filepath}?id=${image.id}`"
-                class="viewer-image"
-                :style="{height: returnImageStyle(image).height}"
-                @contextmenu="onMangaImageContextMenu($event, image.filepath)"
-              />
-            </div>
-            <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page">
-              <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
-            </div>
-            <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page">
-              <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
-            </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
-          </div>
-        </div>
-      </div>
-      <div class="next-manga-button">
-        <el-button size="large" type="success" plain @click="toNextManga(-1)">{{$t('m.previousManga')}}</el-button>
-        <el-button size="large" type="success" plain @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" plain @click="toNextManga(1)">{{$t('m.nextManga')}}</el-button>
-      </div>
-      <div
-        class="drawer-thumbnail-content"
-        v-if="showThumbnail"
-        v-loading="viewerImageList.length === 0"
-        element-loading-text="Loading"
-        element-loading-background="transparent"
-      >
-        <!-- eslint-disable-next-line vue/valid-v-for -->
-        <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
-          <div v-for="(image, index) in chunk" :key="image.id">
-            <img
-              :src="`${image.thumbnailPath}?id=${image.id}`"
-              class="viewer-thumbnail"
-              :style="{width: `calc((100vw - 50px) / ${setting.thumbnailColumn || 10} - 16px)`}"
-              @click="handleClickThumbnail(image.id)"
-              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
-            />
-            <div class="viewer-thunmnail-page">{{chunkIndex * (setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
-          </div>
-        </el-space>
-      </div>
-    </el-drawer>
+    <InternalViewer
+
+    ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
       direction="ltr"
       :size="setting.folderTreeWidth ? setting.folderTreeWidth : '20%'"
@@ -369,19 +217,13 @@
         @current-change="selectFolderTreeNode"
       ></el-tree>
     </el-drawer>
-    <el-dialog v-model="dialogVisibleGraph"
-      fullscreen
-      destroy-on-close
-      @close="destroyCanvas"
-    >
-      <template #header><p>{{$t('m.tagAnalysis')}}</p></template>
-      <div id="tag-graph"></div>
-      <template #footer>
-        <el-button type="primary" @click="geneRecommend(false, 'local')">{{$t('m.searchLocal')}}</el-button>
-        <el-button type="primary" @click="geneRecommend(false)">{{$t('m.getEXRecommand')}}</el-button>
-        <el-button type="primary" @click="geneRecommend(true)">{{$t('m.getEXRecommand')}}(ZH)</el-button>
-      </template>
-    </el-dialog>
+    <Graph
+      ref="TagGraphRef"
+      :book-list="bookList"
+      :cat2letter="cat2letter"
+      :resolved-translation="resolvedTranslation"
+      @search="handleSearchTags"
+    ></Graph>
     <el-drawer v-model="drawerVisibleCollection"
       direction="btt"
       size="80vh"
@@ -471,7 +313,7 @@
               <el-button type="success" style="padding-left: 0;" plain @click="viewManga(bookDetail)">{{$t('m.ad')}}</el-button>
             </el-button-group>
             <!-- <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button> -->
-            <el-button plain @click="triggerShowComment">{{showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
+            <el-button plain @click="triggerShowComment">{{setting.showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
@@ -486,7 +328,7 @@
             <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
-        <el-col :span="showComment?10:18">
+        <el-col :span="setting.showComment ? 10 : 18">
           <el-scrollbar class="book-tag-frame">
             <div v-if="editingTag">
               <div class="edit-line">
@@ -553,7 +395,7 @@
             </div>
           </el-scrollbar>
         </el-col>
-        <el-col :span="8" v-show="showComment">
+        <el-col :span="8" v-show="setting.showComment">
           <el-scrollbar class="book-comment-frame">
             <div class="book-comment" v-for="comment in comments" :key="comment.id">
               <div class="book-comment-postby">{{comment.author}}<span class="book-comment-score">{{comment.score}}</span></div>
@@ -596,370 +438,20 @@
         <el-empty v-else :description="$t('m.noResults')" :image-size="100" />
       </div>
     </el-dialog>
-    <el-dialog v-model="dialogVisibleSetting"
-      width="54em"
-      :modal="false"
-      append-to-body
-      top="60px"
-      class="setting-dialog"
-    >
-      <template #header><p class="setting-title">{{$t('m.setting')}}</p></template>
-      <el-tabs v-model="activeSettingPanel" class="setting-tabs">
-        <el-tab-pane :label="$t('m.general')" name="general">
-          <el-row :gutter="8">
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.library">
-                  <template #prepend><span class="setting-label">{{$t('m.library')}}</span></template>
-                  <template #append><el-button @click="selectLibraryPath">{{$t('m.select')}}</el-button></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.metadataPath" :placeholder="$t('m.metadataPathDefault')">
-                  <template #prepend><span class="setting-label">{{$t('m.metadataPath')}}</span></template>
-                  <template #append><el-button @click="selectMetadataPath">{{$t('m.select')}}</el-button></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.imageExplorer" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.imageViewer')}}</span></template>
-                  <template #append><el-button @click="selectImageExplorerPath">{{$t('m.select')}}</el-button></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input class="label-input">
-                  <template #prepend><span class="setting-label">{{$t('m.theme')}}</span></template>
-                  <template #append>
-                    <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
-                      <el-option label="Default Dark" value="dark"></el-option>
-                      <el-option label="Default Light" value="light"></el-option>
-                      <el-option label="ExHentai" value="dark exhentai"></el-option>
-                      <el-option label="E-Hentai" value="light e-hentai"></el-option>
-                      <el-option label="nHentai" value="dark nhentai"></el-option>
-                    </el-select>
-                  </template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.igneous" @change="saveSetting">
-                  <template #prepend><span class="setting-label">igneous</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.ipb_pass_hash" @change="saveSetting">
-                  <template #prepend><span class="setting-label">ipb_pass_hash</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.ipb_member_id" @change="saveSetting">
-                  <template #prepend><span class="setting-label">ipb_member_id</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.star" @change="saveSetting">
-                  <template #prepend><span class="setting-label">star</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.proxy" @change="saveSetting" :placeholder="$t('m.like') + ' http://127.0.0.1:7890'">
-                  <template #prepend><span class="setting-label">{{$t('m.proxy')}}</span></template>
-                  <template #append><el-button @click="testProxy">{{$t('m.test')}}</el-button></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="5">
-              <div class="setting-line">
-                <el-button class="function-button" type="success" plain @click="loadBookList(true)">{{$t('m.manualScan')}}</el-button>
-              </div>
-            </el-col>
-            <el-col :span="7">
-              <div class="setting-line">
-                <el-button class="function-button" type="primary" plain @click="getBookListMetadata('e-hentai')">{{$t('m.batchGetMetadata')}}</el-button>
-              </div>
-            </el-col>
-            <el-col :span="7">
-              <div class="setting-line">
-                <el-button class="function-button" type="primary" plain @click="getBookListMetadata('exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
-              </div>
-            </el-col>
-          </el-row>
-        </el-tab-pane>
-        <el-tab-pane :label="$t('m.internalViewer')" name="internalViewer">
-          <el-row :gutter="8">
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.thumbnailColumn')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24" class="setting-switch">
-              <el-switch
-                v-model="setting.hidePageNumber"
-                :active-text="$t('m.hidePageNumber')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="24" class="setting-switch">
-              <el-switch
-                v-model="setting.keepReadingProgress"
-                :active-text="$t('m.keepReadingProgress')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="24" class="setting-switch">
-              <el-switch
-                v-model="setting.reverseLeftRight"
-                :active-text="$t('m.reverseLeftRight')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="24" class="setting-switch">
-              <el-switch
-                v-model="setting.autoNextManga"
-                :active-text="$t('m.autoNextManga')"
-                @change="saveSetting"
-              />
-            </el-col>
-          </el-row>
-        </el-tab-pane>
-        <el-tab-pane :label="$t('m.advanced')" name="advanced">
-          <el-row :gutter="8">
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input class="label-input">
-                  <template #prepend><span class="setting-label">{{$t('m.language')}}</span></template>
-                  <template #append>
-                    <el-select placeholder=" " v-model="setting.language" @change="handleLanguageChange">
-                      <el-option :label="$t('m.systemDefault')" value="default"></el-option>
-                      <el-option label="zh-CN" value="zh-CN"></el-option>
-                      <el-option label="en-US" value="en-US"></el-option>
-                    </el-select>
-                  </template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input class="label-input">
-                  <template #prepend><span class="setting-label">{{$t('m.directEnter')}}</span></template>
-                  <template #append>
-                    <el-select placeholder=" " v-model="setting.directEnter" @change="saveSetting">
-                      <el-option :label="$t('m.detailPage')" value="detail"></el-option>
-                      <el-option :label="$t('m.internalViewer')" value="internalViewer"></el-option>
-                      <el-option :label="$t('m.externalViewer')" value="externalViewer"></el-option>
-                    </el-select>
-                  </template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input class="label-input">
-                  <template #prepend><span class="setting-label">{{$t('m.displayTitle')}}</span></template>
-                  <template #append>
-                    <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
-                      <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
-                      <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
-                      <el-option :label="$t('m.filename')" value="filename"></el-option>
-                    </el-select>
-                  </template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model.number="setting.requireGap" :placeholder="$t('m.requireGapInfo')" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <NameFormItem class="setting-line" prependWidth="110px">
-                <template #prepend>{{$t('m.customOptions')}}</template>
-                <template #default>
-                  <el-input v-model="setting.customOptions" :placeholder="$t('m.customOptionsPlaceholder')" @change="saveSetting" :rows="2" type="textarea"></el-input>
-                </template>
-              </NameFormItem>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="24">
-              <div class="setting-line">
-                <el-input v-model="setting.folderTreeWidth" :placeholder="$t('m.folderTreeWidthInfo')" @change="saveSetting">
-                  <template #prepend><span class="setting-label">{{$t('m.folderTreeWidth')}}</span></template>
-                </el-input>
-              </div>
-            </el-col>
-            <el-col :span="4">
-              <div class="setting-line">
-                <el-popconfirm
-                  placement="top-start"
-                  :title="$t('m.rebuildWarning')"
-                  @confirm="forceGeneBookList"
-                >
-                  <template #reference>
-                    <el-button class="function-button" plain>{{$t('m.rebuildLibrary')}}</el-button>
-                  </template>
-                </el-popconfirm>
-              </div>
-            </el-col>
-            <el-col :span="5">
-              <div class="setting-line">
-                <el-popconfirm
-                  placement="top-start"
-                  :title="$t('m.patchWarning')"
-                  @confirm="patchLocalMetadata"
-                >
-                  <template #reference>
-                    <el-button class="function-button" type="primary" plain>{{$t('m.patchLocalMetadata')}}</el-button>
-                  </template>
-                </el-popconfirm>
-              </div>
-            </el-col>
-            <el-col :span="5">
-              <div class="setting-line">
-                <el-button class="function-button" type="primary" plain @click="exportDatabase">{{$t('m.exportMetadata')}}</el-button>
-              </div>
-            </el-col>
-            <el-col :span="5">
-              <div class="setting-line">
-                <el-button class="function-button" type="primary" plain @click="importDatabase">{{$t('m.importMetadata')}}</el-button>
-              </div>
-            </el-col>
-            <el-col :span="5">
-              <div class="setting-line">
-                <el-button class="function-button" type="primary" plain @click="importDatabasefromSqlite">{{$t('m.importMetadatafromSqlite')}}</el-button>
-              </div>
-            </el-col>
-          </el-row>
-          <el-row :gutter="8">
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.loadOnStart"
-                :active-text="$t('m.onStartScan')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.showComment"
-                :active-text="$t('m.showComment')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.showTranslation"
-                :active-text="$t('m.tagTranslate')"
-                @change="handleTranslationSettingChange"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.advancedSearch"
-                :active-text="$t('m.advancedSearch')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.autoCheckUpdates"
-                :active-text="$t('m.autoCheckUpdates')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="12" class="setting-switch">
-              <el-switch
-                v-model="setting.batchTagfailedBook"
-                :active-text="$t('m.batchTagfailedBook')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.skipDeleteConfirm"
-                :active-text="$t('m.skipDeleteConfirm')"
-                @change="saveSetting"
-              />
-            </el-col>
-            <el-col :span="6" class="setting-switch">
-              <el-switch
-                v-model="setting.defaultExpandTree"
-                :active-text="$t('m.defaultExpandTree')"
-                @change="saveSetting"
-              />
-            </el-col>
-          </el-row>
-        </el-tab-pane>
-        <el-tab-pane :label="$t('m.accelerator')" name="accelerator">
-          <el-descriptions
-            :column="2" size="small" style="margin-top: 16px;"
-            v-for="group in acceleratorInfo" :key="group.group"
-            :title="$t(`ac.${group.group}`)"
-          >
-            <el-descriptions-item v-for="(value, key) in group.accelerators" :key="value" width="22em">
-              <template #label><span style="display: inline-block; min-width: 10em;">{{ $t(`ac.${group.group}_${key}`) }}</span></template>
-              <el-tag>{{ value }}</el-tag>
-            </el-descriptions-item>
-          </el-descriptions>
-        </el-tab-pane>
-        <el-tab-pane :label="$t('m.about')" name="about">
-          <el-descriptions :column="1">
-            <el-descriptions-item :label="$t('m.appName')+':'">exhentai-manga-manager</el-descriptions-item>
-            <el-descriptions-item :label="$t('m.version')+':'">
-              <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/releases')">{{version}}</a>
-            </el-descriptions-item>
-            <el-descriptions-item :label="$t('m.appPage')+':'">
-              <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager')">github</a>
-            </el-descriptions-item>
-            <el-descriptions-item :label="$t('m.help')+':'">
-              <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki')">github wiki</a>
-            </el-descriptions-item>
-            <el-descriptions-item :label="$t('m.donation')+':'">
-              <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://afdian.net/a/SeldonHorizon')">爱发电</a>
-              <a v-else href="#" @click="openLink('https://www.buymeacoffee.com/schneehertz')">buy me a coffee</a>
-            </el-descriptions-item>
-          </el-descriptions>
-          <img src="/icon.png" class="about-logo">
-          <el-row>
-            <el-col :span="4" :offset="10">
-              <div class="setting-line">
-                <el-button class="function-button" type="primary" plain @click="autoCheckUpdates(true)">{{$t('m.checkUpdates')}}</el-button>
-              </div>
-            </el-col>
-          </el-row>
-        </el-tab-pane>
-      </el-tabs>
-    </el-dialog>
+    <Setting
+      ref="SettingRef"
+      @update-setting="updateSetting"
+      @handle-language-set="handleLanguageSet"
+      @message="printMessage"
+      @load-book-list="loadBookList"
+      @get-book-list-metadata="getBookListMetadata"
+      @force-gene-book-list="forceGeneBookList"
+      @patch-local-metadata="patchLocalMetadata"
+      @export-database="exportDatabase"
+      @import-database="importDatabase"
+      @import-database-from-sqlite="importDatabasefromSqlite"
+      @handle-resolve-translation-update="handleResolveTranslationUpdate"
+    ></Setting>
   </el-config-provider>
 </template>
 
@@ -967,7 +459,7 @@
 import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
-import { Close, Setting } from '@element-plus/icons-vue'
+import { Close, Setting as SettingIcon } from '@element-plus/icons-vue'
 import { Collections20Filled, Search32Filled, Rename16Regular } from '@vicons/fluent'
 import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
@@ -976,38 +468,38 @@ import he from 'he'
 import {nanoid} from 'nanoid'
 import draggable from 'vuedraggable'
 import * as linkify from 'linkifyjs'
-import G6 from '@antv/g6'
 
-import { getWidth, acceleratorInfo } from './utils.js'
+import { getWidth } from './utils.js'
 
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import en from 'element-plus/dist/locale/en.mjs'
 
-import { version } from '../package.json'
-
 import NameFormItem from './components/NameFormItem.vue'
+import Setting from './components/Setting.vue'
+import Graph from './components/Graph.vue'
+import InternalViewer from './components/InternalViewer.vue'
 
 export default defineComponent({
   components: {
     draggable,
     BookmarkTwotone,
     IosRemoveCircleOutline,
-    NameFormItem
+    NameFormItem,
+    Setting,
+    Graph,
+    InternalViewer
   },
   setup () {
     return {
-      Close, Setting, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
+      Close, SettingIcon, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
       TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular
     }
   },
   data () {
     return {
       dialogVisibleBookDetail: false,
-      dialogVisibleSetting: false,
-      dialogVisibleGraph: false,
       sideVisibleFolderTree: false,
       editCollectionView: false,
-      drawerVisibleViewer: false,
       drawerVisibleCollection: false,
       dialogVisibleEhSearch: false,
       // home
@@ -1020,8 +512,6 @@ export default defineComponent({
       sortValue: undefined,
       _currentPage: 1,
       folderTreeData: [],
-      tagNodeData: [],
-      version: version,
       progress: 0,
       // collection
       selectCollection: undefined,
@@ -1051,13 +541,10 @@ export default defineComponent({
       insertEmptyPage: false,
       insertEmptyPageIndex: 1,
       viewerReadingProgress: [],
+      showThumbnail: false,
       // setting
       setting: {},
-      activeSettingPanel: 'general',
       serviceAvailable: true,
-      showComment: true,
-      showThumbnail: false,
-      acceleratorInfo,
       // dict
       cat2letter: {
         language: 'l',
@@ -1251,14 +738,6 @@ export default defineComponent({
     ipcRenderer.invoke('load-setting')
     .then(async (res) => {
       this.setting = res
-      if (this.setting.showTranslation) this.loadTranslationFromEhTagTranslation()
-      if (this.setting.theme) this.changeTheme(this.setting.theme)
-      if (this.setting.autoCheckUpdates === undefined) {
-        this.setting.autoCheckUpdates = true
-        this.saveSetting()
-      }
-      if (this.setting.autoCheckUpdates) this.autoCheckUpdates(false)
-      this.handleLanguageChange(this.setting.language)
       if (this.setting.loadOnStart) {
         await this.loadBookList()
         this.loadBookList(true)
@@ -1277,16 +756,16 @@ export default defineComponent({
     ipcRenderer.on('send-action', (event, arg)=>{
       switch (arg.action) {
         case 'setting':
-          this.dialogVisibleSetting = true
-          this.activeSettingPanel = 'general'
+          this.$refs.SettingRef.dialogVisibleSetting = true
+          this.$refs.SettingRef.activeSettingPanel = 'general'
           break
         case 'about':
-          this.dialogVisibleSetting = true
-          this.activeSettingPanel = 'about'
+          this.$refs.SettingRef.dialogVisibleSetting = true
+          this.$refs.SettingRef.activeSettingPanel = 'about'
           break
         case 'accelerator':
-          this.dialogVisibleSetting = true
-          this.activeSettingPanel = 'accelerator'
+          this.$refs.SettingRef.dialogVisibleSetting = true
+          this.$refs.SettingRef.activeSettingPanel = 'accelerator'
           break
         case 'send-progress':
           this.progress = +arg.progress > 1 ? 100 : +arg.progress < 0 ? 0 : +arg.progress * 100
@@ -1318,7 +797,7 @@ export default defineComponent({
       if (!!document.querySelector('.is-message-box')) {
         return 'message-box'
       }
-      if (this.dialogVisibleSetting) {
+      if (this.$refs.SettingRef.dialogVisibleSetting) {
         return 'setting'
       }
       if (this.dialogVisibleEhSearch) {
@@ -1338,7 +817,7 @@ export default defineComponent({
           return 'bookdetail'
         }
       }
-      if (this.dialogVisibleGraph) {
+      if (this.$refs.TagGraphRef.dialogVisibleGraph) {
         return 'tag-graph'
       }
       if (this.sideVisibleFolderTree) {
@@ -1630,25 +1109,6 @@ export default defineComponent({
     },
     saveBook (book) {
       return ipcRenderer.invoke('save-book', _.cloneDeep(book))
-    },
-    loadTranslationFromEhTagTranslation () {
-      let resultObject = {}
-      axios.get('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
-      .then(res=>{
-        let sourceTranslationDatabase = res.data.data
-        _.forIn(sourceTranslationDatabase, cat=>{
-          _.forIn(cat.data, (value, key)=>{
-            resultObject[key] = _.pick(value, ['name', 'intro'])
-          })
-        })
-        this.resolvedTranslation = resultObject
-        localStorage.setItem('translationCache', JSON.stringify(resultObject))
-      })
-      .catch((error)=>{
-        console.log(error)
-        this.printMessage('warning', 'load translation from cache')
-        this.resolvedTranslation = JSON.parse(localStorage.getItem('translationCache'))
-      })
     },
     openLink (link) {
       ipcRenderer.invoke('open-url', link)
@@ -1983,7 +1443,7 @@ export default defineComponent({
       }
     },
     getBookListMetadata (server) {
-      this.dialogVisibleSetting = false
+      this.$refs.SettingRef.dialogVisibleSetting = false
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let bookList
@@ -2220,8 +1680,7 @@ export default defineComponent({
     openBookDetail (book) {
       this.bookDetail = book
       this.dialogVisibleBookDetail = true
-      this.showComment = !!this.setting.showComment
-      if (this.showComment) this.getComments(book.url)
+      if (this.setting.showComment) this.getComments(book.url)
     },
     handleClickCover (book) {
       switch (this.setting.directEnter) {
@@ -2285,187 +1744,11 @@ export default defineComponent({
     },
 
     // tag analysis and recommand search
-    displayTagGraph () {
-      let nodes = []
-      _.forEach(this.bookList, book=>{
-        let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
-        let tempNodes = []
-        _.forIn(tags, (list, cat)=>{
-          list.map(tag=>{
-            tempNodes.push(`${cat}##${tag}`)
-          })
-        })
-        nodes = nodes.concat(tempNodes)
-      })
-      let nodesObject = _.countBy(nodes)
-      const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
-      let tempNodeData = []
-      _.forIn(nodesObject, (count, label)=>{
-        let labelArray = _.split(label, '##')
-        try {
-          let letter = this.cat2letter[labelArray[0]] ? this.cat2letter[labelArray[0]] : labelArray[0]
-          tempNodeData.push({
-            id: nanoid(),
-            count,
-            size: Math.ceil(Math.log(count) ** 2 + 70),
-            oriSize: Math.ceil(Math.log(count) ** 2 + 70),
-            name: `${letter}:"${labelArray[1]}$"`,
-            shortName: `${letter}:"${labelArray[1]}"`,
-            oriLabel: label,
-            label: `${this.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${this.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
-            style:{fill: _.sample(colors)}
-          })
-        } catch {}
-      })
-      this.tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 96)
-      this.tagNodeData = _.shuffle(this.tagNodeData)
-      let edges = []
-      let tempTagGroup = []
-      _.forEach(this.bookList, book=>{
-        let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
-        let tempTags = []
-        _.forIn(tags, (list, cat)=>{
-          _.forEach(list, tag=>{
-            let foundNode = _.find(this.tagNodeData, {oriLabel: `${cat}##${tag}`})
-            if (foundNode) {
-              tempTags.push(foundNode.id)
-            }
-          })
-        })
-        tempTags.sort()
-        for (let i = 0; i < tempTags.length; i++) {
-          for (let j = i + 1; j < tempTags.length; j++) {
-            let foundGroup = _.find(tempTagGroup, {set: tempTags[i] + '##' + tempTags[j]})
-            if (foundGroup) {
-              foundGroup.count += 1
-            } else {
-              tempTagGroup.push({
-                set: tempTags[i] + '##' + tempTags[j],
-                count: 1
-              })
-            }
-          }
-        }
-      })
-      let maxCount = _.max(tempTagGroup.map(g=>g.count))
-      let countLimit =  maxCount * 0.1
-      _.forIn(tempTagGroup, g=>{
-        if (g.count > countLimit) {
-          g.array = g.set.split('##')
-          edges.push({
-            source: g.array[0],
-            target: g.array[1],
-            style: {
-              lineWidth: Math.round(g.count / maxCount * 6)
-            }
-          })
-        }
-      })
-      this.dialogVisibleGraph = true
-      this.$nextTick(()=>{
-        let graph = new G6.Graph({
-          container: 'tag-graph',
-          layout: {
-            type: 'force',
-            nodeStrength: 40,
-            edgeStrength: 0.01,
-            collideStrength: 1,
-            alphaDecay: 0.1,
-            nodeSpacing: 10,
-            preventOverlap: true,
-          },
-          defaultNode: {
-            style: {
-              stroke: '#6196FE',
-              lineWidth: 1
-            }
-          },
-          defaultEdge: {
-            type: 'line',
-            style: {
-              stroke: '#6196FE'
-            }
-          },
-          modes: {
-            default: ['drag-canvas', 'zoom-canvas', 'drag-node']
-          }
-        })
-        graph.data({nodes: this.tagNodeData, edges})
-        const refreshDragedNodePosition = (e)=>{
-          const model = e.item.get('model')
-          model.fx = e.x
-          model.fy = e.y
-        }
-        graph.on('node:dragstart', (e)=>{
-          graph.layout()
-          refreshDragedNodePosition(e)
-        })
-        graph.on('node:drag', (e)=>{
-          refreshDragedNodePosition(e)
-        })
-        graph.on('node:dragend', (e)=>{
-          e.item.get('model').fx = null
-          e.item.get('model').fy = null
-        })
-        graph.on('node:click', (e)=>{
-          const node = e.item
-          const states = node.getStates()
-          let clicked = false
-          const model = node.getModel()
-          _.find(this.tagNodeData, {id: model.id}).size = 200
-          let size = 200
-          states.forEach((state)=>{
-            if (state === 'click') {
-              clicked = true
-              size = model.oriSize
-              _.find(this.tagNodeData, {id: model.id}).size = model.oriSize
-            }
-          })
-          graph.setItemState(node, 'click', !clicked)
-          graph.getNodes().forEach((node)=>{
-            graph.updateItem(node, {
-              style: {
-                stroke: '#6196FE',
-                lineWidth: 1
-              }
-            })
-          })
-          if (!clicked) {
-            graph.updateItem(node, {
-              size,
-              style: {
-                stroke: '#FF0000',
-                lineWidth: 3
-              }
-            })
-            node.getNeighbors().forEach((node)=>{
-              graph.updateItem(node, {
-                style: {
-                  stroke: '#FF0000',
-                  lineWidth: 3
-                }
-              })
-            })
-          }
-          graph.layout()
-        })
-        graph.render()
-      })
+    handleSearchTags (string) {
+      this.searchString = string
+      this.searchBook()
     },
-    geneRecommend (chinese = false, type = 'exhentai') {
-      let tagGroup2 = _.filter(this.tagNodeData, n=>n.size >= 200)
-      let tagGroup3 = tagGroup2
-      if (type === 'exhentai') {
-        ipcRenderer.invoke('open-url', `https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
-      } else {
-        this.dialogVisibleGraph = false
-        this.searchString = `${tagGroup3.map(n=>n.shortName).join(' ')}`
-        this.searchBook()
-      }
-    },
-    destroyCanvas () {
-      document.querySelector('#tag-graph canvas').remove()
-    },
+
 
     // collection view function
     loadCollectionList () {
@@ -2666,11 +1949,11 @@ export default defineComponent({
       this.viewManga(book)
     },
     triggerShowComment () {
-      if (this.showComment) {
-        this.showComment = false
+      if (this.setting.showComment) {
+        this.setting.showComment = false
       } else {
         this.getComments(this.bookDetail.url)
-        this.showComment = true
+        this.setting.showComment = true
       }
     },
     getComments (url) {
@@ -2950,7 +2233,7 @@ export default defineComponent({
         let selectBook = activeBookList[indexNext]
         setTimeout(() => {
           this.viewManga(selectBook)
-          if (this.showComment) this.getComments(selectBook.url)
+          if (this.setting.showComment) this.getComments(selectBook.url)
         }, 500)
       } else {
         this.printMessage('info', 'out of range')
@@ -2962,7 +2245,7 @@ export default defineComponent({
       let selectBook = _.sample(activeBookList)
       setTimeout(() => {
         this.viewManga(selectBook)
-        if (this.showComment) this.getComments(selectBook.url)
+        if (this.setting.showComment) this.getComments(selectBook.url)
       }, 500)
     },
     jumpMangeDetail (step) {
@@ -3035,47 +2318,14 @@ export default defineComponent({
     },
 
     // setting
-    handleTranslationSettingChange (val) {
-      if (val) {
-        this.loadTranslationFromEhTagTranslation()
-      } else {
-        this.resolvedTranslation = {}
-      }
-      this.saveSetting()
-    },
-    handleThemeChange (val) {
-      this.changeTheme(val)
-      this.saveSetting()
-    },
-    changeTheme (classValue) {
-      document.documentElement.setAttribute('class', classValue)
-    },
-    selectLibraryPath () {
-      ipcRenderer.invoke('select-folder')
-      .then(res=>{
-        this.setting.library = res
-        this.saveSetting()
-      })
-    },
-    selectMetadataPath () {
-      ipcRenderer.invoke('select-folder')
-      .then(res=>{
-        this.setting.metadataPath = res
-        this.saveSetting()
-      })
-    },
-    selectImageExplorerPath () {
-      ipcRenderer.invoke('select-file')
-      .then(res=>{
-        this.setting.imageExplorer = `"${res}"`
-        this.saveSetting()
-      })
+    handleResolveTranslationUpdate (val) {
+      this.resolvedTranslation = val
     },
     saveSetting () {
       ipcRenderer.invoke('save-setting', _.cloneDeep(this.setting))
     },
     forceGeneBookList () {
-      this.dialogVisibleSetting = false
+      this.$refs.SettingRef.dialogVisibleSetting = false
       localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
       ipcRenderer.invoke('force-gene-book-list')
       .then(res=>{
@@ -3092,67 +2342,24 @@ export default defineComponent({
       ipcRenderer.invoke('patch-local-metadata')
       .then(()=>this.loadBookList())
     },
-    handleLanguageChange (val) {
-      ipcRenderer.invoke('get-locale').then(localeString=>{
-        let languageCode
-        if (!val || (val === 'default')) {
-          languageCode = localeString
-        } else {
-          languageCode = val
-        }
-        switch (languageCode) {
-          case 'zh-CN':
-            this.locale = zhCn
-            this.$i18n.locale = 'zh-CN'
-            break
-          case 'en-US':
-            this.locale = en
-            this.$i18n.locale = 'en-US'
-            break
-          default:
-            this.locale = en
-            this.$i18n.locale = 'en-US'
-            break
-        }
-        this.saveSetting()
-      })
+    updateSetting (setting) {
+      this.setting = setting
     },
-    autoCheckUpdates (forceShowDialog) {
-      axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
-      .then(res=>{
-        let { tag_name, html_url } = res.data
-        if (tag_name && tag_name !== 'v' + this.version) {
-          ElMessageBox.confirm(
-            this.$t('c.newVersion') + tag_name,
-            '',
-            {
-              confirmButtonText: this.$t('c.downloadUpdate'),
-              type: 'success'
-            }
-          )
-          .then(()=>{
-            ipcRenderer.invoke('open-url', html_url)
-          })
-        } else if (forceShowDialog) {
-          ElMessageBox.confirm(
-            this.$t('c.notNewVersion'),
-            '',
-            {
-              type: 'info',
-              showCancelButton: false
-            }
-          )
-        }
-      })
-    },
-    testProxy () {
-      axios.get('https://e-hentai.org')
-      .then(()=>{
-        this.printMessage('success', this.$t('c.proxyWorking'))
-      })
-      .catch(()=>{
-        this.printMessage('error', this.$t('c.proxyNotWorking'))
-      })
+    handleLanguageSet (languageCode) {
+      switch (languageCode) {
+        case 'zh-CN':
+          this.locale = zhCn
+          this.$i18n.locale = 'zh-CN'
+          break
+        case 'en-US':
+          this.locale = en
+          this.$i18n.locale = 'en-US'
+          break
+        default:
+          this.locale = en
+          this.$i18n.locale = 'en-US'
+          break
+      }
     },
 
     // import/export
@@ -3206,7 +2413,7 @@ export default defineComponent({
               }
             }
             if (index === this.bookList.length - 1) {
-              this.dialogVisibleSetting = false
+              this.$refs.SettingRef.dialogVisibleSetting = false
               this.printMessage('success', this.$t('c.importMessage'))
             }
             await this.saveBook(book)
@@ -3457,10 +2664,6 @@ body
 .open-collection-title
   margin: 0 10px
 
-#tag-graph
-  width: 100%
-  height: calc(100vh - 170px)
-
 .book-collect-card
   width: 138px
   height: 229px
@@ -3595,35 +2798,6 @@ body
     margin: 8px 0
   .search-result-ind:hover
     background-color: var(--el-fill-color-dark)
-
-.setting-dialog
-  .el-dialog__body
-    padding: 5px 20px 16px
-.setting-title
-  margin:0
-  text-align: center
-.setting-line
-  margin: 6px 0
-  .el-input-group__prepend
-    width: 110px
-.setting-switch
-  text-align: left
-  margin-top: 6px
-.label-input>.el-input__wrapper
-  display: none
-.label-input
-  .el-input-group__append
-    width: calc(100% - 140px)
-    padding: 0
-    background-color: transparent
-    border-left: solid 1px var(--el-border-color)
-    .el-select
-      width: 100%
-.about-logo
-  width: 160px
-  position: absolute
-  right: 40px
-  top: 10px
 
 .viewer-drawer
   .el-drawer__body

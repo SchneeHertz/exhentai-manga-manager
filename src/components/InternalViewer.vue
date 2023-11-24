@@ -490,7 +490,6 @@ const handleViewerAreaClick = (event) => {
       } else {
         ;({ click } = props.keyMap.normal)
       }
-      console.log(click)
       if(event.clientX > window.innerWidth / 2) {
         currentImageIndex.value += click
         document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0

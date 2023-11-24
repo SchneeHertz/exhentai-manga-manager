@@ -367,7 +367,7 @@
                 </el-select>
               </div>
               <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
-              <el-button class="tag-edit-button" @click="$refs.SearchDialogRef.getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
+              <el-button class="tag-edit-button" @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
               <el-button class="tag-edit-button" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
               <el-button class="tag-edit-button" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
             </div>
@@ -417,8 +417,7 @@
       ref="SearchDialogRef"
       :cookie="cookie"
       @message="printMessage"
-      @save-book="saveBook"
-      @get-book-info-from-eh="getBookInfoFromEh"
+      @resolve-search-result="resolveSearchResult"
     ></SearchDialog>
     <Setting
       ref="SettingRef"
@@ -440,7 +439,7 @@
 <script>
 import { defineComponent } from 'vue'
 import axios from 'axios'
-import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon } from '@element-plus/icons-vue'
 import { Collections20Filled, Search32Filled, Rename16Regular } from '@vicons/fluent'
 import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
@@ -767,13 +766,13 @@ export default defineComponent({
       if (this.currentUI() === 'viewer-content') {
         if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
           if (event.key === next || event.key === 'ArrowDown') {
-            this.currentImageIndex += 1
+            this.$refs.InternalViewerRef.currentImageIndex += 1
           }
           if (event.key === prev || event.key === 'ArrowUp') {
-            this.currentImageIndex -= 1
+            this.$refs.InternalViewerRef.currentImageIndex -= 1
           }
           if (event.key === 'Home') {
-            this.currentImageIndex = 0
+            this.$refs.InternalViewerRef.currentImageIndex = 0
           }
           if (event.key === 'End') {
             if (this.$refs.InternalViewerRef.imageStyleType === 'single') {
@@ -785,7 +784,7 @@ export default defineComponent({
         }
         if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
           if (event.key === "/") {
-            this.$refs.InternalViewerRef.insertEmptyPageIndex = this.currentImageIndex
+            this.$refs.InternalViewerRef.insertEmptyPageIndex = this.$refs.InternalViewerRef.currentImageIndex
             this.$refs.InternalViewerRef.insertEmptyPage = !this.$refs.InternalViewerRef.insertEmptyPage
           }
         }
@@ -914,10 +913,10 @@ export default defineComponent({
         if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
           let element = document.querySelector('.viewer-drawer .el-drawer__body')
           if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
-            this.currentImageIndex += 1
+            this.$refs.InternalViewerRef.currentImageIndex += 1
             element.scrollTop = 0
           } else if (event.deltaY < 0 && element.scrollTop <= 0) {
-            this.currentImageIndex += -1
+            this.$refs.InternalViewerRef.currentImageIndex += -1
           }
         }
       }
@@ -1024,6 +1023,102 @@ export default defineComponent({
     },
 
     // metadata
+    resolveSearchResult (bookId, url, type) {
+      let book = _.find(this.bookList, {id: bookId})
+      if (type === 'chaika') {
+        book.url = `https://panda.chaika.moe${url}`
+        this.getBookInfoFromChaika(book)
+      } else if (type === 'hentag') {
+        book.url = url
+        this.getBookInfoFromHentag(book)
+      } else {
+        book.url = url
+        this.getBookInfoFromEh(book)
+      }
+      this.$refs.SearchDialogRef.dialogVisibleEhSearch = false
+    },
+    getBookInfoFromChaika (book) {
+      let archiveNo = /\d+/.exec(book.url)[0]
+      axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
+      .then(async res=>{
+        _.assign(
+          book,
+          _.pick(res.data, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+        )
+        book.posted = +book.posted
+        book.filecount = +book.filecount
+        book.rating = +book.rating
+        book.title = he.decode(book.title)
+        book.title_jpn = he.decode(book.title_jpn)
+        let tagObject = _.groupBy(book.tags, tag=>{
+          let result = /(.+):/.exec(tag)
+          if (result) {
+            return /(.+):/.exec(tag)[1]
+          } else {
+            return 'misc'
+          }
+        })
+        _.forIn(tagObject, (arr, key)=>{
+          tagObject[key] = arr.map(tag=>{
+            let result = /:(.+)$/.exec(tag)
+            if (result) {
+              return /:(.+)$/.exec(tag)[1].replaceAll('_', ' ')
+            } else {
+              return tag.replaceAll('_', ' ')
+            }
+          })
+        })
+        book.tags = tagObject
+        book.status = 'tagged'
+        await this.saveBook(book)
+      })
+    },
+    async getBookInfoFromHentag (book) {
+      let { data } = await axios.get(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
+      let tags = {}
+      data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
+      data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody=>parody.name) : ''
+      data.characters.length > 0 ? tags['character'] = data.characters.map(character=>character.name) : ''
+      data.circles.length > 0 ? tags['group'] = data.circles.map(circle=>circle.name) : ''
+      data.artists.length > 0 ? tags['artist'] = data.artists.map(artist=>artist.name) : ''
+      data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag=>maleTag.name) : ''
+      data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag=>femaleTag.name) : ''
+      if (data.otherTags.length > 0) {
+        data.otherTags.forEach(({ name }) => {
+          let cat = this.tag2cat[name]
+          if (cat) {
+            if (tags[cat]) {
+              tags[cat].push(name)
+            } else {
+              tags[cat] = [name]
+            }
+          } else {
+            if (tags['misc']) {
+              tags['misc'].push(name)
+            } else {
+              tags['misc'] = [name]
+            }
+          }
+        })
+      }
+      _.assign(book, {
+        title: data.title,
+        posted: Math.floor(data.createdAt / 1000),
+        category: this.categoryOption[data.category],
+        tags
+      })
+      book.status = 'tagged'
+      await this.saveBook(book)
+    },
+    getBookInfo (book) {
+      if (book.url.startsWith('https://panda.chaika.moe')) {
+        this.getBookInfoFromChaika(book)
+      } else if (book.url.startsWith('https://hentag.com')) {
+        this.getBookInfoFromHentag(book)
+      } else {
+        this.getBookInfoFromEh(book)
+      }
+    },
     async getBookInfoFromEh (book) {
       let match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
       ipcRenderer.invoke('post-data-ex', {
@@ -1715,7 +1810,7 @@ export default defineComponent({
         })
     },
     handleStopReadManga () {
-      if (this.setting.keepReadingProgress) this.saveReadingProgress()
+      if (this.setting.keepReadingProgress) this.$refs.InternalViewerRef.saveReadingProgress()
       ipcRenderer.invoke('release-sendimagelock')
     },
     toNextManga (step) {

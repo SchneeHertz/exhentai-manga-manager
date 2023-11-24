@@ -154,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Close } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
@@ -380,13 +380,6 @@ const returnImageStyle = (image) => {
     }
   }
 }
-const returnImageFrameStyle = () => {
-  if (imageStyleType.value === 'scroll') {
-    return {}
-  } else {
-    return {height: '100vh'}
-  }
-}
 
 const initResize = (id, originWidth) => {
   if (imageStyleType.value === 'scroll') {
@@ -459,7 +452,7 @@ const handleClickThumbnail = (id) => {
   if (imageStyleType.value === 'scroll') {
     _.forEach(viewerImageList.value, (image)=>{
       if (image.id === id) {
-        this.$nextTick(()=>document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = scrollTopValue)
+        nextTick(()=>document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = scrollTopValue)
         return false
       }
       // 28 is the height of .viewer-image-page
@@ -554,6 +547,7 @@ defineExpose({
   imageStyleType,
   insertEmptyPage,
   insertEmptyPageIndex,
+  saveReadingProgress,
   viewManga,
 })
 </script>

@@ -5,7 +5,7 @@
     destroy-on-close
     class="dialog-search"
   >
-    <el-input v-model="searchStringDialog" :disabled="disabledSearchString" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)">
+    <el-input v-model="searchStringDialog" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)">
       <template #prepend>
         <el-select class="search-type-select" v-model="searchTypeDialog">
           <el-option label="exhentai(sha1)" value="exhentai" />
@@ -25,7 +25,7 @@
         <p
           v-for="result in ehSearchResultList"
           :key="result.url"
-          @click="resolveSearchResult(bookDetail, result.url, result.type)"
+          @click="$emit('resolveSearchResult', bookDetail.id, result.url, result.type)"
           class="search-result-ind"
         >{{result.title}}</p>
       </div>
@@ -35,13 +35,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import axios from 'axios'
 import { Search32Filled } from '@vicons/fluent'
 
 const props = defineProps(['cookie'])
 
-const emit = defineEmits(['message', 'saveBook', 'getBookInfoFromEh'])
+const emit = defineEmits(['message', 'resolveSearchResult'])
 
 const dialogVisibleEhSearch = ref(false)
 const searchResultLoading = ref(false)
@@ -49,10 +49,6 @@ const searchStringDialog = ref('')
 const searchTypeDialog = ref('exhentai')
 const ehSearchResultList = ref([])
 const bookDetail = ref({})
-
-const disabledSearchString = computed(() => {
-  return ['exhentai', 'e-hentai'].includes(searchTypeDialog.value)
-})
 
 const openSearchDialog = (book, server) => {
   dialogVisibleEhSearch.value = true
@@ -181,107 +177,9 @@ const resolveHentagResult = (data) => {
   })
 }
 
-const resolveSearchResult = (book, url, type) => {
-  if (type === 'chaika') {
-    book.url = `https://panda.chaika.moe${url}`
-    getBookInfoFromChaika(book)
-  } else if (type === 'hentag') {
-    book.url = url
-    getBookInfoFromHentag(book)
-  } else {
-    book.url = url
-    getBookInfoFromEh(book)
-  }
-  dialogVisibleEhSearch.value = false
-}
-
-const getBookInfoFromChaika = (book) => {
-  let archiveNo = /\d+/.exec(book.url)[0]
-  axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
-  .then(async res=>{
-    _.assign(
-      book,
-      _.pick(res.data, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
-    )
-    book.posted = +book.posted
-    book.filecount = +book.filecount
-    book.rating = +book.rating
-    book.title = he.decode(book.title)
-    book.title_jpn = he.decode(book.title_jpn)
-    let tagObject = _.groupBy(book.tags, tag=>{
-      let result = /(.+):/.exec(tag)
-      if (result) {
-        return /(.+):/.exec(tag)[1]
-      } else {
-        return 'misc'
-      }
-    })
-    _.forIn(tagObject, (arr, key)=>{
-      tagObject[key] = arr.map(tag=>{
-        let result = /:(.+)$/.exec(tag)
-        if (result) {
-          return /:(.+)$/.exec(tag)[1].replaceAll('_', ' ')
-        } else {
-          return tag.replaceAll('_', ' ')
-        }
-      })
-    })
-    book.tags = tagObject
-    book.status = 'tagged'
-    emit('saveBook', book)
-  })
-}
-const getBookInfoFromHentag = async (book) => {
-  let { data } = await axios.get(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
-  let tags = {}
-  data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
-  data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody=>parody.name) : ''
-  data.characters.length > 0 ? tags['character'] = data.characters.map(character=>character.name) : ''
-  data.circles.length > 0 ? tags['group'] = data.circles.map(circle=>circle.name) : ''
-  data.artists.length > 0 ? tags['artist'] = data.artists.map(artist=>artist.name) : ''
-  data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag=>maleTag.name) : ''
-  data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag=>femaleTag.name) : ''
-  if (data.otherTags.length > 0) {
-    data.otherTags.forEach(({ name }) => {
-      let cat = this.tag2cat[name]
-      if (cat) {
-        if (tags[cat]) {
-          tags[cat].push(name)
-        } else {
-          tags[cat] = [name]
-        }
-      } else {
-        if (tags['misc']) {
-          tags['misc'].push(name)
-        } else {
-          tags['misc'] = [name]
-        }
-      }
-    })
-  }
-  _.assign(book, {
-    title: data.title,
-    posted: Math.floor(data.createdAt / 1000),
-    category: this.categoryOption[data.category],
-    tags
-  })
-  book.status = 'tagged'
-  emit('saveBook', book)
-}
-const getBookInfo = (book) => {
-  if (book.url.startsWith('https://panda.chaika.moe')) {
-    getBookInfoFromChaika(book)
-  } else if (book.url.startsWith('https://hentag.com')) {
-    getBookInfoFromHentag(book)
-  } else {
-    emit('getBookInfoFromEh', book)
-  }
-}
-
 defineExpose({
   dialogVisibleEhSearch,
-  openSearchDialog,
-  getBookInfo
+  openSearchDialog
 })
 
 </script>

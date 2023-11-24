@@ -24,7 +24,6 @@
         @focus="getCurrentImageId"
         @change="saveImageStyleType"
         class="viewer-mode"
-        ref="viewer-mode"
         v-show="showThumbnail === false"
       >
         <el-option value="scroll" :label="$t('m.scrolling')" />
@@ -36,7 +35,6 @@
         size="small"
         @change="saveImageStyleFit"
         class="viewer-image-fit"
-        ref="viewer-image-fit"
         v-show="imageStyleType !== 'scroll' && showThumbnail === false"
       >
         <el-option value="width" :label="$t('m.fitWidth')" />
@@ -47,7 +45,6 @@
         v-model="viewerImageWidth"
         size="small"
         class="viewer-image-width"
-        ref="viewer-image-width"
         v-show="imageStyleType === 'scroll' && showThumbnail === false"
       >
         <el-option :value="0.5" label="50vw" />
@@ -82,7 +79,7 @@
             />
             <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
           </div>
-          <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
+          <div class="viewer-image-page" v-if="!props.setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </div>
       <div v-else-if="imageStyleType === 'single'">
@@ -95,7 +92,7 @@
               @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex]?.filepath)"
             />
           </div>
-          <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
+          <div class="viewer-image-page" v-if="!props.setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
           <img
             :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
             class="viewer-image-preload"
@@ -123,14 +120,14 @@
           <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page">
             <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
           </div>
-          <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
+          <div class="viewer-image-page" v-if="!props.setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
         </div>
       </div>
     </div>
     <div class="next-manga-button">
-      <el-button size="large" type="success" plain @click="toNextManga(-1)">{{$t('m.previousManga')}}</el-button>
-      <el-button size="large" type="success" plain @click="toNextMangaRandom">{{$t('m.nextMangaRandom')}}</el-button>
-      <el-button size="large" type="success" plain @click="toNextManga(1)">{{$t('m.nextManga')}}</el-button>
+      <el-button size="large" type="success" plain @click="$emit('toNextManga', -1)">{{$t('m.previousManga')}}</el-button>
+      <el-button size="large" type="success" plain @click="$emit('toNextMangaRandom')">{{$t('m.nextMangaRandom')}}</el-button>
+      <el-button size="large" type="success" plain @click="$emit('toNextManga', 1)">{{$t('m.nextManga')}}</el-button>
     </div>
     <div
       class="drawer-thumbnail-content"
@@ -145,11 +142,11 @@
           <img
             :src="`${image.thumbnailPath}?id=${image.id}`"
             class="viewer-thumbnail"
-            :style="{width: `calc((100vw - 50px) / ${setting.thumbnailColumn || 10} - 16px)`}"
+            :style="{width: `calc((100vw - 50px) / ${props.setting.thumbnailColumn || 10} - 16px)`}"
             @click="handleClickThumbnail(image.id)"
             @contextmenu="onMangaImageContextMenu($event, image.filepath)"
           />
-          <div class="viewer-thunmnail-page">{{chunkIndex * (setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
+          <div class="viewer-thunmnail-page">{{chunkIndex * (props.setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </el-space>
     </div>
@@ -157,21 +154,32 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Close } from '@element-plus/icons-vue'
+import { ElLoading } from 'element-plus'
+import ContextMenu from '@imengyu/vue3-context-menu'
 
-const props = defineProps(['setting', 'keyMap'])
+const { t } = useI18n()
+
+const props = defineProps(['setting', 'keyMap', 'bookDetail'])
 
 const emit = defineEmits([
   'handleStopReadManga',
-  'toNextManga'
+  'toNextManga',
+  'toNextMangaRandom',
+  'useNewCover',
+  'message',
+  'updateOptions'
 ])
+
 const drawerVisibleViewer = ref(false)
 const showThumbnail = ref(false)
 const viewerImageWidth = ref(0.9)
 const imageStyleType = ref('scroll')
 const imageStyleFit = ref('window')
 const viewerReadingProgress = ref([])
+const currentImageId = ref('')
 const insertEmptyPage = ref(false)
 const insertEmptyPageIndex = ref(1)
 const viewerImageList = ref([])
@@ -191,7 +199,7 @@ const viewerImageListDouble = computed(() => {
       } else {
         frame.page.push(image)
         frame.pageNumber.push(pageNumber)
-        if ((insertEmptyPage.value && result.length === this.insertEmptyPageIndex) || frame.page.length >= 2) {
+        if ((insertEmptyPage.value && result.length === insertEmptyPageIndex.value) || frame.page.length >= 2) {
           result.push(_.clone(frame))
           frame = {page: [], pageNumber: []}
         }
@@ -204,60 +212,269 @@ const viewerImageListDouble = computed(() => {
   }
 })
 
+const thumbnailList = computed(()=>{
+  return _.chunk(viewerImageList.value, props.setting.thumbnailColumn || 10)
+})
+
+
 onMounted(()=>{
   viewerImageWidth.value = +localStorage.getItem('viewerImageWidth') || 0.9
   imageStyleType.value = localStorage.getItem('imageStyleType') || 'scroll'
   imageStyleFit.value = localStorage.getItem('imageStyleFit') || 'window'
   viewerReadingProgress.value = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
+
+  ipcRenderer.on('manga-content', (event, arg)=>{
+    viewerImageList.value.push(arg)
+  })
 })
 
-let _currentImageIndex = 0
+const viewManga = (book) => {
+  viewerImageList.value = []
+  currentImageIndex.value = 0
+  insertEmptyPage.value = false
+  insertEmptyPageIndex.value = 1
+  const loading = ElLoading.service({
+    lock: true,
+    text: 'Loading',
+    background: _.includes(props.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+  })
+  ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
+  .then(() => {
+    drawerVisibleViewer.value = true
+    if (props.setting.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
+  })
+  .catch(err => {
+    console.log(err)
+  })
+  .finally(() => {
+    loading.close()
+  })
+}
+
+let _currentImageIndex = ref(0)
 const currentImageIndex = computed({
   get () {
-    return _currentImageIndex
+    return _currentImageIndex.value
   },
   set (val) {
     let listLength
-    if (this.imageStyleType === 'single') {
+    if (imageStyleType.value === 'single') {
       listLength = viewerImageList.value.length
     } else {
       listLength = viewerImageListDouble.value.length
     }
     if (Number.isInteger(val)) {
       if (val < 0) {
-        _currentImageIndex = 0
+        _currentImageIndex.value = 0
       } else if (val > listLength - 1 && listLength >= 1) {
-        _currentImageIndex = listLength - 1
+        _currentImageIndex.value = listLength - 1
         if (props.setting.autoNextManga) emit('toNextManga', 1)
       } else {
-        _currentImageIndex = val
+        _currentImageIndex.value = val
       }
     }
   }
 })
 
+let storeDrawerScrollTop
+const switchThumbnail = (val) => {
+  setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
+  if (imageStyleType.value === 'scroll') {
+    if (!val) {
+      if (storeDrawerScrollTop) {
+        nextTick(()=>{
+          document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = storeDrawerScrollTop
+          storeDrawerScrollTop = undefined
+        })
+      }
+    } else {
+      storeDrawerScrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
+    }
+  }
+}
+
+const returnImageStyle = (image) => {
+  const returnImageStyleObject = ({width, height})=>{
+    if (width) {
+      return { width: width + 'px', height: (image.height * (width / image.width)) + 'px' }
+    }
+    if (height) {
+      return { width: (image.width * (height / image.height)) + 'px', height: height + 'px' }
+    }
+  }
+  if (image) {
+    const windowRatio = window.innerWidth / window.innerHeight
+    switch (imageStyleType.value) {
+      case 'scroll':
+        if (viewerImageWidth.value <= 2) {
+          return returnImageStyleObject({width: viewerImageWidth.value * window.innerWidth})
+        } else {
+          return returnImageStyleObject({width: viewerImageWidth.value / 100 * image.width / window.devicePixelRatio})
+        }
+      case 'double': {
+        switch (imageStyleFit.value) {
+          case 'height': {
+            if (props.setting.hidePageNumber) {
+              return returnImageStyleObject({height: window.innerHeight - 1})
+            } else {
+              // 28,30 is the height of .viewer-image-page
+              return returnImageStyleObject({height: window.innerHeight - 30})
+            }
+          }
+          case 'width': {
+            // 18 is the width of scrollbar
+            if (image.width > image.height) {
+              return returnImageStyleObject({width: window.innerWidth - 18})
+            } else {
+              return returnImageStyleObject({width: (window.innerWidth - 18) / 2})
+            }
+          }
+          case 'window': {
+            if (image.width > image.height) {
+              if (image.width / image.height > windowRatio) {
+                return returnImageStyleObject({width: window.innerWidth - 18})
+              } else {
+                if (props.setting.hidePageNumber) {
+                  return returnImageStyleObject({height: window.innerHeight})
+                } else {
+                  return returnImageStyleObject({height: window.innerHeight - 30})
+                }
+              }
+            } else if (image.width * 2 / image.height > windowRatio) {
+              return returnImageStyleObject({width: (window.innerWidth - 18) / 2 })
+            } else {
+              if (props.setting.hidePageNumber) {
+                return returnImageStyleObject({height: window.innerHeight - 1})
+              } else {
+                return returnImageStyleObject({height: window.innerHeight - 30})
+              }
+            }
+          }
+        }
+      }
+      case 'single': {
+        switch (imageStyleFit.value) {
+          case 'height': {
+            if (props.setting.hidePageNumber) {
+              return returnImageStyleObject({height: window.innerHeight})
+            } else {
+              return returnImageStyleObject({height: window.innerHeight - 30})
+            }
+          }
+          case 'width': {
+            return returnImageStyleObject({width: window.innerWidth - 18})
+          }
+          case 'window': {
+            if (image.width / image.height > windowRatio) {
+              return returnImageStyleObject({width: window.innerWidth - 18})
+            } else {
+              if (props.setting.hidePageNumber) {
+                return returnImageStyleObject({height: window.innerHeight})
+              } else {
+                return returnImageStyleObject({height: window.innerHeight - 30})
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+const returnImageFrameStyle = () => {
+  if (imageStyleType.value === 'scroll') {
+    return {}
+  } else {
+    return {height: '100vh'}
+  }
+}
+
+const initResize = (id, originWidth) => {
+  if (imageStyleType.value === 'scroll') {
+    let element = document.getElementById(id)
+    let Resize = (e)=>{
+      if (viewerImageWidth.value <= 2) {
+        viewerImageWidth.value = _.round((e.clientX - element.offsetLeft) / window.innerWidth , 2)
+      } else {
+        viewerImageWidth.value = _.round((e.clientX - element.offsetLeft) / originWidth * 100 * window.devicePixelRatio, 0)
+      }
+    }
+    let stopResize = (e)=>{
+      window.removeEventListener('mousemove', Resize, false)
+      window.removeEventListener('mouseup', stopResize, false)
+      localStorage.setItem('viewerImageWidth', viewerImageWidth.value)
+    }
+    window.addEventListener('mousemove', Resize, false)
+    window.addEventListener('mouseup', stopResize, false)
+  }
+}
+
+const getCurrentImageId = () => {
+  if (imageStyleType.value === 'scroll') {
+    let scrollTopValue = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
+    _.forEach(viewerImageList.value, (image)=>{
+      if (scrollTopValue < 0) {
+        currentImageId.value = image.id
+        return false
+      }
+      // 28 is the height of .viewer-image-page
+      if (props.setting.hidePageNumber) {
+        scrollTopValue -= parseFloat(returnImageStyle(image).height)
+      } else {
+        scrollTopValue -= parseFloat(returnImageStyle(image).height) + 28
+      }
+    })
+  } else if (imageStyleType.value === 'single') {
+    currentImageId.value = viewerImageList.value[currentImageIndex.value].id
+  } else if (imageStyleType.value === 'double') {
+    currentImageId.value = viewerImageListDouble.value[currentImageIndex.value].page[0].id
+  }
+  return currentImageId.value
+}
+const saveReadingProgress = () => {
+  let currentImageId = getCurrentImageId()
+  let currentImageIndex = viewerImageList.value.findIndex(image=>image.id === currentImageId)
+  if (currentImageIndex > props.bookDetail.pageCount - 6) {
+    currentImageId = viewerImageList.value[0].id
+  }
+  viewerReadingProgress.value.unshift({bookId: props.bookDetail.id, pageId: currentImageId})
+  localStorage.setItem('viewerReadingProgress', JSON.stringify(viewerReadingProgress.value.slice(0, 1000)))
+}
+
+const saveImageStyleType = () => {
+  if (imageStyleType.value === 'double') emit('message', 'info', t('c.insertEmptyPageInfo'))
+  localStorage.setItem('imageStyleType', imageStyleType.value)
+  setTimeout(()=>{
+    handleClickThumbnail(currentImageId.value)
+    document.querySelector('.viewer-close-button').focus()
+  }, 500)
+}
+const saveImageStyleFit = () => {
+  localStorage.setItem('imageStyleFit', imageStyleFit.value)
+  setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
+}
+
 const handleClickThumbnail = (id) => {
   showThumbnail.value = false
   let scrollTopValue = 0
   if (imageStyleType.value === 'scroll') {
-    _.forEach(this.viewerImageList, (image)=>{
+    _.forEach(viewerImageList.value, (image)=>{
       if (image.id === id) {
         this.$nextTick(()=>document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = scrollTopValue)
         return false
       }
       // 28 is the height of .viewer-image-page
-      if (this.setting.hidePageNumber) {
-        scrollTopValue += parseFloat(this.returnImageStyle(image).height)
+      if (props.setting.hidePageNumber) {
+        scrollTopValue += parseFloat(returnImageStyle(image).height)
       } else {
-        scrollTopValue += parseFloat(this.returnImageStyle(image).height) + 28
+        scrollTopValue += parseFloat(returnImageStyle(image).height) + 28
       }
     })
-  } else if (this.imageStyleType === 'single') {
-    this.currentImageIndex = _.findIndex(this.viewerImageList, {id: id})
-  } else if (this.imageStyleType === 'double') {
-    _.forEach(this.viewerImageListDouble, (imageGroup, index)=>{
+  } else if (imageStyleType.value === 'single') {
+    currentImageIndex.value = _.findIndex(viewerImageList.value, {id: id})
+  } else if (imageStyleType.value === 'double') {
+    _.forEach(viewerImageListDouble.value, (imageGroup, index)=>{
       if (_.find(imageGroup.page, {id: id})) {
-        this.currentImageIndex = index
+        currentImageIndex.value = index
         return false
       }
     })
@@ -273,6 +490,7 @@ const handleViewerAreaClick = (event) => {
       } else {
         ;({ click } = props.keyMap.normal)
       }
+      console.log(click)
       if(event.clientX > window.innerWidth / 2) {
         currentImageIndex.value += click
         document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
@@ -284,11 +502,146 @@ const handleViewerAreaClick = (event) => {
   }
 }
 
+const handleJumpToReadingProgress = async (book) => {
+  let findProgress = viewerReadingProgress.value.find(progress=>progress.bookId === book.id)
+  if (findProgress) {
+    const timer = ms => new Promise(res => setTimeout(res, ms))
+    while (true) {
+      if (imageStyleType.value === 'scroll' || imageStyleType.value === 'single') {
+        if (viewerImageList.value.findIndex(image=>image.id === findProgress.pageId) >= 0) {
+          handleClickThumbnail(findProgress.pageId)
+          break
+        }
+      } else if (imageStyleType.value === 'double') {
+        if (viewerImageListDouble.value.findIndex(imageGroup=>imageGroup.page.findIndex(page=>page.id === findProgress.pageId) >= 0) >= 0) {
+          handleClickThumbnail(findProgress.pageId)
+          break
+        }
+      }
+      if (viewerImageList.value.length > book.pageCount - 5 || props.bookDetail.id !== book.id) break
+      await timer(500)
+    }
+  }
+}
+
+const onMangaImageContextMenu = (e, filepath) => {
+  e.preventDefault()
+  ContextMenu.showContextMenu({
+    x: e.x,
+    y: e.y,
+    items: [
+      {
+        label: t('c.copyImageToClipboard'),
+        onClick: () => {
+          ipcRenderer.invoke('copy-image-to-clipboard', filepath)
+        }
+      },
+      {
+        label: t('c.designateAsCover'),
+        onClick: () => {
+          emit('useNewCover', filepath)
+        }
+      }
+    ]
+  })
+}
+
 defineExpose({
   drawerVisibleViewer,
   showThumbnail,
+  currentImageIndex,
+  viewerImageList,
+  viewerImageListDouble,
   imageStyleType,
   insertEmptyPage,
-  insertEmptyPageIndex
+  insertEmptyPageIndex,
+  viewManga,
 })
 </script>
+
+<style lang="stylus">
+.viewer-drawer
+  .el-drawer__body
+    padding: 0
+    display: flex
+    justify-content: center
+    align-items: center
+    flex-wrap: wrap
+
+.viewer-close-button
+  position: absolute
+  top: 28px
+  right: 25px
+  z-index: 10
+  .el-icon
+    width: 32px
+    svg
+      height: 32px
+      width: 32px
+.viewer-close-button:hover
+  color: var(--el-color-primary) !important
+
+.viewer-mode-setting
+  opacity: 0.1
+  position: absolute
+  width: 100px
+  top: 8px
+  left: 8px
+  z-index: 10
+  transition-delay: 0.2s
+.viewer-mode-setting:hover
+  opacity: 1
+.viewer-mode, .viewer-image-fit, .viewer-thumbnail-select, .viewer-image-width
+  width: 100px
+  margin: 4px 8px
+
+.image-frame
+  display: flex
+  flex-direction: column
+  align-items: center
+  .viewer-image-frame-scroll
+    position: relative
+  .viewer-image-frame
+    margin: auto
+    .viewer-image
+      user-select: none
+    .viewer-image-bar
+      position: absolute
+      height: 100%
+      width: 6px
+      top: 0
+      right: -3px
+      cursor: ew-resize
+    .viewer-image-bar:hover
+      background-color: var(--el-color-primary)
+  .viewer-image-frame-double .viewer-image
+    float: right
+  .viewer-image-page
+    line-height: 18px
+    margin-top: 3px
+    margin-bottom: 7px
+    width: 98vw
+  .viewer-image-preload
+    display: none
+
+.next-manga-button
+  opacity: 0.05
+  position: fixed
+  bottom: 1em
+  z-index: 10
+  transition-delay: 0.2s
+  .el-button
+    --el-button-bg-color: #f0f9eb66
+.next-manga-button:hover
+  opacity: 1
+
+.drawer-thumbnail-content
+  margin: 1em
+  height: 100vh
+  text-align: left
+.viewer-thumbnail
+  margin: 8px 0 0
+.viewer-thunmnail-page
+  text-align: center
+  font-size: 11px
+</style>

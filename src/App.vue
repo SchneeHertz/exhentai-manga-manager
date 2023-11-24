@@ -127,7 +127,7 @@
             ><BookmarkTwotone /></el-icon>
             <el-button-group class="outer-read-button-group">
               <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-              <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
+              <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
             </el-button-group>
             <el-tag
               class="book-status-tag"
@@ -206,8 +206,12 @@
       ref="InternalViewerRef"
       :setting="setting"
       :key-map="keyMap"
+      :book-detail="bookDetail"
       @handle-stop-read-manga="handleStopReadManga"
       @to-next-manga="toNextManga"
+      @to-next-manga-random="toNextMangaRandom"
+      @use-new-cover="useNewCover"
+      @message="printMessage"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
       direction="ltr"
@@ -263,7 +267,7 @@
           ><BookmarkTwotone /></el-icon>
           <el-button-group class="outer-read-button-group">
             <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-            <el-button type="success" size="small" class="outer-read-button" plain @click="viewManga(book)">{{$t('m.ad')}}</el-button>
+            <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
           </el-button-group>
           <el-tag
             class="book-status-tag"
@@ -314,7 +318,7 @@
           <el-row class="book-detail-function">
             <el-button-group style="margin-right: 12px;">
               <el-button type="success" style="padding-right: 0;" plain @click="openLocalBook(bookDetail)">{{$t('m.re')}}</el-button>
-              <el-button type="success" style="padding-left: 0;" plain @click="viewManga(bookDetail)">{{$t('m.ad')}}</el-button>
+              <el-button type="success" style="padding-left: 0;" plain @click="$refs.InternalViewerRef.viewManga(bookDetail)">{{$t('m.ad')}}</el-button>
             </el-button-group>
             <!-- <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button> -->
             <el-button plain @click="triggerShowComment">{{setting.showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
@@ -534,15 +538,6 @@ export default defineComponent({
       disabledSearchString: false,
       ehSearchResultList: [],
       editTagOptions: [],
-      // viewer
-      viewerImageList: [],
-      viewerImageWidth: 0.9,
-      imageStyleType: 'scroll',
-      imageStyleFit: 'window',
-      _currentImageIndex: 0,
-      currentImageId: undefined,
-      storeDrawerScrollTop: undefined,
-      viewerReadingProgress: [],
       // setting
       setting: {},
       serviceAvailable: true,
@@ -646,9 +641,7 @@ export default defineComponent({
       return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
         .map(str=>({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
     },
-    thumbnailList () {
-      return _.chunk(this.viewerImageList, this.setting.thumbnailColumn || 10)
-    },
+
     cookie () {
       return `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id};star=${this.setting.star}`
     },
@@ -682,9 +675,6 @@ export default defineComponent({
         console.log(arg)
       }
     })
-    ipcRenderer.on('manga-content', (event, arg)=>{
-      this.viewerImageList.push(arg)
-    })
     ipcRenderer.invoke('load-setting')
     .then(async (res) => {
       this.setting = res
@@ -695,11 +685,7 @@ export default defineComponent({
         this.loadBookList()
       }
     })
-    this.viewerImageWidth = +localStorage.getItem('viewerImageWidth') || 0.9
-    this.imageStyleType = localStorage.getItem('imageStyleType') || 'scroll'
-    this.imageStyleFit = localStorage.getItem('imageStyleFit') || 'window'
     this.sortValue = localStorage.getItem('sortValue')
-    this.viewerReadingProgress = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
     window.addEventListener('keydown', this.resolveKey)
     window.addEventListener('wheel', this.resolveWheel)
     window.addEventListener('mousedown', this.resolveMouseDown)
@@ -821,9 +807,9 @@ export default defineComponent({
           }
           if (event.key === 'End') {
             if (this.$refs.InternalViewerRef.imageStyleType === 'single') {
-              this.currentImageIndex = this.viewerImageList.length - 1
+              this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageList.length - 1
             } else if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
-              this.currentImageIndex = this.viewerImageListDouble.length - 1
+              this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageListDouble.length - 1
             }
           }
         }
@@ -871,7 +857,7 @@ export default defineComponent({
       if (this.currentUI() === 'bookdetail') {
         if (event.key === 'Enter') {
           event.preventDefault()
-          this.viewManga(this.bookDetail)
+          this.$refs.InternalViewerRef.viewManga(this.bookDetail)
         }
         if (event.key === 'Delete') {
           this.deleteLocalBook(this.bookDetail)
@@ -1616,7 +1602,7 @@ export default defineComponent({
     handleClickCover (book) {
       switch (this.setting.directEnter) {
         case 'internalViewer':
-          this.viewManga(book)
+          this.$refs.InternalViewerRef.viewManga(book)
           break
         case 'externalViewer':
           this.openLocalBook(book)
@@ -1848,36 +1834,14 @@ export default defineComponent({
         ).then(deleteBook).catch(()=>({}))
       }
     },
-    viewManga (book) {
-      this.bookDetail = book
-      this.viewerImageList = []
-      this.currentImageIndex = 0
-      this.insertEmptyPage = false
-      this.insertEmptyPageIndex = 1
-      const loading = ElLoading.service({
-        lock: true,
-        text: 'Loading',
-        background: _.includes(this.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
-      })
-      ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(this.bookDetail))
-      .then(() => {
-        this.$refs.InternalViewerRef.drawerVisibleViewer = true
-        if (this.setting.keepReadingProgress && this.currentUI() === 'viewer-content') this.handleJumpToReadingProgress(book)
-      })
-      .catch(err => {
-        console.log(err)
-      })
-      .finally(() => {
-        loading.close()
-      })
-    },
+
     openContentView (book) {
       this.$refs.InternalViewerRef.showThumbnail = false
-      this.viewManga(book)
+      this.$refs.InternalViewerRef.viewManga(book)
     },
     openThumbnailView (book) {
       this.$refs.InternalViewerRef.showThumbnail = true
-      this.viewManga(book)
+      this.$refs.InternalViewerRef.viewManga(book)
     },
     triggerShowComment () {
       if (this.setting.showComment) {
@@ -1984,146 +1948,12 @@ export default defineComponent({
     },
 
     // internal viewer
-    returnImageStyle(image) {
-      const returnImageStyleObject = ({width, height})=>{
-        if (width) {
-          return { width: width + 'px', height: (image.height * (width / image.width)) + 'px' }
-        }
-        if (height) {
-          return { width: (image.width * (height / image.height)) + 'px', height: height + 'px' }
-        }
-      }
-      if (image) {
-        const windowRatio = window.innerWidth / window.innerHeight
-        switch (this.imageStyleType) {
-          case 'scroll':
-            if (this.viewerImageWidth <= 2) {
-              return returnImageStyleObject({width: this.viewerImageWidth * window.innerWidth})
-            } else {
-              return returnImageStyleObject({width: this.viewerImageWidth / 100 * image.width / window.devicePixelRatio})
-            }
-          case 'double': {
-            switch (this.imageStyleFit) {
-              case 'height': {
-                if (this.setting.hidePageNumber) {
-                  return returnImageStyleObject({height: window.innerHeight - 1})
-                } else {
-                  // 28,30 is the height of .viewer-image-page
-                  return returnImageStyleObject({height: window.innerHeight - 30})
-                }
-              }
-              case 'width': {
-                // 18 is the width of scrollbar
-                if (image.width > image.height) {
-                  return returnImageStyleObject({width: window.innerWidth - 18})
-                } else {
-                  return returnImageStyleObject({width: (window.innerWidth - 18) / 2})
-                }
-              }
-              case 'window': {
-                if (image.width > image.height) {
-                  if (image.width / image.height > windowRatio) {
-                    return returnImageStyleObject({width: window.innerWidth - 18})
-                  } else {
-                    if (this.setting.hidePageNumber) {
-                      return returnImageStyleObject({height: window.innerHeight})
-                    } else {
-                      return returnImageStyleObject({height: window.innerHeight - 30})
-                    }
-                  }
-                } else if (image.width * 2 / image.height > windowRatio) {
-                  return returnImageStyleObject({width: (window.innerWidth - 18) / 2 })
-                } else {
-                  if (this.setting.hidePageNumber) {
-                    return returnImageStyleObject({height: window.innerHeight - 1})
-                  } else {
-                    return returnImageStyleObject({height: window.innerHeight - 30})
-                  }
-                }
-              }
-            }
-          }
-          case 'single': {
-            switch (this.imageStyleFit) {
-              case 'height': {
-                if (this.setting.hidePageNumber) {
-                  return returnImageStyleObject({height: window.innerHeight})
-                } else {
-                  return returnImageStyleObject({height: window.innerHeight - 30})
-                }
-              }
-              case 'width': {
-                return returnImageStyleObject({width: window.innerWidth - 18})
-              }
-              case 'window': {
-                if (image.width / image.height > windowRatio) {
-                  return returnImageStyleObject({width: window.innerWidth - 18})
-                } else {
-                  if (this.setting.hidePageNumber) {
-                    return returnImageStyleObject({height: window.innerHeight})
-                  } else {
-                    return returnImageStyleObject({height: window.innerHeight - 30})
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    returnImageFrameStyle () {
-      if (this.imageStyleType === 'scroll') {
-        return {}
-      } else {
-        return {height: '100vh'}
-      }
-    },
-    saveImageStyleType () {
-      if (this.imageStyleType === 'double') this.printMessage('info', this.$t('c.insertEmptyPageInfo'))
-      localStorage.setItem('imageStyleType', this.imageStyleType)
-      setTimeout(()=>{
-        this.handleClickThumbnail(this.currentImageId)
-        document.querySelector('.viewer-close-button').focus()
-      }, 500)
-    },
-    saveImageStyleFit () {
-      localStorage.setItem('imageStyleFit', this.imageStyleFit)
-      setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
-    },
-    switchThumbnail (val) {
-      setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
-      if (this.imageStyleType === 'scroll') {
-        if (!val) {
-          if (this.storeDrawerScrollTop) {
-            this.$nextTick(()=>{
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = this.storeDrawerScrollTop
-              this.storeDrawerScrollTop = undefined
-            })
-          }
-        } else {
-          this.storeDrawerScrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
-        }
-      }
-    },
-
-    initResize (id, originWidth) {
-      if (this.imageStyleType === 'scroll') {
-        let element = document.getElementById(id)
-        let Resize = (e)=>{
-          if (this.viewerImageWidth <= 2) {
-            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / window.innerWidth , 2)
-          } else {
-            this.viewerImageWidth = _.round((e.clientX - element.offsetLeft) / originWidth * 100 * window.devicePixelRatio, 0)
-          }
-        }
-        let stopResize = (e)=>{
-          window.removeEventListener('mousemove', Resize, false)
-          window.removeEventListener('mouseup', stopResize, false)
-          localStorage.setItem('viewerImageWidth', this.viewerImageWidth)
-        }
-        window.addEventListener('mousemove', Resize, false)
-        window.addEventListener('mouseup', stopResize, false)
-      }
+    useNewCover (filepath) {
+      ipcRenderer.invoke('use-new-cover', filepath)
+        .then((coverPath)=>{
+          this.bookDetail.coverPath = coverPath
+          this.saveBook(this.bookDetail)
+        })
     },
     handleStopReadManga () {
       if (this.setting.keepReadingProgress) this.saveReadingProgress()
@@ -2137,7 +1967,8 @@ export default defineComponent({
       if (indexNext >= 0 && indexNext < activeBookList.length) {
         let selectBook = activeBookList[indexNext]
         setTimeout(() => {
-          this.viewManga(selectBook)
+          this.bookDetail = selectBook
+          this.$refs.InternalViewerRef.viewManga(selectBook)
           if (this.setting.showComment) this.getComments(selectBook.url)
         }, 500)
       } else {
@@ -2149,7 +1980,8 @@ export default defineComponent({
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
       let selectBook = _.sample(activeBookList)
       setTimeout(() => {
-        this.viewManga(selectBook)
+        this.bookDetail = selectBook
+        this.$refs.InternalViewerRef.viewManga(selectBook)
         if (this.setting.showComment) this.getComments(selectBook.url)
       }, 500)
     },
@@ -2167,60 +1999,7 @@ export default defineComponent({
       let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
       this.openBookDetail(_.sample(activeBookList))
     },
-    getCurrentImageId () {
-      let currentImageId
-      if (this.imageStyleType === 'scroll') {
-        let scrollTopValue = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
-        _.forEach(this.viewerImageList, (image)=>{
-          if (scrollTopValue < 0) {
-            currentImageId = image.id
-            return false
-          }
-          // 28 is the height of .viewer-image-page
-          if (this.setting.hidePageNumber) {
-            scrollTopValue -= parseFloat(this.returnImageStyle(image).height)
-          } else {
-            scrollTopValue -= parseFloat(this.returnImageStyle(image).height) + 28
-          }
-        })
-      } else if (this.imageStyleType === 'single') {
-        currentImageId = this.viewerImageList[this.currentImageIndex].id
-      } else if (this.imageStyleType === 'double') {
-        currentImageId = this.viewerImageListDouble[this.currentImageIndex].page[0].id
-      }
-      this.currentImageId = currentImageId
-      return currentImageId
-    },
-    saveReadingProgress () {
-      let currentImageId = this.getCurrentImageId()
-      let currentImageIndex = this.viewerImageList.findIndex(image=>image.id === currentImageId)
-      if (currentImageIndex > this.bookDetail.pageCount - 6) {
-        currentImageId = this.viewerImageList[0].id
-      }
-      this.viewerReadingProgress.unshift({bookId: this.bookDetail.id, pageId: currentImageId})
-      localStorage.setItem('viewerReadingProgress', JSON.stringify(this.viewerReadingProgress.slice(0, 1000)))
-    },
-    async handleJumpToReadingProgress (book) {
-      let findProgress = this.viewerReadingProgress.find(progress=>progress.bookId === book.id)
-      if (findProgress) {
-        const timer = ms => new Promise(res => setTimeout(res, ms))
-        while (true) {
-          if (this.imageStyleType === 'scroll' || this.imageStyleType === 'single') {
-            if (this.viewerImageList.findIndex(image=>image.id === findProgress.pageId) >= 0) {
-              this.handleClickThumbnail(findProgress.pageId)
-              break
-            }
-          } else if (this.imageStyleType === 'double') {
-            if (this.viewerImageListDouble.findIndex(imageGroup=>imageGroup.page.findIndex(page=>page.id === findProgress.pageId) >= 0) >= 0) {
-              this.handleClickThumbnail(findProgress.pageId)
-              break
-            }
-          }
-          if (this.viewerImageList.length > book.pageCount - 5 || this.bookDetail.id !== book.id) break
-          await timer(500)
-        }
-      }
-    },
+
 
     // setting
     handleResolveTranslationUpdate (val) {
@@ -2384,31 +2163,6 @@ export default defineComponent({
             label: this.$t('m.pasteTagClipboard'),
             onClick: () => {
               this.pasteTagClipboard(book)
-            }
-          },
-        ]
-      })
-    },
-    onMangaImageContextMenu (e, filepath) {
-      e.preventDefault()
-      this.$contextmenu({
-        x: e.x,
-        y: e.y,
-        items: [
-          {
-            label: this.$t('c.copyImageToClipboard'),
-            onClick: () => {
-              ipcRenderer.invoke('copy-image-to-clipboard', filepath)
-            }
-          },
-          {
-            label: this.$t('c.designateAsCover'),
-            onClick: () => {
-              ipcRenderer.invoke('use-new-cover', filepath)
-              .then((coverPath)=>{
-                this.bookDetail.coverPath = coverPath
-                this.saveBook(this.bookDetail)
-              })
             }
           },
         ]
@@ -2703,91 +2457,6 @@ body
     margin: 8px 0
   .search-result-ind:hover
     background-color: var(--el-fill-color-dark)
-
-.viewer-drawer
-  .el-drawer__body
-    padding: 0
-    display: flex
-    justify-content: center
-    align-items: center
-    flex-wrap: wrap
-
-.viewer-close-button
-  position: absolute
-  top: 28px
-  right: 25px
-  z-index: 10
-  .el-icon
-    width: 32px
-    svg
-      height: 32px
-      width: 32px
-.viewer-close-button:hover
-  color: var(--el-color-primary) !important
-
-.viewer-mode-setting
-  opacity: 0.1
-  position: absolute
-  width: 100px
-  top: 8px
-  left: 8px
-  z-index: 10
-  transition-delay: 0.2s
-.viewer-mode-setting:hover
-  opacity: 1
-.viewer-mode, .viewer-image-fit, .viewer-thumbnail-select, .viewer-image-width
-  width: 100px
-  margin: 4px 8px
-
-.image-frame
-  display: flex
-  flex-direction: column
-  align-items: center
-  .viewer-image-frame-scroll
-    position: relative
-  .viewer-image-frame
-    margin: auto
-    .viewer-image
-      user-select: none
-    .viewer-image-bar
-      position: absolute
-      height: 100%
-      width: 6px
-      top: 0
-      right: -3px
-      cursor: ew-resize
-    .viewer-image-bar:hover
-      background-color: var(--el-color-primary)
-  .viewer-image-frame-double .viewer-image
-    float: right
-  .viewer-image-page
-    line-height: 18px
-    margin-top: 3px
-    margin-bottom: 7px
-    width: 98vw
-  .viewer-image-preload
-    display: none
-
-.next-manga-button
-  opacity: 0.05
-  position: fixed
-  bottom: 1em
-  z-index: 10
-  transition-delay: 0.2s
-  .el-button
-    --el-button-bg-color: #f0f9eb66
-.next-manga-button:hover
-  opacity: 1
-
-.drawer-thumbnail-content
-  margin: 1em
-  height: 100vh
-  text-align: left
-.viewer-thumbnail
-  margin: 8px 0 0
-.viewer-thunmnail-page
-  text-align: center
-  font-size: 11px
 
 .el-autocomplete-suggestion__wrap, .el-select-dropdown__wrap
   max-height: 490px!important

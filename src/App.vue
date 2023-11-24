@@ -326,7 +326,7 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-button type="primary" plain
-              @click="openSearchDialog(bookDetail)"
+              @click="$refs.SearchDialogRef.openSearchDialog(bookDetail)"
             >{{$t('m.getMetadata')}}</el-button>
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
@@ -367,7 +367,7 @@
                 </el-select>
               </div>
               <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
-              <el-button class="tag-edit-button" @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
+              <el-button class="tag-edit-button" @click="$refs.SearchDialogRef.getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
               <el-button class="tag-edit-button" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
               <el-button class="tag-edit-button" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
             </div>
@@ -413,39 +413,13 @@
         </el-col>
       </el-row>
     </el-dialog>
-    <el-dialog v-model="dialogVisibleEhSearch"
-      width="60%"
-      :title="$t('m.search')"
-      destroy-on-close
-      class="dialog-search"
-    >
-      <el-input v-model="searchStringDialog" :disabled="disabledSearchString" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)">
-        <template #prepend>
-          <el-select class="search-type-select" v-model="searchTypeDialog">
-            <el-option label="exhentai(sha1)" value="exhentai" />
-            <el-option label="e-hentai(sha1)" value="e-hentai" />
-            <el-option label="exhentai(keyword)" value="exsearch" />
-            <el-option label="e-hentai(keyword)" value="e-search" />
-            <el-option label="chaika(keyword)" value="chaika" />
-            <el-option label="hentag(keyword)" value="hentag" />
-          </el-select>
-        </template>
-        <template #append>
-          <el-button :icon="Search32Filled" @click="getBookListFromWeb(bookDetail, searchTypeDialog)"/>
-        </template>
-      </el-input>
-      <div v-loading="searchResultLoading">
-        <div class="search-result" v-if="ehSearchResultList.length > 0">
-          <p
-            v-for="result in ehSearchResultList"
-            :key="result.url"
-            @click="resolveSearchResult(bookDetail, result.url, result.type)"
-            class="search-result-ind"
-          >{{result.title}}</p>
-        </div>
-        <el-empty v-else :description="$t('m.noResults')" :image-size="100" />
-      </div>
-    </el-dialog>
+    <SearchDialog
+      ref="SearchDialogRef"
+      :cookie="cookie"
+      @message="printMessage"
+      @save-book="saveBook"
+      @get-book-info-from-eh="getBookInfoFromEh"
+    ></SearchDialog>
     <Setting
       ref="SettingRef"
       @update-setting="updateSetting"
@@ -467,7 +441,7 @@
 import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
-import { Close, Setting as SettingIcon } from '@element-plus/icons-vue'
+import { Setting as SettingIcon } from '@element-plus/icons-vue'
 import { Collections20Filled, Search32Filled, Rename16Regular } from '@vicons/fluent'
 import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
@@ -486,6 +460,7 @@ import NameFormItem from './components/NameFormItem.vue'
 import Setting from './components/Setting.vue'
 import Graph from './components/Graph.vue'
 import InternalViewer from './components/InternalViewer.vue'
+import SearchDialog from './components/SearchDialog.vue'
 
 export default defineComponent({
   components: {
@@ -495,11 +470,12 @@ export default defineComponent({
     NameFormItem,
     Setting,
     Graph,
-    InternalViewer
+    InternalViewer,
+    SearchDialog
   },
   setup () {
     return {
-      Close, SettingIcon, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
+      SettingIcon, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
       TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular
     }
   },
@@ -509,7 +485,6 @@ export default defineComponent({
       sideVisibleFolderTree: false,
       editCollectionView: false,
       drawerVisibleCollection: false,
-      dialogVisibleEhSearch: false,
       // home
       bookList: [],
       displayBookList: [],
@@ -532,11 +507,6 @@ export default defineComponent({
       comments: [],
       tagGroup: {},
       editingTag: false,
-      searchResultLoading: false,
-      searchStringDialog: undefined,
-      searchTypeDialog: 'exhentai',
-      disabledSearchString: false,
-      ehSearchResultList: [],
       editTagOptions: [],
       // setting
       setting: {},
@@ -736,7 +706,7 @@ export default defineComponent({
       if (this.$refs.SettingRef.dialogVisibleSetting) {
         return 'setting'
       }
-      if (this.dialogVisibleEhSearch) {
+      if (this.$refs.SearchDialogRef.dialogVisibleEhSearch) {
         return 'search-dialog'
       }
       if (this.$refs.InternalViewerRef.drawerVisibleViewer) {
@@ -1054,134 +1024,6 @@ export default defineComponent({
     },
 
     // metadata
-    openSearchDialog (book, server) {
-      this.dialogVisibleEhSearch = true
-      if (server) this.searchTypeDialog = server
-      this.ehSearchResultList = []
-      this.searchStringDialog = this.returnFileName(book)
-      this.bookDetail = book
-      this.getBookListFromWeb(book, this.searchTypeDialog)
-    },
-    resolveEhentaiResult (htmlString) {
-      try {
-        let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.gl3c.glname')
-        this.ehSearchResultList = []
-        resultNodes.forEach((node)=>{
-          this.ehSearchResultList.push({
-            title: node.querySelector('.glink').innerHTML,
-            url: node.querySelector('a').getAttribute('href')
-          })
-        })
-      } catch (e) {
-        console.log(e)
-        if (htmlString.includes('Your IP address has been')) {
-          this.printMessage('error', 'Your IP address has been temporarily banned')
-        } else {
-          this.printMessage('error', 'Get tag failed')
-        }
-      }
-    },
-    resolveChaikaResult (htmlString) {
-      let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.result-list')
-      this.ehSearchResultList = []
-      resultNodes.forEach((node)=>{
-        this.ehSearchResultList.push({
-          title: node.querySelector('td a').innerHTML,
-          url: node.querySelector('a').getAttribute('href'),
-          type: 'chaika'
-        })
-      })
-    },
-    resolveHentagResult (data) {
-      let resultList = data.works.slice(0, 10)
-      this.ehSearchResultList = []
-      resultList.forEach((result)=>{
-        let findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))
-        if (findExUrl) {
-          this.ehSearchResultList.push({
-            title: result.title,
-            url: findExUrl
-          })
-        } else {
-          this.ehSearchResultList.push({
-            title: result.title,
-            url: `https://hentag.com/vault/${result.id}`,
-            type: 'hentag'
-          })
-        }
-      })
-    },
-    getBookListFromWeb (book, server = 'e-hentai') {
-      this.searchResultLoading = true
-      if (server === 'e-hentai') {
-        axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
-        .then(res=>{
-          this.resolveEhentaiResult(res.data)
-        })
-        .finally(()=>{
-          this.searchResultLoading = false
-        })
-      } else if (server === 'exhentai') {
-        ipcRenderer.invoke('get-ex-webpage', {
-          url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
-          cookie: this.cookie
-        })
-        .then(res=>{
-          this.resolveEhentaiResult(res)
-        })
-        .finally(()=>{
-          this.searchResultLoading = false
-        })
-      } else if (server === 'e-search') {
-        axios.get(`https://e-hentai.org/?f_search=${encodeURI(this.searchStringDialog)}&f_cats=689`)
-        .then(res=>{
-          this.resolveEhentaiResult(res.data)
-        })
-        .finally(()=>{
-          this.searchResultLoading = false
-        })
-      } else if (server === 'exsearch') {
-        ipcRenderer.invoke('get-ex-webpage', {
-          url: `https://exhentai.org/?f_search=${encodeURI(this.searchStringDialog)}&f_cats=689`,
-          cookie: this.cookie
-        })
-        .then(res=>{
-          this.resolveEhentaiResult(res)
-        })
-        .finally(()=>{
-          this.searchResultLoading = false
-        })
-      } else if (server === 'chaika') {
-        axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(this.searchStringDialog)}`)
-        .then(res=>{
-          this.resolveChaikaResult(res.data)
-        })
-        .finally(()=>{
-          this.searchResultLoading = false
-        })
-      } else if (server === 'hentag') {
-        axios.get(`https://hentag.com/public/api/vault-search?t=${encodeURI(this.searchStringDialog)}`)
-        .then(res=>{
-          this.resolveHentagResult(res.data)
-        })
-        .finally(()=>{
-          this.searchResultLoading = false
-        })
-      }
-    },
-    resolveSearchResult (book, url, type) {
-      if (type === 'chaika') {
-        book.url = `https://panda.chaika.moe${url}`
-        this.getBookInfoFromChaika(book)
-      } else if (type === 'hentag') {
-        book.url = url
-        this.getBookInfoFromHentag(book)
-      } else {
-        book.url = url
-        this.getBookInfoFromEh(book)
-      }
-      this.dialogVisibleEhSearch = false
-    },
     async getBookInfoFromEh (book) {
       let match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
       ipcRenderer.invoke('post-data-ex', {
@@ -1241,88 +1083,6 @@ export default defineComponent({
           }
         }
       })
-    },
-    getBookInfoFromChaika (book) {
-      let archiveNo = /\d+/.exec(book.url)[0]
-      axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
-      .then(async res=>{
-        _.assign(
-          book,
-          _.pick(res.data, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
-        )
-        book.posted = +book.posted
-        book.filecount = +book.filecount
-        book.rating = +book.rating
-        book.title = he.decode(book.title)
-        book.title_jpn = he.decode(book.title_jpn)
-        let tagObject = _.groupBy(book.tags, tag=>{
-          let result = /(.+):/.exec(tag)
-          if (result) {
-            return /(.+):/.exec(tag)[1]
-          } else {
-            return 'misc'
-          }
-        })
-        _.forIn(tagObject, (arr, key)=>{
-          tagObject[key] = arr.map(tag=>{
-            let result = /:(.+)$/.exec(tag)
-            if (result) {
-              return /:(.+)$/.exec(tag)[1].replaceAll('_', ' ')
-            } else {
-              return tag.replaceAll('_', ' ')
-            }
-          })
-        })
-        book.tags = tagObject
-        book.status = 'tagged'
-        await this.saveBook(book)
-      })
-    },
-    async getBookInfoFromHentag (book) {
-      let { data } = await axios.get(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
-      let tags = {}
-      data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
-      data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody=>parody.name) : ''
-      data.characters.length > 0 ? tags['character'] = data.characters.map(character=>character.name) : ''
-      data.circles.length > 0 ? tags['group'] = data.circles.map(circle=>circle.name) : ''
-      data.artists.length > 0 ? tags['artist'] = data.artists.map(artist=>artist.name) : ''
-      data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag=>maleTag.name) : ''
-      data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag=>femaleTag.name) : ''
-      if (data.otherTags.length > 0) {
-        data.otherTags.forEach(({ name }) => {
-          let cat = this.tag2cat[name]
-          if (cat) {
-            if (tags[cat]) {
-              tags[cat].push(name)
-            } else {
-              tags[cat] = [name]
-            }
-          } else {
-            if (tags['misc']) {
-              tags['misc'].push(name)
-            } else {
-              tags['misc'] = [name]
-            }
-          }
-        })
-      }
-      _.assign(book, {
-        title: data.title,
-        posted: Math.floor(data.createdAt / 1000),
-        category: this.categoryOption[data.category],
-        tags
-      })
-      book.status = 'tagged'
-      await this.saveBook(book)
-    },
-    getBookInfo (book) {
-      if (book.url.startsWith('https://panda.chaika.moe')) {
-        this.getBookInfoFromChaika(book)
-      } else if (book.url.startsWith('https://hentag.com')) {
-        this.getBookInfoFromHentag(book)
-      } else {
-        this.getBookInfoFromEh(book)
-      }
     },
     async getBookInfoFromEhFirstResult (book, server = 'e-hentai') {
       let resolveEhFirstResult = async (book, htmlString)=>{
@@ -1665,7 +1425,6 @@ export default defineComponent({
       this.searchString = string
       this.searchBook()
     },
-
 
     // collection view function
     loadCollectionList () {
@@ -2132,7 +1891,7 @@ export default defineComponent({
           {
             label: this.$t('m.getMetadata'),
             onClick: () => {
-              this.openSearchDialog(book)
+              this.$refs.SearchDialogRef.openSearchDialog(book)
             }
           },
           {
@@ -2375,7 +2134,7 @@ body
       right: 2px
       cursor: pointer
 
-.el-dialog.is-fullscreen
+.el-dialog.is-fullscreen.dialog-detail
   .el-dialog__header
     .el-dialog__headerbtn
       margin: 8px 16px 0 0
@@ -2446,18 +2205,7 @@ body
       padding-left: 4px
       color: var(--el-text-color-regular)
 
-.dialog-search
-  .el-dialog__body
-    padding: 5px 20px 16px
-  .search-type-select
-    width: 160px
-  .search-result-ind
-    cursor: pointer
-    text-align: left
-    margin: 8px 0
-  .search-result-ind:hover
-    background-color: var(--el-fill-color-dark)
-
+// search-input sort-select
 .el-autocomplete-suggestion__wrap, .el-select-dropdown__wrap
   max-height: 490px!important
 

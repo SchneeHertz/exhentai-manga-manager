@@ -25,6 +25,7 @@ app.use(createI18n({
   locale: 'zh-CN',
   fallbackLocale: 'zh-CN',
   globalInjection: true,
+  legacy: false,
   messages
 }))
 app.mount('#app')

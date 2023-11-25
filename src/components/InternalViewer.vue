@@ -424,13 +424,15 @@ const getCurrentImageId = () => {
   return currentImageId.value
 }
 const saveReadingProgress = () => {
-  let currentImageId = getCurrentImageId()
-  let currentImageIndex = viewerImageList.value.findIndex(image=>image.id === currentImageId)
-  if (currentImageIndex > props.bookDetail.pageCount - 6) {
-    currentImageId = viewerImageList.value[0].id
-  }
-  viewerReadingProgress.value.unshift({bookId: props.bookDetail.id, pageId: currentImageId})
-  localStorage.setItem('viewerReadingProgress', JSON.stringify(viewerReadingProgress.value.slice(0, 1000)))
+  try {
+    let currentImageId = getCurrentImageId()
+    let currentImageIndex = viewerImageList.value.findIndex(image=>image.id === currentImageId)
+    if (currentImageIndex > props.bookDetail.pageCount - 6) {
+      currentImageId = viewerImageList.value[0].id
+    }
+    viewerReadingProgress.value.unshift({bookId: props.bookDetail.id, pageId: currentImageId})
+    localStorage.setItem('viewerReadingProgress', JSON.stringify(viewerReadingProgress.value.slice(0, 1000)))
+  } catch {}
 }
 
 const saveImageStyleType = () => {

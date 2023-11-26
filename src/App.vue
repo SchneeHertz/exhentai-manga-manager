@@ -996,9 +996,6 @@ export default defineComponent({
     saveBook (book) {
       return ipcRenderer.invoke('save-book', _.cloneDeep(book))
     },
-    openLink (link) {
-      ipcRenderer.invoke('open-url', link)
-    },
     getDisplayTitle (book) {
       switch (this.setting.displayTitle) {
         case 'englishTitle':

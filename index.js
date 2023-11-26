@@ -546,7 +546,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
         if (widthLimit !== 0 && width > widthLimit) {
           height = Math.floor(height * (widthLimit / width))
           width = widthLimit
-          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}${extname}`)
+          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}.jpg`)
           switch (extname) {
             case '.gif':
               break
@@ -558,7 +558,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
               break
           }
         }
-        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}${extname}`)
+        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
         switch (extname) {
           case '.gif':
             thumbnailPath = imageFilepath

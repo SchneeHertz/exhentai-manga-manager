@@ -2265,6 +2265,7 @@ body
       bottom: 80px
       cursor: pointer
       opacity: 0
+      transition-delay: 0.5s
       background-color: rgba(0, 0, 0, 0.3)
       .el-icon
         font-size: 34px
@@ -2278,6 +2279,7 @@ body
       border-radius: 0 4px 4px 0
     .next-manga-pane:hover, .prev-manga-pane:hover
       opacity: 1
+      transition-delay: 0s
   .edit-line
     margin: 4px 0
     .el-select

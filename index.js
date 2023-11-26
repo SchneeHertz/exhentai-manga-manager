@@ -538,7 +538,7 @@ ipcMain.handle('show-file', async (event, filepath) => {
 })
 
 ipcMain.handle('use-new-cover', async (event, filepath) => {
-  let copyTempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(filepath))
+  let copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(filepath))
   let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
   try {
     await sharp(copyTempCoverPath)
@@ -584,7 +584,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
       if (sendImageLock) {
         let filepath = list[index - 1]
         if (filepath.search(/[%#]/) >= 0 || type === 'folder') {
-          let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid()}.${path.extname(filepath)}`)
+          let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(8)}${path.extname(filepath)}`)
           await fs.promises.copyFile(filepath, newFilepath)
           filepath = newFilepath
         }
@@ -592,13 +592,13 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
         if (width > widthLimit) {
           height = Math.floor(height * (widthLimit / width))
           width = widthLimit
-          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid()}.${path.extname(filepath)}`)
+          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}${path.extname(filepath)}`)
           await sharp(filepath)
             .resize({ width })
             .toFile(resizedFilepath)
           filepath = resizedFilepath
         }
-        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid()}.${path.extname(filepath)}`)
+        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}${path.extname(filepath)}`)
         await sharp(filepath)
           .resize({ width: thumbnailWidth })
           .toFile(thumbnailPath)

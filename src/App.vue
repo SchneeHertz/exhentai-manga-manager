@@ -446,7 +446,7 @@ import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleO
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
-import {nanoid} from 'nanoid'
+import { nanoid } from 'nanoid'
 import draggable from 'vuedraggable'
 import * as linkify from 'linkifyjs'
 

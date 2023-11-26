@@ -40,7 +40,7 @@ let geneCover = async (filepath, type) => {
   }
 
   let coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
-  let copyTempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(tempCoverPath))
+  let copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(tempCoverPath))
   await fs.promises.copyFile(tempCoverPath, copyTempCoverPath)
   await sharp(copyTempCoverPath)
     .resize(500, 707, {

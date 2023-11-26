@@ -302,6 +302,8 @@
               :color="bookDetail.mark ? '#E6A23C' : '#666666'"
               class="book-detail-star" @click="switchMark(bookDetail)"
             ><BookmarkTwotone /></el-icon>
+            <div class="next-manga-pane" @click="jumpMangeDetail(1)"><el-icon text><CaretRight20Regular /></el-icon></div>
+            <div class="prev-manga-pane" @click="jumpMangeDetail(-1)"><el-icon text><CaretLeft20Regular /></el-icon></div>
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
@@ -441,7 +443,7 @@ import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon } from '@element-plus/icons-vue'
-import { Collections20Filled, Search32Filled, Rename16Regular } from '@vicons/fluent'
+import { Collections20Filled, Search32Filled, Rename16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
 import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
@@ -463,9 +465,8 @@ import SearchDialog from './components/SearchDialog.vue'
 
 export default defineComponent({
   components: {
+    BookmarkTwotone, IosRemoveCircleOutline, CaretRight20Regular, CaretLeft20Regular,
     draggable,
-    BookmarkTwotone,
-    IosRemoveCircleOutline,
     NameFormItem,
     Setting,
     Graph,
@@ -475,7 +476,7 @@ export default defineComponent({
   setup () {
     return {
       SettingIcon, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
-      TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular
+      TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular,
     }
   },
   data () {
@@ -2259,6 +2260,24 @@ body
       height: 354px
       object-fit: cover
       border-radius: 4px
+    .next-manga-pane, .prev-manga-pane
+      position: absolute
+      bottom: 80px
+      cursor: pointer
+      opacity: 0
+      background-color: rgba(0, 0, 0, 0.3)
+      .el-icon
+        font-size: 34px
+        margin: 80px 0
+        color: #FFFFFF
+    .next-manga-pane
+      right: 0
+      border-radius: 4px 0 0 4px
+    .prev-manga-pane
+      left: 0
+      border-radius: 0 4px 4px 0
+    .next-manga-pane:hover, .prev-manga-pane:hover
+      opacity: 1
   .edit-line
     margin: 4px 0
     .el-select

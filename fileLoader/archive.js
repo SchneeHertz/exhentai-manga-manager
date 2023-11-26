@@ -19,7 +19,7 @@ let getArchivelist = async (libraryPath)=>{
 }
 
 let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
-  let tempFolder = path.join(TEMP_PATH, nanoid())
+  let tempFolder = path.join(TEMP_PATH, nanoid(8))
   let output = await spawnPromise(_7z, ['l', filepath, '-slt', '-p123456'])
   let pathlist = _.filter(output.split(/\r\n/), s=>_.startsWith(s, 'Path') && !_.includes(s, '__MACOSX'))
   pathlist = pathlist.map(p=>{
@@ -46,10 +46,10 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
   } else {
     throw new Error('compression package isnot include image')
   }
-  targetFilePath = path.join(TEMP_PATH, nanoid() + path.extname(targetFile))
+  targetFilePath = path.join(TEMP_PATH, nanoid(8) + path.extname(targetFile))
   await fs.promises.copyFile(path.join(tempFolder, targetFile), targetFilePath)
 
-  tempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(coverFile))
+  tempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(coverFile))
   await fs.promises.copyFile(path.join(tempFolder, coverFile), tempCoverPath)
 
   coverPath = path.join(COVER_PATH, nanoid() + '.webp')
@@ -59,7 +59,7 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
 }
 
 let getImageListFromArchive = async (filepath, VIEWER_PATH)=>{
-  let tempFolder = path.join(VIEWER_PATH, nanoid(6))
+  let tempFolder = path.join(VIEWER_PATH, nanoid(8))
   await spawnPromise(_7z, ['x', filepath, '-o' + tempFolder, '-p123456'])
   let list = globSync('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: tempFolder,

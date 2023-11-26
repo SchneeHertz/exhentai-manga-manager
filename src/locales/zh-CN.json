@@ -82,7 +82,7 @@
     "searchLocal": "搜索本地",
     "getEXRecommand": "获取EX推荐",
     "widthLimit": "限制图像宽度(px)",
-    "widthLimitInfo": "默认为屏幕宽度(px)",
+    "widthLimitInfo": "默认为屏幕宽度(px), 0为不限制",
     "getTagbyUrl": "用网址获取元数据",
     "copyTagClipboard": "复制标签信息到剪贴板",
     "pasteTagClipboard": "从剪贴板粘贴标签信息",

@@ -541,9 +541,11 @@ ipcMain.handle('use-new-cover', async (event, filepath) => {
   let copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(filepath))
   let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
   try {
+    await fs.promises.copyFile(filepath, copyTempCoverPath)
     await sharp(copyTempCoverPath)
     .resize(500, 707, {
-      fit: 'contain'
+      fit: 'contain',
+      background: '#303133'
     })
     .toFile(coverPath)
     return coverPath
@@ -579,33 +581,47 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
   ;(async () => {
     // 384 is the default 4K screen width divided by the default number of thumbnail columns
     let thumbnailWidth = _.isFinite(screenWidth / setting.thumbnailColumn) ? Math.floor(screenWidth / setting.thumbnailColumn) : 384
-    let widthLimit = Math.floor(setting.widthLimit) || screenWidth
+    let widthLimit = _.isNumber(setting.widthLimit) ? Math.ceil(setting.widthLimit) : screenWidth
     for (let index = 1; index <= list.length; index++) {
       if (sendImageLock) {
-        let filepath = list[index - 1]
-        if (filepath.search(/[%#]/) >= 0 || type === 'folder') {
-          let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(8)}${path.extname(filepath)}`)
-          await fs.promises.copyFile(filepath, newFilepath)
-          filepath = newFilepath
+        let imageFilepath = list[index - 1]
+        let extname = path.extname(imageFilepath)
+        if (imageFilepath.search(/[%#]/) >= 0 || type === 'folder') {
+          let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(8)}${extname}`)
+          await fs.promises.copyFile(imageFilepath, newFilepath)
+          imageFilepath = newFilepath
         }
-        let { width, height } = await sharp(filepath).metadata()
-        if (width > widthLimit) {
+        let { width, height } = await sharp(imageFilepath).metadata()
+        if (widthLimit !== 0 && width > widthLimit) {
           height = Math.floor(height * (widthLimit / width))
           width = widthLimit
-          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}${path.extname(filepath)}`)
-          await sharp(filepath)
-            .resize({ width })
-            .toFile(resizedFilepath)
-          filepath = resizedFilepath
+          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}${extname}`)
+          switch (extname) {
+            case '.gif':
+              break
+            default:
+              await sharp(imageFilepath)
+                .resize({ width })
+                .toFile(resizedFilepath)
+              imageFilepath = resizedFilepath
+              break
+          }
         }
-        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}${path.extname(filepath)}`)
-        await sharp(filepath)
-          .resize({ width: thumbnailWidth })
-          .toFile(thumbnailPath)
+        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}${extname}`)
+        switch (extname) {
+          case '.gif':
+            thumbnailPath = imageFilepath
+            break
+          default:
+            await sharp(imageFilepath)
+              .resize({ width: thumbnailWidth })
+              .toFile(thumbnailPath)
+            break
+        }
         mainWindow.webContents.send('manga-content', {
           id: `${bookId}_${index}`,
           index,
-          filepath,
+          filepath: imageFilepath,
           thumbnailPath,
           width, height
         })

@@ -369,6 +369,7 @@ ipcMain.handle('patch-local-metadata-by-book', async (event, book) => {
     }
   } catch (e) {
     sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+    await clearFolder(TEMP_PATH)
     return Promise.reject()
   }
 })
@@ -408,7 +409,8 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
-        Cookie: cookie
+        Cookie: cookie,
+        'Content-Type': 'application/json'
       },
       agent: new HttpsProxyAgent(setting.proxy)
     })
@@ -423,7 +425,8 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
-        Cookie: cookie
+        Cookie: cookie,
+        'Content-Type': 'application/json'
       }
     })
       .then(res=>{

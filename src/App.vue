@@ -305,6 +305,9 @@
             <div class="next-manga-pane" @click="jumpMangeDetail(1)"><el-icon text><CaretRight20Regular /></el-icon></div>
             <div class="prev-manga-pane" @click="jumpMangeDetail(-1)"><el-icon text><CaretLeft20Regular /></el-icon></div>
           </el-row>
+          <el-row :gutter="20" class="book-detail-rate">
+            <el-rate v-model="bookDetail.rating" size="large" allow-half @change="saveBook(bookDetail)"/>
+          </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
               <el-descriptions-item :label="$t('m.pageCount')+':'">
@@ -2247,7 +2250,7 @@ body
 .url-link
   cursor: pointer
 .book-detail-card
-  .book-detail-function
+  .book-detail-function, .book-detail-rate
     justify-content: center
     margin-bottom: 10px
   .book-detail-cover-frame

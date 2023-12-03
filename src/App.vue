@@ -435,7 +435,7 @@
       @patch-local-metadata="patchLocalMetadata"
       @export-database="exportDatabase"
       @import-database="importDatabase"
-      @import-database-from-sqlite="importMetadataFromSqlite"
+      @import-metadata-from-sqlite="importMetadataFromSqlite"
       @handle-resolve-translation-update="handleResolveTranslationUpdate"
     ></Setting>
   </el-config-provider>

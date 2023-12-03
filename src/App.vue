@@ -435,7 +435,7 @@
       @patch-local-metadata="patchLocalMetadata"
       @export-database="exportDatabase"
       @import-database="importDatabase"
-      @import-database-from-sqlite="importDatabasefromSqlite"
+      @import-database-from-sqlite="importMetadataFromSqlite"
       @handle-resolve-translation-update="handleResolveTranslationUpdate"
     ></Setting>
   </el-config-provider>
@@ -1963,7 +1963,7 @@ export default defineComponent({
         }
       })
     },
-    importDatabasefromSqlite () {
+    importMetadataFromSqlite () {
       ipcRenderer.invoke('import-sqlite', _.cloneDeep(this.bookList))
       .then(result=>{
         let {success, bookList} = result

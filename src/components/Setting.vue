@@ -260,7 +260,7 @@
           </el-col>
           <el-col :span="5">
             <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('importDatabasefromSqlite')">{{$t('m.importMetadatafromSqlite')}}</el-button>
+              <el-button class="function-button" type="primary" plain @click="$emit('importMetadataFromSqlite')">{{$t('m.importMetadataFromSqlite')}}</el-button>
             </div>
           </el-col>
         </el-row>
@@ -388,7 +388,7 @@ const emit = defineEmits([
   'patchLocalMetadata',
   'exportDatabase',
   'importDatabase',
-  'importDatabasefromSqlite',
+  'importMetadataFromSqlite',
   'handleResolveTranslationUpdate'
 ])
 

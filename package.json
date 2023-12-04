@@ -67,7 +67,7 @@
   },
   "devDependencies": {
     "@antv/g6": "^4.6.15",
-    "@imengyu/vue3-context-menu": "^1.1.1",
+    "@imengyu/vue3-context-menu": "^1.3.3",
     "@vicons/carbon": "^0.12.0",
     "@vicons/fluent": "^0.12.0",
     "@vicons/ionicons4": "^0.12.0",

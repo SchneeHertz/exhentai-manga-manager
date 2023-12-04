@@ -2331,6 +2331,7 @@ body
   background-color: var(--el-fill-color-extra-light)!important
   .mx-context-menu-item:hover
     background-color: var(--el-fill-color-dark)
+    color: var(--el-text-color-regular)
   .mx-context-menu-item
     padding: 6px
     color: var(--el-text-color-regular)

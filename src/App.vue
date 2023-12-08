@@ -211,6 +211,7 @@
       @to-next-manga="toNextManga"
       @to-next-manga-random="toNextMangaRandom"
       @use-new-cover="useNewCover"
+      @select-book="selectBook"
       @message="printMessage"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
@@ -1809,6 +1810,9 @@ export default defineComponent({
           this.bookDetail.coverPath = coverPath
           this.saveBook(this.bookDetail)
         })
+    },
+    selectBook (book) {
+      this.bookDetail = book
     },
     handleStopReadManga () {
       if (this.setting.keepReadingProgress) this.$refs.InternalViewerRef.saveReadingProgress()

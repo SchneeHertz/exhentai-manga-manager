@@ -167,6 +167,7 @@ const emit = defineEmits([
   'toNextManga',
   'toNextMangaRandom',
   'useNewCover',
+  'selectBook',
   'message',
   'updateOptions'
 ])
@@ -231,6 +232,7 @@ const viewManga = (book) => {
   currentImageIndex.value = 0
   insertEmptyPage.value = false
   insertEmptyPageIndex.value = 1
+  emit('selectBook', book)
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',

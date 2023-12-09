@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain, session, dialog, shell, screen, Menu, clipboard, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const process = require('process')
 const { brotliDecompress } = require('zlib')
 const { promisify, format } = require('util')
 const _ = require('lodash')
@@ -16,13 +15,13 @@ const { HttpsProxyAgent } = require('https-proxy-agent')
 const windowStateKeeper = require('electron-window-state')
 
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
+const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook } = require('./fileLoader/index.js')
-
 const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, preparePath } = require('./modules/init_folder_setting.js')
+
+
 preparePath()
 let setting = prepareSetting()
-const { prepareTemplate } = require('./modules/prepare_menu.js')
-
 
 const Manga = prepareMangaModel(path.join(STORE_PATH, './database.sqlite'))
 let metadataSqliteFile
@@ -33,9 +32,8 @@ if (setting.metadataPath) {
 }
 let Metadata = prepareMetadataModel(metadataSqliteFile)
 
-
-let logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
-let logStdout = process.stdout
+const logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
+const logStdout = process.stdout
 
 console.log = (...message) => {
   logFile.write(format(...message) + '\n')
@@ -51,7 +49,7 @@ process
     process.exit(1)
   })
 
-let sendMessageToWebContents = (message) => {
+const sendMessageToWebContents = (message) => {
   console.log(message)
   mainWindow.webContents.send('send-message', message)
 }
@@ -130,7 +128,7 @@ process.on('exit', () => {
 })
 
 // base function
-let loadBookListFromBrFile = async () => {
+const loadBookListFromBrFile = async () => {
   try {
     let buffer = await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json.br'))
     let decodeBuffer = await promisify(brotliDecompress)(buffer)
@@ -187,12 +185,21 @@ const saveBookToDatabase = async (book) => {
   console.log(`Saved ${book.title}`)
 }
 
-let setProgressBar = (progress) => {
+const setProgressBar = (progress) => {
   mainWindow.setProgressBar(progress)
   mainWindow.webContents.send('send-action', {
     action: 'send-progress',
     progress
   })
+}
+
+const clearFolder = async (Folder) => {
+  try {
+    await fs.promises.rm(Folder, { recursive: true, force: true })
+    await fs.promises.mkdir(Folder, { recursive: true })
+  } catch (err) {
+    console.log(err)
+  }
 }
 
 
@@ -220,7 +227,6 @@ ipcMain.handle('load-book-list', async (event, scan) => {
         let { filepath, type } = list[i]
         let foundData = await Manga.findOne({ where: { filepath: filepath } })
         if (foundData === null) {
-          // sendMessageToWebContents(`load ${filepath}, ${i + 1} of ${listLength}`)
           let id = nanoid()
           let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
           if (targetFilePath && coverPath) {
@@ -247,25 +253,12 @@ ipcMain.handle('load-book-list', async (event, scan) => {
           await foundData.save()
         }
         setProgressBar(i / listLength)
-        if ((i + 1) % 50 === 0) {
-          // sendMessageToWebContents(`load ${i + 1} of ${listLength}`)
-          try {
-            await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
-            await fs.promises.mkdir(TEMP_PATH, { recursive: true })
-          } catch (err) {
-            console.log(err)
-          }
-        }
+        if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
       } catch (e) {
         sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
       }
     }
-    try {
-      await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
-      await fs.promises.mkdir(TEMP_PATH, { recursive: true })
-    } catch (err) {
-      console.log(err)
-    }
+    await clearFolder(TEMP_PATH)
 
     let existData = await Manga.findAll({ where: { exist: true }, raw: true })
     try {
@@ -286,14 +279,8 @@ ipcMain.handle('load-book-list', async (event, scan) => {
 
 ipcMain.handle('force-gene-book-list', async (event, arg) => {
   await Manga.destroy({ truncate: true })
-  try {
-    await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
-    await fs.promises.mkdir(TEMP_PATH, { recursive: true })
-    await fs.promises.rm(COVER_PATH, { recursive: true, force: true })
-    await fs.promises.mkdir(COVER_PATH, { recursive: true })
-  } catch (err) {
-    console.log(err)
-  }
+  await clearFolder(TEMP_PATH)
+  await clearFolder(COVER_PATH)
   sendMessageToWebContents('start loading library')
   let list = await getBookFilelist(setting.library)
   if (!_.isEmpty(setting.excludeFile)) {
@@ -310,7 +297,6 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
   for (let i = 0; i < listLength; i++) {
     try {
       let { filepath, type } = list[i]
-      // sendMessageToWebContents(`load ${filepath}, ${i + 1} of ${listLength}`)
       let id = nanoid()
       let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
       if (targetFilePath && coverPath) {
@@ -330,25 +316,13 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
           date: Date.now()
         })
       }
-      if ((i + 1) % 50 === 0) {
-        try {
-          await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
-          await fs.promises.mkdir(TEMP_PATH, { recursive: true })
-        } catch (err) {
-          console.log(err)
-        }
-      }
+      if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
       setProgressBar(i / listLength)
     } catch (e) {
       sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
     }
   }
-  try {
-    await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
-    await fs.promises.mkdir(TEMP_PATH, { recursive: true })
-  } catch (err) {
-    console.log(err)
-  }
+  await clearFolder(TEMP_PATH)
 
   setProgressBar(-1)
   return await loadBookListFromDatabase()
@@ -357,14 +331,8 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
 ipcMain.handle('patch-local-metadata', async (event, arg) => {
   let bookList = await loadBookListFromDatabase()
   let bookListLength = bookList.length
-  try {
-    await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
-    await fs.promises.mkdir(TEMP_PATH, { recursive: true })
-    await fs.promises.rm(COVER_PATH, { recursive: true, force: true })
-    await fs.promises.mkdir(COVER_PATH, { recursive: true })
-  } catch (err) {
-    console.log(err)
-  }
+  await clearFolder(TEMP_PATH)
+  await clearFolder(COVER_PATH)
 
   for (let i = 0; i < bookListLength; i++) {
     try {
@@ -376,28 +344,15 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
         let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         _.assign(book, { type, coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
         await saveBookToDatabase(book)
-        // sendMessageToWebContents(`patch ${filepath}, ${i + 1} of ${bookListLength}`)
       }
-      if ((i + 1) % 50 === 0) {
-        try {
-          await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
-          await fs.promises.mkdir(TEMP_PATH, { recursive: true })
-        } catch (err) {
-          console.log(err)
-        }
-      }
+      if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
       setProgressBar(i / bookListLength)
     } catch (e) {
       sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)
     }
   }
 
-  try {
-    await fs.promises.rm(TEMP_PATH, { recursive: true, force: true })
-    await fs.promises.mkdir(TEMP_PATH, { recursive: true })
-  } catch (err) {
-    console.log(err)
-  }
+  await clearFolder(TEMP_PATH)
   setProgressBar(-1)
   return bookList
 })
@@ -409,10 +364,12 @@ ipcMain.handle('patch-local-metadata-by-book', async (event, book) => {
     let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
     if (targetFilePath && coverPath) {
       let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+      await clearFolder(TEMP_PATH)
       return Promise.resolve({ coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
     }
   } catch (e) {
     sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+    await clearFolder(TEMP_PATH)
     return Promise.reject()
   }
 })
@@ -452,7 +409,8 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
-        Cookie: cookie
+        Cookie: cookie,
+        'Content-Type': 'application/json'
       },
       agent: new HttpsProxyAgent(setting.proxy)
     })
@@ -467,7 +425,8 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
-        Cookie: cookie
+        Cookie: cookie,
+        'Content-Type': 'application/json'
       }
     })
       .then(res=>{
@@ -538,11 +497,14 @@ ipcMain.handle('show-file', async (event, filepath) => {
 })
 
 ipcMain.handle('use-new-cover', async (event, filepath) => {
+  let copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(filepath))
   let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
   try {
-    await sharp(filepath)
+    await fs.promises.copyFile(filepath, copyTempCoverPath)
+    await sharp(copyTempCoverPath)
     .resize(500, 707, {
-      fit: 'contain'
+      fit: 'contain',
+      background: '#303133'
     })
     .toFile(coverPath)
     return coverPath
@@ -564,47 +526,56 @@ ipcMain.handle('delete-local-book', async (event, filepath) => {
 
 // viewer
 ipcMain.handle('load-manga-image-list', async (event, book) => {
-  try {
-    await fs.promises.rm(VIEWER_PATH, { recursive: true, force: true })
-    await fs.promises.mkdir(VIEWER_PATH, { recursive: true })
-  } catch (err) {
-    console.log(err)
-  }
-  let { filepath, type, id: bookId } = book
+  await clearFolder(VIEWER_PATH)
 
+  let { filepath, type, id: bookId } = book
   let list = await getImageListByBook(filepath, type)
 
   sendImageLock = true
   ;(async () => {
     // 384 is the default 4K screen width divided by the default number of thumbnail columns
     let thumbnailWidth = _.isFinite(screenWidth / setting.thumbnailColumn) ? Math.floor(screenWidth / setting.thumbnailColumn) : 384
-    let widthLimit = Math.floor(setting.widthLimit) || screenWidth
+    let widthLimit = _.isNumber(setting.widthLimit) ? Math.ceil(setting.widthLimit) : screenWidth
     for (let index = 1; index <= list.length; index++) {
       if (sendImageLock) {
-        let filepath = list[index - 1]
-        if (filepath.search(/[%#]/) >= 0) {
-          let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(6)}_${path.basename(filepath).replace(/[%#]/, '_')}`)
-          await fs.promises.copyFile(filepath, newFilepath)
-          filepath = newFilepath
+        let imageFilepath = list[index - 1]
+        let extname = path.extname(imageFilepath)
+        if (imageFilepath.search(/[%#]/) >= 0 || type === 'folder') {
+          let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(8)}${extname}`)
+          await fs.promises.copyFile(imageFilepath, newFilepath)
+          imageFilepath = newFilepath
         }
-        let { width, height } = await sharp(filepath).metadata()
-        if (width > widthLimit) {
+        let { width, height } = await sharp(imageFilepath).metadata()
+        if (widthLimit !== 0 && width > widthLimit) {
           height = Math.floor(height * (widthLimit / width))
           width = widthLimit
-          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(6)}_${path.basename(filepath)}`)
-          await sharp(filepath)
-            .resize({ width })
-            .toFile(resizedFilepath)
-          filepath = resizedFilepath
+          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}.jpg`)
+          switch (extname) {
+            case '.gif':
+              break
+            default:
+              await sharp(imageFilepath)
+                .resize({ width })
+                .toFile(resizedFilepath)
+              imageFilepath = resizedFilepath
+              break
+          }
         }
-        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(6)}_${path.basename(filepath)}`)
-        await sharp(filepath)
-          .resize({ width: thumbnailWidth })
-          .toFile(thumbnailPath)
+        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
+        switch (extname) {
+          case '.gif':
+            thumbnailPath = imageFilepath
+            break
+          default:
+            await sharp(imageFilepath)
+              .resize({ width: thumbnailWidth })
+              .toFile(thumbnailPath)
+            break
+        }
         mainWindow.webContents.send('manga-content', {
           id: `${bookId}_${index}`,
           index,
-          filepath,
+          filepath: imageFilepath,
           thumbnailPath,
           width, height
         })
@@ -743,9 +714,6 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
             metadata.url = `https://exhentai.org/g/${metadata.gid}/${metadata.token}/`
             _.assign(book, _.pick(metadata, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url']), { status: 'tagged' })
             await saveBookToDatabase(book)
-            // sendMessageToWebContents(`${i + 1} of ${bookListLength}, found metadata for ${book.filepath}`)
-          } else {
-            // sendMessageToWebContents(`${i + 1} of ${bookListLength}, metadata not found for ${book.filepath}`)
           }
           setProgressBar(i / bookListLength)
         }

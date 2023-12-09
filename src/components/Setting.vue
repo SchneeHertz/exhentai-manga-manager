@@ -260,7 +260,7 @@
           </el-col>
           <el-col :span="5">
             <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('importDatabasefromSqlite')">{{$t('m.importMetadatafromSqlite')}}</el-button>
+              <el-button class="function-button" type="primary" plain @click="$emit('importMetadataFromSqlite')">{{$t('m.importMetadataFromSqlite')}}</el-button>
             </div>
           </el-col>
         </el-row>
@@ -345,7 +345,8 @@
             <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager')">github</a>
           </el-descriptions-item>
           <el-descriptions-item :label="$t('m.help')+':'">
-            <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki')">github wiki</a>
+            <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明')">github wiki</a>
+            <a v-else href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction')">github wiki</a>
           </el-descriptions-item>
           <el-descriptions-item :label="$t('m.donation')+':'">
             <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://afdian.net/a/SeldonHorizon')">爱发电</a>
@@ -387,7 +388,7 @@ const emit = defineEmits([
   'patchLocalMetadata',
   'exportDatabase',
   'importDatabase',
-  'importDatabasefromSqlite',
+  'importMetadataFromSqlite',
   'handleResolveTranslationUpdate'
 ])
 
@@ -522,6 +523,10 @@ const handleLanguageChange = (val) => {
 const saveSetting = () => {
   emit('updateSetting', setting.value)
   ipcRenderer.invoke('save-setting', _.cloneDeep(setting.value))
+}
+
+const openLink = (link) => {
+  ipcRenderer.invoke('open-url', link)
 }
 
 const dialogVisibleSetting = ref(false)

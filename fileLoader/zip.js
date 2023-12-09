@@ -16,7 +16,7 @@ let getZipFilelist = async (libraryPath)=>{
 }
 
 let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
-  let tempFolder = path.join(TEMP_PATH, nanoid())
+  let tempFolder = path.join(TEMP_PATH, nanoid(8))
   let zip = new AdmZip(filepath)
   let zipFileList = zip.getEntries()
   let findZFile = (entryName)=>{
@@ -44,10 +44,10 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
     throw new Error('compression package isnot include image')
   }
 
-  targetFilePath = path.join(TEMP_PATH, nanoid() + path.extname(targetFile))
+  targetFilePath = path.join(TEMP_PATH, nanoid(8) + path.extname(targetFile))
   await fs.promises.copyFile(path.join(tempFolder, targetFile), targetFilePath)
 
-  tempCoverPath = path.join(TEMP_PATH, nanoid() + path.extname(imageList[0]))
+  tempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(imageList[0]))
   await fs.promises.copyFile(path.join(tempFolder, imageList[0]), tempCoverPath)
 
   coverPath = path.join(COVER_PATH, nanoid() + '.webp')
@@ -58,7 +58,7 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
 
 let getImageListFromZip = async (filepath, VIEWER_PATH)=>{
   let zip = new AdmZip(filepath)
-  let tempFolder = path.join(VIEWER_PATH, nanoid(6))
+  let tempFolder = path.join(VIEWER_PATH, nanoid(8))
   zip.extractAllTo(tempFolder, true)
   let list = globSync('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: tempFolder,

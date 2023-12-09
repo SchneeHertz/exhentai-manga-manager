@@ -211,6 +211,7 @@
       @to-next-manga="toNextManga"
       @to-next-manga-random="toNextMangaRandom"
       @use-new-cover="useNewCover"
+      @select-book="selectBook"
       @message="printMessage"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
@@ -302,6 +303,11 @@
               :color="bookDetail.mark ? '#E6A23C' : '#666666'"
               class="book-detail-star" @click="switchMark(bookDetail)"
             ><BookmarkTwotone /></el-icon>
+            <div class="next-manga-pane" @click="jumpMangeDetail(1)"><el-icon text><CaretRight20Regular /></el-icon></div>
+            <div class="prev-manga-pane" @click="jumpMangeDetail(-1)"><el-icon text><CaretLeft20Regular /></el-icon></div>
+          </el-row>
+          <el-row :gutter="20" class="book-detail-rate">
+            <el-rate v-model="bookDetail.rating" size="large" allow-half @change="saveBook(bookDetail)"/>
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
@@ -430,7 +436,7 @@
       @patch-local-metadata="patchLocalMetadata"
       @export-database="exportDatabase"
       @import-database="importDatabase"
-      @import-database-from-sqlite="importDatabasefromSqlite"
+      @import-metadata-from-sqlite="importMetadataFromSqlite"
       @handle-resolve-translation-update="handleResolveTranslationUpdate"
     ></Setting>
   </el-config-provider>
@@ -441,12 +447,12 @@ import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon } from '@element-plus/icons-vue'
-import { Collections20Filled, Search32Filled, Rename16Regular } from '@vicons/fluent'
+import { Collections20Filled, Search32Filled, Rename16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
 import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
-import {nanoid} from 'nanoid'
+import { nanoid } from 'nanoid'
 import draggable from 'vuedraggable'
 import * as linkify from 'linkifyjs'
 
@@ -463,9 +469,8 @@ import SearchDialog from './components/SearchDialog.vue'
 
 export default defineComponent({
   components: {
+    BookmarkTwotone, IosRemoveCircleOutline, CaretRight20Regular, CaretLeft20Regular,
     draggable,
-    BookmarkTwotone,
-    IosRemoveCircleOutline,
     NameFormItem,
     Setting,
     Graph,
@@ -475,7 +480,7 @@ export default defineComponent({
   setup () {
     return {
       SettingIcon, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
-      TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular
+      TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular,
     }
   },
   data () {
@@ -995,9 +1000,6 @@ export default defineComponent({
     },
     saveBook (book) {
       return ipcRenderer.invoke('save-book', _.cloneDeep(book))
-    },
-    openLink (link) {
-      ipcRenderer.invoke('open-url', link)
     },
     getDisplayTitle (book) {
       switch (this.setting.displayTitle) {
@@ -1809,6 +1811,9 @@ export default defineComponent({
           this.saveBook(this.bookDetail)
         })
     },
+    selectBook (book) {
+      this.bookDetail = book
+    },
     handleStopReadManga () {
       if (this.setting.keepReadingProgress) this.$refs.InternalViewerRef.saveReadingProgress()
       ipcRenderer.invoke('release-sendimagelock')
@@ -1962,7 +1967,7 @@ export default defineComponent({
         }
       })
     },
-    importDatabasefromSqlite () {
+    importMetadataFromSqlite () {
       ipcRenderer.invoke('import-sqlite', _.cloneDeep(this.bookList))
       .then(result=>{
         let {success, bookList} = result
@@ -2249,7 +2254,7 @@ body
 .url-link
   cursor: pointer
 .book-detail-card
-  .book-detail-function
+  .book-detail-function, .book-detail-rate
     justify-content: center
     margin-bottom: 10px
   .book-detail-cover-frame
@@ -2262,6 +2267,26 @@ body
       height: 354px
       object-fit: cover
       border-radius: 4px
+    .next-manga-pane, .prev-manga-pane
+      position: absolute
+      bottom: 80px
+      cursor: pointer
+      opacity: 0
+      transition-delay: 0.5s
+      background-color: rgba(0, 0, 0, 0.3)
+      .el-icon
+        font-size: 34px
+        margin: 80px 0
+        color: #FFFFFF
+    .next-manga-pane
+      right: 0
+      border-radius: 4px 0 0 4px
+    .prev-manga-pane
+      left: 0
+      border-radius: 0 4px 4px 0
+    .next-manga-pane:hover, .prev-manga-pane:hover
+      opacity: 1
+      transition-delay: 0s
   .edit-line
     margin: 4px 0
     .el-select
@@ -2310,6 +2335,7 @@ body
   background-color: var(--el-fill-color-extra-light)!important
   .mx-context-menu-item:hover
     background-color: var(--el-fill-color-dark)
+    color: var(--el-text-color-regular)
   .mx-context-menu-item
     padding: 6px
     color: var(--el-text-color-regular)

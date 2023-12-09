@@ -7,57 +7,7 @@
     @close="$emit('handleStopReadManga')"
     class="viewer-drawer"
   >
-    <el-button :link="true" text :icon="Close" size="large" class="viewer-close-button" @click="drawerVisibleViewer = false"></el-button>
-    <div class="viewer-mode-setting">
-      <el-select
-        v-model="showThumbnail"
-        size="small"
-        @change="switchThumbnail"
-        class="viewer-thumbnail-select"
-      >
-        <el-option :value="true" :label="$t('m.thumbnail')" />
-        <el-option :value="false" :label="$t('m.content')" />
-      </el-select>
-      <el-select
-        v-model="imageStyleType"
-        size="small"
-        @focus="getCurrentImageId"
-        @change="saveImageStyleType"
-        class="viewer-mode"
-        v-show="showThumbnail === false"
-      >
-        <el-option value="scroll" :label="$t('m.scrolling')" />
-        <el-option value="single" :label="$t('m.singlePage')" />
-        <el-option value="double" :label="$t('m.doublePage')" />
-      </el-select>
-      <el-select
-        v-model="imageStyleFit"
-        size="small"
-        @change="saveImageStyleFit"
-        class="viewer-image-fit"
-        v-show="imageStyleType !== 'scroll' && showThumbnail === false"
-      >
-        <el-option value="width" :label="$t('m.fitWidth')" />
-        <el-option value="height" :label="$t('m.fitHeight')" />
-        <el-option value="window" :label="$t('m.fitWindow')" />
-      </el-select>
-      <el-select
-        v-model="viewerImageWidth"
-        size="small"
-        class="viewer-image-width"
-        v-show="imageStyleType === 'scroll' && showThumbnail === false"
-      >
-        <el-option :value="0.5" label="50vw" />
-        <el-option :value="0.75" label="75vw" />
-        <el-option :value="0.9" label="90vw" />
-        <el-option :value="20" label="20%" />
-        <el-option :value="50" label="50%" />
-        <el-option :value="75" label="75%" />
-        <el-option :value="100" label="100%" />
-      </el-select>
-    </div>
-    <div
-      class="drawer-image-content"
+    <div class="drawer-image-content"
       @click="handleViewerAreaClick"
       v-if="!showThumbnail"
       v-loading="viewerImageList.length === 0"
@@ -124,13 +74,7 @@
         </div>
       </div>
     </div>
-    <div class="next-manga-button">
-      <el-button size="large" type="success" plain @click="$emit('toNextManga', -1)">{{$t('m.previousManga')}}</el-button>
-      <el-button size="large" type="success" plain @click="$emit('toNextMangaRandom')">{{$t('m.nextMangaRandom')}}</el-button>
-      <el-button size="large" type="success" plain @click="$emit('toNextManga', 1)">{{$t('m.nextManga')}}</el-button>
-    </div>
-    <div
-      class="drawer-thumbnail-content"
+    <div class="drawer-thumbnail-content"
       v-if="showThumbnail"
       v-loading="viewerImageList.length === 0"
       element-loading-text="Loading"
@@ -149,6 +93,60 @@
           <div class="viewer-thunmnail-page">{{chunkIndex * (props.setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </el-space>
+    </div>
+    <el-button class="viewer-close-button" :link="true" text :icon="Close" size="large" @click="drawerVisibleViewer = false"></el-button>
+    <div class="viewer-mode-setting">
+      <el-select
+        v-model="showThumbnail"
+        size="small"
+        @change="switchThumbnail"
+        class="viewer-thumbnail-select"
+      >
+        <el-option :value="true" :label="$t('m.thumbnail')" />
+        <el-option :value="false" :label="$t('m.content')" />
+      </el-select>
+      <el-select
+        v-model="imageStyleType"
+        size="small"
+        @focus="getCurrentImageId"
+        @change="saveImageStyleType"
+        class="viewer-mode"
+        v-show="showThumbnail === false"
+      >
+        <el-option value="scroll" :label="$t('m.scrolling')" />
+        <el-option value="single" :label="$t('m.singlePage')" />
+        <el-option value="double" :label="$t('m.doublePage')" />
+      </el-select>
+      <el-select
+        v-model="imageStyleFit"
+        size="small"
+        @change="saveImageStyleFit"
+        class="viewer-image-fit"
+        v-show="imageStyleType !== 'scroll' && showThumbnail === false"
+      >
+        <el-option value="width" :label="$t('m.fitWidth')" />
+        <el-option value="height" :label="$t('m.fitHeight')" />
+        <el-option value="window" :label="$t('m.fitWindow')" />
+      </el-select>
+      <el-select
+        v-model="viewerImageWidth"
+        size="small"
+        class="viewer-image-width"
+        v-show="imageStyleType === 'scroll' && showThumbnail === false"
+      >
+        <el-option :value="0.5" label="50vw" />
+        <el-option :value="0.75" label="75vw" />
+        <el-option :value="0.9" label="90vw" />
+        <el-option :value="20" label="20%" />
+        <el-option :value="50" label="50%" />
+        <el-option :value="75" label="75%" />
+        <el-option :value="100" label="100%" />
+      </el-select>
+    </div>
+    <div class="next-manga-button">
+      <el-button size="large" type="success" plain @click="$emit('toNextManga', -1)">{{$t('m.previousManga')}}</el-button>
+      <el-button size="large" type="success" plain @click="$emit('toNextMangaRandom')">{{$t('m.nextMangaRandom')}}</el-button>
+      <el-button size="large" type="success" plain @click="$emit('toNextManga', 1)">{{$t('m.nextManga')}}</el-button>
     </div>
   </el-drawer>
 </template>
@@ -169,6 +167,7 @@ const emit = defineEmits([
   'toNextManga',
   'toNextMangaRandom',
   'useNewCover',
+  'selectBook',
   'message',
   'updateOptions'
 ])
@@ -233,6 +232,7 @@ const viewManga = (book) => {
   currentImageIndex.value = 0
   insertEmptyPage.value = false
   insertEmptyPageIndex.value = 1
+  emit('selectBook', book)
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',
@@ -424,13 +424,15 @@ const getCurrentImageId = () => {
   return currentImageId.value
 }
 const saveReadingProgress = () => {
-  let currentImageId = getCurrentImageId()
-  let currentImageIndex = viewerImageList.value.findIndex(image=>image.id === currentImageId)
-  if (currentImageIndex > props.bookDetail.pageCount - 6) {
-    currentImageId = viewerImageList.value[0].id
-  }
-  viewerReadingProgress.value.unshift({bookId: props.bookDetail.id, pageId: currentImageId})
-  localStorage.setItem('viewerReadingProgress', JSON.stringify(viewerReadingProgress.value.slice(0, 1000)))
+  try {
+    let currentImageId = getCurrentImageId()
+    let currentImageIndex = viewerImageList.value.findIndex(image=>image.id === currentImageId)
+    if (currentImageIndex > props.bookDetail.pageCount - 6) {
+      currentImageId = viewerImageList.value[0].id
+    }
+    viewerReadingProgress.value.unshift({bookId: props.bookDetail.id, pageId: currentImageId})
+    localStorage.setItem('viewerReadingProgress', JSON.stringify(viewerReadingProgress.value.slice(0, 1000)))
+  } catch {}
 }
 
 const saveImageStyleType = () => {
@@ -565,7 +567,6 @@ defineExpose({
   position: absolute
   top: 28px
   right: 25px
-  z-index: 10
   .el-icon
     width: 32px
     svg
@@ -580,7 +581,6 @@ defineExpose({
   width: 100px
   top: 8px
   left: 8px
-  z-index: 10
   transition-delay: 0.2s
 .viewer-mode-setting:hover
   opacity: 1
@@ -621,7 +621,6 @@ defineExpose({
   opacity: 0.05
   position: fixed
   bottom: 1em
-  z-index: 10
   transition-delay: 0.2s
   .el-button
     --el-button-bg-color: #f0f9eb66

@@ -1,4 +1,6 @@
 const fs = require('fs')
+const path = require('node:path')
+const { nanoid } = require('nanoid')
 const { createHash } = require('crypto')
 const sharp = require('sharp')
 const { getFolderlist, solveBookTypeFolder, getImageListFromFolder } = require('./folder.js')
@@ -38,7 +40,9 @@ let geneCover = async (filepath, type) => {
   }
 
   let coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
-  await sharp(tempCoverPath)
+  let copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(tempCoverPath))
+  await fs.promises.copyFile(tempCoverPath, copyTempCoverPath)
+  await sharp(copyTempCoverPath)
     .resize(500, 707, {
       fit: 'contain',
       background: '#303133'

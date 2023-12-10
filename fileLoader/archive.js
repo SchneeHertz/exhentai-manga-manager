@@ -12,9 +12,9 @@ let getArchivelist = async (libraryPath)=>{
   let list = globSync('**/*.@(rar|7z|cb7|cbr)', {
     cwd: libraryPath,
     nocase: true,
-    follow: true
+    follow: true,
+    absolute: true
   })
-  list = list.map(filepath=>path.join(libraryPath, filepath))
   return list
 }
 

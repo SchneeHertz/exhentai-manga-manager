@@ -21,14 +21,14 @@ let getFolderlist = async (libraryPath)=>{
   let imageList = globIterate('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: libraryPath,
     nocase: true,
-    follow: true
+    follow: true,
+    absolute: true
   })
   let list = new Set()
   for await (image of imageList) {
     list.add(path.dirname(image))
   }
   list = [...list]
-  list = list.map(filepath=>path.join(libraryPath, filepath))
   return list
 }
 

@@ -9,9 +9,9 @@ let getZipFilelist = async (libraryPath)=>{
   let list = globSync('**/*.@(zip|cbz)', {
     cwd: libraryPath,
     nocase: true,
-    follow: true
+    follow: true,
+    absolute: true
   })
-  list = list.map(filepath=>path.join(libraryPath, filepath))
   return list
 }
 

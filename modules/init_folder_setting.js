@@ -8,10 +8,16 @@ if (!fs.existsSync(STORE_PATH)) {
   fs.mkdirSync(STORE_PATH)
 }
 try {
-  fs.accessSync(path.join(process.cwd(), 'portable'))
-  STORE_PATH = process.cwd()
+  let dataPath = path.join(process.cwd(), 'data')
+  fs.accessSync(dataPath)
+  STORE_PATH = dataPath
 } catch {
-  STORE_PATH = app.getPath('userData')
+  try {
+    fs.accessSync(path.join(process.cwd(), 'portable'))
+    STORE_PATH = process.cwd()
+  } catch {
+    STORE_PATH = app.getPath('userData')
+  }
 }
 
 const TEMP_PATH = path.join(STORE_PATH, 'tmp')

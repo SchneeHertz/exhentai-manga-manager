@@ -1459,6 +1459,7 @@ export default defineComponent({
     openBookDetail (book) {
       this.bookDetail = book
       this.dialogVisibleBookDetail = true
+      this.comments = []
       if (this.setting.showComment) this.getComments(book.url)
     },
     handleClickCover (book) {
@@ -1708,6 +1709,7 @@ export default defineComponent({
       if (this.setting.showComment) {
         this.setting.showComment = false
       } else {
+        this.comments = []
         this.getComments(this.bookDetail.url)
         this.setting.showComment = true
       }
@@ -1834,6 +1836,7 @@ export default defineComponent({
         setTimeout(() => {
           this.bookDetail = selectBook
           this.$refs.InternalViewerRef.viewManga(selectBook)
+          this.comments = []
           if (this.setting.showComment) this.getComments(selectBook.url)
         }, 500)
       } else {
@@ -1847,6 +1850,7 @@ export default defineComponent({
       setTimeout(() => {
         this.bookDetail = selectBook
         this.$refs.InternalViewerRef.viewManga(selectBook)
+        this.comments = []
         if (this.setting.showComment) this.getComments(selectBook.url)
       }, 500)
     },

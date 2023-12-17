@@ -96,7 +96,7 @@ const createWindow = () => {
 
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
 app.whenReady().then(async () => {
-  await Manga.sync()
+  await Manga.sync({ alter: true })
   await Metadata.sync()
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
@@ -753,4 +753,14 @@ ipcMain.handle('copy-text-to-clipboard', async (event, text) => {
 
 ipcMain.handle('read-text-from-clipboard', async () => {
   return clipboard.readText()
+})
+
+ipcMain.handle('update-window-title', async (event, title) => {
+  let name = require('./package.json').name
+  let version = require('./package.json').version
+  if (title) {
+    mainWindow.setTitle(name + ' ' + version + ' | ' + title)
+  } else {
+    mainWindow.setTitle(name + ' ' + version)
+  }
 })

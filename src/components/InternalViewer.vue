@@ -169,7 +169,8 @@ const emit = defineEmits([
   'useNewCover',
   'selectBook',
   'message',
-  'updateOptions'
+  'updateOptions',
+  'updateWindowTitle'
 ])
 
 const drawerVisibleViewer = ref(false)
@@ -238,6 +239,7 @@ const viewManga = (book) => {
     text: 'Loading',
     background: _.includes(props.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
   })
+  emit('updateWindowTitle', book)
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
   .then(() => {
     drawerVisibleViewer.value = true

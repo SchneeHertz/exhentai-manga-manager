@@ -213,6 +213,7 @@
       @use-new-cover="useNewCover"
       @select-book="selectBook"
       @message="printMessage"
+      @update-window-title="updateWindowTitle"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
       direction="ltr"
@@ -1012,6 +1013,10 @@ export default defineComponent({
         default:
           return book.title_jpn || book.title || this.returnFileName(book)
       }
+    },
+    updateWindowTitle (book) {
+      let title = this.getDisplayTitle(book)
+      ipcRenderer.invoke('update-window-title', title)
     },
     isBook (book) {
       // isCollection mean book is collection
@@ -1817,6 +1822,7 @@ export default defineComponent({
     handleStopReadManga () {
       if (this.setting.keepReadingProgress) this.$refs.InternalViewerRef.saveReadingProgress()
       ipcRenderer.invoke('release-sendimagelock')
+      ipcRenderer.invoke('update-window-title')
     },
     toNextManga (step) {
       this.handleStopReadManga()

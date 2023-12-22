@@ -1234,10 +1234,14 @@ export default defineComponent({
       let load = async (gap) => {
         for (let i = 0; i < bookList.length; i++) {
           ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
-          if (this.serviceAvailable) {
-            await this.getBookInfoFromEhFirstResult(bookList[i], server)
-            // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
-            await timer(gap)
+          try {
+            if (this.serviceAvailable) {
+              await this.getBookInfoFromEhFirstResult(bookList[i], server)
+              // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
+              await timer(gap)
+            }
+          } catch (error) {
+            console.error(error)
           }
         }
         ipcRenderer.invoke('set-progress-bar', -1)

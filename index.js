@@ -77,7 +77,7 @@ const createWindow = () => {
   if (app.isPackaged) {
     win.loadFile('dist/index.html')
   } else {
-    win.loadURL('http://localhost:3000')
+    win.loadURL('http://localhost:5374')
   }
   win.setMenuBarVisibility(false)
   win.setAutoHideMenuBar(true)

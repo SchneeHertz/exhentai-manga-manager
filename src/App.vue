@@ -368,8 +368,8 @@
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBook(bookDetail)"
-                  filterable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
+                <el-select v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
+                  filterable clearable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
                   <el-option v-for="tag in editTagOptions" :key="tag.value" :value="tag.value" >{{tag.label}}</el-option>
                 </el-select>
               </div>
@@ -1772,14 +1772,15 @@ export default defineComponent({
           }))
         })
         this.tagGroup = tempTagGroup
-      } else {
-        _.forIn(this.bookDetail.tags, (tagarr, tagCat)=>{
-          if (_.isEmpty(tagarr)) {
-            delete this.bookDetail.tags[tagCat]
-          }
-        })
-        this.saveBook(this.bookDetail)
       }
+    },
+    saveBookTags (book) {
+      _.forIn(book.tags, (tagarr, tagCat)=>{
+        if (_.isEmpty(tagarr)) {
+          delete book.tags[tagCat]
+        }
+      })
+      this.saveBook(book)
     },
     addTagCat () {
       ElMessageBox.prompt(this.$t('c.inputCategoryName'), this.$t('m.addCategory'), {

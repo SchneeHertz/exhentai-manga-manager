@@ -5,8 +5,9 @@ const { nanoid } = require('nanoid')
 const { spawn } = require('child_process')
 const _ = require('lodash')
 const iconv = require('iconv-lite')
+const { app } = require('electron')
 
-const _7z = path.join(process.cwd(), 'resources/extraResources/7z.exe')
+const _7z = path.join(path.dirname(app.getPath('exe')), 'resources/extraResources/7z.exe')
 
 let getArchivelist = async (libraryPath)=>{
   let list = globSync('**/*.@(rar|7z|cb7|cbr)', {

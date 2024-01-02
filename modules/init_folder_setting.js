@@ -7,14 +7,15 @@ let STORE_PATH = app.getPath('userData')
 if (!fs.existsSync(STORE_PATH)) {
   fs.mkdirSync(STORE_PATH)
 }
+let exeFolder = path.dirname(app.getPath('exe'))
 try {
-  let dataPath = path.join(process.cwd(), 'data')
+  let dataPath = path.join(exeFolder, 'data')
   fs.accessSync(dataPath)
   STORE_PATH = dataPath
 } catch {
   try {
-    fs.accessSync(path.join(process.cwd(), 'portable'))
-    STORE_PATH = process.cwd()
+    fs.accessSync(path.join(exeFolder, 'portable'))
+    STORE_PATH = exeFolder
   } catch {
     STORE_PATH = app.getPath('userData')
   }

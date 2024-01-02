@@ -1,21 +1,22 @@
 const { app } = require('electron')
 const fs = require('fs')
 const path = require('path')
+const { getRootPath } = require('./utils.js')
 
 
 let STORE_PATH = app.getPath('userData')
 if (!fs.existsSync(STORE_PATH)) {
   fs.mkdirSync(STORE_PATH)
 }
-let exeFolder = path.dirname(app.getPath('exe'))
+let rootPath = getRootPath()
 try {
-  let dataPath = path.join(exeFolder, 'data')
+  let dataPath = path.join(rootPath, 'data')
   fs.accessSync(dataPath)
   STORE_PATH = dataPath
 } catch {
   try {
-    fs.accessSync(path.join(exeFolder, 'portable'))
-    STORE_PATH = exeFolder
+    fs.accessSync(path.join(rootPath, 'portable'))
+    STORE_PATH = rootPath
   } catch {
     STORE_PATH = app.getPath('userData')
   }

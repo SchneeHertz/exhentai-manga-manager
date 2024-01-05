@@ -580,13 +580,14 @@ export default defineComponent({
       }
     },
     tagList () {
-      return _(this.bookList.map(b=>{
+      let tagArray = _(this.bookList.map(b=>{
         return _.map(b.tags, (tags, cat)=>{
           return _.map(tags, tag=>`${cat}##${tag}`)
         })
       }))
-      .flattenDeep().uniq().sort()
-      .map(combinedTag=>{
+      .flattenDeep().value()
+      let uniqedTagArray = [...new Set(tagArray)].sort()
+      return uniqedTagArray.map(combinedTag=>{
         let tagArray = _.split(combinedTag, '##')
         let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
         let labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
@@ -595,18 +596,17 @@ export default defineComponent({
           value: `${letter}:"${tagArray[1]}"`
         }
       })
-      .value()
     },
     tag2cat () {
       let temp = {}
-      _(this.bookList.map(b=>{
+      let tagArray = _(this.bookList.map(b=>{
         return _.map(b.tags, (tags, cat)=>{
           return _.map(tags, tag=>`${cat}##${tag}`)
         })
       }))
-      .flattenDeep().uniq().sort()
-      .value()
-      .forEach(combinedTag=>{
+      .flattenDeep().value()
+      let uniqedTagArray = [...new Set(tagArray)]
+      uniqedTagArray.forEach(combinedTag=>{
         let tagArray = _.split(combinedTag, '##')
         temp[tagArray[1]] = tagArray[0]
       })
@@ -1757,16 +1757,16 @@ export default defineComponent({
           _.forIn(tagObject, (tagArray, tagCat)=>{
             if (_.isArray(tagArray)) {
               if (_.has(tempTagGroup, tagCat)) {
-                tempTagGroup[tagCat] = [...tempTagGroup[tagCat], ...tagArray]
+                tagArray.forEach(tag=>tempTagGroup[tagCat].add(tag))
               } else {
-                tempTagGroup[tagCat] = tagArray
+                tempTagGroup[tagCat] = new Set(tagArray)
               }
             }
           })
         })
         let showTranslation = this.setting.showTranslation
-        _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.sortBy(_.uniq(tagArray)).map(tag=>({
+        _.forIn(tempTagGroup, (tagSet, tagCat)=>{
+          tempTagGroup[tagCat] = [...tagSet].sort().map(tag=>({
             value: tag,
             label: `${showTranslation ? (this.resolvedTranslation[tag]?.name || tag ) + ' || ' : ''}${tag}`
           }))

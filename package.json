@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "start": "chcp 65001 && electron .",
     "pack": "electron-builder --dir",
-    "dist": "vite build && electron-builder"
+    "dist": "auto-changelog && vite build && electron-builder"
   },
   "build": {
     "appId": "electron.e-hentai.tagger",
@@ -73,6 +73,7 @@
     "@vicons/ionicons4": "^0.12.0",
     "@vicons/material": "^0.12.0",
     "@vitejs/plugin-vue": "^2.3.0",
+    "auto-changelog": "^2.4.0",
     "axios": "^1.6.2",
     "electron": "^26.2.3",
     "electron-builder": "^24.6.4",

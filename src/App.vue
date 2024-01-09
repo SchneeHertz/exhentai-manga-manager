@@ -229,7 +229,7 @@
     </el-drawer>
     <Graph
       ref="TagGraphRef"
-      :book-list="bookList"
+      :book-list="displayBookList"
       :cat2letter="cat2letter"
       :resolved-translation="resolvedTranslation"
       @search="handleSearchTags"
@@ -1772,6 +1772,8 @@ export default defineComponent({
           }))
         })
         this.tagGroup = tempTagGroup
+      } else {
+        this.saveBookTags(this.bookDetail)
       }
     },
     saveBookTags (book) {
@@ -2058,6 +2060,12 @@ export default defineComponent({
             label: this.$t('c.copyLinkToClipboard'),
             onClick: () => {
               ipcRenderer.invoke('copy-text-to-clipboard', book.url)
+            }
+          },
+          {
+            label: this.$t('c.copyTitleAndLinkToClipboard'),
+            onClick: () => {
+              ipcRenderer.invoke('copy-text-to-clipboard', `${book.title_jpn || book.title}\n${book.url}\n`)
             }
           },
         ]

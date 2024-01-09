@@ -141,6 +141,7 @@
     "cancel": "Cancel",
     "copyTitleToClipboard": "Copy Title to Clipboard",
     "copyLinkToClipboard": "Copy Link to Clipboard",
+    "copyTitleAndLinkToClipboard": "Copy Title and Link to Clipboard",
     "redirect": "Redirect",
     "inputCategoryName": "Please input category name",
     "insertEmptyPageInfo": "Press / key to adjust the double page order",

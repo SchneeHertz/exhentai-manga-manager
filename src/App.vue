@@ -229,7 +229,7 @@
     </el-drawer>
     <Graph
       ref="TagGraphRef"
-      :book-list="bookList"
+      :book-list="displayBookList"
       :cat2letter="cat2letter"
       :resolved-translation="resolvedTranslation"
       @search="handleSearchTags"
@@ -699,6 +699,12 @@ export default defineComponent({
     window.removeEventListener('wheel', this.resolveWheel)
     window.removeEventListener('mousedown', this.resolveMouseDown)
   },
+  watch: {
+    bookList () {
+      this.displayBookList = this.bookList
+      this.handleSortChange(this.sortValue)
+    }
+  },
   methods: {
     // base function
     currentUI () {
@@ -991,11 +997,7 @@ export default defineComponent({
     async loadBookList (scan) {
       return await ipcRenderer.invoke('load-book-list', scan)
         .then(res => {
-          if (this.sortValue) {
-            this.bookList = res
-          } else {
-            this.bookList = res.sort(this.sortList('date'))
-          }
+          this.bookList = res
           this.loadCollectionList()
         })
     },
@@ -1255,9 +1257,8 @@ export default defineComponent({
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
-    handleSortChange (val, isSearch) {
-      let bookList = this.bookList
-      if (isSearch) bookList = this.displayBookList
+    handleSortChange (val) {
+      let bookList = this.displayBookList.length > 0 ? this.displayBookList : this.bookList
       switch(val){
         case 'mark':
           this.displayBookList = _.filter(bookList, 'mark')
@@ -1276,51 +1277,51 @@ export default defineComponent({
           this.chunkList()
           break
         case 'addAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('date')))
+          this.displayBookList = bookList.toSorted(this.sortList('date')).toReversed()
           this.chunkList()
           break
         case 'addDescend':
-          this.displayBookList = bookList.sort(this.sortList('date'))
+          this.displayBookList = bookList.toSorted(this.sortList('date'))
           this.chunkList()
           break
         case 'mtimeAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('mtime')))
+          this.displayBookList = bookList.toSorted(this.sortList('mtime')).toReversed()
           this.chunkList()
           break
         case 'mtimeDescend':
-          this.displayBookList = bookList.sort(this.sortList('mtime'))
+          this.displayBookList = bookList.toSorted(this.sortList('mtime'))
           this.chunkList()
           break
         case 'postAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('posted')))
+          this.displayBookList = bookList.toSorted(this.sortList('posted')).toReversed()
           this.chunkList()
           break
         case 'postDescend':
-          this.displayBookList = bookList.sort(this.sortList('posted'))
+          this.displayBookList = bookList.toSorted(this.sortList('posted'))
           this.chunkList()
           break
         case 'scoreAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('rating')))
+          this.displayBookList = bookList.toSorted(this.sortList('rating')).toReversed()
           this.chunkList()
           break
         case 'scoreDescend':
-          this.displayBookList = bookList.sort(this.sortList('rating'))
+          this.displayBookList = bookList.toSorted(this.sortList('rating'))
           this.chunkList()
           break
         case 'artistAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('tags.artist')))
+          this.displayBookList = bookList.toSorted(this.sortList('tags.artist')).toReversed()
           this.chunkList()
           break
         case 'artistDescend':
-          this.displayBookList = bookList.sort(this.sortList('tags.artist'))
+          this.displayBookList = bookList.toSorted(this.sortList('tags.artist'))
           this.chunkList()
           break
         case 'titleAscend':
-          this.displayBookList = _.reverse(bookList.sort((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a))))
+          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a))).toReversed()
           this.chunkList()
           break
         case 'titleDescend':
-          this.displayBookList = bookList.sort((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a)))
+          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a)))
           this.chunkList()
           break
         default:
@@ -1384,6 +1385,7 @@ export default defineComponent({
     handleSearchStringChange (val) {
       if (!val) {
         this.searchString = ''
+        this.displayBookList = this.bookList
         this.handleSortChange(this.sortValue)
         setTimeout(() => document.querySelector('.search-input .el-input__inner').blur(), 100)
       }
@@ -1446,7 +1448,7 @@ export default defineComponent({
           }
         })
       })
-      this.handleSortChange(this.sortValue, true)
+      this.handleSortChange(this.sortValue)
     },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
@@ -1524,7 +1526,6 @@ export default defineComponent({
         let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
         this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
       }
-      this.handleSortChange(this.sortValue)
     },
 
     // tag analysis and recommand search
@@ -1572,6 +1573,7 @@ export default defineComponent({
             })
           }
         })
+        this.displayBookList = this.bookList
         this.handleSortChange(this.sortValue)
       })
     },
@@ -1887,11 +1889,7 @@ export default defineComponent({
       localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
       ipcRenderer.invoke('force-gene-book-list')
       .then(res=>{
-        if (this.sortValue) {
-          this.bookList = res
-        } else {
-          this.bookList = res.sort(this.sortList('date'))
-        }
+        this.bookList = res
         this.loadCollectionList()
         this.printMessage('success', this.$t('c.rebuildMessage'))
       })
@@ -1989,7 +1987,6 @@ export default defineComponent({
         if (success) {
           this.bookList = bookList
           this.printMessage('success', this.$t('c.importMessage'))
-          this.handleSortChange(this.sortValue)
         } else {
           this.printMessage('info', this.$t('c.canceled'))
         }

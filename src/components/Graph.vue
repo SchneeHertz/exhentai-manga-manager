@@ -158,8 +158,8 @@ const displayTagGraph = () => {
       const states = node.getStates()
       let clicked = false
       const model = node.getModel()
-      _.find(tagNodeData, {id: model.id}).size = 256
-      let size = 256
+      _.find(tagNodeData, {id: model.id}).size = 270
+      let size = 270
       states.forEach((state)=>{
         if (state === 'click') {
           clicked = true
@@ -200,7 +200,7 @@ const displayTagGraph = () => {
 }
 
 const geneRecommend = (chinese = false, type = 'exhentai') => {
-  let tagGroup2 = _.filter(tagNodeData, n=>n.size >= 200)
+  let tagGroup2 = _.filter(tagNodeData, n=>n.size >= 270)
   let tagGroup3 = tagGroup2
   if (type === 'exhentai') {
     ipcRenderer.invoke('open-url', `https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)

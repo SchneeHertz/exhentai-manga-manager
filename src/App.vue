@@ -834,6 +834,9 @@ export default defineComponent({
         if (event.key === 'PageUp') {
           this.toNextManga(-1)
         }
+        if (event.key === '=') {
+          this.$refs.InternalViewerRef.showThumbnail = !this.$refs.InternalViewerRef.showThumbnail
+        }
       }
       if (this.currentUI() === 'bookdetail') {
         if (event.key === 'Enter') {

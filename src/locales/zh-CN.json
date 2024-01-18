@@ -194,6 +194,7 @@
     "InnerViewer_ScrollDown": "向下滚动",
     "InnerViewer_FirstPage": "第一页",
     "InnerViewer_LastPage": "最后一页",
-    "InnerViewer_InsertEmptyPage": "插入空页"
+    "InnerViewer_InsertEmptyPage": "插入空页",
+    "InnerViewer_SwitchThumbnail": "切换缩略图"
   }
 }

@@ -24,7 +24,7 @@
   </a>
 </p>
 
-[中文介绍](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README.md) | English Readme
+[中文介绍](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README.md) | English Readme | [日本語の説明](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README_JA.md)
 
 </div>
 

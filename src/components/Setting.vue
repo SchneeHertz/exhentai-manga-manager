@@ -434,6 +434,7 @@ const selectImageExplorerPath = () => {
 
 const loadTranslationFromEhTagTranslation = () => {
   let resultObject = {}
+  emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache') || "{}"))
   axios.get('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
   .then(res=>{
     let sourceTranslationDatabase = res.data.data
@@ -447,8 +448,7 @@ const loadTranslationFromEhTagTranslation = () => {
   })
   .catch((error)=>{
     console.log(error)
-    emit('message', 'warning', 'load translation from cache')
-    emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache')))
+    emit('message', 'warning', 'use translation from cache')
   })
 }
 

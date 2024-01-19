@@ -33,7 +33,7 @@ let tagNodeData = []
 const displayTagGraph = () => {
   let nodes = []
   _.forEach(props.bookList, book=>{
-    let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
+    let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
     let tempNodes = []
     _.forIn(tags, (list, cat)=>{
       list.map(tag=>{
@@ -43,6 +43,7 @@ const displayTagGraph = () => {
     nodes = nodes.concat(tempNodes)
   })
   let nodesObject = _.countBy(nodes)
+  let maxTagCount = _.max(_.values(nodesObject))
   const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
   let tempNodeData = []
   _.forIn(nodesObject, (count, label)=>{
@@ -52,8 +53,8 @@ const displayTagGraph = () => {
       tempNodeData.push({
         id: nanoid(),
         count,
-        size: Math.ceil(Math.log(count) ** 2 + 70),
-        oriSize: Math.ceil(Math.log(count) ** 2 + 70),
+        size: Math.ceil(( count / maxTagCount * 14 ) ** 2 + 70),
+        oriSize: Math.ceil(( count / maxTagCount * 14 ) ** 2 + 70),
         name: `${letter}:"${labelArray[1]}$"`,
         shortName: `${letter}:"${labelArray[1]}"`,
         oriLabel: label,
@@ -62,7 +63,7 @@ const displayTagGraph = () => {
       })
     } catch {}
   })
-  tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 96)
+  tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 32)
   tagNodeData = _.shuffle(tagNodeData)
   let edges = []
   let tempTagGroup = []
@@ -93,7 +94,7 @@ const displayTagGraph = () => {
     }
   })
   let maxCount = _.max(tempTagGroup.map(g=>g.count))
-  let countLimit =  maxCount * 0.1
+  let countLimit =  maxCount * 0.16
   _.forIn(tempTagGroup, g=>{
     if (g.count > countLimit) {
       g.array = g.set.split('##')
@@ -157,8 +158,8 @@ const displayTagGraph = () => {
       const states = node.getStates()
       let clicked = false
       const model = node.getModel()
-      _.find(tagNodeData, {id: model.id}).size = 200
-      let size = 200
+      _.find(tagNodeData, {id: model.id}).size = 270
+      let size = 270
       states.forEach((state)=>{
         if (state === 'click') {
           clicked = true
@@ -199,7 +200,7 @@ const displayTagGraph = () => {
 }
 
 const geneRecommend = (chinese = false, type = 'exhentai') => {
-  let tagGroup2 = _.filter(tagNodeData, n=>n.size >= 200)
+  let tagGroup2 = _.filter(tagNodeData, n=>n.size >= 270)
   let tagGroup3 = tagGroup2
   if (type === 'exhentai') {
     ipcRenderer.invoke('open-url', `https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
@@ -222,5 +223,5 @@ defineExpose({
 <style lang="stylus">
 #tag-graph
   width: 100%
-  height: calc(100vh - 170px)
+  height: calc(100vh - 210px)
 </style>

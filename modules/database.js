@@ -38,6 +38,10 @@ const prepareMangaModel = (databasePath) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
+    hiddenBook: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
     exist: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

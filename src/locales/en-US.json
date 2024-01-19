@@ -141,6 +141,7 @@
     "cancel": "Cancel",
     "copyTitleToClipboard": "Copy Title to Clipboard",
     "copyLinkToClipboard": "Copy Link to Clipboard",
+    "copyTitleAndLinkToClipboard": "Copy Title and Link to Clipboard",
     "redirect": "Redirect",
     "inputCategoryName": "Please input category name",
     "insertEmptyPageInfo": "Press / key to adjust the double page order",
@@ -192,6 +193,7 @@
     "InnerViewer_ScrollDown": "Scroll Down",
     "InnerViewer_FirstPage": "First Page",
     "InnerViewer_LastPage": "Last Page",
-    "InnerViewer_InsertEmptyPage": "Insert Empty Page"
+    "InnerViewer_InsertEmptyPage": "Insert Empty Page",
+    "InnerViewer_SwitchThumbnail": "Switch Thumbnail"
   }
 }

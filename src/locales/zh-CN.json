@@ -141,6 +141,7 @@
     "cancel": "取消",
     "copyTitleToClipboard": "复制漫画名到剪贴板",
     "copyLinkToClipboard": "复制链接到剪贴板",
+    "copyTitleAndLinkToClipboard": "复制漫画名和链接到剪贴板",
     "redirect": "转到",
     "inputCategoryName": "请输入类别名",
     "insertEmptyPageInfo": "按/键调整双页排序",
@@ -193,6 +194,7 @@
     "InnerViewer_ScrollDown": "向下滚动",
     "InnerViewer_FirstPage": "第一页",
     "InnerViewer_LastPage": "最后一页",
-    "InnerViewer_InsertEmptyPage": "插入空页"
+    "InnerViewer_InsertEmptyPage": "插入空页",
+    "InnerViewer_SwitchThumbnail": "切换缩略图"
   }
 }

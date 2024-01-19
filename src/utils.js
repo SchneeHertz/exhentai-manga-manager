@@ -66,6 +66,7 @@ const acceleratorInfo = [
       'FirstPage': 'Home',
       'LastPage': 'End',
       'InsertEmptyPage': '/',
+      'SwitchThumbnail': '=',
     }
   }
 ]

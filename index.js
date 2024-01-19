@@ -77,7 +77,7 @@ const createWindow = () => {
   if (app.isPackaged) {
     win.loadFile('dist/index.html')
   } else {
-    win.loadURL('http://localhost:3000')
+    win.loadURL('http://localhost:5374')
   }
   win.setMenuBarVisibility(false)
   win.setAutoHideMenuBar(true)
@@ -96,7 +96,7 @@ const createWindow = () => {
 
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
 app.whenReady().then(async () => {
-  await Manga.sync()
+  await Manga.sync({ alter: true })
   await Metadata.sync()
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
@@ -444,7 +444,7 @@ ipcMain.handle('save-book', async (event, book) => {
 
 // home
 ipcMain.handle('get-folder-tree', async (event, bookList) => {
-  let folderList = _.uniq(bookList.map(b => path.dirname(b.filepath)))
+  let folderList = [...new Set(bookList.map(b => path.dirname(b.filepath)))]
   let librarySplitPathsLength = setting.library.split(path.sep).length - 1
   let bookPathSplitList = folderList.sort().map(fp => fp.split(path.sep).slice(librarySplitPathsLength))
   let folderTreeObject = {}
@@ -753,4 +753,14 @@ ipcMain.handle('copy-text-to-clipboard', async (event, text) => {
 
 ipcMain.handle('read-text-from-clipboard', async () => {
   return clipboard.readText()
+})
+
+ipcMain.handle('update-window-title', async (event, title) => {
+  let name = require('./package.json').name
+  let version = require('./package.json').version
+  if (title) {
+    mainWindow.setTitle(name + ' ' + version + ' | ' + title)
+  } else {
+    mainWindow.setTitle(name + ' ' + version)
+  }
 })

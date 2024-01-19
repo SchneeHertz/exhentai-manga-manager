@@ -213,6 +213,7 @@
       @use-new-cover="useNewCover"
       @select-book="selectBook"
       @message="printMessage"
+      @update-window-title="updateWindowTitle"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
       direction="ltr"
@@ -228,7 +229,7 @@
     </el-drawer>
     <Graph
       ref="TagGraphRef"
-      :book-list="bookList"
+      :book-list="displayBookList"
       :cat2letter="cat2letter"
       :resolved-translation="resolvedTranslation"
       @search="handleSearchTags"
@@ -367,8 +368,8 @@
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBook(bookDetail)"
-                  filterable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
+                <el-select v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
+                  filterable clearable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
                   <el-option v-for="tag in editTagOptions" :key="tag.value" :value="tag.value" >{{tag.label}}</el-option>
                 </el-select>
               </div>
@@ -579,13 +580,14 @@ export default defineComponent({
       }
     },
     tagList () {
-      return _(this.bookList.map(b=>{
+      let tagArray = _(this.bookList.map(b=>{
         return _.map(b.tags, (tags, cat)=>{
           return _.map(tags, tag=>`${cat}##${tag}`)
         })
       }))
-      .flattenDeep().uniq().sort()
-      .map(combinedTag=>{
+      .flattenDeep().value()
+      let uniqedTagArray = [...new Set(tagArray)].sort()
+      return uniqedTagArray.map(combinedTag=>{
         let tagArray = _.split(combinedTag, '##')
         let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
         let labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
@@ -594,18 +596,17 @@ export default defineComponent({
           value: `${letter}:"${tagArray[1]}"`
         }
       })
-      .value()
     },
     tag2cat () {
       let temp = {}
-      _(this.bookList.map(b=>{
+      let tagArray = _(this.bookList.map(b=>{
         return _.map(b.tags, (tags, cat)=>{
           return _.map(tags, tag=>`${cat}##${tag}`)
         })
       }))
-      .flattenDeep().uniq().sort()
-      .value()
-      .forEach(combinedTag=>{
+      .flattenDeep().value()
+      let uniqedTagArray = [...new Set(tagArray)]
+      uniqedTagArray.forEach(combinedTag=>{
         let tagArray = _.split(combinedTag, '##')
         temp[tagArray[1]] = tagArray[0]
       })
@@ -697,6 +698,12 @@ export default defineComponent({
     window.removeEventListener('keydown', this.resolveKey)
     window.removeEventListener('wheel', this.resolveWheel)
     window.removeEventListener('mousedown', this.resolveMouseDown)
+  },
+  watch: {
+    bookList () {
+      this.displayBookList = this.bookList
+      this.handleSortChange(this.sortValue)
+    }
   },
   methods: {
     // base function
@@ -826,6 +833,9 @@ export default defineComponent({
         }
         if (event.key === 'PageUp') {
           this.toNextManga(-1)
+        }
+        if (event.key === '=') {
+          this.$refs.InternalViewerRef.showThumbnail = !this.$refs.InternalViewerRef.showThumbnail
         }
       }
       if (this.currentUI() === 'bookdetail') {
@@ -990,11 +1000,7 @@ export default defineComponent({
     async loadBookList (scan) {
       return await ipcRenderer.invoke('load-book-list', scan)
         .then(res => {
-          if (this.sortValue) {
-            this.bookList = res
-          } else {
-            this.bookList = res.sort(this.sortList('date'))
-          }
+          this.bookList = res
           this.loadCollectionList()
         })
     },
@@ -1012,6 +1018,10 @@ export default defineComponent({
         default:
           return book.title_jpn || book.title || this.returnFileName(book)
       }
+    },
+    updateWindowTitle (book) {
+      let title = this.getDisplayTitle(book)
+      ipcRenderer.invoke('update-window-title', title)
     },
     isBook (book) {
       // isCollection mean book is collection
@@ -1229,10 +1239,14 @@ export default defineComponent({
       let load = async (gap) => {
         for (let i = 0; i < bookList.length; i++) {
           ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
-          if (this.serviceAvailable) {
-            await this.getBookInfoFromEhFirstResult(bookList[i], server)
-            // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
-            await timer(gap)
+          try {
+            if (this.serviceAvailable) {
+              await this.getBookInfoFromEhFirstResult(bookList[i], server)
+              // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
+              await timer(gap)
+            }
+          } catch (error) {
+            console.error(error)
           }
         }
         ipcRenderer.invoke('set-progress-bar', -1)
@@ -1246,9 +1260,8 @@ export default defineComponent({
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
-    handleSortChange (val, isSearch) {
-      let bookList = this.bookList
-      if (isSearch) bookList = this.displayBookList
+    handleSortChange (val) {
+      let bookList = this.displayBookList.length > 0 ? this.displayBookList : this.bookList
       switch(val){
         case 'mark':
           this.displayBookList = _.filter(bookList, 'mark')
@@ -1267,51 +1280,51 @@ export default defineComponent({
           this.chunkList()
           break
         case 'addAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('date')))
+          this.displayBookList = bookList.toSorted(this.sortList('date')).toReversed()
           this.chunkList()
           break
         case 'addDescend':
-          this.displayBookList = bookList.sort(this.sortList('date'))
+          this.displayBookList = bookList.toSorted(this.sortList('date'))
           this.chunkList()
           break
         case 'mtimeAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('mtime')))
+          this.displayBookList = bookList.toSorted(this.sortList('mtime')).toReversed()
           this.chunkList()
           break
         case 'mtimeDescend':
-          this.displayBookList = bookList.sort(this.sortList('mtime'))
+          this.displayBookList = bookList.toSorted(this.sortList('mtime'))
           this.chunkList()
           break
         case 'postAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('posted')))
+          this.displayBookList = bookList.toSorted(this.sortList('posted')).toReversed()
           this.chunkList()
           break
         case 'postDescend':
-          this.displayBookList = bookList.sort(this.sortList('posted'))
+          this.displayBookList = bookList.toSorted(this.sortList('posted'))
           this.chunkList()
           break
         case 'scoreAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('rating')))
+          this.displayBookList = bookList.toSorted(this.sortList('rating')).toReversed()
           this.chunkList()
           break
         case 'scoreDescend':
-          this.displayBookList = bookList.sort(this.sortList('rating'))
+          this.displayBookList = bookList.toSorted(this.sortList('rating'))
           this.chunkList()
           break
         case 'artistAscend':
-          this.displayBookList = _.reverse(bookList.sort(this.sortList('tags.artist')))
+          this.displayBookList = bookList.toSorted(this.sortList('tags.artist')).toReversed()
           this.chunkList()
           break
         case 'artistDescend':
-          this.displayBookList = bookList.sort(this.sortList('tags.artist'))
+          this.displayBookList = bookList.toSorted(this.sortList('tags.artist'))
           this.chunkList()
           break
         case 'titleAscend':
-          this.displayBookList = _.reverse(bookList.sort((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a))))
+          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a))).toReversed()
           this.chunkList()
           break
         case 'titleDescend':
-          this.displayBookList = bookList.sort((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a)))
+          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a)))
           this.chunkList()
           break
         default:
@@ -1375,6 +1388,7 @@ export default defineComponent({
     handleSearchStringChange (val) {
       if (!val) {
         this.searchString = ''
+        this.displayBookList = this.bookList
         this.handleSortChange(this.sortValue)
         setTimeout(() => document.querySelector('.search-input .el-input__inner').blur(), 100)
       }
@@ -1437,7 +1451,7 @@ export default defineComponent({
           }
         })
       })
-      this.handleSortChange(this.sortValue, true)
+      this.handleSortChange(this.sortValue)
     },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
@@ -1454,6 +1468,7 @@ export default defineComponent({
     openBookDetail (book) {
       this.bookDetail = book
       this.dialogVisibleBookDetail = true
+      this.comments = []
       if (this.setting.showComment) this.getComments(book.url)
     },
     handleClickCover (book) {
@@ -1514,7 +1529,6 @@ export default defineComponent({
         let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
         this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
       }
-      this.handleSortChange(this.sortValue)
     },
 
     // tag analysis and recommand search
@@ -1562,6 +1576,7 @@ export default defineComponent({
             })
           }
         })
+        this.displayBookList = this.bookList
         this.handleSortChange(this.sortValue)
       })
     },
@@ -1674,7 +1689,8 @@ export default defineComponent({
             })
             this.saveCollection()
           } else {
-            this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
+            let findBookInBookList = _.findIndex(this.bookList, b=>b.filepath === book.filepath)
+            this.bookList.splice(findBookInBookList, 1)
             this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
             this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
           }
@@ -1703,6 +1719,7 @@ export default defineComponent({
       if (this.setting.showComment) {
         this.setting.showComment = false
       } else {
+        this.comments = []
         this.getComments(this.bookDetail.url)
         this.setting.showComment = true
       }
@@ -1746,29 +1763,32 @@ export default defineComponent({
           _.forIn(tagObject, (tagArray, tagCat)=>{
             if (_.isArray(tagArray)) {
               if (_.has(tempTagGroup, tagCat)) {
-                tempTagGroup[tagCat] = [...tempTagGroup[tagCat], ...tagArray]
+                tagArray.forEach(tag=>tempTagGroup[tagCat].add(tag))
               } else {
-                tempTagGroup[tagCat] = tagArray
+                tempTagGroup[tagCat] = new Set(tagArray)
               }
             }
           })
         })
         let showTranslation = this.setting.showTranslation
-        _.forIn(tempTagGroup, (tagArray, tagCat)=>{
-          tempTagGroup[tagCat] = _.sortBy(_.uniq(tagArray)).map(tag=>({
+        _.forIn(tempTagGroup, (tagSet, tagCat)=>{
+          tempTagGroup[tagCat] = [...tagSet].sort().map(tag=>({
             value: tag,
             label: `${showTranslation ? (this.resolvedTranslation[tag]?.name || tag ) + ' || ' : ''}${tag}`
           }))
         })
         this.tagGroup = tempTagGroup
       } else {
-        _.forIn(this.bookDetail.tags, (tagarr, tagCat)=>{
-          if (_.isEmpty(tagarr)) {
-            delete this.bookDetail.tags[tagCat]
-          }
-        })
-        this.saveBook(this.bookDetail)
+        this.saveBookTags(this.bookDetail)
       }
+    },
+    saveBookTags (book) {
+      _.forIn(book.tags, (tagarr, tagCat)=>{
+        if (_.isEmpty(tagarr)) {
+          delete book.tags[tagCat]
+        }
+      })
+      this.saveBook(book)
     },
     addTagCat () {
       ElMessageBox.prompt(this.$t('c.inputCategoryName'), this.$t('m.addCategory'), {
@@ -1817,6 +1837,7 @@ export default defineComponent({
     handleStopReadManga () {
       if (this.setting.keepReadingProgress) this.$refs.InternalViewerRef.saveReadingProgress()
       ipcRenderer.invoke('release-sendimagelock')
+      ipcRenderer.invoke('update-window-title')
     },
     toNextManga (step) {
       this.handleStopReadManga()
@@ -1828,6 +1849,7 @@ export default defineComponent({
         setTimeout(() => {
           this.bookDetail = selectBook
           this.$refs.InternalViewerRef.viewManga(selectBook)
+          this.comments = []
           if (this.setting.showComment) this.getComments(selectBook.url)
         }, 500)
       } else {
@@ -1841,6 +1863,7 @@ export default defineComponent({
       setTimeout(() => {
         this.bookDetail = selectBook
         this.$refs.InternalViewerRef.viewManga(selectBook)
+        this.comments = []
         if (this.setting.showComment) this.getComments(selectBook.url)
       }, 500)
     },
@@ -1872,11 +1895,7 @@ export default defineComponent({
       localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
       ipcRenderer.invoke('force-gene-book-list')
       .then(res=>{
-        if (this.sortValue) {
-          this.bookList = res
-        } else {
-          this.bookList = res.sort(this.sortList('date'))
-        }
+        this.bookList = res
         this.loadCollectionList()
         this.printMessage('success', this.$t('c.rebuildMessage'))
       })
@@ -1974,7 +1993,6 @@ export default defineComponent({
         if (success) {
           this.bookList = bookList
           this.printMessage('success', this.$t('c.importMessage'))
-          this.handleSortChange(this.sortValue)
         } else {
           this.printMessage('info', this.$t('c.canceled'))
         }
@@ -2043,6 +2061,12 @@ export default defineComponent({
             label: this.$t('c.copyLinkToClipboard'),
             onClick: () => {
               ipcRenderer.invoke('copy-text-to-clipboard', book.url)
+            }
+          },
+          {
+            label: this.$t('c.copyTitleAndLinkToClipboard'),
+            onClick: () => {
+              ipcRenderer.invoke('copy-text-to-clipboard', `${book.title_jpn || book.title}\n${book.url}\n`)
             }
           },
         ]

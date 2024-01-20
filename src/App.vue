@@ -236,7 +236,7 @@
     ></Graph>
     <el-drawer v-model="drawerVisibleCollection"
       direction="btt"
-      size="80vh"
+      size="calc(100vh - 60px)"
       destroy-on-close
       class="collection-drawer"
     >
@@ -1525,9 +1525,11 @@ export default defineComponent({
     selectFolderTreeNode (selectNode) {
       if (selectNode.folderPath.length <= 1) {
         this.bookList.map(book=>book.folderHide = false)
+        this.chunkList()
       } else {
         let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
         this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+        this.chunkList()
       }
     },
 

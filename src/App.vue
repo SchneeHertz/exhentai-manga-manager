@@ -1,6 +1,7 @@
 <template>
   <el-config-provider :locale="locale">
     <div id="progressbar" :style="{ width: progress + '%' }"></div>
+    <el-button class="fullscreen-button" circle :icon="FullScreen" size="large" @click="switchFullscreen"></el-button>
     <el-row :gutter="20" class="book-search-bar">
       <el-col :span="1" :offset="2">
         <el-button type="primary" :icon="TreeViewAlt" plain @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
@@ -447,7 +448,7 @@
 import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Setting as SettingIcon } from '@element-plus/icons-vue'
+import { Setting as SettingIcon, FullScreen } from '@element-plus/icons-vue'
 import { Collections20Filled, Search32Filled, Rename16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
 import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
@@ -480,7 +481,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      SettingIcon, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
+      SettingIcon, FullScreen, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
       TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular,
     }
   },
@@ -939,6 +940,13 @@ export default defineComponent({
     resolveMouseDown (event) {
       if (event.button === 3) {
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
+      }
+    },
+    switchFullscreen () {
+      if (document.fullscreenElement) {
+        document.exitFullscreen()
+      } else {
+        document.documentElement.requestFullscreen()
       }
     },
     customChunk (list, size, index) {
@@ -2118,6 +2126,24 @@ body
   animation: striped-flow 3s linear infinite
   animation-duration: 30s
   border-radius: 2px
+
+
+.fullscreen-button
+  position: absolute
+  top: 39px
+  left: calc(50vw - 22px)
+  border-width: 0
+  opacity: 0
+  transition-delay: 0.2s
+  z-index: 3000!important
+  .el-icon
+    width: 20px
+    svg
+      height: 20px
+      width: 20px
+.fullscreen-button:hover
+  opacity: 1
+  background-color: #ffffff66
 
 .search-input,
 .function-button

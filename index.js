@@ -765,3 +765,7 @@ ipcMain.handle('update-window-title', async (event, title) => {
     mainWindow.setTitle(name + ' ' + version)
   }
 })
+
+ipcMain.handle('switch-fullscreen', async (event, arg) => {
+  mainWindow.setFullScreen(!mainWindow.isFullScreen())
+})

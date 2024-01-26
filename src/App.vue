@@ -943,11 +943,7 @@ export default defineComponent({
       }
     },
     switchFullscreen () {
-      if (document.fullscreenElement) {
-        document.exitFullscreen()
-      } else {
-        document.documentElement.requestFullscreen()
-      }
+      ipcRenderer.invoke('switch-fullscreen')
     },
     customChunk (list, size, index) {
       let result = []
@@ -2136,7 +2132,6 @@ body
   left: calc(50vw - 22px)
   border-width: 0
   opacity: 0
-  transition-delay: 0.2s
   z-index: 3000!important
   .el-icon
     width: 20px

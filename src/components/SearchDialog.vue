@@ -5,21 +5,25 @@
     destroy-on-close
     class="dialog-search"
   >
-    <el-input v-model="searchStringDialog" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)">
-      <template #prepend>
-        <el-select class="search-type-select" v-model="searchTypeDialog">
-          <el-option label="exhentai(sha1)" value="exhentai" />
-          <el-option label="e-hentai(sha1)" value="e-hentai" />
-          <el-option label="exhentai(keyword)" value="exsearch" />
-          <el-option label="e-hentai(keyword)" value="e-search" />
-          <el-option label="chaika(keyword)" value="chaika" />
-          <el-option label="hentag(keyword)" value="hentag" />
-        </el-select>
-      </template>
-      <template #append>
+    <el-form :inline="true">
+      <el-form-item>
+        <el-input v-model="searchStringDialog" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)" class="search-input">
+          <template #append>
+            <el-select class="search-type-select" v-model="searchTypeDialog">
+              <el-option label="exhentai(sha1)" value="exhentai" />
+              <el-option label="e-hentai(sha1)" value="e-hentai" />
+              <el-option label="exhentai(keyword)" value="exsearch" />
+              <el-option label="e-hentai(keyword)" value="e-search" />
+              <el-option label="chaika(keyword)" value="chaika" />
+              <el-option label="hentag(keyword)" value="hentag" />
+            </el-select>
+          </template>
+        </el-input>
+      </el-form-item>
+      <el-form-item>
         <el-button :icon="Search32Filled" @click="getBookListFromWeb(bookDetail, searchTypeDialog)"/>
-      </template>
-    </el-input>
+      </el-form-item>
+    </el-form>
     <div v-loading="searchResultLoading">
       <div class="search-result" v-if="ehSearchResultList.length > 0">
         <p
@@ -188,6 +192,10 @@ defineExpose({
 .dialog-search
   .el-dialog__body
     padding: 5px 20px 16px
+  .el-form-item
+    margin-right: 4px
+  .search-input
+    width: calc(60vw - 96px)
   .search-type-select
     width: 160px
   .search-result-ind

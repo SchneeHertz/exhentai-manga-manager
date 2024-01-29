@@ -1656,6 +1656,7 @@ export default defineComponent({
         return _.find(this.bookList, book => book.id === hash_id || book.hash === hash_id)
       }))
       this.openCollectionTitle = collection.title
+      this.selectCollection = collection.id
     },
 
     // detail view function

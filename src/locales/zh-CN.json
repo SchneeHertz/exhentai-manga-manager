@@ -2,7 +2,9 @@
   "m":{
     "folderTree": "文件夹树",
     "search": "搜索",
-    "shuffle": "打乱",
+    "shuffle": "随机排序",
+    "sort_filter": "排序/筛选",
+    "filter": "筛选",
     "sort": "排序",
     "bookmarkOnly": "仅收藏",
     "collectionOnly": "仅合集",
@@ -21,6 +23,7 @@
     "addCollection": "新增合集",
     "renameCollection": "重命名合集",
     "save": "保存",
+    "exit": "退出",
     "re": "阅",
     "ad": "读",
     "collection": "合集",

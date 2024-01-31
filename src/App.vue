@@ -57,23 +57,27 @@
         <el-button :icon="SettingIcon" plain @click="$refs.SettingRef.dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
       </el-col>
       <el-col :span="3">
-        <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
-          <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
-          <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
-          <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
-          <el-option :label="$t('m.shuffle')" value="shuffle"></el-option>
-          <el-option :label="$t('m.addTimeAscend')" value="addAscend"></el-option>
-          <el-option :label="$t('m.addTimeDescend')" value="addDescend"></el-option>
-          <el-option :label="$t('m.mtimeAscend')" value="mtimeAscend"></el-option>
-          <el-option :label="$t('m.mtimeDescend')" value="mtimeDescend"></el-option>
-          <el-option :label="$t('m.postTimeAscend')" value="postAscend"></el-option>
-          <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
-          <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
-          <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
-          <el-option :label="$t('m.artistAscend')" value="artistAscend"></el-option>
-          <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
-          <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
-          <el-option :label="$t('m.titleDescend')" value="titleDescend"></el-option>
+        <el-select :placeholder="$t('m.sort_filter')" @change="handleSortChange" clearable v-model="sortValue">
+          <el-option-group :label="$t('m.filter')">
+            <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
+            <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
+            <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
+          </el-option-group>
+          <el-option-group :label="$t('m.sort')">
+            <el-option :label="$t('m.shuffle')" value="shuffle"></el-option>
+            <el-option :label="$t('m.addTimeAscend')" value="addAscend"></el-option>
+            <el-option :label="$t('m.addTimeDescend')" value="addDescend"></el-option>
+            <el-option :label="$t('m.mtimeAscend')" value="mtimeAscend"></el-option>
+            <el-option :label="$t('m.mtimeDescend')" value="mtimeDescend"></el-option>
+            <el-option :label="$t('m.postTimeAscend')" value="postAscend"></el-option>
+            <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
+            <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
+            <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
+            <el-option :label="$t('m.artistAscend')" value="artistAscend"></el-option>
+            <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
+            <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
+            <el-option :label="$t('m.titleDescend')" value="titleDescend"></el-option>
+          </el-option-group>
         </el-select>
       </el-col>
       <el-col :span="4">
@@ -89,6 +93,9 @@
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
+          </el-col>
+          <el-col :span="6" v-if="editCollectionView">
+            <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
         </el-row>
       </el-col>
@@ -241,7 +248,12 @@
       destroy-on-close
       class="collection-drawer"
     >
-      <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
+      <template #header>
+        <div>
+          <span class="open-collection-title">{{openCollectionTitle}}</span>
+          <el-button type="primary" :icon="Edit" plain link class="collection-edit-button" @click="editCurrentCollection"/>
+        </div>
+      </template>
       <div
         v-for="(book, index) in openCollectionBookList"
         :key="book.id"
@@ -448,9 +460,9 @@
 import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Setting as SettingIcon, FullScreen } from '@element-plus/icons-vue'
+import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
 import { Collections20Filled, Search32Filled, Rename16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
-import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
+import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
@@ -481,7 +493,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      SettingIcon, FullScreen, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
+      SettingIcon, FullScreen, Edit, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload, MdExit,
       TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular,
     }
   },
@@ -1324,7 +1336,7 @@ export default defineComponent({
           this.chunkList()
           break
         default:
-          this.displayBookList = bookList
+          this.displayBookList = this.bookList
           this.chunkList()
           break
       }
@@ -1649,6 +1661,11 @@ export default defineComponent({
       }))
       this.openCollectionTitle = collection.title
       this.selectCollection = collection.id
+    },
+    editCurrentCollection () {
+      this.drawerVisibleCollection = false
+      this.editCollectionView = true
+      this.handleSelectCollectionChange(this.selectCollection)
     },
 
     // detail view function
@@ -2220,7 +2237,9 @@ body
   height: 18px
 
 .open-collection-title
-  margin: 0 10px
+  margin: 0 4px
+.collection-edit-button
+  margin-bottom: 2px
 
 .book-collect-card
   width: 138px

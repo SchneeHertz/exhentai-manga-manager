@@ -21,7 +21,7 @@
         </el-input>
       </el-form-item>
       <el-form-item>
-        <el-button :icon="Search32Filled" @click="getBookListFromWeb(bookDetail, searchTypeDialog)"/>
+        <el-button type="primary" plain :icon="Search32Filled" @click="getBookListFromWeb(bookDetail, searchTypeDialog)"/>
       </el-form-item>
     </el-form>
     <div v-loading="searchResultLoading">

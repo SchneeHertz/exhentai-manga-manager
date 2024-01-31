@@ -10,12 +10,7 @@
         <el-input v-model="searchStringDialog" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)" class="search-input">
           <template #append>
             <el-select class="search-type-select" v-model="searchTypeDialog">
-              <el-option label="exhentai(sha1)" value="exhentai" />
-              <el-option label="e-hentai(sha1)" value="e-hentai" />
-              <el-option label="exhentai(keyword)" value="exsearch" />
-              <el-option label="e-hentai(keyword)" value="e-search" />
-              <el-option label="chaika(keyword)" value="chaika" />
-              <el-option label="hentag(keyword)" value="hentag" />
+              <el-option v-for="searchType in props.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
             </el-select>
           </template>
         </el-input>
@@ -43,7 +38,7 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { Search32Filled } from '@vicons/fluent'
 
-const props = defineProps(['cookie'])
+const props = defineProps(['cookie', 'searchTypeList'])
 
 const emit = defineEmits(['message', 'resolveSearchResult'])
 

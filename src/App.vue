@@ -436,6 +436,7 @@
     <SearchDialog
       ref="SearchDialogRef"
       :cookie="cookie"
+      :search-type-list="searchTypeList"
       @message="printMessage"
       @resolve-search-result="resolveSearchResult"
     ></SearchDialog>
@@ -553,6 +554,14 @@ export default defineComponent({
         'Cosplay',
         'Asian Porn',
         'Misc',
+      ],
+      searchTypeList: [
+        { label: "exhentai(sha1)", value: "exhentai" },
+        { label: "e-hentai(sha1)", value: "e-hentai" },
+        { label: "exhentai(keyword)", value: "exsearch" },
+        { label: "e-hentai(keyword)", value: "e-search" },
+        { label: "chaika(keyword)", value: "chaika" },
+        { label: "hentag(keyword)", value: "hentag" },
       ],
       keyMap: {
         normal: {

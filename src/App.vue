@@ -960,20 +960,12 @@ export default defineComponent({
       })
       return result
     },
-    returnFileName (book) {
-      // Windows only
-      if (book.type === 'folder') {
-        return book.filepath.replace(/^.*\\/g, '')
-      } else {
-        return book.filepath.replace(/^.*\\|\.[^.]*$/g, '')
-      }
-    },
     returnFileNameWithExt (filepath) {
-      // Windows only
-      let matched = /[^\\]+$/.exec(filepath)
-      if (matched) {
-        return matched[0]
-      }
+      return filepath.split(/[/\\]/).pop()
+    },
+    returnFileName (filepath) {
+      let fileNameWithExtension = this.returnFileNameWithExt(filepath)
+      return fileNameWithExtension.split('.').slice(0, -1).join('.') || fileNameWithExtension
     },
     sortList(label) {
       return (a, b)=>{
@@ -1018,9 +1010,9 @@ export default defineComponent({
         case 'japaneseTitle':
           return book.title_jpn || book.title
         case 'filename':
-          return this.returnFileName(book)
+          return this.returnFileName(book.filepath)
         default:
-          return book.title_jpn || book.title || this.returnFileName(book)
+          return book.title_jpn || book.title || this.returnFileName(book.filepath)
       }
     },
     updateWindowTitle (book) {

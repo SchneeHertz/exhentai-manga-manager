@@ -4,7 +4,7 @@
     <el-button class="fullscreen-button" circle :icon="FullScreen" size="large" @click="switchFullscreen"></el-button>
     <el-row :gutter="20" class="book-search-bar">
       <el-col :span="1" :offset="2">
-        <el-button type="primary" :icon="TreeViewAlt" plain @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
+        <el-button type="primary" :icon="TreeViewAlt" plain @click="openFolderTree" :title="$t('m.folderTree')"></el-button>
       </el-col>
       <el-col :span="8">
         <el-autocomplete
@@ -1019,6 +1019,7 @@ export default defineComponent({
         .then(res => {
           this.bookList = res
           this.loadCollectionList()
+          this.geneFolderTree()
         })
     },
     saveBook (book) {
@@ -1337,11 +1338,11 @@ export default defineComponent({
           this.chunkList()
           break
         case 'titleAscend':
-          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a))).toReversed()
+          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a), undefined, {numeric: true, sensitivity: 'base'})).toReversed()
           this.chunkList()
           break
         case 'titleDescend':
-          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a)))
+          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a), undefined, {numeric: true, sensitivity: 'base'}))
           this.chunkList()
           break
         default:
@@ -1529,15 +1530,18 @@ export default defineComponent({
 
 
     // folder tree
-    geneFolderTree () {
+    openFolderTree () {
       this.sideVisibleFolderTree = !this.sideVisibleFolderTree
-      if (this.sideVisibleFolderTree) {
-        let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.isCollection)
-        ipcRenderer.invoke('get-folder-tree', bookList)
-        .then(data=>{
-          this.folderTreeData = data
-        })
+      if (this.sideVisibleFolderTree && _.isEmpty(this.folderTreeData)) {
+        this.geneFolderTree()
       }
+    },
+    geneFolderTree () {
+      let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.isCollection)
+      ipcRenderer.invoke('get-folder-tree', bookList)
+      .then(data=>{
+        this.folderTreeData = data
+      })
     },
     selectFolderTreeNode (selectNode) {
       if (selectNode.folderPath.length <= 1) {

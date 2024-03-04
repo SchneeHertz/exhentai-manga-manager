@@ -100,6 +100,7 @@
     "nextMangaRandom": "Next Manga (Random)",
     "language": "Language",
     "systemDefault": "System Default",
+    "defaultScraper": "Default Scraper",
     "excludeFile": "Exclude File",
     "excludeFileInfo": "Regular expression for excluding file paths, when matching part of the file path, exclude the file.",
     "trimTitleRegExp": "Trim Title RegExp",

@@ -195,6 +195,18 @@
           </el-col>
           <el-col :span="24">
             <div class="setting-line">
+              <el-input class="label-input">
+                <template #prepend><span class="setting-label">{{$t('m.defaultScraper')}}</span></template>
+                <template #append>
+                  <el-select v-model="setting.defaultScraper" @change="saveSetting">
+                    <el-option v-for="searchType in props.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+                  </el-select>
+                </template>
+              </el-input>
+            </div>
+          </el-col>
+          <el-col :span="24">
+            <div class="setting-line">
               <el-input v-model.number="setting.requireGap" :placeholder="$t('m.requireGapInfo')" @change="saveSetting">
                 <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
               </el-input>
@@ -385,6 +397,8 @@ import NameFormItem from './NameFormItem.vue'
 
 const { t } = useI18n()
 
+const props = defineProps(['searchTypeList'])
+
 const emit = defineEmits([
   'updateSetting',
   'handleLanguageSet',
@@ -404,18 +418,18 @@ onMounted(() => {
   ipcRenderer.invoke('load-setting')
     .then(async (res) => {
       setting.value = res
+
+      // set default value
+      if (res.autoCheckUpdates === undefined) setting.value.autoCheckUpdates = true
+      if (res.trimTitleRegExp === undefined) setting.value.trimTitleRegExp = '\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
+      if (res.defaultScraper === undefined) setting.value.defaultScraper = 'exhentai'
+      saveSetting()
+
+      // default action
       if (res.theme) changeTheme(res.theme)
       handleLanguageChange(res.language)
       if (res.showTranslation) loadTranslationFromEhTagTranslation()
-      if (res.autoCheckUpdates === undefined) {
-        setting.value.autoCheckUpdates = true
-        saveSetting()
-      }
       if (res.autoCheckUpdates) autoCheckUpdates(false)
-      if (res.trimTitleRegExp === undefined) {
-        setting.value.trimTitleRegExp = '\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
-        saveSetting()
-      }
     })
 })
 

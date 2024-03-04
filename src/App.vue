@@ -443,6 +443,7 @@
     ></SearchDialog>
     <Setting
       ref="SettingRef"
+      :search-type-list="searchTypeList"
       @update-setting="updateSetting"
       @handle-language-set="handleLanguageSet"
       @message="printMessage"

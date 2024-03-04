@@ -100,6 +100,7 @@
     "nextMangaRandom": "下一本(随机)",
     "language": "语言",
     "systemDefault": "系统默认",
+    "defaultScraper": "默认元数据来源",
     "excludeFile": "排除文件",
     "excludeFileInfo": "用于排除的文件路径的正则表达式, 当匹配到文件路径的部分时排除该文件",
     "trimTitleRegExp": "修剪标题",

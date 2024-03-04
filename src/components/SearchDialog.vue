@@ -45,11 +45,12 @@ const emit = defineEmits(['message', 'resolveSearchResult'])
 const dialogVisibleEhSearch = ref(false)
 const searchResultLoading = ref(false)
 const searchStringDialog = ref('')
-const searchTypeDialog = ref('exhentai')
+const searchTypeDialog = ref('')
 const ehSearchResultList = ref([])
 const bookDetail = ref({})
 
 const openSearchDialog = (book, server) => {
+  if (!searchTypeDialog.value) searchTypeDialog.value = props.setting.defaultScraper
   dialogVisibleEhSearch.value = true
   bookDetail.value = _.cloneDeep(book)
   if (server) searchTypeDialog.value = server

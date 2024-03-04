@@ -57,7 +57,7 @@ const ehSearchResultList = ref([])
 const bookDetail = ref({})
 
 const openSearchDialog = (book, server) => {
-  if (!searchTypeDialog.value) searchTypeDialog.value = props.setting.defaultScraper
+  if (!searchTypeDialog.value) searchTypeDialog.value = props.setting.defaultScraper || 'exhentai'
   dialogVisibleEhSearch.value = true
   bookDetail.value = _.cloneDeep(book)
   if (server) searchTypeDialog.value = server

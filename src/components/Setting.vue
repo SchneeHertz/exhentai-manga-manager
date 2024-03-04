@@ -221,14 +221,14 @@
             </NameFormItem>
           </el-col>
           <el-col :span="24">
-            <div class="setting-line">
+            <div class="setting-line regexp">
               <el-input v-model="setting.trimTitleRegExp" :placeholder="$t('m.trimTitleRegExpInfo')" @change="saveSetting">
                 <template #prepend><span class="setting-label">{{$t('m.trimTitleRegExp')}}</span></template>
               </el-input>
             </div>
           </el-col>
           <el-col :span="24">
-            <div class="setting-line">
+            <div class="setting-line regexp">
               <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
                 <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
               </el-input>
@@ -575,6 +575,9 @@ defineExpose({
   margin: 6px 0
   .el-input-group__prepend
     width: 110px
+.setting-line.regexp
+  .el-input__inner
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace
 .setting-switch
   text-align: left
   margin-top: 6px

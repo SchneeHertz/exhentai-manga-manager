@@ -732,7 +732,7 @@ export default defineComponent({
   methods: {
     // base function
     currentUI () {
-      if (document.activeElement.tagName === 'INPUT') {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
         return 'inputing'
       }
       if (!!document.querySelector('.is-message-box')) {

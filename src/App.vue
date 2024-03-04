@@ -1210,7 +1210,7 @@ export default defineComponent({
       }
     },
     getBookListMetadata (server) {
-      if (!server) server = setting.defaultScraper || 'exhentai'
+      if (!server) server = this.setting.defaultScraper || 'exhentai'
       this.$refs.SettingRef.dialogVisibleSetting = false
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))

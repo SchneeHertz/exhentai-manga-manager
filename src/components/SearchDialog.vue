@@ -38,7 +38,7 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { Search32Filled } from '@vicons/fluent'
 
-const props = defineProps(['cookie', 'searchTypeList'])
+const props = defineProps(['cookie', 'searchTypeList', 'setting'])
 
 const emit = defineEmits(['message', 'resolveSearchResult'])
 
@@ -54,17 +54,17 @@ const openSearchDialog = (book, server) => {
   bookDetail.value = _.cloneDeep(book)
   if (server) searchTypeDialog.value = server
   ehSearchResultList.value = []
-  searchStringDialog.value = returnFileName(bookDetail.value)
+  searchStringDialog.value = returnTrimFileName(bookDetail.value)
   getBookListFromWeb(bookDetail.value, searchTypeDialog.value)
 }
 
-const returnFileName = (book) => {
-  // Windows only
-  if (book.type === 'folder') {
-    return book.filepath.replace(/^.*\\/g, '')
-  } else {
-    return book.filepath.replace(/^.*\\|\.[^.]*$/g, '')
+const returnTrimFileName = (book) => {
+  let fileNameWithExtension = book.filepath.split(/[/\\]/).pop()
+  let fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.') || fileNameWithExtension
+  if (props.setting.trimTitleRegExp) {
+    return fileNameWithoutExtension.replace(new RegExp(props.setting.trimTitleRegExp, 'g'), '')
   }
+  return fileNameWithoutExtension
 }
 
 const getBookListFromWeb = (book, server = 'e-hentai') => {

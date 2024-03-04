@@ -210,6 +210,13 @@
           </el-col>
           <el-col :span="24">
             <div class="setting-line">
+              <el-input v-model="setting.trimTitleRegExp" :placeholder="$t('m.trimTitleRegExpInfo')" @change="saveSetting">
+                <template #prepend><span class="setting-label">{{$t('m.trimTitleRegExp')}}</span></template>
+              </el-input>
+            </div>
+          </el-col>
+          <el-col :span="24">
+            <div class="setting-line">
               <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
                 <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
               </el-input>
@@ -405,6 +412,10 @@ onMounted(() => {
         saveSetting()
       }
       if (res.autoCheckUpdates) autoCheckUpdates(false)
+      if (res.trimTitleRegExp === undefined) {
+        setting.value.trimTitleRegExp = '\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
+        saveSetting()
+      }
     })
 })
 

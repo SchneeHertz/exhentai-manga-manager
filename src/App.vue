@@ -437,6 +437,7 @@
       ref="SearchDialogRef"
       :cookie="cookie"
       :search-type-list="searchTypeList"
+      :setting="setting"
       @message="printMessage"
       @resolve-search-result="resolveSearchResult"
     ></SearchDialog>

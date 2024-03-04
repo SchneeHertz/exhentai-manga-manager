@@ -7,7 +7,11 @@
   >
     <el-form :inline="true">
       <el-form-item>
-        <el-input v-model="searchStringDialog" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)" class="search-input">
+        <el-input
+          v-model="searchStringDialog"
+          @keyup.enter="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+          class="search-input"
+        >
           <template #append>
             <el-select class="search-type-select" v-model="searchTypeDialog">
               <el-option v-for="searchType in props.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
@@ -16,7 +20,10 @@
         </el-input>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" plain :icon="Search32Filled" @click="getBookListFromWeb(bookDetail, searchTypeDialog)"/>
+        <el-button
+          type="primary" plain :icon="Search32Filled"
+          @click="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+        />
       </el-form-item>
     </el-form>
     <div v-loading="searchResultLoading">
@@ -56,7 +63,7 @@ const openSearchDialog = (book, server) => {
   if (server) searchTypeDialog.value = server
   ehSearchResultList.value = []
   searchStringDialog.value = returnTrimFileName(bookDetail.value)
-  getBookListFromWeb(bookDetail.value, searchTypeDialog.value)
+  getBookListFromWeb(bookDetail.value.hash.toUpperCase(), searchStringDialog.value, searchTypeDialog.value)
 }
 
 const returnTrimFileName = (book) => {
@@ -68,63 +75,48 @@ const returnTrimFileName = (book) => {
   return fileNameWithoutExtension
 }
 
-const getBookListFromWeb = (book, server = 'e-hentai') => {
+const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
+  let resultList = []
   searchResultLoading.value = true
   if (server === 'e-hentai') {
-    axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
+    resultList = await axios.get(`https://e-hentai.org/?f_shash=${bookHash}&fs_similar=1&fs_exp=on&f_cats=689`)
     .then(res=>{
-      resolveEhentaiResult(res.data)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveEhentaiResult(res.data)
     })
   } else if (server === 'exhentai') {
-    ipcRenderer.invoke('get-ex-webpage', {
-      url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
+    resultList = await ipcRenderer.invoke('get-ex-webpage', {
+      url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=1&fs_exp=on&f_cats=689`,
       cookie: props.cookie
     })
     .then(res=>{
-      resolveEhentaiResult(res)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveEhentaiResult(res)
     })
   } else if (server === 'e-search') {
-    axios.get(`https://e-hentai.org/?f_search=${encodeURI(searchStringDialog.value)}&f_cats=689`)
+    resultList = await axios.get(`https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=689`)
     .then(res=>{
-      resolveEhentaiResult(res.data)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveEhentaiResult(res.data)
     })
   } else if (server === 'exsearch') {
-    ipcRenderer.invoke('get-ex-webpage', {
-      url: `https://exhentai.org/?f_search=${encodeURI(searchStringDialog.value)}&f_cats=689`,
+    resultList = await ipcRenderer.invoke('get-ex-webpage', {
+      url: `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=689`,
       cookie: props.cookie
     })
     .then(res=>{
-      resolveEhentaiResult(res)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveEhentaiResult(res)
     })
   } else if (server === 'chaika') {
-    axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(searchStringDialog.value)}`)
+    resultList = await axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(title)}`)
     .then(res=>{
-      resolveChaikaResult(res.data)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveChaikaResult(res.data)
     })
   } else if (server === 'hentag') {
-    axios.get(`https://hentag.com/public/api/vault-search?t=${encodeURI(searchStringDialog.value)}`)
+    resultList = await axios.get(`https://hentag.com/public/api/vault-search?t=${encodeURI(title)}`)
     .then(res=>{
-      resolveHentagResult(res.data)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveHentagResult(res.data)
     })
   }
+  searchResultLoading.value = false
+  return resultList
 }
 
 const resolveEhentaiResult = (htmlString) => {
@@ -134,9 +126,11 @@ const resolveEhentaiResult = (htmlString) => {
     resultNodes.forEach((node)=>{
       ehSearchResultList.value.push({
         title: node.querySelector('.glink').innerHTML,
-        url: node.querySelector('a').getAttribute('href')
+        url: node.querySelector('a').getAttribute('href'),
+        type: 'e-hentai'
       })
     })
+    return ehSearchResultList.value
   } catch (e) {
     console.log(e)
     if (htmlString.includes('Your IP address has been')) {
@@ -156,6 +150,7 @@ const resolveChaikaResult = (htmlString) => {
       type: 'chaika'
     })
   })
+  return ehSearchResultList.value
 }
 const resolveHentagResult = (data) => {
   let resultList = data.works.slice(0, 10)
@@ -165,7 +160,8 @@ const resolveHentagResult = (data) => {
     if (findExUrl) {
       ehSearchResultList.value.push({
         title: result.title,
-        url: findExUrl
+        url: findExUrl,
+        type: 'e-hentai'
       })
     } else {
       ehSearchResultList.value.push({
@@ -175,11 +171,14 @@ const resolveHentagResult = (data) => {
       })
     }
   })
+  return ehSearchResultList.value
 }
 
 defineExpose({
   dialogVisibleEhSearch,
-  openSearchDialog
+  openSearchDialog,
+  returnTrimFileName,
+  getBookListFromWeb
 })
 
 </script>

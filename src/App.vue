@@ -48,7 +48,7 @@
         <el-button type="primary" :icon="MdRefresh" plain @click="loadBookList(true)" :title="$t('m.manualScan')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata('exhentai')" :title="$t('m.batchGetExMetadata')"></el-button>
+        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetExMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="MdBulb" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
@@ -447,8 +447,6 @@
       @update-setting="updateSetting"
       @handle-language-set="handleLanguageSet"
       @message="printMessage"
-      @load-book-list="loadBookList"
-      @get-book-list-metadata="getBookListMetadata"
       @force-gene-book-list="forceGeneBookList"
       @patch-local-metadata="patchLocalMetadata"
       @export-database="exportDatabase"
@@ -1142,15 +1140,6 @@ export default defineComponent({
       book.status = 'tagged'
       await this.saveBook(book)
     },
-    getBookInfo (book) {
-      if (book.url.startsWith('https://panda.chaika.moe')) {
-        this.getBookInfoFromChaika(book)
-      } else if (book.url.startsWith('https://hentag.com')) {
-        this.getBookInfoFromHentag(book)
-      } else {
-        this.getBookInfoFromEh(book)
-      }
-    },
     async getBookInfoFromEh (book) {
       let match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
       ipcRenderer.invoke('post-data-ex', {
@@ -1211,42 +1200,17 @@ export default defineComponent({
         }
       })
     },
-    async getBookInfoFromEhFirstResult (book, server = 'e-hentai') {
-      let resolveEhFirstResult = async (book, htmlString)=>{
-        try {
-          let bookUrl = new DOMParser().parseFromString(htmlString, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-          book.url = bookUrl
-          await this.getBookInfoFromEh(book)
-        } catch (e) {
-          console.log(e)
-          if (htmlString.includes('Your IP address has been')) {
-            book.status = 'non-tag'
-            this.printMessage('error', 'Your IP address has been temporarily banned')
-            await this.saveBook(book)
-            this.serviceAvailable = false
-          } else {
-            book.status = 'tag-failed'
-            this.printMessage('error', 'Get tag failed')
-            await this.saveBook(book)
-          }
-        }
-      }
-      if (server === 'e-hentai') {
-        axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
-        .then(async res=>{
-          await resolveEhFirstResult(book, res.data)
-        })
-      } else if (server === 'exhentai') {
-        ipcRenderer.invoke('get-ex-webpage', {
-          url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
-          cookie: this.cookie
-        })
-        .then(async res=>{
-          await resolveEhFirstResult(book, res)
-        })
+    getBookInfo (book) {
+      if (book.url.startsWith('https://panda.chaika.moe')) {
+        this.getBookInfoFromChaika(book)
+      } else if (book.url.startsWith('https://hentag.com')) {
+        this.getBookInfoFromHentag(book)
+      } else {
+        this.getBookInfoFromEh(book)
       }
     },
     getBookListMetadata (server) {
+      if (!server) server = setting.defaultScraper || 'exhentai'
       this.$refs.SettingRef.dialogVisibleSetting = false
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
@@ -1261,8 +1225,13 @@ export default defineComponent({
           ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
           try {
             if (this.serviceAvailable) {
-              await this.getBookInfoFromEhFirstResult(bookList[i], server)
-              // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
+              let book = bookList[i]
+              let resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
+                book.hash.toUpperCase(),
+                this.$refs.SearchDialogRef.returnTrimFileName(book),
+                server
+              )
+              this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
               await timer(gap)
             }
           } catch (error) {

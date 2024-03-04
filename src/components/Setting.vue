@@ -86,21 +86,6 @@
               </el-input>
             </div>
           </el-col>
-          <el-col :span="5">
-            <div class="setting-line">
-              <el-button class="function-button" type="success" plain @click="$emit('loadBookList', true)">{{$t('m.manualScan')}}</el-button>
-            </div>
-          </el-col>
-          <el-col :span="7">
-            <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('getBookListMetadata', 'e-hentai')">{{$t('m.batchGetMetadata')}}</el-button>
-            </div>
-          </el-col>
-          <el-col :span="7">
-            <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('getBookListMetadata', 'exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
-            </div>
-          </el-col>
         </el-row>
       </el-tab-pane>
       <el-tab-pane :label="$t('m.internalViewer')" name="internalViewer">
@@ -403,8 +388,6 @@ const emit = defineEmits([
   'updateSetting',
   'handleLanguageSet',
   'message',
-  'loadBookList',
-  'getBookListMetadata',
   'forceGeneBookList',
   'patchLocalMetadata',
   'exportDatabase',

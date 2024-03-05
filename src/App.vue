@@ -1223,9 +1223,9 @@ export default defineComponent({
       let load = async (gap) => {
         for (let i = 0; i < bookList.length; i++) {
           ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
+          let book = bookList[i]
           try {
             if (this.serviceAvailable) {
-              let book = bookList[i]
               let resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
                 book.hash.toUpperCase(),
                 this.$refs.SearchDialogRef.returnTrimFileName(book),
@@ -1235,6 +1235,8 @@ export default defineComponent({
               await timer(gap)
             }
           } catch (error) {
+            book.status = 'tag-failed'
+            await this.saveBook(book)
             console.error(error)
           }
         }

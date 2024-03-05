@@ -7,9 +7,7 @@
     <template #header><p>{{$t('m.tagAnalysis')}}</p></template>
     <div id="tag-graph"></div>
     <template #footer>
-      <el-button type="primary" @click="geneRecommend(false, 'local')">{{$t('m.searchLocal')}}</el-button>
-      <el-button type="primary" @click="geneRecommend(false)">{{$t('m.getEXRecommand')}}</el-button>
-      <el-button type="primary" @click="geneRecommend(true)">{{$t('m.getEXRecommand')}}(ZH)</el-button>
+      <el-button type="primary" @click="geneRecommend">{{$t('m.searchLocal')}}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -199,15 +197,11 @@ const displayTagGraph = () => {
   })
 }
 
-const geneRecommend = (chinese = false, type = 'exhentai') => {
+const geneRecommend = () => {
   let tagGroup2 = _.filter(tagNodeData, n=>n.size >= 270)
   let tagGroup3 = tagGroup2
-  if (type === 'exhentai') {
-    ipcRenderer.invoke('open-url', `https://exhentai.org/?f_search=${tagGroup3.map(n=>n.name).join(' ')}${chinese?' l:chinese$':''}`)
-  } else {
-    dialogVisibleGraph.value = false
-    emit('search', `${tagGroup3.map(n=>n.shortName).join(' ')}`)
-  }
+  dialogVisibleGraph.value = false
+  emit('search', `${tagGroup3.map(n=>n.shortName).join(' ')}`)
 }
 const destroyCanvas = () => {
   document.querySelector('#tag-graph canvas').remove()

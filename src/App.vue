@@ -1914,9 +1914,6 @@ export default defineComponent({
           this.$i18n.locale = 'zh-CN'
           break
         case 'en-US':
-          this.locale = en
-          this.$i18n.locale = 'en-US'
-          break
         default:
           this.locale = en
           this.$i18n.locale = 'en-US'

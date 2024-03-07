@@ -86,21 +86,6 @@
               </el-input>
             </div>
           </el-col>
-          <el-col :span="5">
-            <div class="setting-line">
-              <el-button class="function-button" type="success" plain @click="$emit('loadBookList', true)">{{$t('m.manualScan')}}</el-button>
-            </div>
-          </el-col>
-          <el-col :span="7">
-            <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('getBookListMetadata', 'e-hentai')">{{$t('m.batchGetMetadata')}}</el-button>
-            </div>
-          </el-col>
-          <el-col :span="7">
-            <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('getBookListMetadata', 'exhentai')">{{$t('m.batchGetExMetadata')}}</el-button>
-            </div>
-          </el-col>
         </el-row>
       </el-tab-pane>
       <el-tab-pane :label="$t('m.internalViewer')" name="internalViewer">
@@ -195,6 +180,18 @@
           </el-col>
           <el-col :span="24">
             <div class="setting-line">
+              <el-input class="label-input">
+                <template #prepend><span class="setting-label">{{$t('m.defaultScraper')}}</span></template>
+                <template #append>
+                  <el-select v-model="setting.defaultScraper" @change="saveSetting">
+                    <el-option v-for="searchType in props.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+                  </el-select>
+                </template>
+              </el-input>
+            </div>
+          </el-col>
+          <el-col :span="24">
+            <div class="setting-line">
               <el-input v-model.number="setting.requireGap" :placeholder="$t('m.requireGapInfo')" @change="saveSetting">
                 <template #prepend><span class="setting-label">{{$t('m.requestGap')}}</span></template>
               </el-input>
@@ -209,7 +206,14 @@
             </NameFormItem>
           </el-col>
           <el-col :span="24">
-            <div class="setting-line">
+            <div class="setting-line regexp">
+              <el-input v-model="setting.trimTitleRegExp" :placeholder="$t('m.trimTitleRegExpInfo')" @change="saveSetting">
+                <template #prepend><span class="setting-label">{{$t('m.trimTitleRegExp')}}</span></template>
+              </el-input>
+            </div>
+          </el-col>
+          <el-col :span="24">
+            <div class="setting-line regexp">
               <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
                 <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
               </el-input>
@@ -378,12 +382,12 @@ import NameFormItem from './NameFormItem.vue'
 
 const { t } = useI18n()
 
+const props = defineProps(['searchTypeList'])
+
 const emit = defineEmits([
   'updateSetting',
   'handleLanguageSet',
   'message',
-  'loadBookList',
-  'getBookListMetadata',
   'forceGeneBookList',
   'patchLocalMetadata',
   'exportDatabase',
@@ -397,13 +401,17 @@ onMounted(() => {
   ipcRenderer.invoke('load-setting')
     .then(async (res) => {
       setting.value = res
+
+      // set default value
+      if (res.autoCheckUpdates === undefined) setting.value.autoCheckUpdates = true
+      if (res.trimTitleRegExp === undefined) setting.value.trimTitleRegExp = '\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
+      if (res.defaultScraper === undefined) setting.value.defaultScraper = 'exhentai'
+      saveSetting()
+
+      // default action
       if (res.theme) changeTheme(res.theme)
       handleLanguageChange(res.language)
       if (res.showTranslation) loadTranslationFromEhTagTranslation()
-      if (res.autoCheckUpdates === undefined) {
-        setting.value.autoCheckUpdates = true
-        saveSetting()
-      }
       if (res.autoCheckUpdates) autoCheckUpdates(false)
     })
 })
@@ -550,6 +558,9 @@ defineExpose({
   margin: 6px 0
   .el-input-group__prepend
     width: 110px
+.setting-line.regexp
+  .el-input__inner
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace
 .setting-switch
   text-align: left
   margin-top: 6px

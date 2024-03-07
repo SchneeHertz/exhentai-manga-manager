@@ -95,9 +95,9 @@ const createWindow = () => {
 }
 
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
-app.disableHardwareAcceleration()
+// app.disableHardwareAcceleration()
 app.whenReady().then(async () => {
-  await Manga.sync({ alter: true })
+  await Manga.sync()
   await Metadata.sync()
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
@@ -764,4 +764,8 @@ ipcMain.handle('update-window-title', async (event, title) => {
   } else {
     mainWindow.setTitle(name + ' ' + version)
   }
+})
+
+ipcMain.handle('switch-fullscreen', async (event, arg) => {
+  mainWindow.setFullScreen(!mainWindow.isFullScreen())
 })

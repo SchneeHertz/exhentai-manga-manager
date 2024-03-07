@@ -4,7 +4,7 @@
     <el-button class="fullscreen-button" circle :icon="FullScreen" size="large" @click="switchFullscreen"></el-button>
     <el-row :gutter="20" class="book-search-bar">
       <el-col :span="1" :offset="2">
-        <el-button type="primary" :icon="TreeViewAlt" plain @click="geneFolderTree" :title="$t('m.folderTree')"></el-button>
+        <el-button type="primary" :icon="TreeViewAlt" plain @click="openFolderTree" :title="$t('m.folderTree')"></el-button>
       </el-col>
       <el-col :span="8">
         <el-autocomplete
@@ -48,7 +48,7 @@
         <el-button type="primary" :icon="MdRefresh" plain @click="loadBookList(true)" :title="$t('m.manualScan')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata('exhentai')" :title="$t('m.batchGetExMetadata')"></el-button>
+        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetExMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="MdBulb" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
@@ -57,23 +57,27 @@
         <el-button :icon="SettingIcon" plain @click="$refs.SettingRef.dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
       </el-col>
       <el-col :span="3">
-        <el-select :placeholder="$t('m.sort')" @change="handleSortChange" clearable v-model="sortValue">
-          <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
-          <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
-          <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
-          <el-option :label="$t('m.shuffle')" value="shuffle"></el-option>
-          <el-option :label="$t('m.addTimeAscend')" value="addAscend"></el-option>
-          <el-option :label="$t('m.addTimeDescend')" value="addDescend"></el-option>
-          <el-option :label="$t('m.mtimeAscend')" value="mtimeAscend"></el-option>
-          <el-option :label="$t('m.mtimeDescend')" value="mtimeDescend"></el-option>
-          <el-option :label="$t('m.postTimeAscend')" value="postAscend"></el-option>
-          <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
-          <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
-          <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
-          <el-option :label="$t('m.artistAscend')" value="artistAscend"></el-option>
-          <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
-          <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
-          <el-option :label="$t('m.titleDescend')" value="titleDescend"></el-option>
+        <el-select :placeholder="$t('m.sort_filter')" @change="handleSortChange" clearable v-model="sortValue">
+          <el-option-group :label="$t('m.filter')">
+            <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
+            <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
+            <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
+          </el-option-group>
+          <el-option-group :label="$t('m.sort')">
+            <el-option :label="$t('m.shuffle')" value="shuffle"></el-option>
+            <el-option :label="$t('m.addTimeAscend')" value="addAscend"></el-option>
+            <el-option :label="$t('m.addTimeDescend')" value="addDescend"></el-option>
+            <el-option :label="$t('m.mtimeAscend')" value="mtimeAscend"></el-option>
+            <el-option :label="$t('m.mtimeDescend')" value="mtimeDescend"></el-option>
+            <el-option :label="$t('m.postTimeAscend')" value="postAscend"></el-option>
+            <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
+            <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
+            <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
+            <el-option :label="$t('m.artistAscend')" value="artistAscend"></el-option>
+            <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
+            <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
+            <el-option :label="$t('m.titleDescend')" value="titleDescend"></el-option>
+          </el-option-group>
         </el-select>
       </el-col>
       <el-col :span="4">
@@ -89,6 +93,9 @@
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
+          </el-col>
+          <el-col :span="6" v-if="editCollectionView">
+            <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
         </el-row>
       </el-col>
@@ -237,11 +244,16 @@
     ></Graph>
     <el-drawer v-model="drawerVisibleCollection"
       direction="btt"
-      size="80vh"
+      size="calc(100vh - 60px)"
       destroy-on-close
       class="collection-drawer"
     >
-      <template #header><p class="open-collection-title">{{openCollectionTitle}}</p></template>
+      <template #header>
+        <div>
+          <span class="open-collection-title">{{openCollectionTitle}}</span>
+          <el-button type="primary" :icon="Edit" plain link class="collection-edit-button" @click="editCurrentCollection"/>
+        </div>
+      </template>
       <div
         v-for="(book, index) in openCollectionBookList"
         :key="book.id"
@@ -424,16 +436,17 @@
     <SearchDialog
       ref="SearchDialogRef"
       :cookie="cookie"
+      :search-type-list="searchTypeList"
+      :setting="setting"
       @message="printMessage"
       @resolve-search-result="resolveSearchResult"
     ></SearchDialog>
     <Setting
       ref="SettingRef"
+      :search-type-list="searchTypeList"
       @update-setting="updateSetting"
       @handle-language-set="handleLanguageSet"
       @message="printMessage"
-      @load-book-list="loadBookList"
-      @get-book-list-metadata="getBookListMetadata"
       @force-gene-book-list="forceGeneBookList"
       @patch-local-metadata="patchLocalMetadata"
       @export-database="exportDatabase"
@@ -448,9 +461,9 @@
 import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Setting as SettingIcon, FullScreen } from '@element-plus/icons-vue'
+import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
 import { Collections20Filled, Search32Filled, Rename16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
-import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload } from '@vicons/ionicons4'
+import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
@@ -481,7 +494,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      SettingIcon, FullScreen, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload,
+      SettingIcon, FullScreen, Edit, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload, MdExit,
       TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular,
     }
   },
@@ -541,6 +554,14 @@ export default defineComponent({
         'Cosplay',
         'Asian Porn',
         'Misc',
+      ],
+      searchTypeList: [
+        { label: "exhentai(sha1)", value: "exhentai" },
+        { label: "e-hentai(sha1)", value: "e-hentai" },
+        { label: "exhentai(keyword)", value: "exsearch" },
+        { label: "e-hentai(keyword)", value: "e-search" },
+        { label: "chaika(keyword)", value: "chaika" },
+        { label: "hentag(keyword)", value: "hentag" },
       ],
       keyMap: {
         normal: {
@@ -709,7 +730,7 @@ export default defineComponent({
   methods: {
     // base function
     currentUI () {
-      if (document.activeElement.tagName === 'INPUT') {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
         return 'inputing'
       }
       if (!!document.querySelector('.is-message-box')) {
@@ -943,11 +964,7 @@ export default defineComponent({
       }
     },
     switchFullscreen () {
-      if (document.fullscreenElement) {
-        document.exitFullscreen()
-      } else {
-        document.documentElement.requestFullscreen()
-      }
+      ipcRenderer.invoke('switch-fullscreen')
     },
     customChunk (list, size, index) {
       let result = []
@@ -964,20 +981,12 @@ export default defineComponent({
       })
       return result
     },
-    returnFileName (book) {
-      // Windows only
-      if (book.type === 'folder') {
-        return book.filepath.replace(/^.*\\/g, '')
-      } else {
-        return book.filepath.replace(/^.*\\|\.[^.]*$/g, '')
-      }
-    },
     returnFileNameWithExt (filepath) {
-      // Windows only
-      let matched = /[^\\]+$/.exec(filepath)
-      if (matched) {
-        return matched[0]
-      }
+      return filepath.split(/[/\\]/).pop()
+    },
+    returnFileName (filepath) {
+      let fileNameWithExtension = this.returnFileNameWithExt(filepath)
+      return fileNameWithExtension.split('.').slice(0, -1).join('.') || fileNameWithExtension
     },
     sortList(label) {
       return (a, b)=>{
@@ -1010,6 +1019,7 @@ export default defineComponent({
         .then(res => {
           this.bookList = res
           this.loadCollectionList()
+          this.geneFolderTree()
         })
     },
     saveBook (book) {
@@ -1022,9 +1032,9 @@ export default defineComponent({
         case 'japaneseTitle':
           return book.title_jpn || book.title
         case 'filename':
-          return this.returnFileName(book)
+          return this.returnFileName(book.filepath)
         default:
-          return book.title_jpn || book.title || this.returnFileName(book)
+          return book.title_jpn || book.title || this.returnFileName(book.filepath)
       }
     },
     updateWindowTitle (book) {
@@ -1130,15 +1140,6 @@ export default defineComponent({
       book.status = 'tagged'
       await this.saveBook(book)
     },
-    getBookInfo (book) {
-      if (book.url.startsWith('https://panda.chaika.moe')) {
-        this.getBookInfoFromChaika(book)
-      } else if (book.url.startsWith('https://hentag.com')) {
-        this.getBookInfoFromHentag(book)
-      } else {
-        this.getBookInfoFromEh(book)
-      }
-    },
     async getBookInfoFromEh (book) {
       let match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
       ipcRenderer.invoke('post-data-ex', {
@@ -1199,42 +1200,17 @@ export default defineComponent({
         }
       })
     },
-    async getBookInfoFromEhFirstResult (book, server = 'e-hentai') {
-      let resolveEhFirstResult = async (book, htmlString)=>{
-        try {
-          let bookUrl = new DOMParser().parseFromString(htmlString, 'text/html').querySelector('.gl3c.glname>a').getAttribute('href')
-          book.url = bookUrl
-          await this.getBookInfoFromEh(book)
-        } catch (e) {
-          console.log(e)
-          if (htmlString.includes('Your IP address has been')) {
-            book.status = 'non-tag'
-            this.printMessage('error', 'Your IP address has been temporarily banned')
-            await this.saveBook(book)
-            this.serviceAvailable = false
-          } else {
-            book.status = 'tag-failed'
-            this.printMessage('error', 'Get tag failed')
-            await this.saveBook(book)
-          }
-        }
-      }
-      if (server === 'e-hentai') {
-        axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
-        .then(async res=>{
-          await resolveEhFirstResult(book, res.data)
-        })
-      } else if (server === 'exhentai') {
-        ipcRenderer.invoke('get-ex-webpage', {
-          url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
-          cookie: this.cookie
-        })
-        .then(async res=>{
-          await resolveEhFirstResult(book, res)
-        })
+    getBookInfo (book) {
+      if (book.url.startsWith('https://panda.chaika.moe')) {
+        this.getBookInfoFromChaika(book)
+      } else if (book.url.startsWith('https://hentag.com')) {
+        this.getBookInfoFromHentag(book)
+      } else {
+        this.getBookInfoFromEh(book)
       }
     },
     getBookListMetadata (server) {
+      if (!server) server = this.setting.defaultScraper || 'exhentai'
       this.$refs.SettingRef.dialogVisibleSetting = false
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
@@ -1247,13 +1223,20 @@ export default defineComponent({
       let load = async (gap) => {
         for (let i = 0; i < bookList.length; i++) {
           ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
+          let book = bookList[i]
           try {
             if (this.serviceAvailable) {
-              await this.getBookInfoFromEhFirstResult(bookList[i], server)
-              // this.printMessage('info', `Get Metadata ${i+1} of ${this.bookList.length}`)
+              let resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
+                book.hash.toUpperCase(),
+                this.$refs.SearchDialogRef.returnTrimFileName(book),
+                server
+              )
+              this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
               await timer(gap)
             }
           } catch (error) {
+            book.status = 'tag-failed'
+            await this.saveBook(book)
             console.error(error)
           }
         }
@@ -1328,15 +1311,15 @@ export default defineComponent({
           this.chunkList()
           break
         case 'titleAscend':
-          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a))).toReversed()
+          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a), undefined, {numeric: true, sensitivity: 'base'})).toReversed()
           this.chunkList()
           break
         case 'titleDescend':
-          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a)))
+          this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a), undefined, {numeric: true, sensitivity: 'base'}))
           this.chunkList()
           break
         default:
-          this.displayBookList = bookList
+          this.displayBookList = this.bookList
           this.chunkList()
           break
       }
@@ -1520,22 +1503,27 @@ export default defineComponent({
 
 
     // folder tree
-    geneFolderTree () {
+    openFolderTree () {
       this.sideVisibleFolderTree = !this.sideVisibleFolderTree
-      if (this.sideVisibleFolderTree) {
-        let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.isCollection)
-        ipcRenderer.invoke('get-folder-tree', bookList)
-        .then(data=>{
-          this.folderTreeData = data
-        })
+      if (this.sideVisibleFolderTree && _.isEmpty(this.folderTreeData)) {
+        this.geneFolderTree()
       }
+    },
+    geneFolderTree () {
+      let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.isCollection)
+      ipcRenderer.invoke('get-folder-tree', bookList)
+      .then(data=>{
+        this.folderTreeData = data
+      })
     },
     selectFolderTreeNode (selectNode) {
       if (selectNode.folderPath.length <= 1) {
         this.bookList.map(book=>book.folderHide = false)
+        this.chunkList()
       } else {
         let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
         this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+        this.chunkList()
       }
     },
 
@@ -1658,6 +1646,12 @@ export default defineComponent({
         return _.find(this.bookList, book => book.id === hash_id || book.hash === hash_id)
       }))
       this.openCollectionTitle = collection.title
+      this.selectCollection = collection.id
+    },
+    editCurrentCollection () {
+      this.drawerVisibleCollection = false
+      this.editCollectionView = true
+      this.handleSelectCollectionChange(this.selectCollection)
     },
 
     // detail view function
@@ -1922,9 +1916,6 @@ export default defineComponent({
           this.$i18n.locale = 'zh-CN'
           break
         case 'en-US':
-          this.locale = en
-          this.$i18n.locale = 'en-US'
-          break
         default:
           this.locale = en
           this.$i18n.locale = 'en-US'
@@ -2134,7 +2125,6 @@ body
   left: calc(50vw - 22px)
   border-width: 0
   opacity: 0
-  transition-delay: 0.2s
   z-index: 3000!important
   .el-icon
     width: 20px
@@ -2230,7 +2220,9 @@ body
   height: 18px
 
 .open-collection-title
-  margin: 0 10px
+  margin: 0 4px
+.collection-edit-button
+  margin-bottom: 2px
 
 .book-collect-card
   width: 138px

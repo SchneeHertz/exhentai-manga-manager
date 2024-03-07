@@ -5,21 +5,27 @@
     destroy-on-close
     class="dialog-search"
   >
-    <el-input v-model="searchStringDialog" @keyup.enter="getBookListFromWeb(bookDetail, searchTypeDialog)">
-      <template #prepend>
-        <el-select class="search-type-select" v-model="searchTypeDialog">
-          <el-option label="exhentai(sha1)" value="exhentai" />
-          <el-option label="e-hentai(sha1)" value="e-hentai" />
-          <el-option label="exhentai(keyword)" value="exsearch" />
-          <el-option label="e-hentai(keyword)" value="e-search" />
-          <el-option label="chaika(keyword)" value="chaika" />
-          <el-option label="hentag(keyword)" value="hentag" />
-        </el-select>
-      </template>
-      <template #append>
-        <el-button :icon="Search32Filled" @click="getBookListFromWeb(bookDetail, searchTypeDialog)"/>
-      </template>
-    </el-input>
+    <el-form :inline="true">
+      <el-form-item>
+        <el-input
+          v-model="searchStringDialog"
+          @keyup.enter="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+          class="search-input"
+        >
+          <template #append>
+            <el-select class="search-type-select" v-model="searchTypeDialog">
+              <el-option v-for="searchType in props.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+            </el-select>
+          </template>
+        </el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button
+          type="primary" plain :icon="Search32Filled"
+          @click="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+        />
+      </el-form-item>
+    </el-form>
     <div v-loading="searchResultLoading">
       <div class="search-result" v-if="ehSearchResultList.length > 0">
         <p
@@ -39,92 +45,78 @@ import { ref } from 'vue'
 import axios from 'axios'
 import { Search32Filled } from '@vicons/fluent'
 
-const props = defineProps(['cookie'])
+const props = defineProps(['cookie', 'searchTypeList', 'setting'])
 
 const emit = defineEmits(['message', 'resolveSearchResult'])
 
 const dialogVisibleEhSearch = ref(false)
 const searchResultLoading = ref(false)
 const searchStringDialog = ref('')
-const searchTypeDialog = ref('exhentai')
+const searchTypeDialog = ref('')
 const ehSearchResultList = ref([])
 const bookDetail = ref({})
 
 const openSearchDialog = (book, server) => {
+  if (!searchTypeDialog.value) searchTypeDialog.value = props.setting.defaultScraper || 'exhentai'
   dialogVisibleEhSearch.value = true
   bookDetail.value = _.cloneDeep(book)
   if (server) searchTypeDialog.value = server
   ehSearchResultList.value = []
-  searchStringDialog.value = returnFileName(bookDetail.value)
-  getBookListFromWeb(bookDetail.value, searchTypeDialog.value)
+  searchStringDialog.value = returnTrimFileName(bookDetail.value)
+  getBookListFromWeb(bookDetail.value.hash.toUpperCase(), searchStringDialog.value, searchTypeDialog.value)
 }
 
-const returnFileName = (book) => {
-  // Windows only
-  if (book.type === 'folder') {
-    return book.filepath.replace(/^.*\\/g, '')
-  } else {
-    return book.filepath.replace(/^.*\\|\.[^.]*$/g, '')
+const returnTrimFileName = (book) => {
+  let fileNameWithExtension = book.filepath.split(/[/\\]/).pop()
+  let fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.') || fileNameWithExtension
+  if (props.setting.trimTitleRegExp) {
+    return fileNameWithoutExtension.replace(new RegExp(props.setting.trimTitleRegExp, 'g'), '')
   }
+  return fileNameWithoutExtension
 }
 
-const getBookListFromWeb = (book, server = 'e-hentai') => {
+const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
+  let resultList = []
   searchResultLoading.value = true
   if (server === 'e-hentai') {
-    axios.get(`https://e-hentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`)
+    resultList = await axios.get(`https://e-hentai.org/?f_shash=${bookHash}&fs_similar=1&fs_exp=on&f_cats=689`)
     .then(res=>{
-      resolveEhentaiResult(res.data)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveEhentaiResult(res.data)
     })
   } else if (server === 'exhentai') {
-    ipcRenderer.invoke('get-ex-webpage', {
-      url: `https://exhentai.org/?f_shash=${book.hash.toUpperCase()}&fs_similar=1&fs_exp=on&f_cats=689`,
+    resultList = await ipcRenderer.invoke('get-ex-webpage', {
+      url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=1&fs_exp=on&f_cats=689`,
       cookie: props.cookie
     })
     .then(res=>{
-      resolveEhentaiResult(res)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveEhentaiResult(res)
     })
   } else if (server === 'e-search') {
-    axios.get(`https://e-hentai.org/?f_search=${encodeURI(searchStringDialog.value)}&f_cats=689`)
+    resultList = await axios.get(`https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=689`)
     .then(res=>{
-      resolveEhentaiResult(res.data)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveEhentaiResult(res.data)
     })
   } else if (server === 'exsearch') {
-    ipcRenderer.invoke('get-ex-webpage', {
-      url: `https://exhentai.org/?f_search=${encodeURI(searchStringDialog.value)}&f_cats=689`,
+    resultList = await ipcRenderer.invoke('get-ex-webpage', {
+      url: `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=689`,
       cookie: props.cookie
     })
     .then(res=>{
-      resolveEhentaiResult(res)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveEhentaiResult(res)
     })
   } else if (server === 'chaika') {
-    axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(searchStringDialog.value)}`)
+    resultList = await axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(title)}`)
     .then(res=>{
-      resolveChaikaResult(res.data)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveChaikaResult(res.data)
     })
   } else if (server === 'hentag') {
-    axios.get(`https://hentag.com/public/api/vault-search?t=${encodeURI(searchStringDialog.value)}`)
+    resultList = await axios.get(`https://hentag.com/public/api/vault-search?t=${encodeURI(title)}`)
     .then(res=>{
-      resolveHentagResult(res.data)
-    })
-    .finally(()=>{
-      searchResultLoading.value = false
+      return resolveHentagResult(res.data)
     })
   }
+  searchResultLoading.value = false
+  return resultList
 }
 
 const resolveEhentaiResult = (htmlString) => {
@@ -134,9 +126,11 @@ const resolveEhentaiResult = (htmlString) => {
     resultNodes.forEach((node)=>{
       ehSearchResultList.value.push({
         title: node.querySelector('.glink').innerHTML,
-        url: node.querySelector('a').getAttribute('href')
+        url: node.querySelector('a').getAttribute('href'),
+        type: 'e-hentai'
       })
     })
+    return ehSearchResultList.value
   } catch (e) {
     console.log(e)
     if (htmlString.includes('Your IP address has been')) {
@@ -156,6 +150,7 @@ const resolveChaikaResult = (htmlString) => {
       type: 'chaika'
     })
   })
+  return ehSearchResultList.value
 }
 const resolveHentagResult = (data) => {
   let resultList = data.works.slice(0, 10)
@@ -165,7 +160,8 @@ const resolveHentagResult = (data) => {
     if (findExUrl) {
       ehSearchResultList.value.push({
         title: result.title,
-        url: findExUrl
+        url: findExUrl,
+        type: 'e-hentai'
       })
     } else {
       ehSearchResultList.value.push({
@@ -175,11 +171,14 @@ const resolveHentagResult = (data) => {
       })
     }
   })
+  return ehSearchResultList.value
 }
 
 defineExpose({
   dialogVisibleEhSearch,
-  openSearchDialog
+  openSearchDialog,
+  returnTrimFileName,
+  getBookListFromWeb
 })
 
 </script>
@@ -188,6 +187,10 @@ defineExpose({
 .dialog-search
   .el-dialog__body
     padding: 5px 20px 16px
+  .el-form-item
+    margin-right: 4px
+  .search-input
+    width: calc(60vw - 96px)
   .search-type-select
     width: 160px
   .search-result-ind

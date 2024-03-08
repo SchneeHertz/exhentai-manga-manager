@@ -1442,6 +1442,7 @@ export default defineComponent({
           }
         })
       })
+      if (!this.sortValue) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue)
     },
     searchFromTag (tag, cat) {

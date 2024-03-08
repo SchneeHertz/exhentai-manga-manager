@@ -212,8 +212,11 @@ const viewerImageListDouble = computed(() => {
   }
 })
 
+const receiveThumbnailList = ref([])
+
 const thumbnailList = computed(()=>{
-  return _.chunk(viewerImageList.value, props.setting.thumbnailColumn || 10)
+  receiveThumbnailList.value = _.sortBy(receiveThumbnailList.value, 'index')
+  return _.chunk(receiveThumbnailList.value, props.setting.thumbnailColumn || 10)
 })
 
 
@@ -223,13 +226,17 @@ onMounted(()=>{
   imageStyleFit.value = localStorage.getItem('imageStyleFit') || 'window'
   viewerReadingProgress.value = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
 
-  ipcRenderer.on('manga-content', (event, arg)=>{
+  ipcRenderer.on('manga-image', (event, arg)=>{
     viewerImageList.value.push(arg)
+  })
+  ipcRenderer.on('manga-thumbnail-image', (event, arg)=>{
+    receiveThumbnailList.value.push(arg)
   })
 })
 
 const viewManga = (book) => {
   viewerImageList.value = []
+  receiveThumbnailList.value = []
   currentImageIndex.value = 0
   insertEmptyPage.value = false
   insertEmptyPageIndex.value = 1

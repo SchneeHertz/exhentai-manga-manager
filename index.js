@@ -562,24 +562,31 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
               break
           }
         }
-        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
-        switch (extname) {
-          case '.gif':
-            thumbnailPath = imageFilepath
-            break
-          default:
-            await sharp(imageFilepath)
-              .resize({ width: thumbnailWidth })
-              .toFile(thumbnailPath)
-            break
-        }
-        mainWindow.webContents.send('manga-content', {
+        mainWindow.webContents.send('manga-image', {
           id: `${bookId}_${index}`,
           index,
           filepath: imageFilepath,
-          thumbnailPath,
           width, height
         })
+        ;(async ()=>{
+          let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
+          switch (extname) {
+            case '.gif':
+              thumbnailPath = imageFilepath
+              break
+            default:
+              await sharp(imageFilepath)
+                .resize({ width: thumbnailWidth })
+                .toFile(thumbnailPath)
+              break
+          }
+          mainWindow.webContents.send('manga-thumbnail-image', {
+            id: `${bookId}_${index}`,
+            index,
+            filepath: imageFilepath,
+            thumbnailPath,
+          })
+        })()
       }
     }
   })()

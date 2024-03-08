@@ -190,7 +190,7 @@ defineExpose({
   .el-form-item
     margin-right: 4px
   .search-input
-    width: calc(60vw - 96px)
+    width: calc(60vw - 106px)
   .search-type-select
     width: 160px
   .search-result-ind

@@ -376,7 +376,7 @@
                 <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')" @change="saveBook(bookDetail)"></el-input>
               </div>
               <div class="edit-line">
-                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)">
+                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)" clearable>
                   <el-option v-for="cat in categoryOption" :value="cat" :key="cat">{{cat}}</el-option>
                 </el-select>
               </div>

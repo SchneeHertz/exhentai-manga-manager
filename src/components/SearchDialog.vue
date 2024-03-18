@@ -14,7 +14,7 @@
         >
           <template #append>
             <el-select class="search-type-select" v-model="searchTypeDialog">
-              <el-option v-for="searchType in props.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+              <el-option v-for="searchType in searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
             </el-select>
           </template>
         </el-input>

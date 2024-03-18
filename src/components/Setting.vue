@@ -184,7 +184,7 @@
                 <template #prepend><span class="setting-label">{{$t('m.defaultScraper')}}</span></template>
                 <template #append>
                   <el-select v-model="setting.defaultScraper" @change="saveSetting">
-                    <el-option v-for="searchType in props.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+                    <el-option v-for="searchType in searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
                   </el-select>
                 </template>
               </el-input>

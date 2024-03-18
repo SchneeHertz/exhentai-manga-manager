@@ -29,7 +29,7 @@
             />
             <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
           </div>
-          <div class="viewer-image-page" v-if="!props.setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
+          <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </div>
       <div v-else-if="imageStyleType === 'single'">
@@ -42,7 +42,7 @@
               @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex]?.filepath)"
             />
           </div>
-          <div class="viewer-image-page" v-if="!props.setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
+          <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
           <img
             :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
             class="viewer-image-preload"
@@ -70,7 +70,7 @@
           <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page">
             <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
           </div>
-          <div class="viewer-image-page" v-if="!props.setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
+          <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
         </div>
       </div>
     </div>
@@ -86,11 +86,11 @@
           <img
             :src="`${image.thumbnailPath}?id=${image.id}`"
             class="viewer-thumbnail"
-            :style="{width: `calc((100vw - 50px) / ${props.setting.thumbnailColumn || 10} - 16px)`}"
+            :style="{width: `calc((100vw - 50px) / ${setting.thumbnailColumn || 10} - 16px)`}"
             @click="handleClickThumbnail(image.id)"
             @contextmenu="onMangaImageContextMenu($event, image.filepath)"
           />
-          <div class="viewer-thunmnail-page">{{chunkIndex * (props.setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
+          <div class="viewer-thunmnail-page">{{chunkIndex * (setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
         </div>
       </el-space>
     </div>

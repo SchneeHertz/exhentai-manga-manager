@@ -48,7 +48,7 @@
         <el-button type="primary" :icon="MdRefresh" plain @click="loadBookList(true)" :title="$t('m.manualScan')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetExMetadata')"></el-button>
+        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="MdBulb" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>

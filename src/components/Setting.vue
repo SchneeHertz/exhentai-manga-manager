@@ -371,7 +371,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, h } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
@@ -482,14 +482,13 @@ const testProxy = () => {
 const autoCheckUpdates = (forceShowDialog) => {
   axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
   .then(res=>{
-    let { tag_name, html_url } = res.data
+    let { tag_name, html_url, body } = res.data
     if (tag_name && tag_name !== 'v' + version) {
       ElMessageBox.confirm(
+        h('pre', { innerHTML: body, style: 'font-family: Avenir, Helvetica, Arial, sans-serif'}),
         t('c.newVersion') + tag_name,
-        '',
         {
-          confirmButtonText: t('c.downloadUpdate'),
-          type: 'success'
+          confirmButtonText: t('c.downloadUpdate')
         }
       )
       .then(()=>{
@@ -498,7 +497,6 @@ const autoCheckUpdates = (forceShowDialog) => {
     } else if (forceShowDialog) {
       ElMessageBox.confirm(
         t('c.notNewVersion'),
-        '',
         {
           type: 'info',
           showCancelButton: false

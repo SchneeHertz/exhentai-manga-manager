@@ -315,6 +315,8 @@ const returnImageStyle = (image) => {
     const windowRatio = window.innerWidth / window.innerHeight
     switch (imageStyleType.value) {
       case 'scroll':
+        // With mode as % of window width, cap max width at 2x window width.
+        // With mode as % of image width, set min width at 2%.
         if (viewerImageWidth.value <= 2) {
           return returnImageStyleObject({width: viewerImageWidth.value * window.innerWidth})
         } else {

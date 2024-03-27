@@ -1681,7 +1681,7 @@ export default defineComponent({
     deleteLocalBook (book) {
       const deleteBook = ()=>{
         ipcRenderer.invoke('delete-local-book', book.filepath)
-        .then(()=>{
+        .finally(()=>{
           this.dialogVisibleBookDetail = false
           if (book.collectionHide) {
             _.forEach(this.collectionList, collection=>{

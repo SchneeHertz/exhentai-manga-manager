@@ -502,7 +502,7 @@ ipcMain.handle('use-new-cover', async (event, filepath) => {
   let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
   try {
     await fs.promises.copyFile(filepath, copyTempCoverPath)
-    await sharp(copyTempCoverPath)
+    await sharp(copyTempCoverPath, { failOnError: false })
     .resize(500, 707, {
       fit: 'contain',
       background: '#303133'
@@ -546,7 +546,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           await fs.promises.copyFile(imageFilepath, newFilepath)
           imageFilepath = newFilepath
         }
-        let { width, height } = await sharp(imageFilepath).metadata()
+        let { width, height } = await sharp(imageFilepath, { failOnError: false }).metadata()
         if (widthLimit !== 0 && width > widthLimit) {
           height = Math.floor(height * (widthLimit / width))
           width = widthLimit
@@ -555,31 +555,38 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
             case '.gif':
               break
             default:
-              await sharp(imageFilepath)
+              await sharp(imageFilepath, { failOnError: false })
                 .resize({ width })
                 .toFile(resizedFilepath)
               imageFilepath = resizedFilepath
               break
           }
         }
-        let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
-        switch (extname) {
-          case '.gif':
-            thumbnailPath = imageFilepath
-            break
-          default:
-            await sharp(imageFilepath)
-              .resize({ width: thumbnailWidth })
-              .toFile(thumbnailPath)
-            break
-        }
-        mainWindow.webContents.send('manga-content', {
+        mainWindow.webContents.send('manga-image', {
           id: `${bookId}_${index}`,
           index,
           filepath: imageFilepath,
-          thumbnailPath,
           width, height
         })
+        ;(async ()=>{
+          let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
+          switch (extname) {
+            case '.gif':
+              thumbnailPath = imageFilepath
+              break
+            default:
+              await sharp(imageFilepath, { failOnError: false })
+                .resize({ width: thumbnailWidth })
+                .toFile(thumbnailPath)
+              break
+          }
+          mainWindow.webContents.send('manga-thumbnail-image', {
+            id: `${bookId}_${index}`,
+            index,
+            filepath: imageFilepath,
+            thumbnailPath,
+          })
+        })()
       }
     }
   })()

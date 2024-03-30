@@ -68,7 +68,6 @@
     "patchWarning": "This operation will delete all current covers and update the local file properties",
     "patchLocalMetadata": "PatchLocalMeta",
     "batchGetMetadata": "BatchGetMetadata",
-    "batchGetExMetadata": "BatchGetExMetadata",
     "exportMetadata": "Export Metadata",
     "importMetadata": "Import Metadata",
     "importMetadataFromSqlite": "Import api_dump.sqlite",

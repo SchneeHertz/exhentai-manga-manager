@@ -48,7 +48,7 @@
         <el-button type="primary" :icon="MdRefresh" plain @click="loadBookList(true)" :title="$t('m.manualScan')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetExMetadata')"></el-button>
+        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="MdBulb" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
@@ -376,7 +376,7 @@
                 <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')" @change="saveBook(bookDetail)"></el-input>
               </div>
               <div class="edit-line">
-                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)">
+                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)" clearable>
                   <el-option v-for="cat in categoryOption" :value="cat" :key="cat">{{cat}}</el-option>
                 </el-select>
               </div>
@@ -1442,6 +1442,7 @@ export default defineComponent({
           }
         })
       })
+      if (!this.sortValue) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue)
     },
     searchFromTag (tag, cat) {
@@ -1680,7 +1681,7 @@ export default defineComponent({
     deleteLocalBook (book) {
       const deleteBook = ()=>{
         ipcRenderer.invoke('delete-local-book', book.filepath)
-        .then(()=>{
+        .finally(()=>{
           this.dialogVisibleBookDetail = false
           if (book.collectionHide) {
             _.forEach(this.collectionList, collection=>{

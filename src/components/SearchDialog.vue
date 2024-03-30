@@ -14,7 +14,7 @@
         >
           <template #append>
             <el-select class="search-type-select" v-model="searchTypeDialog">
-              <el-option v-for="searchType in props.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+              <el-option v-for="searchType in searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
             </el-select>
           </template>
         </el-input>
@@ -190,7 +190,7 @@ defineExpose({
   .el-form-item
     margin-right: 4px
   .search-input
-    width: calc(60vw - 96px)
+    width: calc(60vw - 106px)
   .search-type-select
     width: 160px
   .search-result-ind

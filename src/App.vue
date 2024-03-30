@@ -723,8 +723,7 @@ export default defineComponent({
   },
   watch: {
     bookList () {
-      this.displayBookList = this.bookList
-      this.handleSortChange(this.sortValue)
+      this.handleSortChange(this.sortValue, this.bookList)
     }
   },
   methods: {
@@ -1251,8 +1250,8 @@ export default defineComponent({
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
-    handleSortChange (val) {
-      let bookList = this.displayBookList.length > 0 ? this.displayBookList : this.bookList
+    handleSortChange (val, bookList) {
+      if (!bookList) bookList = this.displayBookList
       switch(val){
         case 'mark':
           this.displayBookList = _.filter(bookList, 'mark')
@@ -1379,8 +1378,7 @@ export default defineComponent({
     handleSearchStringChange (val) {
       if (!val) {
         this.searchString = ''
-        this.displayBookList = this.bookList
-        this.handleSortChange(this.sortValue)
+        this.handleSortChange(this.sortValue, this.bookList)
         setTimeout(() => document.querySelector('.search-input .el-input__inner').blur(), 100)
       }
     },
@@ -1443,7 +1441,7 @@ export default defineComponent({
         })
       })
       if (!this.sortValue) this.sortValue = 'addDescend'
-      this.handleSortChange(this.sortValue)
+      this.handleSortChange(this.sortValue, this.displayBookList)
     },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
@@ -1573,8 +1571,7 @@ export default defineComponent({
             })
           }
         })
-        this.displayBookList = this.bookList
-        this.handleSortChange(this.sortValue)
+        this.handleSortChange(this.sortValue, this.bookList)
       })
     },
     createCollection () {

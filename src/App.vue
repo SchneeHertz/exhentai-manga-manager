@@ -230,8 +230,11 @@
     >
       <el-tree
         :data="folderTreeData"
-        :default-expand-all="setting.defaultExpandTree"
+        node-key="folderPath"
+        :default-expanded-keys="expandNodes"
         :expand-on-click-node="false"
+        @node-expand="handleNodeExpand"
+        @node-collapse="handleNodeCollapse"
         @current-change="selectFolderTreeNode"
       ></el-tree>
     </el-drawer>
@@ -351,9 +354,9 @@
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain type="danger" @click="deleteLocalBook(bookDetail)">{{$t('m.delete')}}</el-button>
+            <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">{{$t('m.delete')}}</el-button>
             <el-button plain @click="rescanBook(bookDetail)">{{$t('m.rescan')}}</el-button>
-            <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
+            <el-button type="primary" plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
         <el-col :span="setting.showComment ? 10 : 18">
@@ -504,6 +507,7 @@ export default defineComponent({
       sideVisibleFolderTree: false,
       editCollectionView: false,
       drawerVisibleCollection: false,
+      pathSep: '\\',
       // home
       bookList: [],
       displayBookList: [],
@@ -514,6 +518,7 @@ export default defineComponent({
       sortValue: undefined,
       _currentPage: 1,
       folderTreeData: [],
+      expandNodes: [],
       progress: 0,
       // collection
       selectCollection: undefined,
@@ -682,7 +687,9 @@ export default defineComponent({
         this.loadBookList()
       }
     })
+    this.pathSep = ipcRenderer.sendSync('get-path-sep')
     this.sortValue = localStorage.getItem('sortValue')
+    this.expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
     window.addEventListener('keydown', this.resolveKey)
     window.addEventListener('wheel', this.resolveWheel)
     window.addEventListener('mousedown', this.resolveMouseDown)
@@ -983,9 +990,10 @@ export default defineComponent({
     returnFileNameWithExt (filepath) {
       return filepath.split(/[/\\]/).pop()
     },
-    returnFileName (filepath) {
-      let fileNameWithExtension = this.returnFileNameWithExt(filepath)
-      return fileNameWithExtension.split('.').slice(0, -1).join('.') || fileNameWithExtension
+    returnFileName (book) {
+      let fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
+      if (book.type === 'folder') return fileNameWithExtension
+      return fileNameWithExtension.split('.').slice(0, -1).join('.')
     },
     sortList(label) {
       return (a, b)=>{
@@ -1031,9 +1039,9 @@ export default defineComponent({
         case 'japaneseTitle':
           return book.title_jpn || book.title
         case 'filename':
-          return this.returnFileName(book.filepath)
+          return this.returnFileName(book)
         default:
-          return book.title_jpn || book.title || this.returnFileName(book.filepath)
+          return book.title_jpn || book.title || this.returnFileName(book)
       }
     },
     updateWindowTitle (book) {
@@ -1515,15 +1523,19 @@ export default defineComponent({
         this.folderTreeData = data
       })
     },
-    selectFolderTreeNode (selectNode) {
-      if (selectNode.folderPath.length <= 1) {
-        this.bookList.map(book=>book.folderHide = false)
-        this.chunkList()
-      } else {
-        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
-        this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
-        this.chunkList()
-      }
+    async selectFolderTreeNode (selectNode) {
+      let clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath
+      this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+      this.chunkList()
+    },
+    handleNodeExpand (nodeObject) {
+      this.expandNodes.push(nodeObject.folderPath)
+      this.expandNodes = _.uniq(this.expandNodes)
+      localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
+    },
+    handleNodeCollapse (nodeObject) {
+      this.expandNodes = _.filter(this.expandNodes, path=>path !== nodeObject.folderPath)
+      localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
     },
 
     // tag analysis and recommand search

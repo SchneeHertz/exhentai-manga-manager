@@ -458,13 +458,13 @@ ipcMain.handle('get-folder-tree', async (event, bookList) => {
       if (_.isEmpty(node)) {
         preRoot.push({
           label: trueLabel,
-          folderPath: [...initFolder, trueLabel]
+          folderPath: [...initFolder, trueLabel].slice(1).join(path.sep),
         })
       } else {
         preRoot.push({
           label: trueLabel,
-          folderPath: [...initFolder, trueLabel],
-          children: resolveTree([], node, [...initFolder, trueLabel])
+          folderPath: [...initFolder, trueLabel].slice(1).join(path.sep),
+          children: resolveTree([], node, [...initFolder, trueLabel]),
         })
       }
     })
@@ -743,6 +743,8 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
   }
 })
 
+// tools
+
 ipcMain.handle('set-progress-bar', async (event, progress) => {
   setProgressBar(progress)
 })
@@ -775,4 +777,8 @@ ipcMain.handle('update-window-title', async (event, title) => {
 
 ipcMain.handle('switch-fullscreen', async (event, arg) => {
   mainWindow.setFullScreen(!mainWindow.isFullScreen())
+})
+
+ipcMain.on('get-path-sep', async (event, arg) => {
+  event.returnValue = path.sep
 })

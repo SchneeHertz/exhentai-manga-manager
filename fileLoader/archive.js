@@ -71,6 +71,11 @@ let getImageListFromArchive = async (filepath, VIEWER_PATH)=>{
   return list
 }
 
+let deleteImageFromArchive = async (filename, filepath) => {
+  await spawnPromise(_7z, ['d', filepath, filename, '-p123456'])
+  return true
+}
+
 let spawnPromise = (commmand, argument)=>{
   return new Promise((resolve, reject)=>{
     const spawned = spawn(commmand, argument)
@@ -94,5 +99,6 @@ let spawnPromise = (commmand, argument)=>{
 module.exports = {
   getArchivelist,
   solveBookTypeArchive,
-  getImageListFromArchive
+  getImageListFromArchive,
+  deleteImageFromArchive
 }

@@ -3,8 +3,8 @@ const path = require('node:path')
 const { nanoid } = require('nanoid')
 const { createHash } = require('crypto')
 const sharp = require('sharp')
-const { getFolderlist, solveBookTypeFolder, getImageListFromFolder } = require('./folder.js')
-const { getArchivelist, solveBookTypeArchive, getImageListFromArchive } = require('./archive.js')
+const { getFolderlist, solveBookTypeFolder, getImageListFromFolder, deleteImageFromFolder } = require('./folder.js')
+const { getArchivelist, solveBookTypeArchive, getImageListFromArchive, deleteImageFromArchive } = require('./archive.js')
 const { getZipFilelist, solveBookTypeZip } = require('./zip.js')
 const { TEMP_PATH, COVER_PATH, VIEWER_PATH } = require('../modules/init_folder_setting.js')
 
@@ -63,8 +63,21 @@ const getImageListByBook = async (filepath, type) => {
   }
 }
 
+const deleteImageFromBook = async (filename, filepath, type) => {
+  switch (type) {
+    case 'folder':
+      return await deleteImageFromFolder(filename, filepath)
+    case 'zip':
+    case 'archive':
+      return await deleteImageFromArchive(filename, filepath)
+    default:
+      return await deleteImageFromArchive(filename, filepath)
+  }
+}
+
 module.exports = {
   getBookFilelist,
   geneCover,
-  getImageListByBook
+  getImageListByBook,
+  deleteImageFromBook
 }

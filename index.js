@@ -16,7 +16,7 @@ const windowStateKeeper = require('electron-window-state')
 
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
-const { getBookFilelist, geneCover, getImageListByBook } = require('./fileLoader/index.js')
+const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
 const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, preparePath } = require('./modules/init_folder_setting.js')
 
 
@@ -562,9 +562,11 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
               break
           }
         }
+        let filename = path.basename(list[index - 1])
         mainWindow.webContents.send('manga-image', {
           id: `${bookId}_${index}`,
           index,
+          filename,
           filepath: imageFilepath,
           width, height
         })
@@ -583,6 +585,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           mainWindow.webContents.send('manga-thumbnail-image', {
             id: `${bookId}_${index}`,
             index,
+            filename,
             filepath: imageFilepath,
             thumbnailPath,
           })
@@ -598,6 +601,9 @@ ipcMain.handle('release-sendimagelock', () => {
   sendImageLock = false
 })
 
+ipcMain.handle('delete-image', async (event, filename, filepath, type) => {
+  return await deleteImageFromBook(filename, filepath, type)
+})
 
 // setting
 ipcMain.handle('select-folder', async (event, type) => {

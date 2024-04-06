@@ -142,6 +142,8 @@
     "canceled": "已取消",
     "copyImageToClipboard": "复制图片到剪贴板",
     "designateAsCover": "指定为封面",
+    "deleteImage": "删除图片",
+    "deleteImageError": "删除图片发生错误",
     "cancel": "取消",
     "copyTitleToClipboard": "复制漫画名到剪贴板",
     "copyLinkToClipboard": "复制链接到剪贴板",

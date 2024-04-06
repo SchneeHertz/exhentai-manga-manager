@@ -142,6 +142,8 @@
     "canceled": "Canceled",
     "copyImageToClipboard": "Copy Image to Clipboard",
     "designateAsCover": "Designate as Cover",
+    "deleteImage": "Delete Image",
+    "deleteImageError": "Delete Image Error",
     "cancel": "Cancel",
     "copyTitleToClipboard": "Copy Title to Clipboard",
     "copyLinkToClipboard": "Copy Link to Clipboard",

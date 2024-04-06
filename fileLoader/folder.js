@@ -1,8 +1,8 @@
 const path = require('path')
 const { globIterate, globSync } = require('glob')
 const { nanoid } = require('nanoid')
-const _ = require('lodash')
 const { readdir, stat } = require('fs/promises')
+const { shell } = require('electron')
 
 const dirSize = async dir => {
   const files = await readdir( dir, { withFileTypes: true } )
@@ -60,8 +60,15 @@ let getImageListFromFolder = async (folderpath, VIEWER_PATH)=>{
   return list
 }
 
+let deleteImageFromFolder = async (filename, folderpath) => {
+  let filepath = path.join(folderpath, filename)
+  await shell.trashItem(filepath)
+  return true
+}
+
 module.exports = {
   getFolderlist,
   solveBookTypeFolder,
-  getImageListFromFolder
+  getImageListFromFolder,
+  deleteImageFromFolder
 }

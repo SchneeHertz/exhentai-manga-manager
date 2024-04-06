@@ -25,7 +25,7 @@
               :src="`${image.filepath}?id=${image.id}`"
               class="viewer-image"
               :style="{height: returnImageStyle(image).height}"
-              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+              @contextmenu="onMangaImageContextMenu($event, image)"
             />
             <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
           </div>
@@ -39,7 +39,7 @@
               :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
               class="viewer-image"
               :style="{height: returnImageStyle(viewerImageList[currentImageIndex])?.height}"
-              @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex]?.filepath)"
+              @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex])"
             />
           </div>
           <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
@@ -61,7 +61,7 @@
               :src="`${image.filepath}?id=${image.id}`"
               class="viewer-image"
               :style="{height: returnImageStyle(image).height}"
-              @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+              @contextmenu="onMangaImageContextMenu($event, image)"
             />
           </div>
           <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page">
@@ -88,7 +88,7 @@
             class="viewer-thumbnail"
             :style="{width: `calc((100vw - 50px) / ${setting.thumbnailColumn || 10} - 16px)`}"
             @click="handleClickThumbnail(image.id)"
-            @contextmenu="onMangaImageContextMenu($event, image.filepath)"
+            @contextmenu="onMangaImageContextMenu($event, image)"
           />
           <div class="viewer-thunmnail-page">{{chunkIndex * (setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
         </div>
@@ -529,7 +529,7 @@ const handleJumpToReadingProgress = async (book) => {
   }
 }
 
-const onMangaImageContextMenu = (e, filepath) => {
+const onMangaImageContextMenu = (e, image) => {
   e.preventDefault()
   ContextMenu.showContextMenu({
     x: e.x,
@@ -538,13 +538,25 @@ const onMangaImageContextMenu = (e, filepath) => {
       {
         label: t('c.copyImageToClipboard'),
         onClick: () => {
-          ipcRenderer.invoke('copy-image-to-clipboard', filepath)
+          ipcRenderer.invoke('copy-image-to-clipboard', image.filepath)
         }
       },
       {
         label: t('c.designateAsCover'),
         onClick: () => {
-          emit('useNewCover', filepath)
+          emit('useNewCover', image.filepath)
+        }
+      },
+      {
+        label: t('c.deleteImage'),
+        onClick: async () => {
+          let deleteResult = await ipcRenderer.invoke('delete-image', image.filename, props.bookDetail.filepath, props.bookDetail.type)
+          if (deleteResult) {
+            viewerImageList.value = viewerImageList.value.filter(item=>item.id !== image.id)
+            receiveThumbnailList.value = receiveThumbnailList.value.filter(item=>item.id !== image.id)
+          } else {
+            emit('message', 'error', t('c.deleteImageError'))
+          }
         }
       }
     ]

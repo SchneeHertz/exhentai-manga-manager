@@ -384,9 +384,11 @@
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
-                  filterable clearable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
-                  <el-option v-for="tag in editTagOptions" :key="tag.value" :value="tag.value" >{{tag.label}}</el-option>
+                <el-select
+                  v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
+                  filterable clearable allow-create multiple :teleported="false"
+                >
+                  <el-option v-for="tag in arr" :key="tag.value" :value="tag.value" :label="tag.label" />
                 </el-select>
               </div>
               <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
@@ -1811,18 +1813,6 @@ export default defineComponent({
       .catch(() => {
         this.printMessage('info', this.$t('c.canceled'))
       })
-    },
-    editTagsFetch (arr) {
-      return (str) => {
-        if (str) {
-          this.editTagOptions = _.filter(arr, tag=>tag.label.includes(str))
-        } else {
-          this.editTagOptions = arr
-        }
-      }
-    },
-    editTagFocus (e, arr) {
-      setTimeout(this.editTagsFetch(arr), 200)
     },
 
     // copy and paste tag

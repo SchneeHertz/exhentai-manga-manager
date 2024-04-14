@@ -51,7 +51,7 @@
         <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="MdBulb" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
+        <el-button :icon="Lightbulb16Regular" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="SettingIcon" plain @click="$refs.SettingRef.dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
@@ -86,13 +86,13 @@
             <el-button plain @click="createCollection" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="addCollection" :icon="Collections20Filled" :title="$t('m.addCollection')"></el-button>
+            <el-button type="primary" plain @click="addCollection" :icon="Collections24Regular" :title="$t('m.addCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="renameCollection" :icon="Rename16Regular" :title="$t('m.renameCollection')"></el-button>
+            <el-button type="primary" plain @click="editCollection" :icon="Edit" :title="$t('m.editCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
+            <el-button type="primary" plain @click="saveCollection" :icon="Save16Regular" :title="$t('m.save')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
@@ -380,7 +380,7 @@
               </div>
               <div class="edit-line">
                 <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)" clearable>
-                  <el-option v-for="cat in categoryOption" :value="cat" :key="cat">{{cat}}</el-option>
+                  <el-option v-for="cat in categoryOption" :value="cat" :key="cat" :label="cat" />
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
@@ -467,8 +467,8 @@ import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
-import { Collections20Filled, Search32Filled, Rename16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
-import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
+import { Lightbulb16Regular, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
+import { MdShuffle, IosRemoveCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
@@ -499,8 +499,10 @@ export default defineComponent({
   },
   setup () {
     return {
-      SettingIcon, FullScreen, Edit, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload, MdExit,
-      TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular,
+      SettingIcon, FullScreen, Edit,
+      Collections24Regular, Search32Filled, Lightbulb16Regular, Save16Regular,
+      MdRefresh, MdCodeDownload, MdExit, MdShuffle,
+      TreeViewAlt, CicsSystemGroup
     }
   },
   data () {
@@ -1608,18 +1610,32 @@ export default defineComponent({
         this.printMessage('info', this.$t('c.canceled'))
       })
     },
-    renameCollection () {
+    editCollection () {
       if (_.has(this.selectCollectionObject, 'title')) {
-        ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.renameCollection'), {
-          inputValue: this.selectCollectionObject.title
+        ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.editCollection'), {
+          inputValue: this.selectCollectionObject.title,
+          cancelButtonText: this.$t('c.deleteCollection'),
+          distinguishCancelAndClose: true
         })
         .then(({ value }) => {
           this.selectCollectionObject.title = value
         })
-        .catch(() => {
-          this.printMessage('info', this.$t('c.canceled'))
+        .catch((action) => {
+          if (action === 'cancel') {
+            this.deleteCollection()
+          } else {
+            this.printMessage('info', this.$t('c.canceled'))
+          }
         })
       }
+    },
+    deleteCollection () {
+      this.collectionList = _.filter(this.collectionList, c => c.id !== this.selectCollection)
+      this.selectCollection = undefined
+      this.selectCollectionObject = { list: [] }
+      _.forEach(this.bookList, book => {
+        book.collected = false
+      })
     },
     saveCollection () {
       this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(_.compact(c.list)))
@@ -1627,13 +1643,13 @@ export default defineComponent({
       .then(()=>{
         this.loadBookList(false)
         this.selectCollection = undefined,
-        this.selectCollectionObject = {list:[]}
+        this.selectCollectionObject = { list: [] }
       })
       this.editCollectionView = false
     },
     handleSelectCollectionChange (val) {
-      this.selectCollectionObject= _.find(this.collectionList, {id: val})
-      _.forEach(this.bookList, book=>{
+      this.selectCollectionObject = _.find(this.collectionList, {id: val})
+      _.forEach(this.bookList, book => {
         if (!book.isCollection) {
           if (this.selectCollectionObject.list.includes(book.id) || this.selectCollectionObject.list.includes(book.hash)) {
             book.collected = true

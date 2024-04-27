@@ -1,7 +1,7 @@
 {
   "name": "exhentai-manga-manager",
   "private": true,
-  "version": "1.5.14",
+  "version": "1.5.15",
   "author": "SchneeHertz",
   "description": "Tag-based management, reading manga downloaded from ExHentai",
   "repository": {

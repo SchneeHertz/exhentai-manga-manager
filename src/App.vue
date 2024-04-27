@@ -51,7 +51,7 @@
         <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="MdBulb" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
+        <el-button :icon="Lightbulb16Regular" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="SettingIcon" plain @click="$refs.SettingRef.dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
@@ -86,13 +86,13 @@
             <el-button plain @click="createCollection" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="addCollection" :icon="Collections20Filled" :title="$t('m.addCollection')"></el-button>
+            <el-button type="primary" plain @click="addCollection" :icon="Collections24Regular" :title="$t('m.addCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="renameCollection" :icon="Rename16Regular" :title="$t('m.renameCollection')"></el-button>
+            <el-button type="primary" plain @click="editCollection" :icon="Edit" :title="$t('m.editCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="saveCollection" :icon="MdSave" :title="$t('m.save')"></el-button>
+            <el-button type="primary" plain @click="saveCollection" :icon="Save16Regular" :title="$t('m.save')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
@@ -230,8 +230,11 @@
     >
       <el-tree
         :data="folderTreeData"
-        :default-expand-all="setting.defaultExpandTree"
+        node-key="folderPath"
+        :default-expanded-keys="expandNodes"
         :expand-on-click-node="false"
+        @node-expand="handleNodeExpand"
+        @node-collapse="handleNodeCollapse"
         @current-change="selectFolderTreeNode"
       ></el-tree>
     </el-drawer>
@@ -351,9 +354,9 @@
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button plain type="danger" @click="deleteLocalBook(bookDetail)">{{$t('m.delete')}}</el-button>
+            <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">{{$t('m.delete')}}</el-button>
             <el-button plain @click="rescanBook(bookDetail)">{{$t('m.rescan')}}</el-button>
-            <el-button plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
+            <el-button type="primary" plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
         </el-col>
         <el-col :span="setting.showComment ? 10 : 18">
@@ -377,13 +380,15 @@
               </div>
               <div class="edit-line">
                 <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)" clearable>
-                  <el-option v-for="cat in categoryOption" :value="cat" :key="cat">{{cat}}</el-option>
+                  <el-option v-for="cat in categoryOption" :value="cat" :key="cat" :label="cat" />
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
-                  filterable clearable allow-create multiple :filter-method="editTagsFetch(arr)" @focus="editTagFocus($event, arr)">
-                  <el-option v-for="tag in editTagOptions" :key="tag.value" :value="tag.value" >{{tag.label}}</el-option>
+                <el-select
+                  v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
+                  filterable clearable allow-create multiple :teleported="false"
+                >
+                  <el-option v-for="tag in arr" :key="tag.value" :value="tag.value" :label="tag.label" />
                 </el-select>
               </div>
               <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
@@ -462,8 +467,8 @@ import { defineComponent } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
-import { Collections20Filled, Search32Filled, Rename16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
-import { MdShuffle, MdBulb, MdSave, IosRemoveCircleOutline, MdInformationCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
+import { Lightbulb16Regular, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
+import { MdShuffle, IosRemoveCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
 import he from 'he'
@@ -494,8 +499,10 @@ export default defineComponent({
   },
   setup () {
     return {
-      SettingIcon, FullScreen, Edit, Collections20Filled, Search32Filled, MdShuffle, MdBulb, MdSave, MdRefresh, MdCodeDownload, MdExit,
-      TreeViewAlt, CicsSystemGroup, MdInformationCircleOutline, Rename16Regular,
+      SettingIcon, FullScreen, Edit,
+      Collections24Regular, Search32Filled, Lightbulb16Regular, Save16Regular,
+      MdRefresh, MdCodeDownload, MdExit, MdShuffle,
+      TreeViewAlt, CicsSystemGroup
     }
   },
   data () {
@@ -504,6 +511,7 @@ export default defineComponent({
       sideVisibleFolderTree: false,
       editCollectionView: false,
       drawerVisibleCollection: false,
+      pathSep: '\\',
       // home
       bookList: [],
       displayBookList: [],
@@ -514,6 +522,7 @@ export default defineComponent({
       sortValue: undefined,
       _currentPage: 1,
       folderTreeData: [],
+      expandNodes: [],
       progress: 0,
       // collection
       selectCollection: undefined,
@@ -682,7 +691,9 @@ export default defineComponent({
         this.loadBookList()
       }
     })
+    this.pathSep = ipcRenderer.sendSync('get-path-sep')
     this.sortValue = localStorage.getItem('sortValue')
+    this.expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
     window.addEventListener('keydown', this.resolveKey)
     window.addEventListener('wheel', this.resolveWheel)
     window.addEventListener('mousedown', this.resolveMouseDown)
@@ -723,8 +734,7 @@ export default defineComponent({
   },
   watch: {
     bookList () {
-      this.displayBookList = this.bookList
-      this.handleSortChange(this.sortValue)
+      this.handleSortChange(this.sortValue, this.bookList)
     }
   },
   methods: {
@@ -984,9 +994,10 @@ export default defineComponent({
     returnFileNameWithExt (filepath) {
       return filepath.split(/[/\\]/).pop()
     },
-    returnFileName (filepath) {
-      let fileNameWithExtension = this.returnFileNameWithExt(filepath)
-      return fileNameWithExtension.split('.').slice(0, -1).join('.') || fileNameWithExtension
+    returnFileName (book) {
+      let fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
+      if (book.type === 'folder') return fileNameWithExtension
+      return fileNameWithExtension.split('.').slice(0, -1).join('.')
     },
     sortList(label) {
       return (a, b)=>{
@@ -1032,9 +1043,9 @@ export default defineComponent({
         case 'japaneseTitle':
           return book.title_jpn || book.title
         case 'filename':
-          return this.returnFileName(book.filepath)
+          return this.returnFileName(book)
         default:
-          return book.title_jpn || book.title || this.returnFileName(book.filepath)
+          return book.title_jpn || book.title || this.returnFileName(book)
       }
     },
     updateWindowTitle (book) {
@@ -1251,8 +1262,8 @@ export default defineComponent({
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
-    handleSortChange (val) {
-      let bookList = this.displayBookList.length > 0 ? this.displayBookList : this.bookList
+    handleSortChange (val, bookList) {
+      if (!bookList) bookList = this.displayBookList
       switch(val){
         case 'mark':
           this.displayBookList = _.filter(bookList, 'mark')
@@ -1379,8 +1390,7 @@ export default defineComponent({
     handleSearchStringChange (val) {
       if (!val) {
         this.searchString = ''
-        this.displayBookList = this.bookList
-        this.handleSortChange(this.sortValue)
+        this.handleSortChange(this.sortValue, this.bookList)
         setTimeout(() => document.querySelector('.search-input .el-input__inner').blur(), 100)
       }
     },
@@ -1443,7 +1453,7 @@ export default defineComponent({
         })
       })
       if (!this.sortValue) this.sortValue = 'addDescend'
-      this.handleSortChange(this.sortValue)
+      this.handleSortChange(this.sortValue, this.displayBookList)
     },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
@@ -1517,15 +1527,19 @@ export default defineComponent({
         this.folderTreeData = data
       })
     },
-    selectFolderTreeNode (selectNode) {
-      if (selectNode.folderPath.length <= 1) {
-        this.bookList.map(book=>book.folderHide = false)
-        this.chunkList()
-      } else {
-        let clickLibraryPath = this.setting.library + '\\' + selectNode.folderPath.slice(1).join('\\')
-        this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
-        this.chunkList()
-      }
+    async selectFolderTreeNode (selectNode) {
+      let clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath
+      this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+      this.chunkList()
+    },
+    handleNodeExpand (nodeObject) {
+      this.expandNodes.push(nodeObject.folderPath)
+      this.expandNodes = _.uniq(this.expandNodes)
+      localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
+    },
+    handleNodeCollapse (nodeObject) {
+      this.expandNodes = _.filter(this.expandNodes, path=>path !== nodeObject.folderPath)
+      localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
     },
 
     // tag analysis and recommand search
@@ -1573,8 +1587,7 @@ export default defineComponent({
             })
           }
         })
-        this.displayBookList = this.bookList
-        this.handleSortChange(this.sortValue)
+        this.handleSortChange(this.sortValue, this.bookList)
       })
     },
     createCollection () {
@@ -1597,18 +1610,32 @@ export default defineComponent({
         this.printMessage('info', this.$t('c.canceled'))
       })
     },
-    renameCollection () {
+    editCollection () {
       if (_.has(this.selectCollectionObject, 'title')) {
-        ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.renameCollection'), {
-          inputValue: this.selectCollectionObject.title
+        ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.editCollection'), {
+          inputValue: this.selectCollectionObject.title,
+          cancelButtonText: this.$t('c.deleteCollection'),
+          distinguishCancelAndClose: true
         })
         .then(({ value }) => {
           this.selectCollectionObject.title = value
         })
-        .catch(() => {
-          this.printMessage('info', this.$t('c.canceled'))
+        .catch((action) => {
+          if (action === 'cancel') {
+            this.deleteCollection()
+          } else {
+            this.printMessage('info', this.$t('c.canceled'))
+          }
         })
       }
+    },
+    deleteCollection () {
+      this.collectionList = _.filter(this.collectionList, c => c.id !== this.selectCollection)
+      this.selectCollection = undefined
+      this.selectCollectionObject = { list: [] }
+      _.forEach(this.bookList, book => {
+        book.collected = false
+      })
     },
     saveCollection () {
       this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(_.compact(c.list)))
@@ -1616,13 +1643,13 @@ export default defineComponent({
       .then(()=>{
         this.loadBookList(false)
         this.selectCollection = undefined,
-        this.selectCollectionObject = {list:[]}
+        this.selectCollectionObject = { list: [] }
       })
       this.editCollectionView = false
     },
     handleSelectCollectionChange (val) {
-      this.selectCollectionObject= _.find(this.collectionList, {id: val})
-      _.forEach(this.bookList, book=>{
+      this.selectCollectionObject = _.find(this.collectionList, {id: val})
+      _.forEach(this.bookList, book => {
         if (!book.isCollection) {
           if (this.selectCollectionObject.list.includes(book.id) || this.selectCollectionObject.list.includes(book.hash)) {
             book.collected = true
@@ -1802,18 +1829,6 @@ export default defineComponent({
       .catch(() => {
         this.printMessage('info', this.$t('c.canceled'))
       })
-    },
-    editTagsFetch (arr) {
-      return (str) => {
-        if (str) {
-          this.editTagOptions = _.filter(arr, tag=>tag.label.includes(str))
-        } else {
-          this.editTagOptions = arr
-        }
-      }
-    },
-    editTagFocus (e, arr) {
-      setTimeout(this.editTagsFetch(arr), 200)
     },
 
     // copy and paste tag

@@ -170,7 +170,8 @@ const emit = defineEmits([
   'selectBook',
   'message',
   'updateOptions',
-  'updateWindowTitle'
+  'updateWindowTitle',
+  'rescanBook'
 ])
 
 const drawerVisibleViewer = ref(false)
@@ -554,6 +555,7 @@ const onMangaImageContextMenu = (e, image) => {
           if (deleteResult) {
             viewerImageList.value = viewerImageList.value.filter(item=>item.id !== image.id)
             receiveThumbnailList.value = receiveThumbnailList.value.filter(item=>item.id !== image.id)
+            emit('rescanBook', props.bookDetail)
           } else {
             emit('message', 'error', t('c.deleteImageError'))
           }

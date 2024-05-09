@@ -222,6 +222,7 @@
       @select-book="selectBook"
       @message="printMessage"
       @update-window-title="updateWindowTitle"
+      @rescan-book="rescanBook"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
       direction="ltr"

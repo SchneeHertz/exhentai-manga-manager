@@ -12,25 +12,9 @@
           :fetch-suggestions="querySearch"
           @keyup.enter="searchBook"
           @change="handleSearchStringChange"
-          @select="handleSearchBoxSelect"
           @input="handleInput"
           clearable
           class="search-input"
-          v-if="setting.advancedSearch"
-        >
-          <template #default="{ item }">
-            <span class="autocomplete-label">{{ item.label }}</span>
-            <span class="autocomplete-value">{{ item.value }}</span>
-          </template>
-        </el-autocomplete>
-        <el-autocomplete
-          v-model="searchString"
-          :fetch-suggestions="querySearchLegacy"
-          @keyup.enter="searchBook"
-          @change="handleSearchStringChange"
-          clearable
-          class="search-input"
-          v-else
         >
           <template #default="{ item }">
             <span class="autocomplete-label">{{ item.label }}</span>
@@ -519,7 +503,7 @@ export default defineComponent({
       chunkDisplayBookList: [],
       resolvedTranslation: {},
       locale: zhCn,
-      searchString: undefined,
+      searchString: '',
       sortValue: undefined,
       _currentPage: 1,
       folderTreeData: [],
@@ -625,7 +609,7 @@ export default defineComponent({
         let labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
         return {
           label: `${labelHeader}:${this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]}`,
-          value: `${letter}:"${tagArray[1]}"`
+          value: `${letter}:"${tagArray[1]}"$`
         }
       })
     },
@@ -1347,7 +1331,7 @@ export default defineComponent({
       if (queryString) {
         let keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
         if (!_.isEmpty(keywords)) {
-          let nextKeyword = queryString.slice(_.last(keywords).index).trim()
+          let nextKeyword = queryString.replaceAll(/(~|-)?(l|p|c|g|a|f|m|x|o|cos):"[ .\-a-zA-Z0-9]+"\$/g, '').trim()
           if (nextKeyword[0] === '-' || nextKeyword[0] === '~') {
             result = _.filter(options, str=>{
               return _.includes(str.value.toLowerCase(), nextKeyword.slice(1).toLowerCase())
@@ -1377,20 +1361,6 @@ export default defineComponent({
       }
       callback(result)
     },
-    querySearchLegacy (queryString, callback) {
-      let result = []
-      let options = this.customOptions.concat(this.tagList)
-      if (queryString) {
-        result = _.filter(options, str=>{
-          return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
-          || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
-        })
-      } else {
-        result = options
-      }
-      result.map(obj=>obj.value = obj.value.replace(/\|{3}/, ' '))
-      callback(result)
-    },
     handleSearchStringChange (val) {
       if (!val) {
         this.searchString = ''
@@ -1399,31 +1369,36 @@ export default defineComponent({
       }
     },
     handleInput (val) {
-      if (!this.searchString || val.search(this.searchString) !== -1 || this.searchString.search(val) !== -1) {
+      try {
+        if (/^(l|p|c|g|a|f|m|x|o|cos):"[ .\-a-zA-Z0-9]+"\$$/.test(val) && this.searchString.trim() !== val.trim()) {
+          let keywords = [...this.searchString.trim().matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
+          if (!_.isEmpty(keywords)) {
+            const keyword = this.searchString.replaceAll(/(~|-)?(l|p|c|g|a|f|m|x|o|cos):"[ .\-a-zA-Z0-9]+"\$/g, '').trim()
+            const matches = this.searchString.match(/(~|-)?(l|p|c|g|a|f|m|x|o|cos):"[ .\-a-zA-Z0-9]+"\$/g)
+            if (keyword[0] === '-') {
+              this.searchString = matches.concat([`-${val}`]).join(' ')
+            } else if (keyword[0] === '~') {
+              this.searchString = matches.concat([`~${val}`]).join(' ')
+            } else {
+              this.searchString = matches.concat([val]).join(' ')
+            }
+          } else {
+            const keyword = this.searchString.trim()
+            if (keyword[0] === '-') {
+              this.searchString = `-${val}`
+            } else if (keyword[0] === '~') {
+              this.searchString = `~${val}`
+            } else {
+              this.searchString = val
+            }
+          }
+        } else {
+          this.searchString = val
+          this.searchString = this.searchString.replace(/\|{3}/, ' ')
+        }
+      } catch {
         this.searchString = val
       }
-    },
-    handleSearchBoxSelect (item) {
-      let keywords = [...this.searchString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
-      if (!_.isEmpty(keywords)) {
-        let keywordIndex = _.last(keywords).index
-        if (this.searchString[keywordIndex+1] === '-') {
-          this.searchString = this.searchString.slice(0, keywordIndex) + ' -' + item.value
-        } else if (this.searchString[keywordIndex+1] === '~') {
-          this.searchString = this.searchString.slice(0, keywordIndex) + ' ~' + item.value
-        }else {
-          this.searchString = this.searchString.slice(0, keywordIndex) + ' ' + item.value
-        }
-      } else {
-        if (this.searchString[0] === '-') {
-          this.searchString = '-' + item.value
-        } else if (this.searchString[0] === '~') {
-          this.searchString = '~' + item.value
-        } else {
-          this.searchString = item.value
-        }
-      }
-      this.searchString = this.searchString.replace(/\|{3}/, ' ')
     },
     searchBook () {
       let searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
@@ -1464,9 +1439,9 @@ export default defineComponent({
       this.drawerVisibleCollection = false
       if (cat) {
         let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
-        this.searchString = `${letter}:"${tag}"`
+        this.searchString = `${letter}:"${tag}"$`
       } else {
-        this.searchString = `"${tag}"`
+        this.searchString = `"${tag}"$`
       }
       this.searchBook()
     },

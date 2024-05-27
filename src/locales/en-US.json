@@ -106,7 +106,6 @@
     "trimTitleRegExpInfo": "Regular expression for trimming titles, matches the part that needs to be trimmed.",
     "folderTreeWidth": "Folder Tree Width",
     "folderTreeWidthInfo": "Default is 20%, accept valid css values, like 400px, 30%, 25vw etc.",
-    "advancedSearch": "Advanced Search",
     "checkUpdates": "Check Updates",
     "autoCheckUpdates": "Auto Check Update",
     "batchTagfailedBook": "Also batch get metadata of tag-failed book",

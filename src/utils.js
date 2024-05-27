@@ -1,4 +1,5 @@
 function getWidth (el, type) {
+  if (el === null) return null
   if (type === 'inner') // .innerWidth()
     return el.clientWidth
   else if (type === 'outer') // .outerWidth()

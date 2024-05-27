@@ -292,13 +292,6 @@
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
-              v-model="setting.advancedSearch"
-              :active-text="$t('m.advancedSearch')"
-              @change="saveSetting"
-            />
-          </el-col>
-          <el-col :span="6" class="setting-switch">
-            <el-switch
               v-model="setting.autoCheckUpdates"
               :active-text="$t('m.autoCheckUpdates')"
               @change="saveSetting"
@@ -311,17 +304,17 @@
               @change="saveSetting"
             />
           </el-col>
-          <el-col :span="6" class="setting-switch">
-            <el-switch
-              v-model="setting.skipDeleteConfirm"
-              :active-text="$t('m.skipDeleteConfirm')"
-              @change="saveSetting"
-            />
-          </el-col>
           <el-col :span="12" class="setting-switch">
             <el-switch
               v-model="setting.onlyGetMetadataOfSelectedFolder"
               :active-text="$t('m.onlyGetMetadataOfSelectedFolder')"
+              @change="saveSetting"
+            />
+          </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.skipDeleteConfirm"
+              :active-text="$t('m.skipDeleteConfirm')"
               @change="saveSetting"
             />
           </el-col>

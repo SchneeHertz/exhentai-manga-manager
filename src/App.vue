@@ -1446,13 +1446,13 @@ export default defineComponent({
           if (_.isArray(condition)) {
             return _.every(condition, (str)=>{
               if (_.startsWith(str, '-')) {
-                return !bookString.includes(str.slice(1).replace(/["'$]/g, '').toLowerCase())
+                return !bookString.includes(str.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
               } else {
-                return bookString.includes(str.replace(/["'$]/g, '').toLowerCase())
+                return bookString.includes(str.replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
               }
             })
           } else {
-            return bookString.includes(condition.slice(1).replace(/["'$]/g, '').toLowerCase())
+            return bookString.includes(condition.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
           }
         })
       })

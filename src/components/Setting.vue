@@ -318,6 +318,13 @@
               @change="saveSetting"
             />
           </el-col>
+          <el-col :span="12" class="setting-switch">
+            <el-switch
+              v-model="setting.onlyGetMetadataOfSelectedFolder"
+              :active-text="$t('m.onlyGetMetadataOfSelectedFolder')"
+              @change="saveSetting"
+            />
+          </el-col>
         </el-row>
       </el-tab-pane>
       <el-tab-pane :label="$t('m.accelerator')" name="accelerator">

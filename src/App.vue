@@ -1232,6 +1232,9 @@ export default defineComponent({
       } else {
         bookList = this.bookList.filter(book=>book.status === 'non-tag')
       }
+      if (this.setting.onlyGetMetadataOfSelectedFolder) {
+        bookList = bookList.filter(book => !book.folderHide)
+      }
       let load = async (gap) => {
         for (let i = 0; i < bookList.length; i++) {
           ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)

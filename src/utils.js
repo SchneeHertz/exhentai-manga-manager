@@ -60,14 +60,14 @@ const acceleratorInfo = [
       'PreviousBook': 'PageUp',
       'NextBook': 'PageDown',
       'NextRandomBook': 'Shift+PageDown',
-      'PreviousPage': 'ArrowLeft / ArrowUp / WheelUp',
-      'NextPage': 'ArrowRight / ArrowDown / WheelDown',
       'ScrollUp': 'Ctrl+ArrowUp / Ctrl+ArrowLeft',
       'ScrollDown': 'Ctrl+ArrowDown / Ctrl+ArrowRight',
       'FirstPage': 'Home',
       'LastPage': 'End',
       'InsertEmptyPage': '/',
       'SwitchThumbnail': '=',
+      'PreviousPage': 'ArrowLeft / ArrowUp / WheelUp',
+      'NextPage': 'ArrowRight / ArrowDown / WheelDown / Space',
     }
   }
 ]

@@ -794,7 +794,7 @@ export default defineComponent({
       }
       if (this.currentUI() === 'viewer-content') {
         if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
-          if (event.key === next || event.key === 'ArrowDown') {
+          if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
             this.$refs.InternalViewerRef.currentImageIndex += 1
           }
           if (event.key === prev || event.key === 'ArrowUp') {
@@ -825,7 +825,7 @@ export default defineComponent({
               document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 1.2)
             }
           }
-          if (event.key === next || event.key === 'ArrowDown') {
+          if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
             if (event.ctrlKey) {
               document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 10)
             } else {

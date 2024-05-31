@@ -369,12 +369,12 @@
                 </el-select>
               </div>
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select
+                <el-select-v2
                   v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
                   filterable clearable allow-create multiple :teleported="false"
+                  :options="arr"
                 >
-                  <el-option v-for="tag in arr" :key="tag.value" :value="tag.value" :label="tag.label" />
-                </el-select>
+                </el-select-v2>
               </div>
               <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
               <el-button class="tag-edit-button" @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
@@ -2326,7 +2326,7 @@ body
       transition-delay: 0s
   .edit-line
     margin: 4px 0
-    .el-select
+    .el-select, .el-select-v2
       width: 100%
   .el-descriptions__label
     display: inline-block

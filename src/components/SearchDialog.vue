@@ -79,13 +79,13 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
   let resultList = []
   searchResultLoading.value = true
   if (server === 'e-hentai') {
-    resultList = await axios.get(`https://e-hentai.org/?f_shash=${bookHash}&fs_similar=1&fs_exp=on&f_cats=689`)
+    resultList = await axios.get(`https://e-hentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=689`)
     .then(res=>{
       return resolveEhentaiResult(res.data)
     })
   } else if (server === 'exhentai') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
-      url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=1&fs_exp=on&f_cats=689`,
+      url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=689`,
       cookie: props.cookie
     })
     .then(res=>{

@@ -182,7 +182,7 @@ const saveBookListToDatabase = async (data) => {
 
 const saveBookToDatabase = async (book) => {
   await Manga.update(book, { where: { id: book.id } })
-  await Metadata.update(book, { where: { hash: book.hash } })
+  await Metadata.upsert(book)
   console.log(`Saved ${book.title}`)
 }
 

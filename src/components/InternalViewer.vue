@@ -152,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Close } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
@@ -177,6 +177,7 @@ const emit = defineEmits([
 const drawerVisibleViewer = ref(false)
 const showThumbnail = ref(false)
 const viewerImageWidth = ref(0.9)
+watch(viewerImageWidth, () => localStorage.setItem('viewerImageWidth', viewerImageWidth.value))
 const imageStyleType = ref('scroll')
 const imageStyleFit = ref('window')
 const viewerReadingProgress = ref([])
@@ -406,7 +407,6 @@ const initResize = (id, originWidth) => {
     let stopResize = (e)=>{
       window.removeEventListener('mousemove', Resize, false)
       window.removeEventListener('mouseup', stopResize, false)
-      localStorage.setItem('viewerImageWidth', viewerImageWidth.value)
     }
     window.addEventListener('mousemove', Resize, false)
     window.addEventListener('mouseup', stopResize, false)

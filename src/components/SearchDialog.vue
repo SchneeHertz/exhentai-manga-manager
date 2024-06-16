@@ -68,9 +68,16 @@ const openSearchDialog = (book, server) => {
 
 const returnTrimFileName = (book) => {
   let fileNameWithExtension = book.filepath.split(/[/\\]/).pop()
-  let fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.') || fileNameWithExtension
-  if (props.setting.trimTitleRegExp) {
-    return fileNameWithoutExtension.replace(new RegExp(props.setting.trimTitleRegExp, 'g'), '')
+  let fileNameWithoutExtension = fileNameWithExtension
+  try {
+    if (book.type !== 'folder') {
+      fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.')
+    }
+    if (props.setting.trimTitleRegExp) {
+      return fileNameWithoutExtension.replace(new RegExp(props.setting.trimTitleRegExp, 'g'), '')
+    }
+  } catch (e) {
+    console.log(e)
   }
   return fileNameWithoutExtension
 }

@@ -371,7 +371,7 @@
               <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
                 <el-select-v2
                   v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
-                  filterable clearable allow-create multiple :teleported="false" :reserve-keyword="false"
+                  filterable clearable allow-create multiple :reserve-keyword="false" :height="340"
                   :options="arr"
                 >
                 </el-select-v2>

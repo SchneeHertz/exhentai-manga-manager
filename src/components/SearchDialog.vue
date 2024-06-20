@@ -192,8 +192,6 @@ defineExpose({
 
 <style lang="stylus">
 .dialog-search
-  .el-dialog__body
-    padding: 5px 20px 16px
   .el-form-item
     margin-right: 4px
   .search-input

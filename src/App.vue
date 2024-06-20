@@ -2280,8 +2280,6 @@ body
         svg
           height: 32px
           width: 32px
-  .el-dialog__body
-    padding: 5px 20px 16px
 
 
 .detail-book-title

@@ -539,9 +539,6 @@ defineExpose({
 </script>
 
 <style lang="stylus">
-.setting-dialog
-  .el-dialog__body
-    padding: 5px 20px 16px
 .setting-title
   margin:0
   text-align: center

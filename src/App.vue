@@ -14,6 +14,7 @@
           @change="handleSearchStringChange"
           @input="handleInput"
           clearable
+          :trigger-on-focus="false"
           class="search-input"
         >
           <template #default="{ item }">
@@ -66,8 +67,8 @@
       </el-col>
       <el-col :span="4">
         <el-row :gutter="20">
-          <el-col :span="6"  v-if="!editCollectionView">
-            <el-button plain @click="createCollection" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
+          <el-col :span="6"  v-if="!editTagView && !editCollectionView">
+            <el-button plain @click="enterEditCollectionView" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain @click="addCollection" :icon="Collections24Regular" :title="$t('m.addCollection')"></el-button>
@@ -81,8 +82,16 @@
           <el-col :span="6" v-if="editCollectionView">
             <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
+          <el-col :span="6"  v-if="!editTagView && !editCollectionView">
+            <el-button plain @click="enterEditCollectionView" :icon="TagGroup" :title="$t('m.manageCollection')"></el-button>
+          </el-col>
         </el-row>
       </el-col>
+    </el-row>
+    <el-row :gutter="20" class="book-tag-area">
+      <el-space size="small" id="random-tags">
+        <el-button v-for="tag in randomTags" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
+      </el-space>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
       <el-col :span="24" v-show="!editCollectionView" class="book-card-list">
@@ -213,6 +222,9 @@
       :size="setting.folderTreeWidth ? setting.folderTreeWidth : '20%'"
       modal-class="side-tree-modal"
     >
+      <el-input
+        class="folder-search"
+      ></el-input>
       <el-tree
         :data="folderTreeData"
         node-key="folderPath"
@@ -455,7 +467,7 @@ import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vu
 import { Lightbulb16Regular, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
 import { MdShuffle, IosRemoveCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
-import { TreeViewAlt, CicsSystemGroup } from '@vicons/carbon'
+import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
 import he from 'he'
 import { nanoid } from 'nanoid'
 import draggable from 'vuedraggable'
@@ -487,7 +499,7 @@ export default defineComponent({
       SettingIcon, FullScreen, Edit,
       Collections24Regular, Search32Filled, Lightbulb16Regular, Save16Regular,
       MdRefresh, MdCodeDownload, MdExit, MdShuffle,
-      TreeViewAlt, CicsSystemGroup
+      TreeViewAlt, CicsSystemGroup, TagGroup
     }
   },
   data () {
@@ -495,6 +507,7 @@ export default defineComponent({
       dialogVisibleBookDetail: false,
       sideVisibleFolderTree: false,
       editCollectionView: false,
+      editTagView: false,
       drawerVisibleCollection: false,
       pathSep: '\\',
       // home
@@ -606,12 +619,20 @@ export default defineComponent({
       return uniqedTagArray.map(combinedTag=>{
         let tagArray = _.split(combinedTag, '##')
         let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
-        let labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
+        let labelHeader = tagArray[0]
+        let labelTail = tagArray[1]
+        if (this.setting.showTranslation) {
+          labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
+          labelTail = this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]
+        }
         return {
-          label: `${labelHeader}:${this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]}`,
+          label: `${labelHeader}:${labelTail}`,
           value: `${letter}:"${tagArray[1]}"$`
         }
       })
+    },
+    randomTags () {
+      return _.sampleSize(this.tagList, 24)
     },
     tag2cat () {
       let temp = {}
@@ -632,7 +653,6 @@ export default defineComponent({
       return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
         .map(str=>({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
     },
-
     cookie () {
       return `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id};star=${this.setting.star}`
     },
@@ -1365,7 +1385,6 @@ export default defineComponent({
       if (!val) {
         this.searchString = ''
         this.handleSortChange(this.sortValue, this.bookList)
-        setTimeout(() => document.querySelector('.search-input .el-input__inner').blur(), 100)
       }
     },
     handleInput (val) {
@@ -1401,22 +1420,10 @@ export default defineComponent({
       }
     },
     searchBook () {
-      let searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
-      this.displayBookList = _.filter(this.bookList, (book)=>{
-        let bookString = JSON.stringify(
-          _.assign(
-            {},
-            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url']),
-            {
-              tags: _.map(book.tags, (tags, cat)=>{
-                let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
-                return _.map(tags, tag=>`${letter}:${tag}`)
-              })
-            }
-          )
-        ).toLowerCase()
-        let orCondition = _.filter(searchStringArray, str=>str.startsWith('~'))
-        let andCondition = _.filter(searchStringArray, str=>!str.startsWith('~'))
+      const checkCondition = (bookString) => {
+        const searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
+        const orCondition = _.filter(searchStringArray, str=>str.startsWith('~'))
+        const andCondition = _.filter(searchStringArray, str=>!str.startsWith('~'))
         return _.some([andCondition, ...orCondition], (condition)=>{
           if (_.isArray(condition)) {
             return _.every(condition, (str)=>{
@@ -1430,6 +1437,21 @@ export default defineComponent({
             return bookString.includes(condition.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
           }
         })
+      }
+      this.displayBookList = _.filter(this.bookList, (book)=>{
+        const bookString = JSON.stringify(
+          _.assign(
+            {},
+            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url']),
+            {
+              tags: _.map(book.tags, (tags, cat)=>{
+                const letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+                return _.map(tags, tag=>`${letter}:${tag}`).concat(_.map(tags, tag=>`${cat}:${tag}`))
+              })
+            }
+          )
+        ).toLowerCase()
+        return checkCondition(bookString)
       })
       if (!this.sortValue) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)
@@ -1443,6 +1465,11 @@ export default defineComponent({
       } else {
         this.searchString = `"${tag}"$`
       }
+      this.searchBook()
+    },
+    handleClickTagInRandom (tag) {
+      this.searchString = this.searchString.replaceAll(tag.value, '')
+      this.searchString += ' ' + tag.value
       this.searchBook()
     },
     // home main
@@ -1569,7 +1596,7 @@ export default defineComponent({
         this.handleSortChange(this.sortValue, this.bookList)
       })
     },
-    createCollection () {
+    enterEditCollectionView () {
       this.editCollectionView = true
       if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
     },
@@ -2139,13 +2166,24 @@ body
 
 .side-tree-modal
   background-color: var(--el-mask-color-extra-light)
+  .el-drawer__body
+    padding-top: 0
+  .folder-search
+    margin-bottom: 8px
 
 .pagination-bar
   margin: 4px 0
   justify-content: center
 
+.book-tag-area
+  width: 100%
+  margin-top: 14px
+  #random-tags
+    margin: 0 16px
+    overflow-x: hidden
+
 .book-card-area
-  height: calc(100vh - 98px)
+  height: calc(100vh - 132px)
   overflow-x: auto
   justify-content: center
   margin-top: 8px

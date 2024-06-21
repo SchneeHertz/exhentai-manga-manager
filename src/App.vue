@@ -91,13 +91,13 @@
         </el-row>
       </el-col>
     </el-row>
-    <el-row :gutter="20" class="book-tag-area" v-show="!editTagView && !editCollectionView">
+    <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView">
       <el-space size="small" id="random-tags">
         <el-button v-for="tag in randomTags" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
       </el-space>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
-      <el-col :span="24" v-show="!editTagView && !editCollectionView" class="book-card-list">
+      <el-col :span="24" v-if="!editTagView && !editCollectionView" class="book-card-list">
         <div
           v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
@@ -154,7 +154,7 @@
           </div>
         </div>
       </el-col>
-      <el-col :span="20" v-show="editCollectionView" class="book-collect-view">
+      <el-col :span="20" v-if="editCollectionView" class="book-collect-view">
         <el-badge
           :value="book.collected ? '✓' : '+'"
           :type="book.collected ? 'success' : 'warning'"
@@ -169,7 +169,7 @@
           </div>
         </el-badge>
       </el-col>
-      <el-col :span="4" v-show="editCollectionView" class="book-collection">
+      <el-col :span="4" v-if="editCollectionView" class="book-collection">
         <el-select v-model="selectCollection" class="book-collection-select" filterable @change="handleSelectCollectionChange">
           <el-option v-for="collection in collectionList" :key="collection.id" :value="collection.id" :label="collection.title"></el-option>
         </el-select>
@@ -192,7 +192,7 @@
           </draggable>
         </div>
       </el-col>
-      <el-col :span="20" v-show="editTagView" class="book-tag-edit-view">
+      <el-col :span="20" v-if="editTagView" class="book-tag-edit-view">
         <el-badge
           :value="book.selected ? '✓' : '+'"
           :type="book.selected ? 'success' : 'warning'"
@@ -207,7 +207,7 @@
           </div>
         </el-badge>
       </el-col>
-      <el-col :span="4" v-show="editTagView" class="book-tag-edit-operation">
+      <el-col :span="4" v-if="editTagView" class="book-tag-edit-operation">
         <el-select-v2
           v-model="groupTagSelected"
           filterable clearable multiple :reserve-keyword="false" :height="340"
@@ -465,7 +465,7 @@
             </div>
           </el-scrollbar>
         </el-col>
-        <el-col :span="8" v-show="setting.showComment">
+        <el-col :span="8" v-if="setting.showComment">
           <el-scrollbar class="book-comment-frame">
             <div class="book-comment" v-for="comment in comments" :key="comment.id">
               <div class="book-comment-postby">{{comment.author}}<span class="book-comment-score">{{comment.score}}</span></div>
@@ -654,14 +654,16 @@ export default defineComponent({
       }
     },
     tagList () {
-      let tagArray = _(this.bookList.map(b=>{
-        return _.map(b.tags, (tags, cat)=>{
-          return _.map(tags, tag=>`${cat}##${tag}`)
+      let tagArray = _(this.bookList.filter(b => {
+        return !b.hiddenBook && !b.folderHide
+      }).map(b => {
+        return _.map(b.tags, (tags, cat) => {
+          return _.map(tags, tag => `${cat}##${tag}`)
         })
       }))
       .flattenDeep().value()
       let uniqedTagArray = [...new Set(tagArray)].sort()
-      return uniqedTagArray.map(combinedTag=>{
+      return uniqedTagArray.map(combinedTag => {
         let tagArray = _.split(combinedTag, '##')
         let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
         let labelHeader = tagArray[0]
@@ -1746,6 +1748,8 @@ export default defineComponent({
     // group edit tags viewer
     enterEditTagView () {
       this.editTagView = true
+      this.selectBookList = []
+      this.chunkDisplayBookList.forEach(book => book.selected = false)
     },
     handleSelectBookBadge (book) {
       if (book.selected) {

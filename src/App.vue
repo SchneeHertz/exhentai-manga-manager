@@ -218,18 +218,23 @@
       @rescan-book="rescanBook"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
+      :title="$t('m.folderTree')"
       direction="ltr"
       :size="setting.folderTreeWidth ? setting.folderTreeWidth : '20%'"
       modal-class="side-tree-modal"
     >
       <el-input
         class="folder-search"
+        v-model="treeFilterText"
+        clearable
       ></el-input>
       <el-tree
+        ref="treeRef"
         :data="folderTreeData"
         node-key="folderPath"
         :default-expanded-keys="expandNodes"
         :expand-on-click-node="false"
+        :filter-node-method="filterTreeNode"
         @node-expand="handleNodeExpand"
         @node-collapse="handleNodeCollapse"
         @current-change="selectFolderTreeNode"
@@ -519,6 +524,7 @@ export default defineComponent({
       searchString: '',
       sortValue: undefined,
       _currentPage: 1,
+      treeFilterText: '',
       folderTreeData: [],
       expandNodes: [],
       progress: 0,
@@ -740,7 +746,10 @@ export default defineComponent({
   watch: {
     bookList () {
       this.handleSortChange(this.sortValue, this.bookList)
-    }
+    },
+    treeFilterText () {
+      this.$refs.treeRef.filter(this.treeFilterText)
+    },
   },
   methods: {
     // base function
@@ -1547,6 +1556,10 @@ export default defineComponent({
       this.expandNodes = _.filter(this.expandNodes, path=>path !== nodeObject.folderPath)
       localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
     },
+    filterTreeNode (val, data) {
+      if (!val) return true
+      return data.label.includes(val)
+    },
 
     // tag analysis and recommand search
     handleSearchTags (string) {
@@ -2165,7 +2178,7 @@ body
   float: right
 
 .side-tree-modal
-  background-color: var(--el-mask-color-extra-light)
+  background-color: transparent
   .el-drawer__body
     padding-top: 0
   .folder-search

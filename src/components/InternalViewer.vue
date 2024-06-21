@@ -1,11 +1,12 @@
 <template>
   <el-drawer v-model="drawerVisibleViewer"
-    direction="ttb"
-    size="100%"
+    direction="btt"
+    :size="drawerHeight"
     :with-header="false"
     destroy-on-close
     @close="$emit('handleStopReadManga')"
     class="viewer-drawer"
+    modal-class="viewer-drawer-modal"
   >
     <div class="drawer-image-content"
       @click="handleViewerAreaClick"
@@ -236,7 +237,10 @@ onMounted(()=>{
   })
 })
 
-const viewManga = (book) => {
+const drawerHeight = ref('100%')
+
+const viewManga = (book, viewerHeight = '100%') => {
+  drawerHeight.value = viewerHeight
   viewerImageList.value = []
   receiveThumbnailList.value = []
   currentImageIndex.value = 0
@@ -587,6 +591,8 @@ defineExpose({
     justify-content: center
     align-items: center
     flex-wrap: wrap
+.viewer-drawer-modal
+  background-color: var(--el-mask-color-extra-light)
 
 .viewer-close-button
   position: absolute

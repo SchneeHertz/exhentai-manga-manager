@@ -93,6 +93,7 @@
     </el-row>
     <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView">
       <el-space size="small" id="random-tags">
+        <el-button size="small" plain :icon="MdRefresh" @click="reloadRandomTags"></el-button>
         <el-button v-for="tag in randomTags" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
       </el-space>
     </el-row>
@@ -201,7 +202,7 @@
           @click="handleSelectBookBadge(book)"
           v-show="!book.isCollection && !book.folderHide && !book.hiddenBook"
         >
-          <div class="book-tag-edit-card">
+          <div class="book-tag-edit-card" @contextmenu="previewManga(book)">
             <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
             <img class="book-tag-edit-cover" :src="book.coverPath"/>
           </div>
@@ -211,7 +212,7 @@
         <el-select-v2
           v-model="groupTagSelected"
           filterable clearable multiple :reserve-keyword="false" :height="340"
-          :options="tagList"
+          :options="tagListForSelect"
         ></el-select-v2>
         <el-space wrap class="book-tag-edit-buttons">
           <el-button @click="addTagToGroup" :loading="updateTagsLoading" plain>{{$t('m.addGroupTag')}}</el-button>
@@ -227,7 +228,7 @@
       <el-pagination
         v-model:currentPage="currentPage"
         v-model:page-size="setting.pageSize"
-        :page-sizes="[10, 12, 16, 24, 60, 600, 6000]"
+        :page-sizes="[24, 42, 72, 500, 5000]"
         :small="true"
         layout="total, sizes, prev, pager, next, jumper"
         :total="displayBookCount"
@@ -563,6 +564,7 @@ export default defineComponent({
       folderTreeData: [],
       expandNodes: [],
       progress: 0,
+      randomTags: [],
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -678,8 +680,28 @@ export default defineComponent({
         }
       })
     },
-    randomTags () {
-      return _.sampleSize(this.tagList, 24)
+    tagListForSelect () {
+      let tagArray = _(this.bookList.map(b => {
+        return _.map(b.tags, (tags, cat) => {
+          return _.map(tags, tag => `${cat}##${tag}`)
+        })
+      }))
+      .flattenDeep().value()
+      let uniqedTagArray = [...new Set(tagArray)].sort()
+      return uniqedTagArray.map(combinedTag => {
+        let tagArray = _.split(combinedTag, '##')
+        let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
+        let labelHeader = tagArray[0]
+        let labelTail = tagArray[1]
+        if (this.setting.showTranslation) {
+          labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
+          labelTail = this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]
+        }
+        return {
+          label: `${labelHeader}:${labelTail} || ${letter}:"${tagArray[1]}"$`,
+          value: `${letter}:"${tagArray[1]}"$`
+        }
+      })
     },
     tag2cat () {
       let temp = {}
@@ -787,6 +809,9 @@ export default defineComponent({
   watch: {
     bookList () {
       this.handleSortChange(this.sortValue, this.bookList)
+    },
+    tagList () {
+      this.reloadRandomTags()
     },
     treeFilterText (value) {
       this.$refs.treeRef.filter(value)
@@ -1525,6 +1550,9 @@ export default defineComponent({
       this.searchString += ' ' + tag.value
       this.searchBook()
     },
+    reloadRandomTags () {
+      this.randomTags = _.sampleSize(this.tagList, 24)
+    },
     // home main
     openBookDetail (book) {
       this.bookDetail = book
@@ -1760,6 +1788,10 @@ export default defineComponent({
         this.selectBookList.push(book.id)
       }
     },
+    previewManga (book) {
+      this.$refs.InternalViewerRef.showThumbnail = true
+      this.$refs.InternalViewerRef.viewManga(book, '75%')
+    },
     async addTagToGroup () {
       const letter2cat = _.invert(this.cat2letter)
       let tags = this.groupTagSelected.map(tag => {
@@ -1824,7 +1856,7 @@ export default defineComponent({
       }
     },
     selectAllForGroupTag () {
-      this.chunkDisplayBookList.forEach(book=>{
+      this.displayBookList.forEach(book=>{
         if (!book.isCollection && !book.folderHide && !book.hiddenBook) {
           book.selected = true
           this.selectBookList.push(book.id)
@@ -1832,7 +1864,7 @@ export default defineComponent({
       })
     },
     unselectAllForGroupTag () {
-      this.chunkDisplayBookList.forEach(book=>{
+      this.displayBookList.forEach(book=>{
         book.selected = false
         this.selectBookList = []
       })
@@ -2317,7 +2349,7 @@ body
   float: right
 
 .side-tree-modal
-  background-color: transparent
+  background-color: var(--el-mask-color-extra-light)
   .el-drawer__body
     padding-top: 0
   .folder-search

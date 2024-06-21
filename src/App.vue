@@ -83,18 +83,21 @@
             <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
           <el-col :span="6"  v-if="!editTagView && !editCollectionView">
-            <el-button plain @click="enterEditCollectionView" :icon="TagGroup" :title="$t('m.manageCollection')"></el-button>
+            <el-button plain @click="enterEditTagView" :icon="TagGroup" :title="$t('m.manageCollection')"></el-button>
+          </el-col>
+          <el-col :span="6" v-if="editTagView">
+            <el-button type="primary" plain @click="editTagView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
         </el-row>
       </el-col>
     </el-row>
-    <el-row :gutter="20" class="book-tag-area">
+    <el-row :gutter="20" class="book-tag-area" v-show="!editTagView && !editCollectionView">
       <el-space size="small" id="random-tags">
         <el-button v-for="tag in randomTags" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
       </el-space>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
-      <el-col :span="24" v-show="!editCollectionView" class="book-card-list">
+      <el-col :span="24" v-show="!editTagView && !editCollectionView" class="book-card-list">
         <div
           v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
@@ -151,7 +154,7 @@
           </div>
         </div>
       </el-col>
-      <el-col :span="18" v-show="editCollectionView" class="book-collect">
+      <el-col :span="20" v-show="editCollectionView" class="book-collect-view">
         <el-badge
           :value="book.collected ? '✓' : '+'"
           :type="book.collected ? 'success' : 'warning'"
@@ -166,7 +169,7 @@
           </div>
         </el-badge>
       </el-col>
-      <el-col :span="6" v-show="editCollectionView" class="book-collection">
+      <el-col :span="4" v-show="editCollectionView" class="book-collection">
         <el-select v-model="selectCollection" class="book-collection-select" filterable @change="handleSelectCollectionChange">
           <el-option v-for="collection in collectionList" :key="collection.id" :value="collection.id" :label="collection.title"></el-option>
         </el-select>
@@ -188,6 +191,36 @@
             </template>
           </draggable>
         </div>
+      </el-col>
+      <el-col :span="20" v-show="editTagView" class="book-tag-edit-view">
+        <el-badge
+          :value="book.selected ? '✓' : '+'"
+          :type="book.selected ? 'success' : 'warning'"
+          v-for="book in chunkDisplayBookList" :key="book.id"
+          class="book-add-badge"
+          @click="handleSelectBookBadge(book)"
+          v-show="!book.isCollection && !book.folderHide && !book.hiddenBook"
+        >
+          <div class="book-tag-edit-card">
+            <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
+            <img class="book-tag-edit-cover" :src="book.coverPath"/>
+          </div>
+        </el-badge>
+      </el-col>
+      <el-col :span="4" v-show="editTagView" class="book-tag-edit-operation">
+        <el-select-v2
+          v-model="groupTagSelected"
+          filterable clearable multiple :reserve-keyword="false" :height="340"
+          :options="tagList"
+        ></el-select-v2>
+        <el-space wrap class="book-tag-edit-buttons">
+          <el-button @click="addTagToGroup" :loading="updateTagsLoading" plain>{{$t('m.addGroupTag')}}</el-button>
+          <el-button @click="removeTagToGroup" :loading="updateTagsLoading" plain>{{$t('m.removeGroupTag')}}</el-button>
+        </el-space>
+        <el-space wrap class="book-tag-edit-buttons">
+          <el-button @click="selectAllForGroupTag" plain>{{$t('m.selectAll')}}</el-button>
+          <el-button @click="unselectAllForGroupTag" plain>{{$t('m.unselectAll')}}</el-button>
+        </el-space>
       </el-col>
     </el-row>
     <el-row class="pagination-bar">
@@ -393,10 +426,12 @@
                 >
                 </el-select-v2>
               </div>
-              <el-button class="tag-edit-button" @click="addTagCat">{{$t('m.addCategory')}}</el-button>
-              <el-button class="tag-edit-button" @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
-              <el-button class="tag-edit-button" @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
-              <el-button class="tag-edit-button" @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
+              <el-space wrap class="tag-edit-buttons">
+                <el-button @click="addTagCat">{{$t('m.addCategory')}}</el-button>
+                <el-button @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
+                <el-button @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
+                <el-button @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
+              </el-space>
             </div>
             <div v-else>
               <el-descriptions :column="1">
@@ -534,6 +569,10 @@ export default defineComponent({
       collectionList: [],
       openCollectionTitle: undefined,
       openCollectionBookList: [],
+      // group tag edit
+      selectBookList: [],
+      groupTagSelected: [],
+      updateTagsLoading: false,
       // detail
       bookDetail: {},
       comments: [],
@@ -747,8 +786,8 @@ export default defineComponent({
     bookList () {
       this.handleSortChange(this.sortValue, this.bookList)
     },
-    treeFilterText () {
-      this.$refs.treeRef.filter(this.treeFilterText)
+    treeFilterText (value) {
+      this.$refs.treeRef.filter(value)
     },
   },
   methods: {
@@ -788,6 +827,9 @@ export default defineComponent({
       }
       if (this.editCollectionView) {
         return 'edit-collection'
+      }
+      if (this.editTagView) {
+        return 'edit-group-tag'
       }
       if (this.drawerVisibleCollection) {
         return 'collection'
@@ -1360,7 +1402,7 @@ export default defineComponent({
       if (queryString) {
         let keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
         if (!_.isEmpty(keywords)) {
-          let nextKeyword = queryString.replace(/(~|-)?(l|p|c|g|a|f|m|x|o|cos):"[ .\-a-zA-Z0-9]+"\$/g, '').trim()
+          let nextKeyword = queryString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g, '').trim()
           if (nextKeyword[0] === '-' || nextKeyword[0] === '~') {
             result = _.filter(options, str=>{
               return _.includes(str.value.toLowerCase(), nextKeyword.slice(1).toLowerCase())
@@ -1398,11 +1440,11 @@ export default defineComponent({
     },
     handleInput (val) {
       try {
-        if (/^(l|p|c|g|a|f|m|x|o|cos):"[ .\-a-zA-Z0-9]+"\$$/.test(val) && this.searchString.trim() !== val.trim()) {
+        if (/^[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$$/.test(val) && this.searchString.trim() !== val.trim()) {
           let keywords = [...this.searchString.trim().matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
           if (!_.isEmpty(keywords)) {
-            const keyword = this.searchString.replace(/(~|-)?(l|p|c|g|a|f|m|x|o|cos):"[ .\-a-zA-Z0-9]+"\$/g, '').trim()
-            const matches = this.searchString.match(/(~|-)?(l|p|c|g|a|f|m|x|o|cos):"[ .\-a-zA-Z0-9]+"\$/g)
+            const keyword = this.searchString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g, '').trim()
+            const matches = this.searchString.match(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g)
             if (keyword[0] === '-') {
               this.searchString = matches.concat([`-${val}`]).join(' ')
             } else if (keyword[0] === '~') {
@@ -1701,6 +1743,97 @@ export default defineComponent({
       this.handleSelectCollectionChange(this.selectCollection)
     },
 
+    // group edit tags viewer
+    enterEditTagView () {
+      this.editTagView = true
+    },
+    handleSelectBookBadge (book) {
+      if (book.selected) {
+        book.selected = false
+        this.selectBookList = _.filter(this.selectBookList, b=>b.id !== book.id)
+      } else {
+        book.selected = true
+        this.selectBookList.push(book.id)
+      }
+    },
+    async addTagToGroup () {
+      const letter2cat = _.invert(this.cat2letter)
+      let tags = this.groupTagSelected.map(tag => {
+        const match = /([\w\d一-龟]+):"([- ._\w\d一-龟]+)"\$/.exec(tag)
+        if (match[1] && match[2]) {
+          return {
+            category: letter2cat[match[1]] ? letter2cat[match[1]] : match[1],
+            tag: match[2]
+          }
+        } else {
+          return null
+        }
+      })
+      tags = _.compact(tags)
+      for (const id of this.selectBookList) {
+        let book = _.find(this.bookList, {id})
+        if (!_.has(book, 'tags')) book.tags = {}
+        for (const { category, tag } of tags) {
+          if (_.has(book.tags, category)) {
+            if (!book.tags[category].includes(tag)) {
+              book.tags[category].push(tag)
+            }
+          } else {
+            book.tags[category] = [tag]
+          }
+        }
+        await this.saveBook(book)
+      }
+      this.printMessage('success', this.$t('c.addGroupTagSuccess'))
+    },
+    async removeTagToGroup () {
+      try {
+        this.updateTagsLoading = true
+        const letter2cat = _.invert(this.cat2letter)
+        let tags = this.groupTagSelected.map(tag => {
+          const match = /([\w\d一-龟]+):"([- ._\w\d一-龟]+)"\$/.exec(tag)
+          if (match[1] && match[2]) {
+            return {
+              category: letter2cat[match[1]] ? letter2cat[match[1]] : match[1],
+              tag: match[2]
+            }
+          } else {
+            return null
+          }
+        })
+        tags = _.compact(tags)
+        for (const id of this.selectBookList) {
+          let book = _.find(this.bookList, {id})
+          for (const { category, tag } of tags) {
+            if (_.has(book.tags, category)) {
+              book.tags[category] = _.filter(book.tags[category], t=>t !== tag)
+            }
+          }
+          await this.saveBook(book)
+        }
+        this.printMessage('success', this.$t('c.removeGroupTagSuccess'))
+        this.updateTagsLoading = false
+      } catch (e) {
+        console.error(e)
+        this.printMessage('error', this.$t('c.groupTagError'))
+        this.updateTagsLoading = false
+      }
+    },
+    selectAllForGroupTag () {
+      this.chunkDisplayBookList.forEach(book=>{
+        if (!book.isCollection && !book.folderHide && !book.hiddenBook) {
+          book.selected = true
+          this.selectBookList.push(book.id)
+        }
+      })
+    },
+    unselectAllForGroupTag () {
+      this.chunkDisplayBookList.forEach(book=>{
+        book.selected = false
+        this.selectBookList = []
+      })
+    },
+
     // detail view function
     openUrl (url) {
       ipcRenderer.invoke('open-url', url)
@@ -1841,6 +1974,8 @@ export default defineComponent({
     },
     addTagCat () {
       ElMessageBox.prompt(this.$t('c.inputCategoryName'), this.$t('m.addCategory'), {
+        inputPattern: /^[\w\d一-龟]+$/,
+        inputErrorMessage: this.$t('c.categoryNameError')
       })
       .then(({ value }) => {
         this.tagGroup[value] = []
@@ -2196,15 +2331,15 @@ body
     overflow-x: hidden
 
 .book-card-area
-  height: calc(100vh - 132px)
   overflow-x: auto
   justify-content: center
   margin-top: 8px
-  .book-collect, .book-collection
-    height: calc(100vh - 98px)
+  .book-collect-view, .book-collection, .book-tag-edit-view, .book-tag-edit-operation
+    height: calc(100vh - 96px)
     overflow-x: auto
     padding-top: 4px
   .book-card-list
+    height: calc(100vh - 134px)
     display: flex
     flex-wrap: wrap
     justify-content: center
@@ -2270,7 +2405,7 @@ body
 .collection-edit-button
   margin-bottom: 2px
 
-.book-collect-card
+.book-collect-card, .book-tag-edit-card
   width: 138px
   height: 229px
   border: solid 1px var(--el-border-color)
@@ -2282,12 +2417,12 @@ body
     top: 6px
     right: 17px
     cursor: pointer
-.book-collect-title
+.book-collect-title, .book-tag-edit-title
   height: 38px
   overflow-y: hidden
   margin: 4px 2px
   font-size: 10px
-.book-collect-cover
+.book-collect-cover, .book-tag-edit-cover
   border-radius: 4px
   width: 125px
   height: 177px
@@ -2301,7 +2436,7 @@ body
     height: 79px
     border: solid 1px var(--el-border-color)
     border-radius: 4px
-    margin: 2px 4px
+    margin: 2px 0
     position: relative
     .book-collection-cover
       border-radius: 2px
@@ -2321,6 +2456,13 @@ body
       bottom: 2px
       right: 2px
       cursor: pointer
+
+.book-tag-edit-operation
+  .el-select-v2
+    width: 100%
+  .book-tag-edit-buttons
+    width: 100%
+    margin-top: 10px
 
 .el-dialog.is-fullscreen.dialog-detail
   .el-dialog__header
@@ -2389,7 +2531,7 @@ body
 .book-tag
   margin: 4px 6px
   cursor: pointer
-.tag-edit-button
+.tag-edit-buttons
   margin-top: 4px
 .book-comment-frame
   text-align: left

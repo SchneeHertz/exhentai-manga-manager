@@ -200,7 +200,7 @@
           v-for="book in chunkDisplayBookList" :key="book.id"
           class="book-add-badge"
           @click="handleSelectBookBadge(book)"
-          v-show="!book.isCollection && !book.folderHide && !book.hiddenBook"
+          v-show="!book.isCollection && !book.folderHide"
         >
           <div class="book-tag-edit-card" @contextmenu="previewManga(book)">
             <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
@@ -209,18 +209,41 @@
         </el-badge>
       </el-col>
       <el-col :span="4" v-if="editTagView" class="book-tag-edit-operation">
+        <el-space wrap class="book-tag-edit-buttons">
+          <el-button type="primary" plain @click="selectAllForGroupTag">{{$t('m.selectAll')}}</el-button>
+          <el-button type="primary" plain @click="unselectAllForGroupTag">{{$t('m.unselectAll')}}</el-button>
+        </el-space>
+        <el-divider content-position="left">{{$t('m.tag')}}</el-divider>
         <el-select-v2
           v-model="groupTagSelected"
           filterable clearable multiple :reserve-keyword="false" :height="340"
           :options="tagListForSelect"
         ></el-select-v2>
         <el-space wrap class="book-tag-edit-buttons">
-          <el-button @click="addTagToGroup" :loading="updateTagsLoading" plain>{{$t('m.addGroupTag')}}</el-button>
-          <el-button @click="removeTagToGroup" :loading="updateTagsLoading" plain>{{$t('m.removeGroupTag')}}</el-button>
+          <el-button type="primary" plain @click="addTagToGroup" :loading="updateTagsLoading">{{$t('m.addGroupTag')}}</el-button>
+          <el-button type="primary" @click="removeTagToGroup" :loading="updateTagsLoading" plain>{{$t('m.removeGroupTag')}}</el-button>
         </el-space>
+        <el-divider content-position="left">{{$t('m.category')}}</el-divider>
+        <el-select v-model="categorySelected" :placeholder="$t('m.category')" clearable>
+          <el-option v-for="cat in categoryOption" :value="cat" :key="cat" :label="cat" />
+        </el-select>
         <el-space wrap class="book-tag-edit-buttons">
-          <el-button @click="selectAllForGroupTag" plain>{{$t('m.selectAll')}}</el-button>
-          <el-button @click="unselectAllForGroupTag" plain>{{$t('m.unselectAll')}}</el-button>
+          <el-button type="primary" plain @click="applyCategory" :loading="updateTagsLoading">{{$t('m.apply')}}</el-button>
+        </el-space>
+        <el-divider content-position="left">{{$t('m.metadataStatus')}}</el-divider>
+        <el-select v-model="statusSelected" :placeholder="$t('m.metadataStatus')">
+          <el-option v-for="status in statusOption" :value="status" :key="status" :label="status" />
+        </el-select>
+        <el-space wrap class="book-tag-edit-buttons">
+          <el-button type="primary" plain @click="applyStatus" :loading="updateTagsLoading">{{$t('m.apply')}}</el-button>
+        </el-space>
+        <el-divider content-position="left">{{$t('m.other')}}</el-divider>
+        <el-space wrap class="book-tag-edit-buttons">
+          <el-button type="primary" plain >{{$t('m.batchGetMetadata')}}</el-button>
+          <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteFile')}}</el-button>
+          <el-button type="primary" plain @click="rescanBook(bookDetail)">{{$t('m.rescan')}}</el-button>
+          <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{$t('m.showManga')}}</el-button>
+          <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{$t('m.hideManga')}}</el-button>
         </el-space>
       </el-col>
     </el-row>
@@ -390,7 +413,7 @@
             <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
           </el-row>
           <el-row class="book-detail-function">
-            <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">{{$t('m.delete')}}</el-button>
+            <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteFile')}}</el-button>
             <el-button plain @click="rescanBook(bookDetail)">{{$t('m.rescan')}}</el-button>
             <el-button type="primary" plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
           </el-row>
@@ -406,9 +429,7 @@
               </div>
               <div class="edit-line">
                 <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')" @change="saveBook(bookDetail)">
-                  <el-option value="non-tag">non-tag</el-option>
-                  <el-option value="tagged">tagged</el-option>
-                  <el-option value="tag-failed">tag-failed</el-option>
+                  <el-option v-for="status in statusOption" :value="status" :key="status" :label="status" />
                 </el-select>
               </div>
               <div class="edit-line">
@@ -575,6 +596,8 @@ export default defineComponent({
       selectBookList: [],
       groupTagSelected: [],
       updateTagsLoading: false,
+      categorySelected: undefined,
+      statusSelected: 'tagged',
       // detail
       bookDetail: {},
       comments: [],
@@ -597,6 +620,11 @@ export default defineComponent({
         other: 'o',
         cosplayer: 'cos'
       },
+      statusOption: [
+        'non-tag',
+        'tagged',
+        'tag-failed'
+      ],
       categoryOption: [
         'Doujinshi',
         'Manga',
@@ -1303,9 +1331,8 @@ export default defineComponent({
         this.getBookInfoFromEh(book)
       }
     },
-    getBookListMetadata (server) {
-      if (!server) server = this.setting.defaultScraper || 'exhentai'
-      this.$refs.SettingRef.dialogVisibleSetting = false
+    getBookListMetadata () {
+      let server = this.setting.defaultScraper || 'exhentai'
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
       let bookList
@@ -1855,9 +1882,41 @@ export default defineComponent({
         this.updateTagsLoading = false
       }
     },
+    async applyCategory () {
+      try {
+        this.updateTagsLoading = true
+        for (const id of this.selectBookList) {
+          let book = _.find(this.bookList, {id})
+          book.category = this.categorySelected
+          await this.saveBook(book)
+        }
+        this.printMessage('success', this.$t('c.applied'))
+        this.updateTagsLoading = false
+      } catch (e) {
+        console.error(e)
+        this.printMessage('error', this.$t('c.applyError'))
+        this.updateTagsLoading = false
+      }
+    },
+    async applyStatus () {
+      try {
+        this.updateTagsLoading = true
+        for (const id of this.selectBookList) {
+          let book = _.find(this.bookList, {id})
+          book.status = this.statusSelected
+          await this.saveBook(book)
+        }
+        this.printMessage('success', this.$t('c.applied'))
+        this.updateTagsLoading = false
+      } catch (e) {
+        console.error(e)
+        this.printMessage('error', this.$t('c.applyError'))
+        this.updateTagsLoading = false
+      }
+    },
     selectAllForGroupTag () {
       this.displayBookList.forEach(book=>{
-        if (!book.isCollection && !book.folderHide && !book.hiddenBook) {
+        if (!book.isCollection && !book.folderHide) {
           book.selected = true
           this.selectBookList.push(book.id)
         }
@@ -1874,9 +1933,9 @@ export default defineComponent({
     openUrl (url) {
       ipcRenderer.invoke('open-url', url)
     },
-    triggerHiddenBook (book) {
+    async triggerHiddenBook (book) {
       book.hiddenBook = !book.hiddenBook
-      this.saveBook(book)
+      await this.saveBook(book)
     },
     showFile(filepath) {
       ipcRenderer.invoke('show-file', filepath)
@@ -2224,7 +2283,7 @@ export default defineComponent({
             }
           },
           {
-            label: this.$t('m.deleteManga'),
+            label: this.$t('m.deleteFile'),
             onClick: () => {
               this.deleteLocalBook(book)
             }

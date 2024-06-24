@@ -217,9 +217,6 @@
             <el-descriptions-item :label="$t('m.pageCount')+':'">
               <el-tag class="book-tag" :type="book.pageDiff ? 'danger' : 'info'">{{book.pageCount}} | {{book.filecount}}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item :label="$t('m.filename')+':'">
-              <el-tag type="info" class="book-tag">{{returnFileNameWithExt(book.filepath)}}</el-tag>
-            </el-descriptions-item>
             <el-descriptions-item :label="$t('m.metadataStatus')+':'">
               <el-tag class="book-tag" :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
               @click="searchFromTag(book.status)">{{book.status}}</el-tag>

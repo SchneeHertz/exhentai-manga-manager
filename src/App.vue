@@ -195,21 +195,46 @@
         </div>
       </el-col>
       <el-col :span="20" v-if="editTagView" class="book-tag-edit-view">
-        <el-badge
-          :value="book.selected ? '✓' : '+'"
-          :type="book.selected ? 'success' : 'warning'"
+        <el-popover
           v-for="book in chunkDisplayBookList" :key="book.id"
-          class="book-add-badge"
-          @click="handleSelectBookBadge(book)"
-          v-show="!book.isCollection && !book.folderHide"
+          placement="right" :width="400" trigger="hover" :show-after="500" :hide-after="100"
         >
-          <div class="book-tag-edit-card" @contextmenu="previewManga(book)">
-            <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
-            <img class="book-tag-edit-cover" :src="book.coverPath"/>
-          </div>
-        </el-badge>
+          <template #reference>
+            <el-badge
+              :value="book.selected ? '✓' : '+'"
+              :type="book.selected ? 'success' : 'warning'"
+              class="book-add-badge"
+              @click="handleSelectBookBadge(book)"
+              v-show="!book.isCollection && !book.folderHide"
+            >
+              <div class="book-tag-edit-card" @contextmenu="previewManga(book)">
+                <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
+                <img class="book-tag-edit-cover" :src="book.coverPath"/>
+              </div>
+            </el-badge>
+          </template>
+          <el-descriptions :column="1" size="small" class="book-tag-edit-popover">
+            <el-descriptions-item :label="$t('m.pageCount')+':'">
+              <el-tag class="book-tag" :type="book.pageDiff ? 'danger' : 'info'">{{book.pageCount}} | {{book.filecount}}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="$t('m.filename')+':'">
+              <el-tag type="info" class="book-tag">{{returnFileNameWithExt(book.filepath)}}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="$t('m.metadataStatus')+':'">
+              <el-tag class="book-tag" :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+              @click="searchFromTag(book.status)">{{book.status}}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="$t('m.category')+':'">
+              <el-tag type="info" class="book-tag" @click="searchFromTag(book.category)">{{book.category}}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-for="(tagArr, key) in book.tags" :label="key + ':'" :key="key">
+              <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag, key)"
+              >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-popover>
       </el-col>
-      <el-col :span="4" v-if="editTagView" class="book-tag-edit-operation">
+      <el-col :span="4" v-if="editTagView" class="book-tag-edit-operation" v-loading="updateTagsLoading">
         <el-space wrap class="book-tag-edit-buttons">
           <el-button type="primary" plain @click="selectAllForGroupTag">{{$t('m.selectAll')}}</el-button>
           <el-button type="primary" plain @click="unselectAllForGroupTag">{{$t('m.unselectAll')}}</el-button>
@@ -221,30 +246,30 @@
           :options="tagListForSelect"
         ></el-select-v2>
         <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="addTagToGroup" :loading="updateTagsLoading">{{$t('m.addGroupTag')}}</el-button>
-          <el-button type="primary" @click="removeTagToGroup" :loading="updateTagsLoading" plain>{{$t('m.removeGroupTag')}}</el-button>
+          <el-button type="primary" plain @click="addTagToGroup">{{$t('m.addGroupTag')}}</el-button>
+          <el-button type="primary" @click="removeTagToGroup" plain>{{$t('m.removeGroupTag')}}</el-button>
         </el-space>
         <el-divider content-position="left">{{$t('m.category')}}</el-divider>
         <el-select v-model="categorySelected" :placeholder="$t('m.category')" clearable>
           <el-option v-for="cat in categoryOption" :value="cat" :key="cat" :label="cat" />
         </el-select>
         <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="applyCategory" :loading="updateTagsLoading">{{$t('m.apply')}}</el-button>
+          <el-button type="primary" plain @click="applyCategory">{{$t('m.apply')}}</el-button>
         </el-space>
         <el-divider content-position="left">{{$t('m.metadataStatus')}}</el-divider>
         <el-select v-model="statusSelected" :placeholder="$t('m.metadataStatus')">
           <el-option v-for="status in statusOption" :value="status" :key="status" :label="status" />
         </el-select>
         <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="applyStatus" :loading="updateTagsLoading">{{$t('m.apply')}}</el-button>
+          <el-button type="primary" plain @click="applyStatus">{{$t('m.apply')}}</el-button>
         </el-space>
         <el-divider content-position="left">{{$t('m.other')}}</el-divider>
         <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="groupGetMetadata" :loading="updateTagsLoading">{{$t('m.batchGetMetadata')}}</el-button>
-          <el-button type="danger" plain @click="groupDeleteLocalBook" :loading="updateTagsLoading">{{$t('m.deleteFile')}}</el-button>
-          <el-button type="primary" plain @click="groupRescanBook" :loading="updateTagsLoading">{{$t('m.rescan')}}</el-button>
-          <el-button type="primary" plain @click="groupTriggerHiddenBook(false)" :loading="updateTagsLoading">{{$t('m.showManga')}}</el-button>
-          <el-button type="primary" plain @click="groupTriggerHiddenBook(true)" :loading="updateTagsLoading">{{$t('m.hideManga')}}</el-button>
+          <el-button type="primary" plain @click="groupGetMetadata">{{$t('m.batchGetMetadata')}}</el-button>
+          <el-button type="danger" plain @click="groupDeleteLocalBook">{{$t('m.deleteFile')}}</el-button>
+          <el-button type="primary" plain @click="groupRescanBook">{{$t('m.rescan')}}</el-button>
+          <el-button type="primary" plain @click="groupTriggerHiddenBook(false)">{{$t('m.showManga')}}</el-button>
+          <el-button type="primary" plain @click="groupTriggerHiddenBook(true)">{{$t('m.hideManga')}}</el-button>
         </el-space>
       </el-col>
     </el-row>
@@ -1842,7 +1867,7 @@ export default defineComponent({
       this.$refs.InternalViewerRef.showThumbnail = true
       this.$refs.InternalViewerRef.viewManga(book, '75%')
     },
-    async addTagToGroup () {
+    resolveGroupTagSelected () {
       const letter2cat = _.invert(this.cat2letter)
       let tags = this.groupTagSelected.map(tag => {
         const match = /([\w\d一-龟]+):"([- ._\w\d一-龟]+)"\$/.exec(tag)
@@ -1856,38 +1881,38 @@ export default defineComponent({
         }
       })
       tags = _.compact(tags)
-      for (const id of this.selectBookList) {
-        let book = _.find(this.bookList, {id})
-        if (!_.has(book, 'tags')) book.tags = {}
-        for (const { category, tag } of tags) {
-          if (_.has(book.tags, category)) {
-            if (!book.tags[category].includes(tag)) {
-              book.tags[category].push(tag)
+      return tags
+    },
+    async addTagToGroup () {
+      try {
+        this.updateTagsLoading = true
+        const tags = this.resolveGroupTagSelected()
+        for (const id of this.selectBookList) {
+          let book = _.find(this.bookList, {id})
+          if (!_.has(book, 'tags')) book.tags = {}
+          for (const { category, tag } of tags) {
+            if (_.has(book.tags, category)) {
+              if (!book.tags[category].includes(tag)) {
+                book.tags[category].push(tag)
+              }
+            } else {
+              book.tags[category] = [tag]
             }
-          } else {
-            book.tags[category] = [tag]
           }
+          await this.saveBook(book)
         }
-        await this.saveBook(book)
+        this.printMessage('success', this.$t('c.addGroupTagSuccess'))
+        this.updateTagsLoading = false
+      } catch (e) {
+        console.error(e)
+        this.printMessage('error', this.$t('c.groupTagError'))
+        this.updateTagsLoading = false
       }
-      this.printMessage('success', this.$t('c.addGroupTagSuccess'))
     },
     async removeTagToGroup () {
       try {
         this.updateTagsLoading = true
-        const letter2cat = _.invert(this.cat2letter)
-        let tags = this.groupTagSelected.map(tag => {
-          const match = /([\w\d一-龟]+):"([- ._\w\d一-龟]+)"\$/.exec(tag)
-          if (match[1] && match[2]) {
-            return {
-              category: letter2cat[match[1]] ? letter2cat[match[1]] : match[1],
-              tag: match[2]
-            }
-          } else {
-            return null
-          }
-        })
-        tags = _.compact(tags)
+        const tags = this.resolveGroupTagSelected()
         for (const id of this.selectBookList) {
           let book = _.find(this.bookList, {id})
           for (const { category, tag } of tags) {
@@ -2695,6 +2720,13 @@ body
     display: inline-block
     text-align: right
     width: 80px
+.book-tag-edit-popover
+  .el-descriptions__cell
+    padding-bottom: 0 !important
+  .el-descriptions__label
+    display: inline-block
+    text-align: right
+    width: 65px
 .book-tag-frame
   height: calc(100vh - 100px)
   overflow-y: auto

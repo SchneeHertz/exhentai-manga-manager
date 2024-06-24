@@ -124,7 +124,8 @@
               @contextmenu="onBookContextMenu($event, book)"
             />
             <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
-            <el-tag class="book-card-pagecount" size="small" type="info">{{ book.pageCount }}P</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="error" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
             <el-icon
               :size="30"
               :color="book.mark ? '#E6A23C' : '#666666'"
@@ -335,7 +336,8 @@
             @contextmenu="onBookContextMenu($event, book)"
           />
           <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
-          <el-tag class="book-card-pagecount" size="small" type="info">{{ book.pageCount }}P</el-tag>
+          <el-tag class="book-card-pagecount" size="small" type="error" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+          <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
           <el-icon
             :size="30"
             :color="book.mark ? '#E6A23C' : '#666666'"
@@ -387,7 +389,7 @@
           </el-row>
           <el-row class="book-detail-function">
             <el-descriptions :column="1">
-              <el-descriptions-item :label="$t('m.pageCount')+':'">
+              <el-descriptions-item :label="$t('m.pageCount')+':'" :class-name="bookDetail.pageDiff ? 'text-red' : ''">
                 {{bookDetail.pageCount}} | {{bookDetail.filecount}}
               </el-descriptions-item>
               <el-descriptions-item :label="$t('m.fileSize')+':'">
@@ -1139,13 +1141,19 @@ export default defineComponent({
     async loadBookList (scan) {
       return await ipcRenderer.invoke('load-book-list', scan)
         .then(res => {
-          this.bookList = res
+          this.bookList = this.prepareBookList(res)
           this.loadCollectionList()
           this.geneFolderTree()
         })
     },
     saveBook (book) {
       return ipcRenderer.invoke('save-book', _.cloneDeep(book))
+    },
+    prepareBookList (bookList) {
+      bookList.forEach(book => {
+        if (Number.isInteger(book.filecount) && Number.isInteger(book.pageCount) && Math.abs(book.filecount - book.pageCount) > 5) book.pageDiff = true
+      })
+      return bookList
     },
     getDisplayTitle (book) {
       switch (this.setting.displayTitle) {
@@ -1547,7 +1555,7 @@ export default defineComponent({
         const bookString = JSON.stringify(
           _.assign(
             {},
-            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url']),
+            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff']),
             {
               tags: _.map(book.tags, (tags, cat)=>{
                 const letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
@@ -2370,6 +2378,9 @@ body
     background-position: -100%
   to
     background-position: 100%
+
+.text-red
+  color: red !important
 
 #progressbar
   position: fixed

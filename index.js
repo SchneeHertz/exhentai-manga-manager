@@ -116,6 +116,7 @@ app.on('ready', async () => {
       proxyRules: setting.proxy
     })
   }
+  // session.defaultSession.loadExtension(path.join(__dirname, './devtools'))
 })
 
 app.on('window-all-closed', () => {

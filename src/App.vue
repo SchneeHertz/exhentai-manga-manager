@@ -1866,7 +1866,7 @@ export default defineComponent({
     },
     previewManga (book) {
       this.$refs.InternalViewerRef.showThumbnail = true
-      this.$refs.InternalViewerRef.viewManga(book, '75%')
+      this.$refs.InternalViewerRef.viewManga(book, '83%')
     },
     resolveGroupTagSelected () {
       const letter2cat = _.invert(this.cat2letter)

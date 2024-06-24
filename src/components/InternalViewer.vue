@@ -1,6 +1,6 @@
 <template>
   <el-drawer v-model="drawerVisibleViewer"
-    direction="btt"
+    direction="ltr"
     :size="drawerHeight"
     :with-header="false"
     destroy-on-close
@@ -82,8 +82,8 @@
       element-loading-background="transparent"
     >
       <!-- eslint-disable-next-line vue/valid-v-for -->
-      <el-space v-for="(chunk, chunkIndex) in thumbnailList" :size="16">
-        <div v-for="(image, index) in chunk" :key="image.id">
+      <el-space :size="16" wrap>
+        <div v-for="(image, index) in thumbnailList" :key="image.id">
           <img
             :src="`${image.thumbnailPath}?id=${image.id}`"
             class="viewer-thumbnail"
@@ -91,7 +91,7 @@
             @click="handleClickThumbnail(image.id)"
             @contextmenu="onMangaImageContextMenu($event, image)"
           />
-          <div class="viewer-thunmnail-page">{{chunkIndex * (setting.thumbnailColumn || 10) + index + 1}} of {{viewerImageList.length}}</div>
+          <div class="viewer-thunmnail-page">{{index}} of {{viewerImageList.length}}</div>
         </div>
       </el-space>
     </div>
@@ -218,8 +218,7 @@ const viewerImageListDouble = computed(() => {
 const receiveThumbnailList = ref([])
 
 const thumbnailList = computed(()=>{
-  receiveThumbnailList.value = _.sortBy(receiveThumbnailList.value, 'index')
-  return _.chunk(receiveThumbnailList.value, props.setting.thumbnailColumn || 10)
+  return _.sortBy(receiveThumbnailList.value, 'index')
 })
 
 
@@ -644,7 +643,6 @@ defineExpose({
     line-height: 18px
     margin-top: 3px
     margin-bottom: 7px
-    width: 98vw
   .viewer-image-preload
     display: none
 

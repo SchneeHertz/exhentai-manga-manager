@@ -196,7 +196,7 @@
       <el-col :span="20" v-if="editTagView" class="book-tag-edit-view">
         <el-popover
           v-for="book in visibleChunkDisplayBookListForEditTagView" :key="book.id"
-          placement="right" :width="400" trigger="hover" :show-after="500" :hide-after="100"
+          placement="bottom" :width="400" trigger="hover" :show-after="500" :hide-after="100"
         >
           <template #reference>
             <el-badge
@@ -799,7 +799,7 @@ export default defineComponent({
       return this.chunkDisplayBookList.filter(book => !book.isCollection && !book.folderHide && !book.hiddenBook)
     },
     visibleChunkDisplayBookListForEditTagView () {
-      return this.chunkDisplayBookList.filter(book => !book.collectionHide && !book.folderHide)
+      return this.chunkDisplayBookList.filter(book => !book.isCollection && !book.folderHide)
     },
   },
   mounted () {
@@ -2763,7 +2763,7 @@ body
   max-height: 490px!important
 
 .mx-menu-ghost-host
-  z-index: 3000!important
+  z-index: 4000!important
 .mx-context-menu
   background-color: var(--el-fill-color-extra-light)!important
   .mx-context-menu-item:hover

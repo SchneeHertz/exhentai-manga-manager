@@ -169,6 +169,7 @@
     "notNewVersion": "Not update is available",
     "newVersion": "New Version: ",
     "downloadUpdate": "Download Update",
+    "skipVersion": "Skip this version",
     "proxyWorking": "Proxy server is working",
     "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct",
     "confirmDelete": "Remove the manga from app and delete the local file, OK?",

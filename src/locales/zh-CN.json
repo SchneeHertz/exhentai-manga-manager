@@ -169,6 +169,7 @@
     "notNewVersion": "已是最新版本",
     "newVersion": "新版本: ",
     "downloadUpdate": "下载更新",
+    "skipVersion": "跳过此版本",
     "proxyWorking": "代理服务器连接正常",
     "proxyNotWorking": "连接错误, 检查代理服务器是否工作, 设置是否正确",
     "confirmDelete": "将漫画从软件中移除并删除本地文件, 确定？",

@@ -476,16 +476,24 @@ const autoCheckUpdates = (forceShowDialog) => {
   axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
   .then(res=>{
     let { tag_name, html_url, body } = res.data
-    if (tag_name && tag_name !== 'v' + version) {
+    let skipVersion = localStorage.getItem('skipVersion')
+    if (tag_name && tag_name !== 'v' + version && tag_name !== skipVersion) {
       ElMessageBox.confirm(
         h('pre', { innerHTML: body, style: 'font-family: Avenir, Helvetica, Arial, sans-serif'}),
         t('c.newVersion') + tag_name,
         {
-          confirmButtonText: t('c.downloadUpdate')
+          distinguishCancelAndClose: true,
+          confirmButtonText: t('c.downloadUpdate'),
+          cancelButtonText: t('c.skipVersion')
         }
       )
       .then(()=>{
         ipcRenderer.invoke('open-url', html_url)
+      })
+      .catch((action) => {
+        if (action === 'cancel') {
+          localStorage.setItem('skipVersion', tag_name)
+        }
       })
     } else if (forceShowDialog) {
       ElMessageBox.confirm(

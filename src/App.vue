@@ -160,10 +160,9 @@
         <el-badge
           :value="book.collected ? '✓' : '+'"
           :type="book.collected ? 'success' : 'warning'"
-          v-for="book in chunkDisplayBookList" :key="book.id"
+          v-for="book in visibleChunkDisplayBookListForCollectView" :key="book.id"
           class="book-add-badge"
           @click="handleClickCollectBadge(book)"
-          v-show="!book.isCollection && !book.folderHide && !book.hiddenBook"
         >
           <div class="book-collect-card">
             <p class="book-collect-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
@@ -196,7 +195,7 @@
       </el-col>
       <el-col :span="20" v-if="editTagView" class="book-tag-edit-view">
         <el-popover
-          v-for="book in chunkDisplayBookList" :key="book.id"
+          v-for="book in visibleChunkDisplayBookListForEditTagView" :key="book.id"
           placement="right" :width="400" trigger="hover" :show-after="500" :hide-after="100"
         >
           <template #reference>
@@ -205,7 +204,6 @@
               :type="book.selected ? 'success' : 'warning'"
               class="book-add-badge"
               @click="handleSelectBookBadge(book)"
-              v-show="!book.isCollection && !book.folderHide"
             >
               <div class="book-tag-edit-card" @contextmenu="previewManga(book)">
                 <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
@@ -796,7 +794,13 @@ export default defineComponent({
     },
     visibleChunkDisplayBookList () {
       return this.chunkDisplayBookList.filter(book => !book.collectionHide && (this.sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide)
-    }
+    },
+    visibleChunkDisplayBookListForCollectView () {
+      return this.chunkDisplayBookList.filter(book => !book.isCollection && !book.folderHide && !book.hiddenBook)
+    },
+    visibleChunkDisplayBookListForEditTagView () {
+      return this.chunkDisplayBookList.filter(book => !book.collectionHide && !book.folderHide)
+    },
   },
   mounted () {
     ipcRenderer.on('send-message', (event, arg)=>{

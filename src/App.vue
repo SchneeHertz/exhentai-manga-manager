@@ -124,7 +124,7 @@
               @contextmenu="onBookContextMenu($event, book)"
             />
             <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
-            <el-tag class="book-card-pagecount" size="small" type="error" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
             <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
             <el-icon
               :size="30"
@@ -240,11 +240,11 @@
         </el-space>
         <el-divider content-position="left">{{$t('m.other')}}</el-divider>
         <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain >{{$t('m.batchGetMetadata')}}</el-button>
-          <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteFile')}}</el-button>
-          <el-button type="primary" plain @click="rescanBook(bookDetail)">{{$t('m.rescan')}}</el-button>
-          <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{$t('m.showManga')}}</el-button>
-          <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{$t('m.hideManga')}}</el-button>
+          <el-button type="primary" plain @click="groupGetMetadata" :loading="updateTagsLoading">{{$t('m.batchGetMetadata')}}</el-button>
+          <el-button type="danger" plain @click="groupDeleteLocalBook" :loading="updateTagsLoading">{{$t('m.deleteFile')}}</el-button>
+          <el-button type="primary" plain @click="groupRescanBook" :loading="updateTagsLoading">{{$t('m.rescan')}}</el-button>
+          <el-button type="primary" plain @click="groupTriggerHiddenBook(false)" :loading="updateTagsLoading">{{$t('m.showManga')}}</el-button>
+          <el-button type="primary" plain @click="groupTriggerHiddenBook(true)" :loading="updateTagsLoading">{{$t('m.hideManga')}}</el-button>
         </el-space>
       </el-col>
     </el-row>
@@ -336,7 +336,7 @@
             @contextmenu="onBookContextMenu($event, book)"
           />
           <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
-          <el-tag class="book-card-pagecount" size="small" type="error" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+          <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
           <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
           <el-icon
             :size="30"
@@ -1144,6 +1144,7 @@ export default defineComponent({
           this.bookList = this.prepareBookList(res)
           this.loadCollectionList()
           this.geneFolderTree()
+          this.selectBookList = []
         })
     },
     saveBook (book) {
@@ -1339,10 +1340,32 @@ export default defineComponent({
         this.getBookInfoFromEh(book)
       }
     },
-    getBookListMetadata () {
+    async getBooksMetadata (bookList, gap) {
       let server = this.setting.defaultScraper || 'exhentai'
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
+      for (let i = 0; i < bookList.length; i++) {
+        ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
+        let book = bookList[i]
+        try {
+          if (this.serviceAvailable) {
+            let resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
+              book.hash.toUpperCase(),
+              this.$refs.SearchDialogRef.returnTrimFileName(book),
+              server
+            )
+            this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
+            await timer(gap)
+          }
+        } catch (error) {
+          book.status = 'tag-failed'
+          await this.saveBook(book)
+          console.error(error)
+        }
+      }
+      ipcRenderer.invoke('set-progress-bar', -1)
+    },
+    getBookListMetadata () {
       let bookList
       if (this.setting.batchTagfailedBook) {
         bookList = this.bookList.filter(book=>book.status === 'tag-failed' || book.status === 'non-tag')
@@ -1352,29 +1375,7 @@ export default defineComponent({
       if (this.setting.onlyGetMetadataOfSelectedFolder) {
         bookList = bookList.filter(book => !book.folderHide)
       }
-      let load = async (gap) => {
-        for (let i = 0; i < bookList.length; i++) {
-          ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
-          let book = bookList[i]
-          try {
-            if (this.serviceAvailable) {
-              let resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
-                book.hash.toUpperCase(),
-                this.$refs.SearchDialogRef.returnTrimFileName(book),
-                server
-              )
-              this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
-              await timer(gap)
-            }
-          } catch (error) {
-            book.status = 'tag-failed'
-            await this.saveBook(book)
-            console.error(error)
-          }
-        }
-        ipcRenderer.invoke('set-progress-bar', -1)
-      }
-      load(this.setting.requireGap || 10000)
+      this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
     },
 
     // home header
@@ -1823,6 +1824,20 @@ export default defineComponent({
         this.selectBookList.push(book.id)
       }
     },
+    selectAllForGroupTag () {
+      this.displayBookList.forEach(book=>{
+        if (!book.isCollection && !book.folderHide) {
+          book.selected = true
+          this.selectBookList.push(book.id)
+        }
+      })
+    },
+    unselectAllForGroupTag () {
+      this.displayBookList.forEach(book=>{
+        book.selected = false
+        this.selectBookList = []
+      })
+    },
     previewManga (book) {
       this.$refs.InternalViewerRef.showThumbnail = true
       this.$refs.InternalViewerRef.viewManga(book, '75%')
@@ -1922,19 +1937,69 @@ export default defineComponent({
         this.updateTagsLoading = false
       }
     },
-    selectAllForGroupTag () {
-      this.displayBookList.forEach(book=>{
-        if (!book.isCollection && !book.folderHide) {
-          book.selected = true
-          this.selectBookList.push(book.id)
+    async groupGetMetadata () {
+      try {
+        this.updateTagsLoading = true
+        const bookList = _.compact(this.selectBookList.map(id=>_.find(this.bookList, {id})))
+        await this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
+        this.updateTagsLoading = false
+      } catch (error) {
+        console.error(error)
+        this.updateTagsLoading = false
+      }
+    },
+    groupDeleteLocalBook () {
+      ElMessageBox.confirm(
+        this.$t('c.confirmDelete'),
+        '',
+        {}
+      )
+      .then(async () => {
+        this.updateTagsLoading = true
+        for (const id of this.selectBookList) {
+          const book = _.find(this.bookList, {id})
+          if (book) await this.deleteBook(book)
         }
       })
-    },
-    unselectAllForGroupTag () {
-      this.displayBookList.forEach(book=>{
-        book.selected = false
-        this.selectBookList = []
+      .finally(() => {
+        this.updateTagsLoading = false
       })
+    },
+    async groupRescanBook () {
+      try {
+        this.updateTagsLoading = true
+        for (const id of this.selectBookList) {
+          const book = _.find(this.bookList, {id})
+          if (book) {
+            await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
+            .then((bookInfo) => {
+              _.assign(book, bookInfo)
+              this.saveBook(book)
+            })
+          }
+        }
+        this.printMessage('success', this.$t('c.rescanSuccess'))
+        this.updateTagsLoading = false
+      } catch (error) {
+        console.error(error)
+        this.updateTagsLoading = false
+      }
+    },
+    async groupTriggerHiddenBook (val) {
+      try {
+        this.updateTagsLoading = true
+        for (const id of this.selectBookList) {
+          const book = _.find(this.bookList, {id})
+          if (book) {
+            book.hiddenBook = val
+            await this.saveBook(book)
+          }
+        }
+        this.updateTagsLoading = false
+      } catch (error) {
+        console.error(error)
+        this.updateTagsLoading = false
+      }
     },
 
     // detail view function
@@ -1952,43 +2017,44 @@ export default defineComponent({
       this.bookDetail = book
       ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
     },
-    rescanBook (book) {
-      ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
+    async rescanBook (book) {
+      await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
       .then((bookInfo) => {
         _.assign(book, bookInfo)
         this.saveBook(book)
         this.printMessage('success', this.$t('c.rescanSuccess'))
       })
     },
+    async deleteBook (book) {
+      await ipcRenderer.invoke('delete-local-book', book.filepath)
+      .finally(()=>{
+        this.dialogVisibleBookDetail = false
+        if (book.collectionHide) {
+          _.forEach(this.collectionList, collection=>{
+            collection.list = _.filter(collection.list, hash_id => hash_id !== book.id && hash_id !== book.hash)
+          })
+          this.openCollectionBookList = _.filter(this.openCollectionBookList, bookOfCollection => {
+            return bookOfCollection.id !== book.id && bookOfCollection.id !== book.hash
+          })
+          this.saveCollection()
+        } else {
+          let findBookInBookList = _.findIndex(this.bookList, b=>b.filepath === book.filepath)
+          this.bookList.splice(findBookInBookList, 1)
+          this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
+          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
+        }
+      })
+    },
     deleteLocalBook (book) {
-      const deleteBook = ()=>{
-        ipcRenderer.invoke('delete-local-book', book.filepath)
-        .finally(()=>{
-          this.dialogVisibleBookDetail = false
-          if (book.collectionHide) {
-            _.forEach(this.collectionList, collection=>{
-              collection.list = _.filter(collection.list, hash_id => hash_id !== book.id && hash_id !== book.hash)
-            })
-            this.openCollectionBookList = _.filter(this.openCollectionBookList, bookOfCollection => {
-              return bookOfCollection.id !== book.id && bookOfCollection.id !== book.hash
-            })
-            this.saveCollection()
-          } else {
-            let findBookInBookList = _.findIndex(this.bookList, b=>b.filepath === book.filepath)
-            this.bookList.splice(findBookInBookList, 1)
-            this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
-            this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
-          }
-        })
-      }
       if (this.setting.skipDeleteConfirm) {
-        deleteBook()
+        this.deleteBook(book)
       } else {
         ElMessageBox.confirm(
           this.$t('c.confirmDelete'),
           '',
           {}
-        ).then(deleteBook).catch(()=>({}))
+        )
+        .then(this.deleteBook(book))
       }
     },
 

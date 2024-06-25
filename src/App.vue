@@ -281,50 +281,6 @@
         background
       />
     </el-row>
-    <InternalViewer
-      ref="InternalViewerRef"
-      :setting="setting"
-      :key-map="keyMap"
-      :book-detail="bookDetail"
-      @handle-stop-read-manga="handleStopReadManga"
-      @to-next-manga="toNextManga"
-      @to-next-manga-random="toNextMangaRandom"
-      @use-new-cover="useNewCover"
-      @select-book="selectBook"
-      @message="printMessage"
-      @update-window-title="updateWindowTitle"
-      @rescan-book="rescanBook"
-    ></InternalViewer>
-    <el-drawer v-model="sideVisibleFolderTree"
-      :title="$t('m.folderTree')"
-      direction="ltr"
-      :size="setting.folderTreeWidth ? setting.folderTreeWidth : '20%'"
-      modal-class="side-tree-modal"
-    >
-      <el-input
-        class="folder-search"
-        v-model="treeFilterText"
-        clearable
-      ></el-input>
-      <el-tree
-        ref="treeRef"
-        :data="folderTreeData"
-        node-key="folderPath"
-        :default-expanded-keys="expandNodes"
-        :expand-on-click-node="false"
-        :filter-node-method="filterTreeNode"
-        @node-expand="handleNodeExpand"
-        @node-collapse="handleNodeCollapse"
-        @current-change="selectFolderTreeNode"
-      ></el-tree>
-    </el-drawer>
-    <Graph
-      ref="TagGraphRef"
-      :book-list="displayBookList"
-      :cat2letter="cat2letter"
-      :resolved-translation="resolvedTranslation"
-      @search="handleSearchTags"
-    ></Graph>
     <el-drawer v-model="drawerVisibleCollection"
       direction="btt"
       size="calc(100vh - 60px)"
@@ -424,7 +380,6 @@
               <el-button type="success" style="padding-right: 0;" plain @click="openLocalBook(bookDetail)">{{$t('m.re')}}</el-button>
               <el-button type="success" style="padding-left: 0;" plain @click="$refs.InternalViewerRef.viewManga(bookDetail)">{{$t('m.ad')}}</el-button>
             </el-button-group>
-            <!-- <el-button type="success" plain @click="openLocalBook(bookDetail)">{{$t('m.read')}}</el-button> -->
             <el-button plain @click="triggerShowComment">{{setting.showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
             <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
           </el-row>
@@ -519,6 +474,50 @@
         </el-col>
       </el-row>
     </el-dialog>
+    <InternalViewer
+      ref="InternalViewerRef"
+      :setting="setting"
+      :key-map="keyMap"
+      :book-detail="bookDetail"
+      @handle-stop-read-manga="handleStopReadManga"
+      @to-next-manga="toNextManga"
+      @to-next-manga-random="toNextMangaRandom"
+      @use-new-cover="useNewCover"
+      @select-book="selectBook"
+      @message="printMessage"
+      @update-window-title="updateWindowTitle"
+      @rescan-book="rescanBook"
+    ></InternalViewer>
+    <el-drawer v-model="sideVisibleFolderTree"
+      :title="$t('m.folderTree')"
+      direction="ltr"
+      :size="setting.folderTreeWidth ? setting.folderTreeWidth : '20%'"
+      modal-class="side-tree-modal"
+    >
+      <el-input
+        class="folder-search"
+        v-model="treeFilterText"
+        clearable
+      ></el-input>
+      <el-tree
+        ref="treeRef"
+        :data="folderTreeData"
+        node-key="folderPath"
+        :default-expanded-keys="expandNodes"
+        :expand-on-click-node="false"
+        :filter-node-method="filterTreeNode"
+        @node-expand="handleNodeExpand"
+        @node-collapse="handleNodeCollapse"
+        @current-change="selectFolderTreeNode"
+      ></el-tree>
+    </el-drawer>
+    <Graph
+      ref="TagGraphRef"
+      :book-list="displayBookList"
+      :cat2letter="cat2letter"
+      :resolved-translation="resolvedTranslation"
+      @search="handleSearchTags"
+    ></Graph>
     <SearchDialog
       ref="SearchDialogRef"
       :cookie="cookie"

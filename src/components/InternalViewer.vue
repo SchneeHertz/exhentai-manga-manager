@@ -92,7 +92,7 @@
               @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image)"
             />
-            <div class="viewer-thunmnail-page">{{index}} of {{viewerImageList.length}}</div>
+            <div class="viewer-thunmnail-page">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </el-space>
       </div>
@@ -313,7 +313,7 @@ const drawerViewerBody = ref(null)
 
 const thumbnailWidth = computed(()=>{
   const innerWidth = drawerViewerBody.value ? drawerViewerBody.value.clientWidth : window.innerWidth
-  return `${(innerWidth - 50) / (props.setting.thumbnailColumn || 10) - 8}px`
+  return `${(innerWidth - 32) / (props.setting.thumbnailColumn || 10) - 8}px`
 })
 
 const returnImageStyle = (image) => {
@@ -675,8 +675,6 @@ defineExpose({
   margin: 16px
   height: 100vh
   text-align: left
-.viewer-thumbnail
-  margin: 8px 0 0
 .viewer-thunmnail-page
   text-align: center
   font-size: 11px

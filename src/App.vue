@@ -1605,8 +1605,7 @@ export default defineComponent({
       this.searchBook()
     },
     handleClickTagInRandom (tag) {
-      this.searchString = this.searchString.replaceAll(tag.value, '')
-      this.searchString += ' ' + tag.value
+      this.searchString = tag.value
       this.searchBook()
     },
     reloadRandomTags () {

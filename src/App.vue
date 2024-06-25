@@ -562,7 +562,6 @@ import { getWidth } from './utils.js'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import en from 'element-plus/dist/locale/en.mjs'
 
-import NameFormItem from './components/NameFormItem.vue'
 import Setting from './components/Setting.vue'
 import Graph from './components/Graph.vue'
 import InternalViewer from './components/InternalViewer.vue'
@@ -572,7 +571,6 @@ export default defineComponent({
   components: {
     BookmarkTwotone, IosRemoveCircleOutline, CaretRight20Regular, CaretLeft20Regular,
     draggable,
-    NameFormItem,
     Setting,
     Graph,
     InternalViewer,

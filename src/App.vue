@@ -1985,6 +1985,7 @@ export default defineComponent({
         }
       })
       .finally(() => {
+        this.unselectAllForGroupTag()
         this.updateTagsLoading = false
       })
     },

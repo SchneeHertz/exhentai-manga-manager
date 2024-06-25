@@ -370,6 +370,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
 
 import { version } from '../../package.json'
+import { gh_token } from '../../secret_key.json'
 import { acceleratorInfo } from '../utils.js'
 import NameFormItem from './NameFormItem.vue'
 
@@ -473,7 +474,13 @@ const testProxy = () => {
 }
 
 const autoCheckUpdates = (forceShowDialog) => {
-  axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
+  axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest', {
+    headers: {
+      'Accept': 'application/vnd.github+json',
+      'Authorization': 'Bearer ' + gh_token,
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  })
   .then(res=>{
     let { tag_name, html_url, body } = res.data
     let skipVersion = localStorage.getItem('skipVersion')

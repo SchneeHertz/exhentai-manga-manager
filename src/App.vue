@@ -1841,14 +1841,14 @@ export default defineComponent({
     handleSelectBookBadge (book) {
       if (book.selected) {
         book.selected = false
-        this.selectBookList = _.filter(this.selectBookList, b=>b.id !== book.id)
+        this.selectBookList = _.filter(this.selectBookList, b => b.id !== book.id)
       } else {
         book.selected = true
         this.selectBookList.push(book.id)
       }
     },
     selectAllForGroupTag () {
-      this.displayBookList.forEach(book=>{
+      this.displayBookList.forEach(book => {
         if (!book.isCollection && !book.folderHide) {
           book.selected = true
           this.selectBookList.push(book.id)
@@ -1856,10 +1856,10 @@ export default defineComponent({
       })
     },
     unselectAllForGroupTag () {
-      this.displayBookList.forEach(book=>{
+      this.displayBookList.forEach(book => {
         book.selected = false
-        this.selectBookList = []
       })
+      this.selectBookList = []
     },
     previewManga (book) {
       this.$refs.InternalViewerRef.showThumbnail = true

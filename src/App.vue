@@ -537,8 +537,6 @@
       @message="printMessage"
       @force-gene-book-list="forceGeneBookList"
       @patch-local-metadata="patchLocalMetadata"
-      @export-database="exportDatabase"
-      @import-database="importDatabase"
       @import-metadata-from-sqlite="importMetadataFromSqlite"
       @handle-resolve-translation-update="handleResolveTranslationUpdate"
     ></Setting>
@@ -1678,7 +1676,7 @@ export default defineComponent({
     },
     handleNodeExpand (nodeObject) {
       this.expandNodes.push(nodeObject.folderPath)
-      this.expandNodes = _.uniq(this.expandNodes)
+      this.expandNodes = [...new Set(this.expandNodes)]
       localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
     },
     handleNodeCollapse (nodeObject) {
@@ -1699,31 +1697,31 @@ export default defineComponent({
     // collection view function
     loadCollectionList () {
       ipcRenderer.invoke('load-collection-list')
-      .then(res=>{
+      .then(res => {
         this.collectionList = res
-        _.forEach(this.collectionList, collection=>{
-          let collectBook = _.compact(collection.list.map(hash_id=>{
-            return _.filter(this.bookList, book=>book.id === hash_id || book.hash === hash_id)
+        _.forEach(this.collectionList, collection => {
+          let collectBook = _.compact(collection.list.map(hash_id => {
+            return _.filter(this.bookList, book => book.id === hash_id || book.hash === hash_id)
           }))
           collectBook = _.flatten(collectBook)
-          collection.list = collectBook.map(book=>book.id)
-          collectBook.map(book=>book.collectionHide = true)
-          let date = _.last(_.compact(_.sortBy(collectBook.map(book=>book.date))))
-          let posted = _.last(_.compact(_.sortBy(collectBook.map(book=>book.posted))))
-          let rating = _.last(_.compact(_.sortBy(collectBook.map(book=>book.rating))))
-          let mtime = _.last(_.compact(_.sortBy(collectBook.map(book=>book.mtime))))
+          collection.list = [...new Set(collectBook.map(book => book.hash))]
+          collectBook.map(book => book.collectionHide = true)
+          let date = _.last(_.compact(_.sortBy(collectBook.map(book => book.date))))
+          let posted = _.last(_.compact(_.sortBy(collectBook.map(book => book.posted))))
+          let rating = _.last(_.compact(_.sortBy(collectBook.map(book => book.rating))))
+          let mtime = _.last(_.compact(_.sortBy(collectBook.map(book => book.mtime))))
           let mark = _.some(collectBook, 'mark')
-          let tags = _.mergeWith({}, ...collectBook.map(book=>book.tags), (obj, src)=>{
+          let tags = _.mergeWith({}, ...collectBook.map(book => book.tags), (obj, src) => {
             if (_.isArray(obj) && _.isArray(src)) {
-              return _.uniq(obj.concat(src))
+              return [...new Set(obj.concat(src))]
             } else {
               return src
             }
           })
-          let title_jpn = collectBook.map(book=>book.title+book.title_jpn).join(',')
-          let filepath = collectBook.map(book=>book.filepath).join(',')
-          let category = _.uniq(collectBook.map(book=>book.category)).join(',')
-          let status = _.uniq(collectBook.map(book=>book.status)).join(',')
+          let title_jpn = collectBook.map(book => book.title+book.title_jpn).join(',')
+          let filepath = collectBook.map(book => book.filepath).join(',')
+          let category = [...new Set(collectBook.map(book => book.category))].join(',')
+          let status = [...new Set(collectBook.map(book => book.status))].join(',')
           if (!_.isEmpty(collectBook)) {
             this.bookList.push({
               title: collection.title,
@@ -1820,9 +1818,9 @@ export default defineComponent({
     },
     openCollection (collection) {
       this.drawerVisibleCollection = true
-      this.openCollectionBookList = _.compact(collection.list.map(hash_id=>{
-        return _.find(this.bookList, book => book.id === hash_id || book.hash === hash_id)
-      }))
+      this.openCollectionBookList = _.compact(_.flatten(collection.list.map(hash_id=>{
+        return _.filter(this.bookList, book => book.id === hash_id || book.hash === hash_id)
+      })))
       this.openCollectionTitle = collection.title
       this.selectCollection = collection.id
     },
@@ -2024,7 +2022,7 @@ export default defineComponent({
     async groupGetMetadata () {
       try {
         this.updateTagsLoading = true
-        const bookList = _.compact(this.selectBookList.map(id=>_.find(this.displayBookList, {id})))
+        const bookList = _.compact(this.selectBookList.map(id => _.find(this.displayBookList, {id})))
         await this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
         this.updateTagsLoading = false
       } catch (error) {
@@ -2123,8 +2121,7 @@ export default defineComponent({
           })
           this.saveCollection()
         } else {
-          let findBookInBookList = _.findIndex(this.bookList, b=>b.filepath === book.filepath)
-          this.bookList.splice(findBookInBookList, 1)
+          this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
           this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
           this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
         }
@@ -2348,17 +2345,6 @@ export default defineComponent({
     },
 
     // import/export
-    async exportDatabase () {
-      let folder = await ipcRenderer.invoke('select-folder', this.$t('c.exportFolder'))
-      await ipcRenderer.invoke('export-database', folder)
-      this.printMessage('success', this.$t('c.exportMessage'))
-    },
-    async importDatabase () {
-      let collectionListPath = await ipcRenderer.invoke('select-file', this.$t('c.selectCollectionList'))
-      let metadataSqlitePath = await ipcRenderer.invoke('select-file', this.$t('c.selectMetadataSqlite'))
-      await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
-      this.printMessage('success', this.$t('c.importMessage'))
-    },
     importMetadataFromSqlite () {
       ipcRenderer.invoke('import-sqlite', _.cloneDeep(this.bookList))
       .then(result=>{

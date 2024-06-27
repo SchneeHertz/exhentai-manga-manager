@@ -254,12 +254,12 @@
           </el-col>
           <el-col :span="5">
             <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('exportDatabase')">{{$t('m.exportMetadata')}}</el-button>
+              <el-button class="function-button" type="primary" plain @click="exportDatabase">{{$t('m.exportMetadata')}}</el-button>
             </div>
           </el-col>
           <el-col :span="5">
             <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('importDatabase')">{{$t('m.importMetadata')}}</el-button>
+              <el-button class="function-button" type="primary" plain @click="importDatabase">{{$t('m.importMetadata')}}</el-button>
             </div>
           </el-col>
           <el-col :span="5">
@@ -384,8 +384,6 @@ const emit = defineEmits([
   'message',
   'forceGeneBookList',
   'patchLocalMetadata',
-  'exportDatabase',
-  'importDatabase',
   'importMetadataFromSqlite',
   'handleResolveTranslationUpdate'
 ])
@@ -545,6 +543,20 @@ const saveSetting = () => {
 
 const openLink = (link) => {
   ipcRenderer.invoke('open-url', link)
+}
+
+
+const exportDatabase = async () => {
+  let folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
+  await ipcRenderer.invoke('export-database', folder)
+  emit('message', 'success', t('c.exportMessage'))
+}
+
+const importDatabase = async () => {
+  let collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'))
+  let metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'))
+  await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
+  emit('message', 'success', t('c.importMessage'))
 }
 
 const dialogVisibleSetting = ref(false)

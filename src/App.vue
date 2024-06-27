@@ -2121,7 +2121,8 @@ export default defineComponent({
           })
           this.saveCollection()
         } else {
-          this.bookList = _.filter(this.bookList, b=>b.filepath !== book.filepath)
+          let findBookInBookList = _.findIndex(this.bookList, b=>b.filepath === book.filepath)
+          this.bookList.splice(findBookInBookList, 1)
           this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
           this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
         }

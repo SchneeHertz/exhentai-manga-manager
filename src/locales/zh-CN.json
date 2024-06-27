@@ -144,7 +144,11 @@
     "accelerator": "快捷键"
   },
   "c": {
+    "selectCollectionList": "选择collectionList.json",
+    "selectMetadataSqlite": "选择metadata.sqlite",
     "importMessage": "导入完成, 如导入数据有合集, 需打开编辑合集后手动保存",
+    "exportFolder": "选择导出文件夹",
+    "exportMessage": "导出完成, 请到选择的文件夹下查看collectionList.json和metadata.sqlite",
     "rebuildMessage": "强制重建漫画库完成",
     "inputCollectionName": "请输入合集名",
     "deleteCollection": "删除合集",

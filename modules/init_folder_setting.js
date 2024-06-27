@@ -71,11 +71,23 @@ const prepareSetting = () => {
   return setting
 }
 
+const prepareCollectionList = () => {
+  let collectionList
+  try {
+    collectionList = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'collectionList.json'), { encoding: 'utf-8' }))
+  } catch {
+    collectionList = []
+    fs.writeFileSync(path.join(STORE_PATH, 'collectionList.json'), JSON.stringify(collectionList, null, '  '), { encoding: 'utf-8' })
+  }
+  return collectionList
+}
+
 module.exports = {
   STORE_PATH,
   TEMP_PATH,
   COVER_PATH,
   VIEWER_PATH,
   prepareSetting,
+  prepareCollectionList,
   preparePath
 }

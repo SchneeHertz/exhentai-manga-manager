@@ -411,15 +411,17 @@ onMounted(() => {
 })
 
 const selectLibraryPath = () => {
-  ipcRenderer.invoke('select-folder')
+  ipcRenderer.invoke('select-folder', t('m.library'))
   .then(res=>{
-    setting.value.library = res
-    saveSetting()
+    if (res) {
+      setting.value.library = res
+      saveSetting()
+    }
   })
 }
 
 const selectMetadataPath = () => {
-  ipcRenderer.invoke('select-folder')
+  ipcRenderer.invoke('select-folder', t('m.metadataPath'))
   .then(res=>{
     setting.value.metadataPath = res
     saveSetting()
@@ -427,10 +429,12 @@ const selectMetadataPath = () => {
 }
 
 const selectImageExplorerPath = () => {
-  ipcRenderer.invoke('select-file')
+  ipcRenderer.invoke('select-file', t('m.imageViewer'))
   .then(res=>{
-    setting.value.imageExplorer = `"${res}"`
-    saveSetting()
+    if (res) {
+      setting.value.imageExplorer = `"${res}"`
+      saveSetting()
+    }
   })
 }
 

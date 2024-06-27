@@ -17,11 +17,12 @@ const windowStateKeeper = require('electron-window-state')
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
-const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, preparePath } = require('./modules/init_folder_setting.js')
+const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
 
 
 preparePath()
 let setting = prepareSetting()
+let collectionList = prepareCollectionList()
 
 const Manga = prepareMangaModel(path.join(STORE_PATH, './database.sqlite'))
 let metadataSqliteFile
@@ -475,17 +476,11 @@ ipcMain.handle('get-folder-tree', async (event, bookList) => {
 })
 
 ipcMain.handle('load-collection-list', async (event, arg) => {
-  let list
-  try {
-    list = JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'collectionList.json'), { encoding: 'utf-8' }))
-  } catch (err) {
-    console.log(err)
-    list = []
-  }
-  return list
+  return collectionList
 })
 
 ipcMain.handle('save-collection-list', async (event, list) => {
+  collectionList = list
   return await fs.promises.writeFile(path.join(STORE_PATH, 'collectionList.json'), JSON.stringify(list, null, '  '), { encoding: 'utf-8' })
 })
 
@@ -607,8 +602,9 @@ ipcMain.handle('delete-image', async (event, filename, filepath, type) => {
 })
 
 // setting
-ipcMain.handle('select-folder', async (event, type) => {
+ipcMain.handle('select-folder', async (event, title) => {
   let result = await dialog.showOpenDialog(mainWindow, {
+    title,
     properties: ['openDirectory']
   })
   if (!result.canceled) {
@@ -618,8 +614,9 @@ ipcMain.handle('select-folder', async (event, type) => {
   }
 })
 
-ipcMain.handle('select-file', async (event, type) => {
+ipcMain.handle('select-file', async (event, title) => {
   let result = await dialog.showOpenDialog(mainWindow, {
+    title,
     properties: ['openFile']
   })
   if (!result.canceled) {
@@ -630,7 +627,7 @@ ipcMain.handle('select-file', async (event, type) => {
 })
 
 ipcMain.handle('load-setting', async (event, arg) => {
-  return JSON.parse(fs.readFileSync(path.join(STORE_PATH, 'setting.json'), { encoding: 'utf-8' }))
+  return setting
 })
 
 ipcMain.handle('save-setting', async (event, receiveSetting) => {
@@ -648,48 +645,18 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 })
 
-ipcMain.handle('export-database', async (event, arg) => {
-  let bookList = await loadBookListFromDatabase()
-  let collectionList = []
-  try {
-    collectionList = JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'collectionList.json'), { encoding: 'utf-8' }))
-  } catch (err) {
-    console.log(err)
-  }
-  _.forEach(collectionList, collection => {
-    _.forEach(collection.list, (hash_id, index) => {
-      let foundBook = _.find(bookList, book => book.id === hash_id || book.hash === hash_id)
-      if (foundBook) {
-        foundBook.collectionInfo = {
-          id: collection.id,
-          title: collection.title,
-          index
-        }
-      }
-    })
-  })
-  let database = bookList.map(book => {
-    try {
-      if (!book.hash) {
-        book.hash = createHash('sha1').update(fs.readFileSync(book.tempCoverPath)).digest('hex')
-      }
-      return _.pick(book, ['hash', 'tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category', 'url', 'collectionInfo', 'mark'])
-    } catch {
-      return {}
-    }
-  })
-  return database
+ipcMain.handle('export-database', async (event, folder) => {
+  await fs.promises.copyFile(path.join(STORE_PATH, 'collectionList.json'), path.join(folder, 'collectionList.json'))
+  await fs.promises.copyFile(metadataSqliteFile, path.join(folder, 'metadata.sqlite'))
 })
 
-ipcMain.handle('load-import-database', async (event, arg) => {
-  let result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile']
-  })
-  if (!result.canceled) {
-    return JSON.parse(fs.readFileSync(result.filePaths[0], { encoding: 'utf-8' }))
-  } else {
-    return []
-  }
+ipcMain.handle('import-database', async (event, arg) => {
+  let { collectionListPath, metadataSqlitePath } = arg
+  await Metadata.sequelize.close()
+  await fs.promises.copyFile(collectionListPath, path.join(STORE_PATH, 'collectionList.json'))
+  await fs.promises.copyFile(metadataSqlitePath, metadataSqliteFile)
+  app.relaunch()
+  app.exit(0)
 })
 
 ipcMain.handle('import-sqlite', async (event, bookList) => {

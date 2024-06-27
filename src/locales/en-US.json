@@ -144,7 +144,11 @@
     "accelerator": "Accelerator"
   },
   "c": {
+    "selectCollectionList": "Select collectionList.json",
+    "selectMetadataSqlite": "Se;ect metadata.sqlite",
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
+    "exportFolder": "Choose the folder to export metadata and collectionList.json",
+    "exportMessage": "Export completed, please go to the selected folder to view collectionList.json and metadata.sqlite.",
     "rebuildMessage": "Forced rebuild library completed",
     "inputCollectionName": "Please input collection name",
     "deleteCollection": "Delete Collection",

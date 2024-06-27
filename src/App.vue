@@ -156,15 +156,16 @@
           </div>
         </div>
       </el-col>
-      <el-col :span="20" v-if="editCollectionView" class="book-collect-view">
+      <el-col :span="20" v-if="editCollectionView" class="book-collect-view"
+        @mousedown="handleMouseDownForSelection" @mouseup="handleMouseUpForSelection('collect')" @mousemove="handleMouseMoveForSelection"
+      >
         <el-badge
           :value="book.collected ? '✓' : '+'"
           :type="book.collected ? 'success' : 'warning'"
           v-for="book in visibleChunkDisplayBookListForCollectView" :key="book.id"
           class="book-add-badge"
-          @click="handleClickCollectBadge(book)"
         >
-          <div class="book-collect-card">
+          <div class="book-collect-card selectable-card" :id="book.id" @click="handleClickCollectBadge(book)">
             <p class="book-collect-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
             <img class="book-collect-cover" :src="book.coverPath"/>
           </div>
@@ -193,7 +194,9 @@
           </draggable>
         </div>
       </el-col>
-      <el-col :span="20" v-if="editTagView" class="book-tag-edit-view">
+      <el-col :span="20" v-if="editTagView" class="book-tag-edit-view"
+        @mousedown="handleMouseDownForSelection" @mouseup="handleMouseUpForSelection('tag')" @mousemove="handleMouseMoveForSelection"
+      >
         <el-popover
           v-for="book in visibleChunkDisplayBookListForEditTagView" :key="book.id"
           placement="bottom" :width="400" trigger="hover" :show-after="500" :hide-after="100"
@@ -203,9 +206,8 @@
               :value="book.selected ? '✓' : '+'"
               :type="book.selected ? 'success' : 'warning'"
               class="book-add-badge"
-              @click="handleSelectBookBadge(book)"
             >
-              <div class="book-tag-edit-card" @contextmenu="previewManga(book)">
+              <div class="book-tag-edit-card selectable-card" @contextmenu="previewManga(book)" :id="book.id" @click="handleSelectBookBadge(book)">
                 <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
                 <img class="book-tag-edit-cover" :src="book.coverPath"/>
               </div>
@@ -267,6 +269,7 @@
           <el-button type="primary" plain @click="groupTriggerHiddenBook(true)">{{$t('m.hideManga')}}</el-button>
         </el-space>
       </el-col>
+      <div id="selection-box" ref="selectionBox"></div>
     </el-row>
     <el-row class="pagination-bar">
       <el-pagination
@@ -617,6 +620,9 @@ export default defineComponent({
       updateTagsLoading: false,
       categorySelected: undefined,
       statusSelected: 'tagged',
+      startX: undefined,
+      startY: undefined,
+      isSelecting: false,
       // detail
       bookDetail: {},
       comments: [],
@@ -687,18 +693,11 @@ export default defineComponent({
     },
     displaySelectCollectionList: {
       get () {
-        let list = this.selectCollectionObject.list.map(hash_id=>{
-          let findBook = _.find(this.bookList, book => book.hash === hash_id || book.id === hash_id)
-          if (findBook) {
-            return findBook
-          } else {
-            return undefined
-          }
-        })
-        return _.compact(list)
+        let list = this.selectCollectionObject.list.map(hash_id => _.filter(this.bookList, book => book.hash === hash_id || book.id === hash_id))
+        return _.compact(_.flatten(list))
       },
       set (val) {
-        let list = val.map(b=>b.hash)
+        let list = [...new Set(val.map(b => b.hash))]
         this.selectCollectionObject.list = list
       }
     },
@@ -1704,9 +1703,10 @@ export default defineComponent({
         this.collectionList = res
         _.forEach(this.collectionList, collection=>{
           let collectBook = _.compact(collection.list.map(hash_id=>{
-            return _.find(this.bookList, book=>book.id === hash_id || book.hash === hash_id)
+            return _.filter(this.bookList, book=>book.id === hash_id || book.hash === hash_id)
           }))
-          collection.list = collectBook.map(book=>book.hash)
+          collectBook = _.flatten(collectBook)
+          collection.list = collectBook.map(book=>book.id)
           collectBook.map(book=>book.collectionHide = true)
           let date = _.last(_.compact(_.sortBy(collectBook.map(book=>book.date))))
           let posted = _.last(_.compact(_.sortBy(collectBook.map(book=>book.posted))))
@@ -1782,7 +1782,7 @@ export default defineComponent({
       this.collectionList = _.filter(this.collectionList, c => c.id !== this.selectCollection)
       this.selectCollection = undefined
       this.selectCollectionObject = { list: [] }
-      _.forEach(this.bookList, book => {
+      _.forEach(this.displayBookList, book => {
         book.collected = false
       })
     },
@@ -1798,7 +1798,7 @@ export default defineComponent({
     },
     handleSelectCollectionChange (val) {
       this.selectCollectionObject = _.find(this.collectionList, {id: val})
-      _.forEach(this.bookList, book => {
+      _.forEach(this.displayBookList, book => {
         if (!book.isCollection) {
           if (this.selectCollectionObject.list.includes(book.id) || this.selectCollectionObject.list.includes(book.hash)) {
             book.collected = true
@@ -1809,12 +1809,13 @@ export default defineComponent({
       })
     },
     handleClickCollectBadge (book) {
+      let findBooks = _.filter(this.displayBookList, b => b.id === book.hash || b.hash === book.hash)
       if (book.collected) {
-        book.collected = false
-        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, id=>id !== book.id && id !== book.hash)
+        findBooks.forEach(book => book.collected = false)
+        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, hash => hash !== book.id && hash !== book.hash)
       } else {
+        findBooks.forEach(book => book.collected = true)
         this.selectCollectionObject.list.push(book.hash)
-        book.collected = true
       }
     },
     openCollection (collection) {
@@ -1835,7 +1836,7 @@ export default defineComponent({
     enterEditTagView () {
       this.editTagView = true
       this.selectBookList = []
-      this.chunkDisplayBookList.forEach(book => book.selected = false)
+      this.displayBookList.forEach(book => book.selected = false)
     },
     handleSelectBookBadge (book) {
       if (book.selected) {
@@ -1845,6 +1846,67 @@ export default defineComponent({
         book.selected = true
         this.selectBookList.push(book.id)
       }
+    },
+    handleMouseDownForSelection (e) {
+      this.isSelecting = true;
+      this.startX = e.pageX
+      this.startY = e.pageY
+      this.$refs.selectionBox.style.left = `${this.startX}px`
+      this.$refs.selectionBox.style.top = `${this.startY}px`
+      this.$refs.selectionBox.style.width = `0px`
+      this.$refs.selectionBox.style.height = `0px`
+      e.preventDefault()
+    },
+    handleMouseMoveForSelection (e) {
+      if (this.isSelecting) {
+        let endX = e.pageX
+        let endY = e.pageY
+        let left = Math.min(endX, this.startX)
+        let top = Math.min(endY, this.startY)
+        let width = Math.abs(endX - this.startX)
+        let height = Math.abs(endY - this.startY)
+        this.$refs.selectionBox.style.display = 'block'
+        this.$refs.selectionBox.style.left = `${left}px`
+        this.$refs.selectionBox.style.top = `${top - 60}px`
+        this.$refs.selectionBox.style.width = `${width}px`
+        this.$refs.selectionBox.style.height = `${height}px`
+      }
+    },
+    handleMouseUpForSelection (view) {
+      const rect = this.$refs.selectionBox.getBoundingClientRect()
+      if (rect.width > 10 || rect.height > 10) {
+        document.querySelectorAll('.selectable-card').forEach(item => {
+          const itemRect = item.getBoundingClientRect()
+          if (
+            itemRect.left < rect.right &&
+            itemRect.right > rect.left &&
+            itemRect.top < rect.bottom &&
+            itemRect.bottom > rect.top
+          ) {
+            let book = this.chunkDisplayBookList.find(book => book.id === item.id)
+            if (view === 'tag') {
+              if (book.selected) {
+                book.selected = false
+                this.selectBookList = _.filter(this.selectBookList, id => id !== item.id)
+              } else {
+                book.selected = true
+                this.selectBookList.push(item.id)
+              }
+            } else if (view === 'collect') {
+              let findBooks = _.filter(this.displayBookList, b => b.id === book.hash || b.hash === book.hash)
+              if (book.collected) {
+                findBooks.forEach(book => book.collected = false)
+                this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, hash => hash !== book.id && hash !== book.hash)
+              } else {
+                findBooks.forEach(book => book.collected = true)
+                this.selectCollectionObject.list.push(book.hash)
+              }
+            }
+          }
+        })
+      }
+      this.isSelecting = false
+      this.$refs.selectionBox.style.display = 'none'
     },
     selectAllForGroupTag () {
       this.displayBookList.forEach(book => {
@@ -1885,7 +1947,7 @@ export default defineComponent({
         this.updateTagsLoading = true
         const tags = this.resolveGroupTagSelected()
         for (const id of this.selectBookList) {
-          let book = _.find(this.bookList, {id})
+          let book = _.find(this.displayBookList, {id})
           if (!_.has(book, 'tags')) book.tags = {}
           for (const { category, tag } of tags) {
             if (_.has(book.tags, category)) {
@@ -1911,7 +1973,7 @@ export default defineComponent({
         this.updateTagsLoading = true
         const tags = this.resolveGroupTagSelected()
         for (const id of this.selectBookList) {
-          let book = _.find(this.bookList, {id})
+          let book = _.find(this.displayBookList, {id})
           for (const { category, tag } of tags) {
             if (_.has(book.tags, category)) {
               book.tags[category] = _.filter(book.tags[category], t=>t !== tag)
@@ -1931,7 +1993,7 @@ export default defineComponent({
       try {
         this.updateTagsLoading = true
         for (const id of this.selectBookList) {
-          let book = _.find(this.bookList, {id})
+          let book = _.find(this.displayBookList, {id})
           book.category = this.categorySelected
           await this.saveBook(book)
         }
@@ -1947,7 +2009,7 @@ export default defineComponent({
       try {
         this.updateTagsLoading = true
         for (const id of this.selectBookList) {
-          let book = _.find(this.bookList, {id})
+          let book = _.find(this.displayBookList, {id})
           book.status = this.statusSelected
           await this.saveBook(book)
         }
@@ -1962,7 +2024,7 @@ export default defineComponent({
     async groupGetMetadata () {
       try {
         this.updateTagsLoading = true
-        const bookList = _.compact(this.selectBookList.map(id=>_.find(this.bookList, {id})))
+        const bookList = _.compact(this.selectBookList.map(id=>_.find(this.displayBookList, {id})))
         await this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
         this.updateTagsLoading = false
       } catch (error) {
@@ -1979,7 +2041,7 @@ export default defineComponent({
       .then(async () => {
         this.updateTagsLoading = true
         for (const id of this.selectBookList) {
-          const book = _.find(this.bookList, {id})
+          const book = _.find(this.displayBookList, {id})
           if (book) await this.deleteBook(book)
         }
       })
@@ -1992,7 +2054,7 @@ export default defineComponent({
       try {
         this.updateTagsLoading = true
         for (const id of this.selectBookList) {
-          const book = _.find(this.bookList, {id})
+          const book = _.find(this.displayBookList, {id})
           if (book) {
             await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
             .then((bookInfo) => {
@@ -2012,7 +2074,7 @@ export default defineComponent({
       try {
         this.updateTagsLoading = true
         for (const id of this.selectBookList) {
-          const book = _.find(this.bookList, {id})
+          const book = _.find(this.displayBookList, {id})
           if (book) {
             book.hiddenBook = val
             await this.saveBook(book)
@@ -2286,66 +2348,16 @@ export default defineComponent({
     },
 
     // import/export
-    exportDatabase () {
-      ipcRenderer.invoke('export-database')
-      .then(database=>{
-        let dataStr = JSON.stringify(database, null, '  ')
-        let dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr)
-        let exportFileDefaultName = 'bookHashMetadata.json'
-        let linkElement = document.createElement('a')
-        linkElement.setAttribute('href', dataUri)
-        linkElement.setAttribute('download', exportFileDefaultName)
-        linkElement.click()
-      })
+    async exportDatabase () {
+      let folder = await ipcRenderer.invoke('select-folder', this.$t('c.exportFolder'))
+      await ipcRenderer.invoke('export-database', folder)
+      this.printMessage('success', this.$t('c.exportMessage'))
     },
-    importDatabase () {
-      ipcRenderer.invoke('load-import-database')
-      .then(async database=>{
-        if (!_.isEmpty(database)) {
-          _.forEach(this.bookList, async (book, index)=>{
-            let findData = _.find(database, line=>(line.hash === book.hash || line.hash === book.coverHash))
-            if (findData) {
-              _.assign(book, _.omit(findData, 'hash'))
-              if (book.url){
-                book.status = 'tagged'
-              } else {
-                book.status = 'tag-failed'
-              }
-              if (book.collectionInfo) {
-                let foundCollection = _.find(this.collectionList, {id: book.collectionInfo.id})
-                if (foundCollection) {
-                  if (_.isNumber(book.collectionInfo.index)) {
-                    foundCollection.list[book.collectionInfo.index] = book.hash
-                  } else {
-                    foundCollection.list.push(book.hash)
-                  }
-                } else {
-                  let collection = {
-                    id: book.collectionInfo.id,
-                    title: book.collectionInfo.title,
-                    list: []
-                  }
-                  if (_.isNumber(book.collectionInfo.index)) {
-                    collection.list[book.collectionInfo.index] = book.hash
-                  } else {
-                    collection.list.push(book.hash)
-                  }
-                  this.collectionList.push(collection)
-                }
-                delete book.collectionInfo
-              }
-            }
-            if (index === this.bookList.length - 1) {
-              this.$refs.SettingRef.dialogVisibleSetting = false
-              this.printMessage('success', this.$t('c.importMessage'))
-            }
-            await this.saveBook(book)
-          })
-          this.saveCollection()
-        } else {
-          this.printMessage('info', this.$t('c.canceled'))
-        }
-      })
+    async importDatabase () {
+      let collectionListPath = await ipcRenderer.invoke('select-file', this.$t('c.selectCollectionList'))
+      let metadataSqlitePath = await ipcRenderer.invoke('select-file', this.$t('c.selectMetadataSqlite'))
+      await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
+      this.printMessage('success', this.$t('c.importMessage'))
     },
     importMetadataFromSqlite () {
       ipcRenderer.invoke('import-sqlite', _.cloneDeep(this.bookList))
@@ -2651,6 +2663,13 @@ body
       bottom: 2px
       right: 2px
       cursor: pointer
+
+#selection-box
+  position: absolute
+  border: 2px dashed #00f
+  display: none
+  pointer-events: none
+  user-select: none
 
 .book-tag-edit-operation
   .el-select-v2

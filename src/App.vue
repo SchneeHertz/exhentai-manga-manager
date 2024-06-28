@@ -269,8 +269,8 @@
           <el-button type="primary" plain @click="groupTriggerHiddenBook(true)">{{$t('m.hideManga')}}</el-button>
         </el-space>
       </el-col>
-      <div id="selection-box" ref="selectionBox"></div>
     </el-row>
+    <div id="selection-box" ref="selectionBox"></div>
     <el-row class="pagination-bar">
       <el-pagination
         v-model:currentPage="currentPage"
@@ -1853,6 +1853,7 @@ export default defineComponent({
       this.$refs.selectionBox.style.top = `${this.startY}px`
       this.$refs.selectionBox.style.width = `0px`
       this.$refs.selectionBox.style.height = `0px`
+      this.$refs.selectionBox.style.display = 'block'
       e.preventDefault()
     },
     handleMouseMoveForSelection (e) {
@@ -1863,9 +1864,8 @@ export default defineComponent({
         let top = Math.min(endY, this.startY)
         let width = Math.abs(endX - this.startX)
         let height = Math.abs(endY - this.startY)
-        this.$refs.selectionBox.style.display = 'block'
         this.$refs.selectionBox.style.left = `${left}px`
-        this.$refs.selectionBox.style.top = `${top - 60}px`
+        this.$refs.selectionBox.style.top = `${top}px`
         this.$refs.selectionBox.style.width = `${width}px`
         this.$refs.selectionBox.style.height = `${height}px`
       }

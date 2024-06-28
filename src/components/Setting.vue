@@ -365,7 +365,6 @@
 
 <script setup>
 import { ref, onMounted, h } from 'vue'
-import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
 
@@ -436,21 +435,22 @@ const selectImageExplorerPath = () => {
   })
 }
 
-const loadTranslationFromEhTagTranslation = () => {
+const loadTranslationFromEhTagTranslation = async () => {
   let resultObject = {}
   emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache') || "{}"))
-  axios.get('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
-  .then(res=>{
-    let sourceTranslationDatabase = res.data.data
-    _.forIn(sourceTranslationDatabase, cat=>{
-      _.forIn(cat.data, (value, key)=>{
+  await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
+  .then(res => res.json())
+  .then(res => {
+    let sourceTranslationDatabase = res.data
+    _.forIn(sourceTranslationDatabase, cat => {
+      _.forIn(cat.data, (value, key) => {
         resultObject[key] = _.pick(value, ['name', 'intro'])
       })
     })
     emit('handleResolveTranslationUpdate', resultObject)
     localStorage.setItem('translationCache', JSON.stringify(resultObject))
   })
-  .catch((error)=>{
+  .catch((error) => {
     console.log(error)
     emit('message', 'warning', 'use translation from cache')
   })
@@ -465,26 +465,31 @@ const handleTranslationSettingChange = (val) => {
   saveSetting()
 }
 
-const testProxy = () => {
-  axios.get('https://e-hentai.org')
-  .then(()=>{
-    emit('message', 'success', t('c.proxyWorking'))
+const testProxy = async () => {
+  await fetch('https://e-hentai.org')
+  .then((res) => {
+    if (res.status === 200) {
+      emit('message', 'success', t('c.proxyWorking'))
+    } else {
+      emit('message', 'error', `Error ${res.status}: ` + t('c.proxyNotWorking'))
+    }
   })
-  .catch(()=>{
+  .catch((error) => {
     emit('message', 'error', t('c.proxyNotWorking'))
   })
 }
 
-const autoCheckUpdates = (forceShowDialog) => {
-  axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest', {
+const autoCheckUpdates = async (forceShowDialog) => {
+  await fetch('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest', {
     headers: {
       'Accept': 'application/vnd.github+json',
       'Authorization': 'Bearer ' + gh_token,
       'X-GitHub-Api-Version': '2022-11-28'
     }
   })
-  .then(res=>{
-    let { tag_name, html_url, body } = res.data
+  .then(res => res.json())
+  .then(res => {
+    let { tag_name, html_url, body } = res
     let skipVersion = localStorage.getItem('skipVersion')
     if (tag_name && tag_name !== 'v' + version && tag_name !== skipVersion) {
       ElMessageBox.confirm(

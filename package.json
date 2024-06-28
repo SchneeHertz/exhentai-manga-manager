@@ -74,7 +74,6 @@
     "@vicons/material": "^0.12.0",
     "@vitejs/plugin-vue": "^2.3.0",
     "auto-changelog": "^2.4.0",
-    "axios": "^1.6.2",
     "electron": "^26.2.3",
     "electron-builder": "^24.6.4",
     "element-plus": "^2.7.5",

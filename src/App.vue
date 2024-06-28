@@ -545,7 +545,6 @@
 
 <script>
 import { defineComponent } from 'vue'
-import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
 import { Lightbulb16Regular, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
@@ -1218,20 +1217,21 @@ export default defineComponent({
       }
       this.$refs.SearchDialogRef.dialogVisibleEhSearch = false
     },
-    getBookInfoFromChaika (book) {
+    async getBookInfoFromChaika (book) {
       let archiveNo = /\d+/.exec(book.url)[0]
-      axios.get(`https://panda.chaika.moe/api?archive=${archiveNo}`)
-      .then(async res=>{
+      await fetch(`https://panda.chaika.moe/api?archive=${archiveNo}`)
+      .then(res => res.json())
+      .then(async res => {
         _.assign(
           book,
-          _.pick(res.data, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+          _.pick(res, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
         )
         book.posted = +book.posted
         book.filecount = +book.filecount
         book.rating = +book.rating
         book.title = he.decode(book.title)
         book.title_jpn = he.decode(book.title_jpn)
-        let tagObject = _.groupBy(book.tags, tag=>{
+        let tagObject = _.groupBy(book.tags, tag => {
           let result = /(.+):/.exec(tag)
           if (result) {
             return /(.+):/.exec(tag)[1]
@@ -1239,8 +1239,8 @@ export default defineComponent({
             return 'misc'
           }
         })
-        _.forIn(tagObject, (arr, key)=>{
-          tagObject[key] = arr.map(tag=>{
+        _.forIn(tagObject, (arr, key) => {
+          tagObject[key] = arr.map(tag => {
             let result = /:(.+)$/.exec(tag)
             if (result) {
               return /:(.+)$/.exec(tag)[1].replaceAll('_', ' ')
@@ -1255,15 +1255,16 @@ export default defineComponent({
       })
     },
     async getBookInfoFromHentag (book) {
-      let { data } = await axios.get(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
+      let data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
+      .then(res => res.json())
       let tags = {}
       data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
-      data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody=>parody.name) : ''
-      data.characters.length > 0 ? tags['character'] = data.characters.map(character=>character.name) : ''
-      data.circles.length > 0 ? tags['group'] = data.circles.map(circle=>circle.name) : ''
-      data.artists.length > 0 ? tags['artist'] = data.artists.map(artist=>artist.name) : ''
-      data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag=>maleTag.name) : ''
-      data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag=>femaleTag.name) : ''
+      data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody => parody.name) : ''
+      data.characters.length > 0 ? tags['character'] = data.characters.map(character => character.name) : ''
+      data.circles.length > 0 ? tags['group'] = data.circles.map(circle => circle.name) : ''
+      data.artists.length > 0 ? tags['artist'] = data.artists.map(artist => artist.name) : ''
+      data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag => maleTag.name) : ''
+      data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag => femaleTag.name) : ''
       if (data.otherTags.length > 0) {
         data.otherTags.forEach(({ name }) => {
           let cat = this.tag2cat[name]

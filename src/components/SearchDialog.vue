@@ -112,12 +112,6 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
     .then(res => {
       return resolveEhentaiResult(res)
     })
-  } else if (server === 'chaika') {
-    resultList = await fetch(`https://panda.chaika.moe/search/?title=${encodeURI(title)}`)
-    .then(res => res.text())
-    .then(res => {
-      return resolveChaikaResult(res)
-    })
   } else if (server === 'hentag') {
     resultList = await fetch(`https://hentag.com/public/api/vault-search?t=${encodeURI(title)}`)
     .then(res => res.json())
@@ -149,18 +143,6 @@ const resolveEhentaiResult = (htmlString) => {
       emit('message', 'error', 'Get tag failed')
     }
   }
-}
-const resolveChaikaResult = (htmlString) => {
-  let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.result-list')
-  ehSearchResultList.value = []
-  resultNodes.forEach((node)=>{
-    ehSearchResultList.value.push({
-      title: node.querySelector('td a').innerHTML,
-      url: node.querySelector('a').getAttribute('href'),
-      type: 'chaika'
-    })
-  })
-  return ehSearchResultList.value
 }
 const resolveHentagResult = (data) => {
   let resultList = data.works.slice(0, 10)

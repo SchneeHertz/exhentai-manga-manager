@@ -664,7 +664,6 @@ export default defineComponent({
         { label: "e-hentai(sha1)", value: "e-hentai" },
         { label: "exhentai(keyword)", value: "exsearch" },
         { label: "e-hentai(keyword)", value: "e-search" },
-        { label: "chaika(keyword)", value: "chaika" },
         { label: "hentag(keyword)", value: "hentag" },
       ],
       keyMap: {
@@ -1205,10 +1204,7 @@ export default defineComponent({
     // metadata
     resolveSearchResult (bookId, url, type) {
       let book = _.find(this.bookList, {id: bookId})
-      if (type === 'chaika') {
-        book.url = `https://panda.chaika.moe${url}`
-        this.getBookInfoFromChaika(book)
-      } else if (type === 'hentag') {
+      if (type === 'hentag') {
         book.url = url
         this.getBookInfoFromHentag(book)
       } else {
@@ -1216,43 +1212,6 @@ export default defineComponent({
         this.getBookInfoFromEh(book)
       }
       this.$refs.SearchDialogRef.dialogVisibleEhSearch = false
-    },
-    async getBookInfoFromChaika (book) {
-      let archiveNo = /\d+/.exec(book.url)[0]
-      await fetch(`https://panda.chaika.moe/api?archive=${archiveNo}`)
-      .then(res => res.json())
-      .then(async res => {
-        _.assign(
-          book,
-          _.pick(res, ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
-        )
-        book.posted = +book.posted
-        book.filecount = +book.filecount
-        book.rating = +book.rating
-        book.title = he.decode(book.title)
-        book.title_jpn = he.decode(book.title_jpn)
-        let tagObject = _.groupBy(book.tags, tag => {
-          let result = /(.+):/.exec(tag)
-          if (result) {
-            return /(.+):/.exec(tag)[1]
-          } else {
-            return 'misc'
-          }
-        })
-        _.forIn(tagObject, (arr, key) => {
-          tagObject[key] = arr.map(tag => {
-            let result = /:(.+)$/.exec(tag)
-            if (result) {
-              return /:(.+)$/.exec(tag)[1].replaceAll('_', ' ')
-            } else {
-              return tag.replaceAll('_', ' ')
-            }
-          })
-        })
-        book.tags = tagObject
-        book.status = 'tagged'
-        await this.saveBook(book)
-      })
     },
     async getBookInfoFromHentag (book) {
       let data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
@@ -1353,9 +1312,7 @@ export default defineComponent({
       })
     },
     getBookInfo (book) {
-      if (book.url.startsWith('https://panda.chaika.moe')) {
-        this.getBookInfoFromChaika(book)
-      } else if (book.url.startsWith('https://hentag.com')) {
+      if (book.url.startsWith('https://hentag.com')) {
         this.getBookInfoFromHentag(book)
       } else {
         this.getBookInfoFromEh(book)

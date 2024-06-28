@@ -313,7 +313,7 @@ const drawerViewerBody = ref(null)
 
 const thumbnailWidth = computed(()=>{
   const innerWidth = drawerViewerBody.value ? drawerViewerBody.value.clientWidth : window.innerWidth
-  return `${(innerWidth - 32) / (props.setting.thumbnailColumn || 10) - 8}px`
+  return `${(innerWidth - 32) / (props.setting.thumbnailColumn || 10) - 10}px`
 })
 
 const returnImageStyle = (image) => {

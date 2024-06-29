@@ -5,16 +5,16 @@ const { readdir, stat } = require('fs/promises')
 const { shell } = require('electron')
 
 const dirSize = async dir => {
-  const files = await readdir( dir, { withFileTypes: true } )
-  const filesize = files.map( async file => {
-    const filepath = path.join( dir, file.name )
-    if ( file.isFile() ) {
-      const { size } = await stat( filepath )
+  const files = await readdir(dir, { withFileTypes: true })
+  const filesize = files.map(async file => {
+    const filepath = path.join(dir, file.name)
+    if (file.isFile()) {
+      const { size } = await stat(filepath)
       return size
     }
     return 0
-  } )
-  return ( await Promise.all( filesize ) ).flat( Infinity ).reduce( ( i, size ) => i + size, 0 )
+  })
+  return (await Promise.all(filesize)).flat(Infinity).reduce((i, size) => i + size, 0)
 }
 
 let getFolderlist = async (libraryPath)=>{

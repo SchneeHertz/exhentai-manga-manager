@@ -42,7 +42,6 @@
 
 <script setup>
 import { ref } from 'vue'
-import axios from 'axios'
 import { Search32Filled } from '@vicons/fluent'
 
 const props = defineProps(['cookie', 'searchTypeList', 'setting'])
@@ -68,9 +67,16 @@ const openSearchDialog = (book, server) => {
 
 const returnTrimFileName = (book) => {
   let fileNameWithExtension = book.filepath.split(/[/\\]/).pop()
-  let fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.') || fileNameWithExtension
-  if (props.setting.trimTitleRegExp) {
-    return fileNameWithoutExtension.replace(new RegExp(props.setting.trimTitleRegExp, 'g'), '')
+  let fileNameWithoutExtension = fileNameWithExtension
+  try {
+    if (book.type !== 'folder') {
+      fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.')
+    }
+    if (props.setting.trimTitleRegExp) {
+      return fileNameWithoutExtension.replace(new RegExp(props.setting.trimTitleRegExp, 'g'), '')
+    }
+  } catch (e) {
+    console.log(e)
   }
   return fileNameWithoutExtension
 }
@@ -79,40 +85,38 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
   let resultList = []
   searchResultLoading.value = true
   if (server === 'e-hentai') {
-    resultList = await axios.get(`https://e-hentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=689`)
-    .then(res=>{
-      return resolveEhentaiResult(res.data)
+    resultList = await fetch(`https://e-hentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=689`)
+    .then(res => res.text())
+    .then(res => {
+      return resolveEhentaiResult(res)
     })
   } else if (server === 'exhentai') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
       url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=689`,
       cookie: props.cookie
     })
-    .then(res=>{
+    .then(res => {
       return resolveEhentaiResult(res)
     })
   } else if (server === 'e-search') {
-    resultList = await axios.get(`https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=689`)
-    .then(res=>{
-      return resolveEhentaiResult(res.data)
+    resultList = await fetch(`https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=689`)
+    .then(res => res.text())
+    .then(res => {
+      return resolveEhentaiResult(res)
     })
   } else if (server === 'exsearch') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
       url: `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=689`,
       cookie: props.cookie
     })
-    .then(res=>{
+    .then(res => {
       return resolveEhentaiResult(res)
     })
-  } else if (server === 'chaika') {
-    resultList = await axios.get(`https://panda.chaika.moe/search/?title=${encodeURI(title)}`)
-    .then(res=>{
-      return resolveChaikaResult(res.data)
-    })
   } else if (server === 'hentag') {
-    resultList = await axios.get(`https://hentag.com/public/api/vault-search?t=${encodeURI(title)}`)
-    .then(res=>{
-      return resolveHentagResult(res.data)
+    resultList = await fetch(`https://hentag.com/public/api/vault-search?t=${encodeURI(title)}`)
+    .then(res => res.json())
+    .then(res => {
+      return resolveHentagResult(res)
     })
   }
   searchResultLoading.value = false
@@ -139,18 +143,6 @@ const resolveEhentaiResult = (htmlString) => {
       emit('message', 'error', 'Get tag failed')
     }
   }
-}
-const resolveChaikaResult = (htmlString) => {
-  let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.result-list')
-  ehSearchResultList.value = []
-  resultNodes.forEach((node)=>{
-    ehSearchResultList.value.push({
-      title: node.querySelector('td a').innerHTML,
-      url: node.querySelector('a').getAttribute('href'),
-      type: 'chaika'
-    })
-  })
-  return ehSearchResultList.value
 }
 const resolveHentagResult = (data) => {
   let resultList = data.works.slice(0, 10)
@@ -185,8 +177,6 @@ defineExpose({
 
 <style lang="stylus">
 .dialog-search
-  .el-dialog__body
-    padding: 5px 20px 16px
   .el-form-item
     margin-right: 4px
   .search-input

@@ -254,12 +254,12 @@
           </el-col>
           <el-col :span="5">
             <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('exportDatabase')">{{$t('m.exportMetadata')}}</el-button>
+              <el-button class="function-button" type="primary" plain @click="exportDatabase">{{$t('m.exportMetadata')}}</el-button>
             </div>
           </el-col>
           <el-col :span="5">
             <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('importDatabase')">{{$t('m.importMetadata')}}</el-button>
+              <el-button class="function-button" type="primary" plain @click="importDatabase">{{$t('m.importMetadata')}}</el-button>
             </div>
           </el-col>
           <el-col :span="5">
@@ -365,11 +365,11 @@
 
 <script setup>
 import { ref, onMounted, h } from 'vue'
-import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
 
 import { version } from '../../package.json'
+import { gh_token } from '../../secret_key.json'
 import { acceleratorInfo } from '../utils.js'
 import NameFormItem from './NameFormItem.vue'
 
@@ -383,8 +383,6 @@ const emit = defineEmits([
   'message',
   'forceGeneBookList',
   'patchLocalMetadata',
-  'exportDatabase',
-  'importDatabase',
   'importMetadataFromSqlite',
   'handleResolveTranslationUpdate'
 ])
@@ -410,15 +408,17 @@ onMounted(() => {
 })
 
 const selectLibraryPath = () => {
-  ipcRenderer.invoke('select-folder')
+  ipcRenderer.invoke('select-folder', t('m.library'))
   .then(res=>{
-    setting.value.library = res
-    saveSetting()
+    if (res) {
+      setting.value.library = res
+      saveSetting()
+    }
   })
 }
 
 const selectMetadataPath = () => {
-  ipcRenderer.invoke('select-folder')
+  ipcRenderer.invoke('select-folder', t('m.metadataPath'))
   .then(res=>{
     setting.value.metadataPath = res
     saveSetting()
@@ -426,28 +426,31 @@ const selectMetadataPath = () => {
 }
 
 const selectImageExplorerPath = () => {
-  ipcRenderer.invoke('select-file')
+  ipcRenderer.invoke('select-file', t('m.imageViewer'))
   .then(res=>{
-    setting.value.imageExplorer = `"${res}"`
-    saveSetting()
+    if (res) {
+      setting.value.imageExplorer = `"${res}"`
+      saveSetting()
+    }
   })
 }
 
-const loadTranslationFromEhTagTranslation = () => {
+const loadTranslationFromEhTagTranslation = async () => {
   let resultObject = {}
   emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache') || "{}"))
-  axios.get('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
-  .then(res=>{
-    let sourceTranslationDatabase = res.data.data
-    _.forIn(sourceTranslationDatabase, cat=>{
-      _.forIn(cat.data, (value, key)=>{
+  await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
+  .then(res => res.json())
+  .then(res => {
+    let sourceTranslationDatabase = res.data
+    _.forIn(sourceTranslationDatabase, cat => {
+      _.forIn(cat.data, (value, key) => {
         resultObject[key] = _.pick(value, ['name', 'intro'])
       })
     })
     emit('handleResolveTranslationUpdate', resultObject)
     localStorage.setItem('translationCache', JSON.stringify(resultObject))
   })
-  .catch((error)=>{
+  .catch((error) => {
     console.log(error)
     emit('message', 'warning', 'use translation from cache')
   })
@@ -462,30 +465,49 @@ const handleTranslationSettingChange = (val) => {
   saveSetting()
 }
 
-const testProxy = () => {
-  axios.get('https://e-hentai.org')
-  .then(()=>{
-    emit('message', 'success', t('c.proxyWorking'))
+const testProxy = async () => {
+  await fetch('https://e-hentai.org')
+  .then((res) => {
+    if (res.status === 200) {
+      emit('message', 'success', t('c.proxyWorking'))
+    } else {
+      emit('message', 'error', `Error ${res.status}: ` + t('c.proxyNotWorking'))
+    }
   })
-  .catch(()=>{
+  .catch((error) => {
     emit('message', 'error', t('c.proxyNotWorking'))
   })
 }
 
-const autoCheckUpdates = (forceShowDialog) => {
-  axios.get('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest')
-  .then(res=>{
-    let { tag_name, html_url, body } = res.data
-    if (tag_name && tag_name !== 'v' + version) {
+const autoCheckUpdates = async (forceShowDialog) => {
+  await fetch('https://api.github.com/repos/SchneeHertz/exhentai-manga-manager/releases/latest', {
+    headers: {
+      'Accept': 'application/vnd.github+json',
+      'Authorization': 'Bearer ' + gh_token,
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  })
+  .then(res => res.json())
+  .then(res => {
+    let { tag_name, html_url, body } = res
+    let skipVersion = localStorage.getItem('skipVersion')
+    if (tag_name && tag_name !== 'v' + version && tag_name !== skipVersion) {
       ElMessageBox.confirm(
         h('pre', { innerHTML: body, style: 'font-family: Avenir, Helvetica, Arial, sans-serif'}),
         t('c.newVersion') + tag_name,
         {
-          confirmButtonText: t('c.downloadUpdate')
+          distinguishCancelAndClose: true,
+          confirmButtonText: t('c.downloadUpdate'),
+          cancelButtonText: t('c.skipVersion')
         }
       )
       .then(()=>{
         ipcRenderer.invoke('open-url', html_url)
+      })
+      .catch((action) => {
+        if (action === 'cancel') {
+          localStorage.setItem('skipVersion', tag_name)
+        }
       })
     } else if (forceShowDialog) {
       ElMessageBox.confirm(
@@ -528,6 +550,20 @@ const openLink = (link) => {
   ipcRenderer.invoke('open-url', link)
 }
 
+
+const exportDatabase = async () => {
+  let folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
+  await ipcRenderer.invoke('export-database', folder)
+  emit('message', 'success', t('c.exportMessage'))
+}
+
+const importDatabase = async () => {
+  let collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'))
+  let metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'))
+  await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
+  emit('message', 'success', t('c.importMessage'))
+}
+
 const dialogVisibleSetting = ref(false)
 const activeSettingPanel = ref('general')
 
@@ -539,9 +575,6 @@ defineExpose({
 </script>
 
 <style lang="stylus">
-.setting-dialog
-  .el-dialog__body
-    padding: 5px 20px 16px
 .setting-title
   margin:0
   text-align: center

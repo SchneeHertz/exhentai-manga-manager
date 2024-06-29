@@ -53,8 +53,8 @@ const displayTagGraph = () => {
         count,
         size: Math.ceil(( count / maxTagCount * 14 ) ** 2 + 70),
         oriSize: Math.ceil(( count / maxTagCount * 14 ) ** 2 + 70),
-        name: `${letter}:"${labelArray[1]}$"`,
-        shortName: `${letter}:"${labelArray[1]}"`,
+        name: `${letter}:"${labelArray[1]}"$`,
+        shortName: `${letter}:"${labelArray[1]}"$`,
         oriLabel: label,
         label: `${props.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${props.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
         style:{fill: _.sample(colors)}

@@ -1547,6 +1547,10 @@ export default defineComponent({
       })
       if (!this.sortValue) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)
+      if (this.currentUI() === 'edit-group-tag') {
+        this.selectBookList = []
+        this.displayBookList.forEach(book => book.selected = false)
+      }
     },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false

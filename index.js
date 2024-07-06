@@ -154,13 +154,13 @@ const loadLegecyBookListFromFile = async () => {
 
 const loadBookListFromDatabase = async () => {
   let bookList = await Manga.findAll()
-  bookList = bookList.map(b=>b.toJSON())
+  bookList = bookList.map(b => b.toJSON())
   if (_.isEmpty(bookList)) {
     bookList = await loadLegecyBookListFromFile()
     await saveBookListToDatabase(bookList)
   }
   let metadataList = await Metadata.findAll()
-  metadataList = metadataList.map(m=>m.toJSON())
+  metadataList = metadataList.map(m => m.toJSON())
   let bookListLength = bookList.length
   for (let i = 0; i < bookListLength; i++) {
     let book = bookList[i]
@@ -209,7 +209,8 @@ const clearFolder = async (Folder) => {
 // library and metadata
 ipcMain.handle('load-book-list', async (event, scan) => {
   if (scan) {
-    await Manga.update({ exist: false }, { where: {} })
+    const bookList = await Manga.findAll({ raw: true })
+    bookList.forEach(b => b.exist = false)
 
     sendMessageToWebContents('start loading library')
     let list = await getBookFilelist(setting.library)
@@ -228,13 +229,13 @@ ipcMain.handle('load-book-list', async (event, scan) => {
     for (let i = 0; i < listLength; i++) {
       try {
         let { filepath, type } = list[i]
-        let foundData = await Manga.findOne({ where: { filepath: filepath } })
-        if (foundData === null) {
+        let foundData = bookList.find(b => b.filepath === filepath)
+        if (foundData === undefined) {
           let id = nanoid()
           let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
           if (targetFilePath && coverPath) {
             let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-            await Manga.create({
+            const newBook = {
               title: path.basename(filepath),
               coverPath,
               hash,
@@ -248,22 +249,25 @@ ipcMain.handle('load-book-list', async (event, scan) => {
               status: 'non-tag',
               exist: true,
               date: Date.now()
-            })
+            }
+            await Manga.create(newBook)
+            bookList.push(newBook)
           }
         } else {
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
-          await foundData.save()
         }
-        setProgressBar(i / listLength)
-        if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
+        if ((i + 1) % 50 === 0) {
+          setProgressBar(i / listLength)
+          await clearFolder(TEMP_PATH)
+        }
       } catch (e) {
         sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
       }
     }
     await clearFolder(TEMP_PATH)
 
-    let existData = await Manga.findAll({ where: { exist: true }, raw: true })
+    const existData = bookList.filter(b => b.exist === true)
     try {
       let coverList = await fs.promises.readdir(COVER_PATH)
       let existCoverList = existData.map(b => b.coverPath)
@@ -274,7 +278,10 @@ ipcMain.handle('load-book-list', async (event, scan) => {
     } catch (err) {
       console.log(err)
     }
-    await Manga.destroy({ where: { exist: false } })
+    const removeData = bookList.filter(b => b.exist === false)
+    for (let book of removeData) {
+      await Manga.destroy({ where: { id: book.id } })
+    }
     setProgressBar(-1)
   }
   return await loadBookListFromDatabase()

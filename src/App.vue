@@ -199,7 +199,7 @@
       >
         <el-popover
           v-for="book in visibleChunkDisplayBookListForEditTagView" :key="book.id"
-          placement="left" :width="400" trigger="hover" :show-after="1000" :hide-after="100"
+          placement="left" :width="300" trigger="hover" :show-after="1000" :hide-after="100"
         >
           <template #reference>
             <el-badge

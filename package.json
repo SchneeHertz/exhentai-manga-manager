@@ -65,7 +65,7 @@
     "sharp": "^0.32.6",
     "sqlite": "^4.1.2",
     "sqlite3": "^5.1.6",
-    "xmlbuilder": "^15.1.1"
+    "xmlbuilder2": "^3.1.1"
   },
   "devDependencies": {
     "@antv/g6": "^4.6.15",

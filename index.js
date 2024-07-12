@@ -13,7 +13,6 @@ const { open } = require('sqlite')
 const fetch = require('node-fetch')
 const { HttpsProxyAgent } = require('https-proxy-agent')
 const windowStateKeeper = require('electron-window-state')
-const { create } = require('xmlbuilder2')
 const express = require('express')
 
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
@@ -766,96 +765,135 @@ ipcMain.on('get-path-sep', async (event, arg) => {
   event.returnValue = path.sep
 })
 
-// OPDS server
+// Tachiyomi server
+
 // 初始化Express
-const opdsServer = express()
+const mangaServer = express()
 const port = 23786
 
 // 设置静态文件夹
 const staticFilePath = path.resolve(STORE_PATH, 'public')
 fs.mkdirSync(staticFilePath, { recursive: true })
-opdsServer.use('/static', express.static(staticFilePath))
+mangaServer.use('/static', express.static(staticFilePath))
 
 let mangas = []
 
-opdsServer.get('/api/opds', async (req, res) => {
-  mangas = await loadBookListFromDatabase()
+// 格式化标签
+const formatTags = (tags) => {
+  return Object.entries(tags)
+    .map(([key, values]) => values.map(value => `${key}:${value}`).join(', '))
+    .join(', ')
+}
 
-  const feed = create({ version: '1.0', encoding: 'UTF-8' })
-    .ele('feed')
-    .att('xmlns', 'http://www.w3.org/2005/Atom')
-    .att('xmlns:dcterms', 'http://purl.org/dc/terms/')
-    .att('xmlns:opds', 'http://opds-spec.org/2010/catalog')
-    .att('xmlns:pse', 'http://vaemendis.net/opds-pse/ns')
-    .att('xmlns:thr', 'http://purl.org/syndication/thread/1.0')
-    .ele('id').txt('urn:lrr:0').up()
-    .ele('link').att({ rel: 'self', href: '/api/opds', type: 'application/atom+xml;profile=opds-catalog;kind=acquisition' }).up()
-    .ele('link').att({ rel: 'start', href: '/api/opds', type: 'application/atom+xml;profile=opds-catalog;kind=acquisition' }).up()
-    .ele('title').txt('EMM Manga Library').up()
-    .ele('updated').txt(new Date().toLocaleString("zh-CN")).up()
-    .ele('author')
-    .ele('name').txt('').up()
-    .ele('uri').txt('http://localhost').up()
-    .up()
+mangaServer.get('/api/search', async (req, res) => {
+  try {
+    const filter = req.query.filter || ''
+    const start = parseInt(req.query.start) || 0
 
-  mangas.forEach(manga => {
-    feed.ele('entry')
-      .ele('title').txt(`${manga.title_jpn} | ${manga.title}`).up()
-      .ele('id').txt(`urn:lrr:${manga.id}`).up()
-      .ele('updated').txt(new Date(manga.mtime).toLocaleString("zh-CN")).up()
-      .ele('published').txt(new Date(manga.mtime).toLocaleString("zh-CN")).up()
-      .ele('author').ele('name').txt('').up().up()
-      .ele('dcterms:language').txt('').up()
-      .ele('dcterms:publisher').txt('').up()
-      .ele('dcterms:issued').txt('').up()
-      .ele('category').att('term', manga.category || 'Uncategorized').up()
-      .ele('summary').txt(`date_added: ${new Date(manga.date).toLocaleString("zh-CN")}; ${(_.map(manga.tags, (tags, cat) => _.map(tags, tag => `${cat}:${tag}`))).flat().join('; ')}`).up()
-      .ele('link').att({ rel: 'alternate', href: `/api/opds/${manga.id}`, type: 'application/atom+xml;type=entry;profile=opds-catalog' }).up()
-      .ele('link').att({ rel: 'http://opds-spec.org/image', href: `/cover/${manga.id}`, type: 'image/webp' }).up()
-      .ele('link').att({ rel: 'http://opds-spec.org/image/thumbnail', href: `/cover/${manga.id}`, type: 'image/webp' }).up()
-      // .ele('link').att({ rel: 'http://opds-spec.org/acquisition', href: `/file/${manga.id}`, title: 'Download/Read' }).up()
-      .ele('link').att({ rel: 'http://vaemendis.net/opds-pse/stream', type: 'image/jpeg', href: `/api/opds/${manga.id}/pse?page={pageNumber}`, 'pse:count': manga.pageCount }).up()
-      // .ele('link').att({ type: 'text/html', rel: 'alternate', title: 'Open in Reader', href: `/reader?id=${manga.id}` }).up()
-      .up()
-  })
+    // 读取并搜索数据库
+    mangas = await loadBookListFromDatabase()
+    let filterMangas = mangas.filter(manga => {
+      return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff'])).toLowerCase().includes(filter.toLowerCase())
+      || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
+    })
+    filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
+    filterMangas = filterMangas.slice(start, start + 100)
 
-  res.header('Content-Type', 'application/atom+xml')
-  res.send(feed.end({ prettyPrint: true }))
+    // 格式化响应数据
+    const responseData = filterMangas.map(manga => ({
+      arcid: manga.hash,
+      extension: manga.filepath.split('.').pop(),
+      filename: path.basename(manga.filepath),
+      isnew: 'true',
+      lastreadtime: 0,
+      pagecount: manga.pageCount,
+      progress: 0,
+      size: manga.filesize,
+      summary: null,
+      tags: manga.tags ? formatTags(manga.tags) : '',
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+    }))
+
+    res.json({
+      data: responseData,
+      draw: 0,
+      recordsFiltered: responseData.length,
+      recordsTotal: responseData.length
+    })
+  } catch (error) {
+    res.status(500).send(error.message)
+  }
 })
 
-// 处理特定Manga条目的OPDS详细信息请求
-opdsServer.get('/api/opds/:id', async (req, res) => {
-  const id = req.params.id
-  const manga = _.isEmpty(mangas) ? await Manga.findByPk(id) : mangas.find(book => book.id === id)
-  if (!manga) {
-    return res.status(404).send('Manga not found')
+mangaServer.get('/api/search/random', async (req, res) => {
+  const count = parseInt(req.query.count, 10) || 1
+
+  try {
+    // 从数据库中随机获取指定数量的 Manga 记录
+    let randomMangas = _.sampleSize(await loadBookListFromDatabase(), count)
+
+    const responseData = randomMangas.map(manga => ({
+      arcid: manga.hash,
+      extension: manga.filepath.split('.').pop(),
+      filename: path.basename(manga.filepath),
+      isnew: 'true',
+      lastreadtime: 0,
+      pagecount: manga.pageCount,
+      progress: 0,
+      size: manga.filesize,
+      summary: null,
+      tags: manga.tags ? formatTags(manga.tags) : '',
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+    }))
+
+    res.json({
+      data: responseData
+    })
+    // 返回 JSON 响应
+    res.json()
+  } catch (error) {
+    console.error('Failed to fetch random Manga:', error)
+    res.status(500).send('Internal Server Error')
   }
+})
 
-  const entry = create({ version: '1.0', encoding: 'UTF-8' })
-    .ele('entry')
-    .ele('title').txt(`${manga.title_jpn} | ${manga.title}`).up()
-    .ele('id').txt(`urn:lrr:${manga.id}`).up()
-    .ele('updated').txt(new Date(manga.mtime).toLocaleString("zh-CN")).up()
-    .ele('published').txt(new Date(manga.mtime).toLocaleString("zh-CN")).up()
-    .ele('author').ele('name').txt('').up().up()
-    .ele('dcterms:language').txt('').up()
-    .ele('dcterms:publisher').txt('').up()
-    .ele('dcterms:issued').txt('').up()
-    .ele('category').att('term', manga.category || 'Uncategorized').up()
-    .ele('summary').txt(`date_added: ${new Date(manga.date).toLocaleString("zh-CN")}; ${(_.map(manga.tags, (tags, cat) => _.map(tags, tag => `${cat}:${tag}`))).flat().join('; ')}`).up()
-    .ele('link').att({ rel: 'alternate', href: `/api/opds/${manga.id}`, type: 'application/atom+xml;type=entry;profile=opds-catalog' }).up()
-    .ele('link').att({ rel: 'http://opds-spec.org/image', href: `/cover/${manga.id}`, type: 'image/jpeg' }).up()
-    .ele('link').att({ rel: 'http://opds-spec.org/image/thumbnail', href: `/cover/${manga.id}`, type: 'image/jpeg' }).up()
-    .ele('link').att({ rel: 'http://vaemendis.net/opds-pse/stream', type: 'image/jpeg', href: `/api/opds/${manga.id}/pse?page={pageNumber}`, 'pse:count': manga.pageCount }).up()
+mangaServer.get('/api/archives/:hash/metadata', async (req, res) => {
+  try {
+    const mangaHash = req.params.hash
 
-  res.header('Content-Type', 'application/atom+xml')
-  res.send(entry.end({ prettyPrint: true }))
+    // 从数据库找到对应的漫画
+    if (_.isEmpty(mangas)) mangas = await loadBookListFromDatabase()
+    const manga = await mangas.find(manga => manga.hash === mangaHash)
+
+    if (!manga) {
+      return res.status(404).send('Manga not found')
+    }
+
+    // 构造响应数据
+    const responseMetadata = {
+      arcid: manga.hash,
+      extension: manga.filepath.split('.').pop(),
+      filename: path.basename(manga.filepath),
+      isnew: 'true',
+      lastreadtime: 0,
+      pagecount: manga.pageCount,
+      progress: 0,
+      size: manga.filesize,
+      summary: null,
+      tags: manga.tags ? formatTags(manga.tags) : '',
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+    }
+
+    res.json(responseMetadata)
+  } catch (error) {
+    res.status(500).send(error.message)
+  }
 })
 
 // 处理封面图片请求
-opdsServer.get('/cover/:id', async (req, res) => {
-  const id = req.params.id
-  const manga = await Manga.findByPk(id)
+mangaServer.get('/api/archives/:hash/thumbnail', async (req, res) => {
+  const hash = req.params.hash
+  const manga = await Manga.findOne({where: {hash: hash}})
   if (!manga || !manga.coverPath) {
     return res.status(404).send('Cover not found')
   }
@@ -869,19 +907,50 @@ opdsServer.get('/cover/:id', async (req, res) => {
 })
 
 let existBook = {
-  id: null,
+  hash: null,
   imageList: []
 }
 
+// 处理章节列表请求
+mangaServer.get('/api/archives/:hash/files', async (req, res) => {
+  try {
+    const mangaHash = req.params.hash
+
+    // 从数据库找到对应的漫画
+    const manga = await Manga.findOne({where: {hash: mangaHash}})
+
+    if (!manga) {
+      return res.status(404).send('Manga not found')
+    }
+
+    await clearFolder(staticFilePath)
+    const imageList = await getImageListByBook(manga.filepath, manga.type)
+
+    existBook = {
+      hash: manga.hash,
+      imageList: imageList
+    }
+    // 构造响应数据
+    const responseFiles = {
+      job: Date.now(), // 示例中的 job 可以是一个随机数或时间戳
+      pages: imageList.map((file, index) => `/api/archives/${manga.hash}/page?path=${index + 1}`)
+    }
+
+    res.json(responseFiles)
+  } catch (error) {
+    res.status(500).send(error.message)
+  }
+})
+
 // 处理章节图片请求
-opdsServer.get('/api/opds/:id/pse', async (req, res) => {
-  const id = req.params.id
-  const page = parseInt(req.query.page, 10)
+mangaServer.get('/api/archives/:hash/page', async (req, res) => {
+  const hash = req.params.hash
+  const page = parseInt(req.query.path, 10)
   if (isNaN(page) || page < 1) {
     return res.status(400).send('Invalid page number')
   }
 
-  const manga = await Manga.findByPk(id)
+  const manga = await Manga.findOne({where: {hash: hash}})
   if (!manga || !manga.filepath) {
     return res.status(404).send('File not found')
   }
@@ -889,12 +958,12 @@ opdsServer.get('/api/opds/:id/pse', async (req, res) => {
   // 获取章节图片列表
   try {
     let imageList
-    if (manga.id === existBook.id) {
+    if (manga.hash === existBook.hash) {
       imageList = existBook.imageList
     } else {
       await clearFolder(staticFilePath)
       imageList = await getImageListByBook(manga.filepath, manga.type)
-      existBook.id = manga.id
+      existBook.hash = manga.hash
       existBook.imageList = imageList
     }
     const imageFilePath = imageList[page - 1]
@@ -903,7 +972,7 @@ opdsServer.get('/api/opds/:id/pse', async (req, res) => {
     }
 
     // 重命名并复制图片文件到静态文件夹
-    const imageFileName = `${manga.id}_${page}${path.extname(imageFilePath)}`
+    const imageFileName = `${manga.hash}_${page}${path.extname(imageFilePath)}`
     const imageFile = path.join(staticFilePath, imageFileName)
     await fs.promises.copyFile(imageFilePath, imageFile)
 
@@ -920,6 +989,6 @@ opdsServer.get('/api/opds/:id/pse', async (req, res) => {
 })
 
 // 启动Express服务器
-opdsServer.listen(port, '0.0.0.0', () => {
-  console.log(`OPDS server listening at http://0.0.0.0:${port}`)
+mangaServer.listen(port, '0.0.0.0', () => {
+  console.log(`Manga server listening at http://0.0.0.0:${port}`)
 })

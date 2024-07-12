@@ -13,6 +13,8 @@ const { open } = require('sqlite')
 const fetch = require('node-fetch')
 const { HttpsProxyAgent } = require('https-proxy-agent')
 const windowStateKeeper = require('electron-window-state')
+const xmlbuilder = require('xmlbuilder')
+const express = require('express')
 
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
@@ -762,4 +764,159 @@ ipcMain.handle('switch-fullscreen', async (event, arg) => {
 
 ipcMain.on('get-path-sep', async (event, arg) => {
   event.returnValue = path.sep
+})
+
+// OPDS server
+// 初始化Express
+const opdsServer = express()
+const port = 23786
+
+// 设置静态文件夹
+const staticFilePath = path.resolve(STORE_PATH, 'public')
+fs.mkdirSync(staticFilePath, { recursive: true })
+opdsServer.use('/static', express.static(staticFilePath))
+
+let mangas = []
+
+opdsServer.get('/api/opds', async (req, res) => {
+  mangas = await loadBookListFromDatabase()
+  const feed = xmlbuilder.create('feed', { encoding: 'UTF-8' })
+    .att('xmlns', 'http://www.w3.org/2005/Atom')
+    .att('xmlns:dcterms', 'http://purl.org/dc/terms/')
+    .att('xmlns:opds', 'http://opds-spec.org/2010/catalog')
+    .att('xmlns:pse', 'http://vaemendis.net/opds-pse/ns')
+    .att('xmlns:thr', 'http://purl.org/syndication/thread/1.0')
+    .ele('id', 'urn:lrr:0').up()
+    .ele('link', { rel: 'self', href: '/api/opds', type: 'application/atom+xml;profile=opds-catalog;kind=acquisition' }).up()
+    .ele('link', { rel: 'start', href: '/api/opds', type: 'application/atom+xml;profile=opds-catalog;kind=acquisition' }).up()
+    .ele('title', 'EMM Manga Library').up()
+    .ele('updated', new Date().toLocaleString("zh-CN")).up()
+    .ele('author')
+    .ele('name', '').up()
+    .ele('uri', 'http://localhost').up()
+    .up()
+
+  mangas.forEach(manga => {
+    feed.ele('entry')
+      .ele('title', `${manga.title_jpn} | ${manga.title}`).up()
+      .ele('id', `urn:lrr:${manga.id}`).up()
+      .ele('updated', new Date(manga.mtime).toLocaleString("zh-CN")).up()
+      .ele('published', new Date(manga.mtime).toLocaleString("zh-CN")).up()
+      .ele('author').ele('name', '').up().up()
+      .ele('dcterms:language', '').up()
+      .ele('dcterms:publisher', '').up()
+      .ele('dcterms:issued', '').up()
+      .ele('category', { term: manga.category || 'Uncategorized' }).up()
+      .ele('summary', `date_added: ${new Date(manga.date).toLocaleString("zh-CN")}; ${(_.map(manga.tags, (tags, cat) => _.map(tags, tag => `${cat}:${tag}`))).flat().join('; ')}`).up()
+      .ele('link', { rel: 'alternate', href: `/api/opds/${manga.id}`, type: 'application/atom+xml;type=entry;profile=opds-catalog' }).up()
+      .ele('link', { rel: 'http://opds-spec.org/image', href: `/cover/${manga.id}`, type: 'image/webp' }).up()
+      .ele('link', { rel: 'http://opds-spec.org/image/thumbnail', href: `/cover/${manga.id}`, type: 'image/webp' }).up()
+      // .ele('link', { rel: 'http://opds-spec.org/acquisition', href: `/file/${manga.id}`, title: 'Download/Read' }).up()
+      .ele('link', { rel: 'http://vaemendis.net/opds-pse/stream', type: 'image/jpeg', href: `/api/opds/${manga.id}/pse?page={pageNumber}`, 'pse:count': manga.pageCount }).up()
+      // .ele('link', { type: 'text/html', rel: 'alternate', title: 'Open in Reader', href: `/reader?id=${manga.id}` }).up()
+      .up()
+  })
+
+  res.header('Content-Type', 'application/atom+xml')
+  res.send(feed.end({ pretty: true }))
+})
+
+// 处理特定Manga条目的OPDS详细信息请求
+opdsServer.get('/api/opds/:id', async (req, res) => {
+  const id = req.params.id
+  const manga = _.isEmpty(mangas) ? await Manga.findByPk(id) : mangas.find(book => book.id === id)
+  if (!manga) {
+    return res.status(404).send('Manga not found')
+  }
+
+  const entry = xmlbuilder.create('entry', { encoding: 'UTF-8' })
+    .ele('title', `${manga.title_jpn} | ${manga.title}`).up()
+    .ele('id', `urn:lrr:${manga.id}`).up()
+    .ele('updated', new Date(manga.mtime).toLocaleString("zh-CN")).up()
+    .ele('published', new Date(manga.mtime).toLocaleString("zh-CN")).up()
+    .ele('author').ele('name', '').up().up()
+    .ele('dcterms:language', '').up()
+    .ele('dcterms:publisher', '').up()
+    .ele('dcterms:issued', '').up()
+    .ele('category', { term: manga.category || 'Uncategorized' }).up()
+    .ele('summary', `date_added: ${new Date(manga.date).toLocaleString("zh-CN")}; ${(_.map(manga.tags, (tags, cat) => _.map(tags, tag => `${cat}:${tag}`))).flat().join('; ')}`).up()
+    .ele('link', { rel: 'alternate', href: `/api/opds/${manga.id}`, type: 'application/atom+xml;type=entry;profile=opds-catalog' }).up()
+    .ele('link', { rel: 'http://opds-spec.org/image', href: `/cover/${manga.id}`, type: 'image/jpeg' }).up()
+    .ele('link', { rel: 'http://opds-spec.org/image/thumbnail', href: `/cover/${manga.id}`, type: 'image/jpeg' }).up()
+    .ele('link', { rel: 'http://vaemendis.net/opds-pse/stream', type: 'image/jpeg', href: `/api/opds/${manga.id}/pse?page={pageNumber}`, 'pse:count': manga.pageCount }).up()
+
+  res.header('Content-Type', 'application/atom+xml')
+  res.send(entry.end({ pretty: true }))
+})
+
+// 处理封面图片请求
+opdsServer.get('/cover/:id', async (req, res) => {
+  const id = req.params.id
+  const manga = await Manga.findByPk(id)
+  if (!manga || !manga.coverPath) {
+    return res.status(404).send('Cover not found')
+  }
+  const coverFilePath = path.join(staticFilePath, path.basename(manga.coverPath))
+  await fs.promises.copyFile(manga.coverPath, coverFilePath)
+  if (fs.existsSync(coverFilePath)) {
+    res.sendFile(coverFilePath)
+  } else {
+    res.status(404).send('Cover file not found')
+  }
+})
+
+let existBook = {
+  id: null,
+  imageList: []
+}
+
+// 处理章节图片请求
+opdsServer.get('/api/opds/:id/pse', async (req, res) => {
+  const id = req.params.id
+  const page = parseInt(req.query.page, 10)
+  if (isNaN(page) || page < 1) {
+    return res.status(400).send('Invalid page number')
+  }
+
+  const manga = await Manga.findByPk(id)
+  if (!manga || !manga.filepath) {
+    return res.status(404).send('File not found')
+  }
+
+  // 获取章节图片列表
+  try {
+    let imageList
+    if (manga.id === existBook.id) {
+      imageList = existBook.imageList
+    } else {
+      await clearFolder(staticFilePath)
+      imageList = await getImageListByBook(manga.filepath, manga.type)
+      existBook.id = manga.id
+      existBook.imageList = imageList
+    }
+    const imageFilePath = imageList[page - 1]
+    if (!imageFilePath) {
+      return res.status(404).send('Image not found')
+    }
+
+    // 重命名并复制图片文件到静态文件夹
+    const imageFileName = `${manga.id}_${page}${path.extname(imageFilePath)}`
+    const imageFile = path.join(staticFilePath, imageFileName)
+    await fs.promises.copyFile(imageFilePath, imageFile)
+
+    // 发送图片文件
+    if (fs.existsSync(imageFile)) {
+      res.sendFile(imageFile)
+    } else {
+      res.status(404).send('Image file not found')
+    }
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('Error processing file')
+  }
+})
+
+// 启动Express服务器
+opdsServer.listen(port, '0.0.0.0', () => {
+  console.log(`OPDS server listening at http://0.0.0.0:${port}`)
 })

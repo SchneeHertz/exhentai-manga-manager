@@ -831,11 +831,10 @@ mangaServer.get('/api/search', async (req, res) => {
 })
 
 mangaServer.get('/api/search/random', async (req, res) => {
-  const count = parseInt(req.query.count, 10) || 1
-
   try {
     // 从数据库中随机获取指定数量的 Manga 记录
-    let randomMangas = _.sampleSize(await loadBookListFromDatabase(), count)
+    const count = parseInt(req.query.count, 10) || 1
+    const randomMangas = _.sampleSize(await loadBookListFromDatabase(), count)
 
     const responseData = randomMangas.map(manga => ({
       arcid: manga.hash,
@@ -854,8 +853,6 @@ mangaServer.get('/api/search/random', async (req, res) => {
     res.json({
       data: responseData
     })
-    // 返回 JSON 响应
-    res.json()
   } catch (error) {
     console.error('Failed to fetch random Manga:', error)
     res.status(500).send('Internal Server Error')

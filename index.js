@@ -797,12 +797,12 @@ mangaServer.get('/api/search', async (req, res) => {
       || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
     })
     filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
-    filterMangas = filterMangas.slice(start, start + 100)
+    filterMangas = filterMangas.slice(start, start + 200)
 
     // 格式化响应数据
     const responseData = filterMangas.map(manga => ({
       arcid: manga.hash,
-      extension: manga.filepath.split('.').pop(),
+      extension: path.extname(manga.filepath),
       filename: path.basename(manga.filepath),
       isnew: 'true',
       lastreadtime: 0,
@@ -834,7 +834,7 @@ mangaServer.get('/api/search/random', async (req, res) => {
 
     const responseData = randomMangas.map(manga => ({
       arcid: manga.hash,
-      extension: manga.filepath.split('.').pop(),
+      extension: path.extname(manga.filepath),
       filename: path.basename(manga.filepath),
       isnew: 'true',
       lastreadtime: 0,
@@ -872,7 +872,7 @@ mangaServer.get('/api/archives/:hash/metadata', async (req, res) => {
     // 构造响应数据
     const responseMetadata = {
       arcid: manga.hash,
-      extension: manga.filepath.split('.').pop(),
+      extension: path.extname(manga.filepath),
       filename: path.basename(manga.filepath),
       isnew: 'true',
       lastreadtime: 0,

@@ -923,6 +923,7 @@ mangaServer.get('/api/archives/:hash/files', async (req, res) => {
       return res.status(404).send('Manga not found')
     }
 
+    await clearFolder(VIEWER_PATH)
     await clearFolder(staticFilePath)
     const imageList = await getImageListByBook(manga.filepath, manga.type)
 
@@ -961,6 +962,7 @@ mangaServer.get('/api/archives/:hash/page', async (req, res) => {
     if (manga.hash === existBook.hash) {
       imageList = existBook.imageList
     } else {
+      await clearFolder(VIEWER_PATH)
       await clearFolder(staticFilePath)
       imageList = await getImageListByBook(manga.filepath, manga.type)
       existBook.hash = manga.hash

@@ -792,12 +792,17 @@ mangaServer.get('/api/search', async (req, res) => {
 
     // 读取并搜索数据库
     mangas = await loadBookListFromDatabase()
-    let filterMangas = mangas.filter(manga => {
-      return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff'])).toLowerCase().includes(filter.toLowerCase())
-      || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
-    })
+    let filterMangas
+    if (filter) {
+      filterMangas = mangas.filter(manga => {
+        return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff'])).toLowerCase().includes(filter.toLowerCase())
+        || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
+      })
+    } else {
+      filterMangas = mangas
+    }
     filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
-    filterMangas = filterMangas.slice(start, start + 200)
+    filterMangas = filterMangas.slice(start, start + 500)
 
     // 格式化响应数据
     const responseData = filterMangas.map(manga => ({

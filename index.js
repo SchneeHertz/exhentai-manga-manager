@@ -802,10 +802,9 @@ mangaServer.get('/api/search', async (req, res) => {
       filterMangas = mangas
     }
     filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
-    filterMangas = filterMangas.slice(start, start + 500)
 
     // 格式化响应数据
-    const responseData = filterMangas.map(manga => ({
+    const responseData = filterMangas.slice(start, start + 100).map(manga => ({
       arcid: manga.hash,
       extension: path.extname(manga.filepath),
       filename: path.basename(manga.filepath),
@@ -818,12 +817,11 @@ mangaServer.get('/api/search', async (req, res) => {
       tags: manga.tags ? formatTags(manga.tags) : '',
       title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
     }))
-
     res.json({
       data: responseData,
       draw: 0,
       recordsFiltered: responseData.length,
-      recordsTotal: responseData.length
+      recordsTotal: filterMangas.length
     })
   } catch (error) {
     res.status(500).send(error.message)

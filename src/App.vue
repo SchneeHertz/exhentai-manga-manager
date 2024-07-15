@@ -83,7 +83,7 @@
             <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
           <el-col :span="6"  v-if="!editTagView && !editCollectionView">
-            <el-button plain @click="enterEditTagView" :icon="TagGroup" :title="$t('m.manageCollection')"></el-button>
+            <el-button plain @click="enterEditTagView" :icon="TagGroup" :title="$t('m.manageTag')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editTagView">
             <el-button type="primary" plain @click="editTagView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>

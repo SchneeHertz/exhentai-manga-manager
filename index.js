@@ -649,6 +649,17 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
     Metadata = prepareMetadataModel(path.join(receiveSetting.metadataPath, './metadata.sqlite'))
     await Metadata.sync()
   }
+  if (receiveSetting.enabledLANBrowsing !== setting.enabledLANBrowsing) {
+    if (receiveSetting.enabledLANBrowsing) {
+      enableLANBrowsing()
+    } else {
+      if (LANBrowsingInstance?.listening) {
+        LANBrowsingInstance.close(() => {
+          sendMessageToWebContents('LAN browsing closed')
+        })
+      }
+    }
+  }
   setting = receiveSetting
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 })
@@ -765,16 +776,15 @@ ipcMain.on('get-path-sep', async (event, arg) => {
   event.returnValue = path.sep
 })
 
-// Tachiyomi server
 
 // 初始化Express
-const mangaServer = express()
+const LANBrowsing = express()
 const port = 23786
 
 // 设置静态文件夹
 const staticFilePath = path.resolve(STORE_PATH, 'public')
 fs.mkdirSync(staticFilePath, { recursive: true })
-mangaServer.use('/static', express.static(staticFilePath))
+LANBrowsing.use('/static', express.static(staticFilePath))
 
 let mangas = []
 
@@ -785,7 +795,7 @@ const formatTags = (tags) => {
     .join(', ')
 }
 
-mangaServer.get('/api/search', async (req, res) => {
+LANBrowsing.get('/api/search', async (req, res) => {
   try {
     const filter = req.query.filter || ''
     const start = parseInt(req.query.start) || 0
@@ -828,7 +838,7 @@ mangaServer.get('/api/search', async (req, res) => {
   }
 })
 
-mangaServer.get('/api/search/random', async (req, res) => {
+LANBrowsing.get('/api/search/random', async (req, res) => {
   try {
     // 从数据库中随机获取指定数量的 Manga 记录
     const count = parseInt(req.query.count, 10) || 1
@@ -857,7 +867,7 @@ mangaServer.get('/api/search/random', async (req, res) => {
   }
 })
 
-mangaServer.get('/api/archives/:hash/metadata', async (req, res) => {
+LANBrowsing.get('/api/archives/:hash/metadata', async (req, res) => {
   try {
     const mangaHash = req.params.hash
 
@@ -891,7 +901,7 @@ mangaServer.get('/api/archives/:hash/metadata', async (req, res) => {
 })
 
 // 处理封面图片请求
-mangaServer.get('/api/archives/:hash/thumbnail', async (req, res) => {
+LANBrowsing.get('/api/archives/:hash/thumbnail', async (req, res) => {
   const hash = req.params.hash
   const manga = await Manga.findOne({where: {hash: hash}})
   if (!manga || !manga.coverPath) {
@@ -912,7 +922,7 @@ let existBook = {
 }
 
 // 处理章节列表请求
-mangaServer.get('/api/archives/:hash/files', async (req, res) => {
+LANBrowsing.get('/api/archives/:hash/files', async (req, res) => {
   try {
     const mangaHash = req.params.hash
 
@@ -944,7 +954,7 @@ mangaServer.get('/api/archives/:hash/files', async (req, res) => {
 })
 
 // 处理章节图片请求
-mangaServer.get('/api/archives/:hash/page', async (req, res) => {
+LANBrowsing.get('/api/archives/:hash/page', async (req, res) => {
   const hash = req.params.hash
   const page = parseInt(req.query.path, 10)
   if (isNaN(page) || page < 1) {
@@ -990,7 +1000,22 @@ mangaServer.get('/api/archives/:hash/page', async (req, res) => {
   }
 })
 
+let LANBrowsingInstance
 // 启动Express服务器
-mangaServer.listen(port, '0.0.0.0', () => {
-  console.log(`Manga server listening at http://0.0.0.0:${port}`)
+const enableLANBrowsing = () => {
+  if (LANBrowsingInstance?.listening) {
+    LANBrowsingInstance.close(() => {
+      LANBrowsingInstance = LANBrowsing.listen(port, '0.0.0.0', () => {
+        sendMessageToWebContents(`LAN browsing restart and listening at http://0.0.0.0:${port}`)
+      })
+    })
+  } else {
+    LANBrowsingInstance = LANBrowsing.listen(port, '0.0.0.0', () => {
+      sendMessageToWebContents(`LAN browsing listening at http://0.0.0.0:${port}`)
+    })
+  }
+}
+
+ipcMain.handle('enable-LAN-browsing', async (event, arg) => {
+  enableLANBrowsing()
 })

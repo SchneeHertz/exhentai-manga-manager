@@ -134,6 +134,7 @@
     "displayTitleInfo": "用户界面上显示的标题",
     "hidePageNumber": "隐藏页码",
     "skipDeleteConfirm": "跳过删除确认",
+    "enabledLANBrowsing": "启用局域网浏览",
     "onlyGetMetadataOfSelectedFolder": "仅获取选中文件夹的元数据",
     "fitWidth": "适应宽度",
     "fitHeight": "适应高度",

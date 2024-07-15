@@ -134,6 +134,7 @@
     "displayTitleInfo": "The title displayed on the UI",
     "hidePageNumber": "Hide Page Number",
     "skipDeleteConfirm": "Skip Delete Confirm",
+    "enabledLANBrowsing": "Enable LAN browsing",
     "onlyGetMetadataOfSelectedFolder": "Only Get Metadata of Selected Folder",
     "fitWidth": "fit width",
     "fitHeight": "fit height",

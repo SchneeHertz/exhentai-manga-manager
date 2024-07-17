@@ -2099,7 +2099,7 @@ export default defineComponent({
           '',
           {}
         )
-        .then(this.deleteBook(book))
+        .then(() => this.deleteBook(book))
       }
     },
 

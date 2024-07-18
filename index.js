@@ -1000,6 +1000,18 @@ LANBrowsing.get('/api/archives/:hash/page', async (req, res) => {
   }
 })
 
+LANBrowsing.get('/', (req, res) => {
+  switch (setting.language) {
+    case 'en-US':
+      res.redirect('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/LAN-Browsing')
+      break
+    case 'zh-CN':
+    default:
+      res.redirect('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/%E5%B1%80%E5%9F%9F%E7%BD%91%E6%B5%8F%E8%A7%88')
+      break
+  }
+})
+
 let LANBrowsingInstance
 // 启动Express服务器
 const enableLANBrowsing = () => {

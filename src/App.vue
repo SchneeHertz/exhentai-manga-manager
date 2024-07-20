@@ -275,7 +275,7 @@
       <el-pagination
         v-model:currentPage="currentPage"
         v-model:page-size="setting.pageSize"
-        :page-sizes="[24, 42, 72, 500, 5000]"
+        :page-sizes="[12, 24, 42, 72, 500, 5000]"
         :small="true"
         layout="total, sizes, prev, pager, next, jumper"
         :total="displayBookCount"
@@ -2060,7 +2060,11 @@ export default defineComponent({
     },
     openLocalBook (book) {
       this.bookDetail = book
-      ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
+      if (this.setting.imageExplorer) {
+        ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
+      } else {
+        this.$refs.InternalViewerRef.viewManga(book)
+      }
     },
     async rescanBook (book) {
       await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))

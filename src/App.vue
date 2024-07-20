@@ -91,14 +91,14 @@
         </el-row>
       </el-col>
     </el-row>
-    <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView">
+    <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView && !setting.disableRandomTag">
       <el-space size="small" id="random-tags">
         <el-button size="small" plain :icon="MdRefresh" @click="reloadRandomTags"></el-button>
         <el-button v-for="tag in randomTags" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
       </el-space>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
-      <el-col :span="24" v-if="!editTagView && !editCollectionView" class="book-card-list">
+      <el-col :span="24" v-if="!editTagView && !editCollectionView" class="book-card-list" :style="{height: setting.disableRandomTag ? 'calc(100vh - 96px)' : 'calc(100vh - 134px)'}">
         <div
           v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
@@ -2499,7 +2499,7 @@ body
     overflow-x: auto
     padding-top: 4px
   .book-card-list
-    height: calc(100vh - 134px)
+    height: calc(100vh - 96px)
     display: flex
     flex-wrap: wrap
     justify-content: center

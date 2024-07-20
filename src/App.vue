@@ -1336,6 +1336,15 @@ export default defineComponent({
       let server = this.setting.defaultScraper || 'exhentai'
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
+      const messageInstance = ElMessage({
+        message: this.$t('c.gettingMetadata'),
+        type: 'success',
+        duration: 0,
+        showClose: true,
+        onClose: () => {
+          this.serviceAvailable = false
+        }
+      })
       for (let i = 0; i < bookList.length; i++) {
         ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
         let book = bookList[i]
@@ -1355,6 +1364,7 @@ export default defineComponent({
           console.error(error)
         }
       }
+      messageInstance.close()
       ipcRenderer.invoke('set-progress-bar', -1)
     },
     getBookListMetadata () {

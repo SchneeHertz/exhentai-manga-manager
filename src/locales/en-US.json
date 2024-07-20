@@ -181,7 +181,8 @@
     "proxyWorking": "Proxy server is working",
     "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct",
     "confirmDelete": "Remove the manga from app and delete the local file, OK?",
-    "rescanSuccess": "Rescan successful"
+    "rescanSuccess": "Rescan successful",
+    "gettingMetadata": "Getting metadata..."
   },
   "ac": {
     "Global": "Global",

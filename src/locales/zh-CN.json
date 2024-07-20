@@ -45,6 +45,7 @@
     "showTag": "显示标签",
     "editTag": "编辑标签",
     "getMetadata": "手动获取元数据",
+    "resetMetadata": "重置元数据",
     "deleteFile": "删除文件",
     "delete": "删除",
     "rescan": "重扫",

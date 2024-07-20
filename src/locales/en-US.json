@@ -45,6 +45,7 @@
     "showTag": "Show Tag",
     "editTag": "Edit Tag",
     "getMetadata": "Get Metadata Manually",
+    "resetMetadata": "Reset Metadata",
     "deleteFile": "Delete File",
     "delete": "Delete",
     "rescan": "Rescan",

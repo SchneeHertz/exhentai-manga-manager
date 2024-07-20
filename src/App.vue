@@ -431,6 +431,7 @@
               <el-space wrap class="tag-edit-buttons">
                 <el-button @click="addTagCat">{{$t('m.addCategory')}}</el-button>
                 <el-button @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
+                <el-button @click="resetMetadata(bookDetail)">{{$t('m.resetMetadata')}}</el-button>
                 <el-button @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
                 <el-button @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
               </el-space>
@@ -1310,6 +1311,19 @@ export default defineComponent({
           }
         }
       })
+    },
+    resetMetadata (book) {
+      book.title = this.returnFileName(book)
+      book.title_jpn = ''
+      book.posted = 0
+      book.filecount = 0
+      book.rating = 0
+      book.filesize = 0
+      book.category = ''
+      book.tags = {}
+      book.status = 'non-tag'
+      book.url = ''
+      this.saveBook(book)
     },
     getBookInfo (book) {
       if (book.url.startsWith('https://hentag.com')) {
@@ -2336,6 +2350,12 @@ export default defineComponent({
             label: this.$t('m.getMetadata'),
             onClick: () => {
               this.$refs.SearchDialogRef.openSearchDialog(book)
+            }
+          },
+          {
+            label: this.$t('m.resetMetadata'),
+            onClick: () => {
+              this.resetMetadata(book)
             }
           },
           {

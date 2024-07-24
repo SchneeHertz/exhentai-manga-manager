@@ -56,8 +56,8 @@ const displayTagGraph = async () => {
         onClick: (e, activeEls) => {
           if (activeEls.length === 0) return
           const artist = artists[activeEls[0].index][0]
+          emit('search', `a:"${artist}"$`)
           dialogVisibleGraph.value = false
-          emit('search', artist)
         },
       },
       data: {
@@ -79,6 +79,11 @@ const displayTagGraph = async () => {
     {
       type: 'line',
       options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
         layout: {
           padding: 10
         },
@@ -122,9 +127,13 @@ const displayTagGraph = async () => {
         },
         onClick: (e, activeEls) => {
           if (activeEls.length === 0) return
-          const tag = tagData[activeEls[0].index][0]
+          const tag = tagData[activeEls[0].index]
+          if (tag[3] === 'rgb(54, 162, 235)') {
+            emit('search', `m:"${tag[0]}"$`)
+          } else {
+            emit('search', `f:"${tag[0]}"$`)
+          }
           dialogVisibleGraph.value = false
-          emit('search', tag)
         },
       },
       data: {

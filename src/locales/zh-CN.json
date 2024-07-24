@@ -19,9 +19,10 @@
     "artistDescend": "作者倒序",
     "titleAscend": "标题正序",
     "titleDescend": "标题倒序",
-    "manageCollection": "编辑合集",
+    "manageCollection": "管理合集",
     "addCollection": "新增合集",
     "editCollection": "编辑合集",
+    "manageTag": "管理标签",
     "tag": "标签",
     "addGroupTag": "加入选中标签",
     "removeGroupTag": "移除选中标签",
@@ -44,6 +45,7 @@
     "showTag": "显示标签",
     "editTag": "编辑标签",
     "getMetadata": "手动获取元数据",
+    "resetMetadata": "重置元数据",
     "deleteFile": "删除文件",
     "delete": "删除",
     "rescan": "重扫",
@@ -134,6 +136,8 @@
     "displayTitleInfo": "用户界面上显示的标题",
     "hidePageNumber": "隐藏页码",
     "skipDeleteConfirm": "跳过删除确认",
+    "enabledLANBrowsing": "启用局域网浏览",
+    "disableRandomTag": "禁用首页显示随机标签",
     "onlyGetMetadataOfSelectedFolder": "仅获取选中文件夹的元数据",
     "fitWidth": "适应宽度",
     "fitHeight": "适应高度",
@@ -177,7 +181,8 @@
     "proxyWorking": "代理服务器连接正常",
     "proxyNotWorking": "连接错误, 检查代理服务器是否工作, 设置是否正确",
     "confirmDelete": "将漫画从软件中移除并删除本地文件, 确定？",
-    "rescanSuccess": "重新扫描完成"
+    "rescanSuccess": "重新扫描完成",
+    "gettingMetadata": "获取元数据中..."
   },
   "ac": {
     "Global": "全局",

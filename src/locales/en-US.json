@@ -19,9 +19,10 @@
     "artistDescend": "Artist Descend",
     "titleAscend": "Title Ascend",
     "titleDescend": "Title Descend",
-    "manageCollection": "Edit Collection",
+    "manageCollection": "Manage Collection",
     "addCollection": "Add Collection",
     "editCollection": "Edit Collection",
+    "manageTag": "Manage Tag",
     "tag": "Tag",
     "addGroupTag": "Add Selected Tags",
     "removeGroupTag": "Remove Selected Tags",
@@ -44,6 +45,7 @@
     "showTag": "Show Tag",
     "editTag": "Edit Tag",
     "getMetadata": "Get Metadata Manually",
+    "resetMetadata": "Reset Metadata",
     "deleteFile": "Delete File",
     "delete": "Delete",
     "rescan": "Rescan",
@@ -134,6 +136,8 @@
     "displayTitleInfo": "The title displayed on the UI",
     "hidePageNumber": "Hide Page Number",
     "skipDeleteConfirm": "Skip Delete Confirm",
+    "enabledLANBrowsing": "Enable LAN Browsing",
+    "disableRandomTag": "Disable Random Tag",
     "onlyGetMetadataOfSelectedFolder": "Only Get Metadata of Selected Folder",
     "fitWidth": "fit width",
     "fitHeight": "fit height",
@@ -177,7 +181,8 @@
     "proxyWorking": "Proxy server is working",
     "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct",
     "confirmDelete": "Remove the manga from app and delete the local file, OK?",
-    "rescanSuccess": "Rescan successful"
+    "rescanSuccess": "Rescan successful",
+    "gettingMetadata": "Getting metadata..."
   },
   "ac": {
     "Global": "Global",

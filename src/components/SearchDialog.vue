@@ -85,28 +85,28 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
   let resultList = []
   searchResultLoading.value = true
   if (server === 'e-hentai') {
-    resultList = await fetch(`https://e-hentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=689`)
+    resultList = await fetch(`https://e-hentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=161`)
     .then(res => res.text())
     .then(res => {
       return resolveEhentaiResult(res)
     })
   } else if (server === 'exhentai') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
-      url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=689`,
+      url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=161`,
       cookie: props.cookie
     })
     .then(res => {
       return resolveEhentaiResult(res)
     })
   } else if (server === 'e-search') {
-    resultList = await fetch(`https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=689`)
+    resultList = await fetch(`https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=161`)
     .then(res => res.text())
     .then(res => {
       return resolveEhentaiResult(res)
     })
   } else if (server === 'exsearch') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
-      url: `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=689`,
+      url: `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=161`,
       cookie: props.cookie
     })
     .then(res => {

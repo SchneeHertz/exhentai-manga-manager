@@ -13,6 +13,7 @@ const { open } = require('sqlite')
 const fetch = require('node-fetch')
 const { HttpsProxyAgent } = require('https-proxy-agent')
 const windowStateKeeper = require('electron-window-state')
+const express = require('express')
 
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
@@ -154,13 +155,13 @@ const loadLegecyBookListFromFile = async () => {
 
 const loadBookListFromDatabase = async () => {
   let bookList = await Manga.findAll()
-  bookList = bookList.map(b=>b.toJSON())
+  bookList = bookList.map(b => b.toJSON())
   if (_.isEmpty(bookList)) {
     bookList = await loadLegecyBookListFromFile()
     await saveBookListToDatabase(bookList)
   }
   let metadataList = await Metadata.findAll()
-  metadataList = metadataList.map(m=>m.toJSON())
+  metadataList = metadataList.map(m => m.toJSON())
   let bookListLength = bookList.length
   for (let i = 0; i < bookListLength; i++) {
     let book = bookList[i]
@@ -209,7 +210,8 @@ const clearFolder = async (Folder) => {
 // library and metadata
 ipcMain.handle('load-book-list', async (event, scan) => {
   if (scan) {
-    await Manga.update({ exist: false }, { where: {} })
+    const bookList = await Manga.findAll({ raw: true })
+    bookList.forEach(b => b.exist = false)
 
     sendMessageToWebContents('start loading library')
     let list = await getBookFilelist(setting.library)
@@ -228,13 +230,13 @@ ipcMain.handle('load-book-list', async (event, scan) => {
     for (let i = 0; i < listLength; i++) {
       try {
         let { filepath, type } = list[i]
-        let foundData = await Manga.findOne({ where: { filepath: filepath } })
-        if (foundData === null) {
+        let foundData = bookList.find(b => b.filepath === filepath)
+        if (foundData === undefined) {
           let id = nanoid()
           let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
           if (targetFilePath && coverPath) {
             let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-            await Manga.create({
+            const newBook = {
               title: path.basename(filepath),
               coverPath,
               hash,
@@ -248,22 +250,25 @@ ipcMain.handle('load-book-list', async (event, scan) => {
               status: 'non-tag',
               exist: true,
               date: Date.now()
-            })
+            }
+            await Manga.create(newBook)
+            bookList.push(newBook)
           }
         } else {
           foundData.exist = true
           foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
-          await foundData.save()
         }
-        setProgressBar(i / listLength)
-        if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
+        if ((i + 1) % 50 === 0) {
+          setProgressBar(i / listLength)
+          await clearFolder(TEMP_PATH)
+        }
       } catch (e) {
         sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
       }
     }
     await clearFolder(TEMP_PATH)
 
-    let existData = await Manga.findAll({ where: { exist: true }, raw: true })
+    const existData = bookList.filter(b => b.exist === true)
     try {
       let coverList = await fs.promises.readdir(COVER_PATH)
       let existCoverList = existData.map(b => b.coverPath)
@@ -274,7 +279,10 @@ ipcMain.handle('load-book-list', async (event, scan) => {
     } catch (err) {
       console.log(err)
     }
-    await Manga.destroy({ where: { exist: false } })
+    const removeData = bookList.filter(b => b.exist === false)
+    for (let book of removeData) {
+      await Manga.destroy({ where: { id: book.id } })
+    }
     setProgressBar(-1)
   }
   return await loadBookListFromDatabase()
@@ -641,6 +649,17 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
     Metadata = prepareMetadataModel(path.join(receiveSetting.metadataPath, './metadata.sqlite'))
     await Metadata.sync()
   }
+  if (receiveSetting.enabledLANBrowsing !== setting.enabledLANBrowsing) {
+    if (receiveSetting.enabledLANBrowsing) {
+      enableLANBrowsing()
+    } else {
+      if (LANBrowsingInstance?.listening) {
+        LANBrowsingInstance.close(() => {
+          sendMessageToWebContents('LAN browsing closed')
+        })
+      }
+    }
+  }
   setting = receiveSetting
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 })
@@ -755,4 +774,260 @@ ipcMain.handle('switch-fullscreen', async (event, arg) => {
 
 ipcMain.on('get-path-sep', async (event, arg) => {
   event.returnValue = path.sep
+})
+
+
+// 初始化Express
+const LANBrowsing = express()
+const port = 23786
+
+// 设置静态文件夹
+const staticFilePath = path.resolve(STORE_PATH, 'public')
+fs.mkdirSync(staticFilePath, { recursive: true })
+LANBrowsing.use('/static', express.static(staticFilePath))
+
+let mangas = []
+
+// 格式化标签
+const formatTags = (tags) => {
+  return Object.entries(tags)
+    .map(([key, values]) => values.map(value => `${key}:${value}`).join(', '))
+    .join(', ')
+}
+
+LANBrowsing.get('/api/search', async (req, res) => {
+  try {
+    const filter = req.query.filter || ''
+    const start = parseInt(req.query.start) || 0
+
+    // 读取并搜索数据库
+    mangas = await loadBookListFromDatabase()
+    let filterMangas
+    if (filter) {
+      filterMangas = mangas.filter(manga => {
+        return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff'])).toLowerCase().includes(filter.toLowerCase())
+        || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
+      })
+    } else {
+      filterMangas = mangas
+    }
+    filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
+
+    // 格式化响应数据
+    const responseData = filterMangas.slice(start, start + 100).map(manga => ({
+      arcid: manga.hash,
+      extension: path.extname(manga.filepath),
+      filename: path.basename(manga.filepath),
+      isnew: 'true',
+      lastreadtime: 0,
+      pagecount: manga.pageCount,
+      progress: 0,
+      size: manga.filesize,
+      summary: null,
+      tags: manga.tags ? formatTags(manga.tags) : '',
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+    }))
+    res.json({
+      data: responseData,
+      draw: 0,
+      recordsFiltered: responseData.length,
+      recordsTotal: filterMangas.length
+    })
+  } catch (error) {
+    res.status(500).send(error.message)
+  }
+})
+
+LANBrowsing.get('/api/search/random', async (req, res) => {
+  try {
+    // 从数据库中随机获取指定数量的 Manga 记录
+    const count = parseInt(req.query.count, 10) || 1
+    const randomMangas = _.sampleSize(await loadBookListFromDatabase(), count)
+
+    const responseData = randomMangas.map(manga => ({
+      arcid: manga.hash,
+      extension: path.extname(manga.filepath),
+      filename: path.basename(manga.filepath),
+      isnew: 'true',
+      lastreadtime: 0,
+      pagecount: manga.pageCount,
+      progress: 0,
+      size: manga.filesize,
+      summary: null,
+      tags: manga.tags ? formatTags(manga.tags) : '',
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+    }))
+
+    res.json({
+      data: responseData
+    })
+  } catch (error) {
+    console.error('Failed to fetch random Manga:', error)
+    res.status(500).send('Internal Server Error')
+  }
+})
+
+LANBrowsing.get('/api/archives/:hash/metadata', async (req, res) => {
+  try {
+    const mangaHash = req.params.hash
+
+    // 从数据库找到对应的漫画
+    if (_.isEmpty(mangas)) mangas = await loadBookListFromDatabase()
+    const manga = await mangas.find(manga => manga.hash === mangaHash)
+
+    if (!manga) {
+      return res.status(404).send('Manga not found')
+    }
+
+    // 构造响应数据
+    const responseMetadata = {
+      arcid: manga.hash,
+      extension: path.extname(manga.filepath),
+      filename: path.basename(manga.filepath),
+      isnew: 'true',
+      lastreadtime: 0,
+      pagecount: manga.pageCount,
+      progress: 0,
+      size: manga.filesize,
+      summary: null,
+      tags: manga.tags ? formatTags(manga.tags) : '',
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+    }
+
+    res.json(responseMetadata)
+  } catch (error) {
+    res.status(500).send(error.message)
+  }
+})
+
+// 处理封面图片请求
+LANBrowsing.get('/api/archives/:hash/thumbnail', async (req, res) => {
+  const hash = req.params.hash
+  const manga = await Manga.findOne({where: {hash: hash}})
+  if (!manga || !manga.coverPath) {
+    return res.status(404).send('Cover not found')
+  }
+  const coverFilePath = path.join(staticFilePath, path.basename(manga.coverPath))
+  await fs.promises.copyFile(manga.coverPath, coverFilePath)
+  if (fs.existsSync(coverFilePath)) {
+    res.sendFile(coverFilePath)
+  } else {
+    res.status(404).send('Cover file not found')
+  }
+})
+
+let existBook = {
+  hash: null,
+  imageList: []
+}
+
+// 处理章节列表请求
+LANBrowsing.get('/api/archives/:hash/files', async (req, res) => {
+  try {
+    const mangaHash = req.params.hash
+
+    // 从数据库找到对应的漫画
+    const manga = await Manga.findOne({where: {hash: mangaHash}})
+
+    if (!manga) {
+      return res.status(404).send('Manga not found')
+    }
+
+    await clearFolder(VIEWER_PATH)
+    await clearFolder(staticFilePath)
+    const imageList = await getImageListByBook(manga.filepath, manga.type)
+
+    existBook = {
+      hash: manga.hash,
+      imageList: imageList
+    }
+    // 构造响应数据
+    const responseFiles = {
+      job: Date.now(), // 示例中的 job 可以是一个随机数或时间戳
+      pages: imageList.map((file, index) => `/api/archives/${manga.hash}/page?path=${index + 1}`)
+    }
+
+    res.json(responseFiles)
+  } catch (error) {
+    res.status(500).send(error.message)
+  }
+})
+
+// 处理章节图片请求
+LANBrowsing.get('/api/archives/:hash/page', async (req, res) => {
+  const hash = req.params.hash
+  const page = parseInt(req.query.path, 10)
+  if (isNaN(page) || page < 1) {
+    return res.status(400).send('Invalid page number')
+  }
+
+  const manga = await Manga.findOne({where: {hash: hash}})
+  if (!manga || !manga.filepath) {
+    return res.status(404).send('File not found')
+  }
+
+  // 获取章节图片列表
+  try {
+    let imageList
+    if (manga.hash === existBook.hash) {
+      imageList = existBook.imageList
+    } else {
+      await clearFolder(VIEWER_PATH)
+      await clearFolder(staticFilePath)
+      imageList = await getImageListByBook(manga.filepath, manga.type)
+      existBook.hash = manga.hash
+      existBook.imageList = imageList
+    }
+    const imageFilePath = imageList[page - 1]
+    if (!imageFilePath) {
+      return res.status(404).send('Image not found')
+    }
+
+    // 重命名并复制图片文件到静态文件夹
+    const imageFileName = `${manga.hash}_${page}${path.extname(imageFilePath)}`
+    const imageFile = path.join(staticFilePath, imageFileName)
+    await fs.promises.copyFile(imageFilePath, imageFile)
+
+    // 发送图片文件
+    if (fs.existsSync(imageFile)) {
+      res.sendFile(imageFile)
+    } else {
+      res.status(404).send('Image file not found')
+    }
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('Error processing file')
+  }
+})
+
+LANBrowsing.get('/', (req, res) => {
+  switch (setting.language) {
+    case 'en-US':
+      res.redirect('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/LAN-Browsing')
+      break
+    case 'zh-CN':
+    default:
+      res.redirect('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/%E5%B1%80%E5%9F%9F%E7%BD%91%E6%B5%8F%E8%A7%88')
+      break
+  }
+})
+
+let LANBrowsingInstance
+// 启动Express服务器
+const enableLANBrowsing = () => {
+  if (LANBrowsingInstance?.listening) {
+    LANBrowsingInstance.close(() => {
+      LANBrowsingInstance = LANBrowsing.listen(port, '0.0.0.0', () => {
+        sendMessageToWebContents(`LAN browsing restart and listening at http://0.0.0.0:${port}`)
+      })
+    })
+  } else {
+    LANBrowsingInstance = LANBrowsing.listen(port, '0.0.0.0', () => {
+      sendMessageToWebContents(`LAN browsing listening at http://0.0.0.0:${port}`)
+    })
+  }
+}
+
+ipcMain.handle('enable-LAN-browsing', async (event, arg) => {
+  enableLANBrowsing()
 })

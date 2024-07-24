@@ -83,7 +83,7 @@
             <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
           <el-col :span="6"  v-if="!editTagView && !editCollectionView">
-            <el-button plain @click="enterEditTagView" :icon="TagGroup" :title="$t('m.manageCollection')"></el-button>
+            <el-button plain @click="enterEditTagView" :icon="TagGroup" :title="$t('m.manageTag')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editTagView">
             <el-button type="primary" plain @click="editTagView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
@@ -91,14 +91,14 @@
         </el-row>
       </el-col>
     </el-row>
-    <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView">
+    <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView && !setting.disableRandomTag">
       <el-space size="small" id="random-tags">
         <el-button size="small" plain :icon="MdRefresh" @click="reloadRandomTags"></el-button>
         <el-button v-for="tag in randomTags" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
       </el-space>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
-      <el-col :span="24" v-if="!editTagView && !editCollectionView" class="book-card-list">
+      <el-col :span="24" v-if="!editTagView && !editCollectionView" class="book-card-list" :style="{height: setting.disableRandomTag ? 'calc(100vh - 96px)' : 'calc(100vh - 134px)'}">
         <div
           v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
@@ -199,7 +199,7 @@
       >
         <el-popover
           v-for="book in visibleChunkDisplayBookListForEditTagView" :key="book.id"
-          placement="bottom" :width="400" trigger="hover" :show-after="500" :hide-after="100"
+          placement="left" :width="300" trigger="hover" :show-after="1000" :hide-after="100"
         >
           <template #reference>
             <el-badge
@@ -275,7 +275,7 @@
       <el-pagination
         v-model:currentPage="currentPage"
         v-model:page-size="setting.pageSize"
-        :page-sizes="[24, 42, 72, 500, 5000]"
+        :page-sizes="[12, 24, 42, 72, 500, 5000]"
         :small="true"
         layout="total, sizes, prev, pager, next, jumper"
         :total="displayBookCount"
@@ -431,6 +431,7 @@
               <el-space wrap class="tag-edit-buttons">
                 <el-button @click="addTagCat">{{$t('m.addCategory')}}</el-button>
                 <el-button @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
+                <el-button @click="resetMetadata(bookDetail)">{{$t('m.resetMetadata')}}</el-button>
                 <el-button @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
                 <el-button @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
               </el-space>
@@ -1311,6 +1312,19 @@ export default defineComponent({
         }
       })
     },
+    resetMetadata (book) {
+      book.title = this.returnFileName(book)
+      book.title_jpn = ''
+      book.posted = 0
+      book.filecount = 0
+      book.rating = 0
+      book.filesize = 0
+      book.category = ''
+      book.tags = {}
+      book.status = 'non-tag'
+      book.url = ''
+      this.saveBook(book)
+    },
     getBookInfo (book) {
       if (book.url.startsWith('https://hentag.com')) {
         this.getBookInfoFromHentag(book)
@@ -1322,6 +1336,15 @@ export default defineComponent({
       let server = this.setting.defaultScraper || 'exhentai'
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
+      const messageInstance = ElMessage({
+        message: this.$t('c.gettingMetadata'),
+        type: 'success',
+        duration: 0,
+        showClose: true,
+        onClose: () => {
+          this.serviceAvailable = false
+        }
+      })
       for (let i = 0; i < bookList.length; i++) {
         ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
         let book = bookList[i]
@@ -1341,6 +1364,7 @@ export default defineComponent({
           console.error(error)
         }
       }
+      messageInstance.close()
       ipcRenderer.invoke('set-progress-bar', -1)
     },
     getBookListMetadata () {
@@ -1547,6 +1571,10 @@ export default defineComponent({
       })
       if (!this.sortValue) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)
+      if (this.currentUI() === 'edit-group-tag') {
+        this.selectBookList = []
+        this.displayBookList.forEach(book => book.selected = false)
+      }
     },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
@@ -2056,7 +2084,11 @@ export default defineComponent({
     },
     openLocalBook (book) {
       this.bookDetail = book
-      ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
+      if (this.setting.imageExplorer) {
+        ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
+      } else {
+        this.$refs.InternalViewerRef.viewManga(book)
+      }
     },
     async rescanBook (book) {
       await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
@@ -2095,7 +2127,7 @@ export default defineComponent({
           '',
           {}
         )
-        .then(this.deleteBook(book))
+        .then(() => this.deleteBook(book))
       }
     },
 
@@ -2331,6 +2363,12 @@ export default defineComponent({
             }
           },
           {
+            label: this.$t('m.resetMetadata'),
+            onClick: () => {
+              this.resetMetadata(book)
+            }
+          },
+          {
             label: this.$t('m.openMangaFileLocation'),
             onClick: () => {
               this.showFile(book.filepath)
@@ -2491,7 +2529,7 @@ body
     overflow-x: auto
     padding-top: 4px
   .book-card-list
-    height: calc(100vh - 134px)
+    height: calc(100vh - 96px)
     display: flex
     flex-wrap: wrap
     justify-content: center

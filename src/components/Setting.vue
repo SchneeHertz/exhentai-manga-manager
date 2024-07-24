@@ -318,6 +318,20 @@
               @change="saveSetting"
             />
           </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.enabledLANBrowsing"
+              :active-text="$t('m.enabledLANBrowsing')"
+              @change="saveSetting"
+            />
+          </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.disableRandomTag"
+              :active-text="$t('m.disableRandomTag')"
+              @change="saveSetting"
+            />
+          </el-col>
         </el-row>
       </el-tab-pane>
       <el-tab-pane :label="$t('m.accelerator')" name="accelerator">
@@ -404,6 +418,7 @@ onMounted(() => {
       handleLanguageChange(res.language)
       if (res.showTranslation) loadTranslationFromEhTagTranslation()
       if (res.autoCheckUpdates) autoCheckUpdates(false)
+      if (res.enabledLANBrowsing) ipcRenderer.invoke('enable-LAN-browsing')
     })
 })
 

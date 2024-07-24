@@ -1536,17 +1536,30 @@ export default defineComponent({
       }
     },
     searchBook () {
-      const checkCondition = (bookString) => {
+      const checkCondition = (bookString, bookDate) => {
         const searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
         const orCondition = _.filter(searchStringArray, str=>str.startsWith('~'))
         const andCondition = _.filter(searchStringArray, str=>!str.startsWith('~'))
         return _.some([andCondition, ...orCondition], (condition)=>{
           if (_.isArray(condition)) {
             return _.every(condition, (str)=>{
-              if (_.startsWith(str, '-')) {
-                return !bookString.includes(str.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
-              } else {
-                return bookString.includes(str.replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
+              try {
+                if (_.startsWith(str, '-')) {
+                  return !bookString.includes(str.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
+                } else if (_.startsWith(str, ':')) {
+                  const type = str.slice(1, 6)
+                  if (str[6] === '>') {
+                    return bookDate[type] > new Date(str.slice(7))
+                  } else if (str[6] === '<') {
+                    return bookDate[type] < new Date(str.slice(7))
+                  } else {
+                    return false
+                  }
+                } else {
+                  return bookString.includes(str.replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
+                }
+              } catch {
+                return false
               }
             })
           } else {
@@ -1567,7 +1580,12 @@ export default defineComponent({
             }
           )
         ).toLowerCase()
-        return checkCondition(bookString)
+        const bookDate = {
+          mtime: new Date(book.mtime),
+          atime: new Date(book.date),
+          ptime: new Date(book.posted * 1000)
+        }
+        return checkCondition(bookString, bookDate)
       })
       if (!this.sortValue) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)

@@ -37,7 +37,7 @@ const resolveTags = (tags) => {
 const displayTagGraph = async () => {
   dialogVisibleGraph.value = true
   await nextTick()
-  const bookInfos = props.bookList.map(book => ({
+  const bookInfos = props.bookList.filter(book => !book.folderHide && !book.hiddenBook).map(book => ({
     artists: book?.tags?.artist ? [...book.tags.artist] : [],
     male: book?.tags?.male ? [...book.tags.male] : [],
     female: book?.tags.female ? [...book.tags.female] : [],
@@ -52,6 +52,12 @@ const displayTagGraph = async () => {
       options: {
         layout: {
           padding: 10
+        },
+        onClick: (e, activeEls) => {
+          if (activeEls.length === 0) return
+          const artist = artists[activeEls[0].index][0]
+          dialogVisibleGraph.value = false
+          emit('search', artist)
         },
       },
       data: {
@@ -76,6 +82,15 @@ const displayTagGraph = async () => {
         layout: {
           padding: 10
         },
+        onClick: (e, activeEls) => {
+          if (activeEls.length === 0) return
+          if (activeEls[0].index < mtime.length - 1) {
+            emit('search', `:mtime>${mtime[activeEls[0].index][0]} :mtime<${mtime[activeEls[0].index + 1][0]}`)
+          } else {
+            emit('search', `:mtime>${mtime[activeEls[0].index][0]}`)
+          }
+          dialogVisibleGraph.value = false
+        },
       },
       data: {
         labels: mtime.map(p => p[0]),
@@ -91,11 +106,11 @@ const displayTagGraph = async () => {
     }
   )
 
-  const maleTags = _(bookInfos.map(book => book.male)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 10).value()
-  const femaleTags = _(bookInfos.map(book => book.female)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 10).value()
+  const maleTags = _(bookInfos.map(book => book.male)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 18).value()
+  const femaleTags = _(bookInfos.map(book => book.female)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 18).value()
   let tagData = maleTags.map(p => {p[2] = 'rgba(54, 162, 235, 0.2)'; p[3] = 'rgb(54, 162, 235)'; return p})
     .concat(femaleTags.map(p => {p[2] = 'rgba(255, 99, 132, 0.2)'; p[3] = 'rgb(255, 99, 132)'; return p}))
-  tagData = _.sortBy(tagData, p => -p[1])
+  tagData = _.sortBy(tagData, p => -p[1]).slice(0, 24)
   const chartTagCount = new Chart(
     document.getElementById('graph-tag-count'),
     {
@@ -104,6 +119,12 @@ const displayTagGraph = async () => {
         maintainAspectRatio: false,
         layout: {
           padding: 10
+        },
+        onClick: (e, activeEls) => {
+          if (activeEls.length === 0) return
+          const tag = tagData[activeEls[0].index][0]
+          dialogVisibleGraph.value = false
+          emit('search', tag)
         },
       },
       data: {

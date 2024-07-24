@@ -182,7 +182,8 @@
     "proxyNotWorking": "连接错误, 检查代理服务器是否工作, 设置是否正确",
     "confirmDelete": "将漫画从软件中移除并删除本地文件, 确定？",
     "rescanSuccess": "重新扫描完成",
-    "gettingMetadata": "获取元数据中..."
+    "gettingMetadata": "获取元数据中...",
+    "artist": "作者"
   },
   "ac": {
     "Global": "全局",

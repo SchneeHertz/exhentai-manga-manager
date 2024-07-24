@@ -182,7 +182,8 @@
     "proxyNotWorking": "Connection error, check if the proxy server is working and if the settings are correct",
     "confirmDelete": "Remove the manga from app and delete the local file, OK?",
     "rescanSuccess": "Rescan successful",
-    "gettingMetadata": "Getting metadata..."
+    "gettingMetadata": "Getting metadata...",
+    "artist": "Artist"
   },
   "ac": {
     "Global": "Global",

@@ -36,7 +36,7 @@
         <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="Lightbulb16Regular" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
+        <el-button :icon="ArrowTrendingLines20Filled" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="SettingIcon" plain @click="$refs.SettingRef.dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
@@ -518,7 +518,7 @@
     <Graph
       ref="TagGraphRef"
       :book-list="displayBookList"
-      :cat2letter="cat2letter"
+      :setting="setting"
       :resolved-translation="resolvedTranslation"
       @search="handleSearchTags"
     ></Graph>
@@ -548,7 +548,7 @@
 import { defineComponent } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
-import { Lightbulb16Regular, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
+import { ArrowTrendingLines20Filled, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
 import { MdShuffle, IosRemoveCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
@@ -579,7 +579,7 @@ export default defineComponent({
   setup () {
     return {
       SettingIcon, FullScreen, Edit,
-      Collections24Regular, Search32Filled, Lightbulb16Regular, Save16Regular,
+      Collections24Regular, Search32Filled, ArrowTrendingLines20Filled, Save16Regular,
       MdRefresh, MdCodeDownload, MdExit, MdShuffle,
       TreeViewAlt, CicsSystemGroup, TagGroup
     }

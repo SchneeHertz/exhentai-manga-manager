@@ -1549,9 +1549,9 @@ export default defineComponent({
                 } else if (_.startsWith(str, ':')) {
                   const type = str.slice(1, 6)
                   if (str[6] === '>') {
-                    return bookDate[type] > new Date(str.slice(7))
+                    return bookDate[type] >= new Date(str.slice(7))
                   } else if (str[6] === '<') {
-                    return bookDate[type] < new Date(str.slice(7))
+                    return bookDate[type] <= new Date(str.slice(7))
                   } else {
                     return false
                   }

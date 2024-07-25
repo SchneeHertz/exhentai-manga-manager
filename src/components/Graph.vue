@@ -50,6 +50,11 @@ const displayTagGraph = async () => {
     {
       type: 'bar',
       options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
         layout: {
           padding: 10
         },
@@ -122,6 +127,11 @@ const displayTagGraph = async () => {
       type: 'bar',
       options: {
         maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
         layout: {
           padding: 10
         },

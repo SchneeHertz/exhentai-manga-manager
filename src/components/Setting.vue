@@ -360,7 +360,7 @@
             <a v-else href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction')">github wiki</a>
           </el-descriptions-item>
           <el-descriptions-item :label="$t('m.donation')+':'">
-            <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://afdian.net/a/SeldonHorizon')">爱发电</a>
+            <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://afdian.com/a/SeldonHorizon')">爱发电</a>
             <a v-else href="#" @click="openLink('https://www.buymeacoffee.com/schneehertz')">buy me a coffee</a>
           </el-descriptions-item>
         </el-descriptions>

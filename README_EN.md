@@ -43,7 +43,7 @@
 - Create a manga library from a folder
 - Extract covers from manga files and then batch get tags for manga from ExHentai
 - Edit tags
-- Search based on tags, manga name, file path
+- Search based on tags, manga name, file path，time
 - Associating external image viewers
 - Built-in image viewer
 
@@ -65,6 +65,8 @@
 - Support importing exhentai overall metadata database backup
 - Built-in image viewer supports single page, double page, and scroll browsing.
 - Copy Metadata from ExHentai Page[Script](https://sleazyfork.org/zh-CN/scripts/472321-%E6%8F%90%E5%8F%96e-hentai%E7%94%BB%E5%BB%8A%E5%85%83%E6%95%B0%E6%8D%AE)
+- Tag Frequency Analysis
+- Local Area Network Browsing
 
 ## TODO
 - Rename and move manga files according to rules

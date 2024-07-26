@@ -36,7 +36,7 @@
         <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetMetadata')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button :icon="Lightbulb16Regular" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
+        <el-button :icon="ArrowTrendingLines20Filled" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="SettingIcon" plain @click="$refs.SettingRef.dialogVisibleSetting = true" :title="$t('m.setting')"></el-button>
@@ -518,7 +518,7 @@
     <Graph
       ref="TagGraphRef"
       :book-list="displayBookList"
-      :cat2letter="cat2letter"
+      :setting="setting"
       :resolved-translation="resolvedTranslation"
       @search="handleSearchTags"
     ></Graph>
@@ -548,7 +548,7 @@
 import { defineComponent } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
-import { Lightbulb16Regular, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
+import { ArrowTrendingLines20Filled, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
 import { MdShuffle, IosRemoveCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
@@ -579,7 +579,7 @@ export default defineComponent({
   setup () {
     return {
       SettingIcon, FullScreen, Edit,
-      Collections24Regular, Search32Filled, Lightbulb16Regular, Save16Regular,
+      Collections24Regular, Search32Filled, ArrowTrendingLines20Filled, Save16Regular,
       MdRefresh, MdCodeDownload, MdExit, MdShuffle,
       TreeViewAlt, CicsSystemGroup, TagGroup
     }
@@ -1536,17 +1536,30 @@ export default defineComponent({
       }
     },
     searchBook () {
-      const checkCondition = (bookString) => {
+      const checkCondition = (bookString, bookDate) => {
         const searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
         const orCondition = _.filter(searchStringArray, str=>str.startsWith('~'))
         const andCondition = _.filter(searchStringArray, str=>!str.startsWith('~'))
         return _.some([andCondition, ...orCondition], (condition)=>{
           if (_.isArray(condition)) {
             return _.every(condition, (str)=>{
-              if (_.startsWith(str, '-')) {
-                return !bookString.includes(str.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
-              } else {
-                return bookString.includes(str.replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
+              try {
+                if (_.startsWith(str, '-')) {
+                  return !bookString.includes(str.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
+                } else if (_.startsWith(str, ':')) {
+                  const type = str.slice(1, 6)
+                  if (str[6] === '>') {
+                    return bookDate[type] >= new Date(str.slice(7))
+                  } else if (str[6] === '<') {
+                    return bookDate[type] <= new Date(str.slice(7))
+                  } else {
+                    return false
+                  }
+                } else {
+                  return bookString.includes(str.replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
+                }
+              } catch {
+                return false
               }
             })
           } else {
@@ -1567,7 +1580,12 @@ export default defineComponent({
             }
           )
         ).toLowerCase()
-        return checkCondition(bookString)
+        const bookDate = {
+          mtime: new Date(book.mtime),
+          atime: new Date(book.date),
+          ptime: new Date(book.posted * 1000)
+        }
+        return checkCondition(bookString, bookDate)
       })
       if (!this.sortValue) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)

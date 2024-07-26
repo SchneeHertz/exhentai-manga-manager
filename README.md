@@ -43,7 +43,7 @@
 - 从一个文件夹建立漫画库
 - 从漫画文件中提取封面，然后批量从ExHentai获取漫画的标签
 - 编辑标签
-- 基于标签，漫画名，文件路径的搜索
+- 基于标签，漫画名，文件路径，时间的搜索
 - 关联外部图片浏览器
 - 内置图片浏览器
 
@@ -65,6 +65,8 @@
 - 支持导入exhentai整体元数据数据库备份
 - 内置图片浏览器支持单页，双页，卷轴式浏览
 - 从ExHentai页面复制元数据的[脚本](https://sleazyfork.org/zh-CN/scripts/472321-%E6%8F%90%E5%8F%96e-hentai%E7%94%BB%E5%BB%8A%E5%85%83%E6%95%B0%E6%8D%AE)
+- 标签频率分析
+- 局域网浏览
 
 ## TODO
 - 根据规则重命名和移动漫画文件
@@ -76,8 +78,8 @@
 
 
 ## 赞助
-https://afdian.net/@SeldonHorizon
-如果这个软件帮到了你，可以请我喝杯奶茶
+[!["爱发电"](https://static.afdiancdn.com/static/img/logo/logo.png)](https://afdian.com/a/SeldonHorizon)
+[如果这个软件帮到了你，可以请我喝杯奶茶](https://afdian.com/a/SeldonHorizon)
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/schneehertz)
 If this software helps you, you can buy me a cup of coffee

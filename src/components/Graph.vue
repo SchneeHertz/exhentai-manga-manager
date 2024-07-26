@@ -1,210 +1,165 @@
 <template>
-  <el-dialog v-model="dialogVisibleGraph"
-    fullscreen
-    destroy-on-close
-    @close="destroyCanvas"
-  >
+  <el-dialog v-model="dialogVisibleGraph" fullscreen destroy-on-close>
     <template #header><p>{{$t('m.tagAnalysis')}}</p></template>
-    <div id="tag-graph"></div>
-    <template #footer>
-      <el-button type="primary" @click="geneRecommend">{{$t('m.searchLocal')}}</el-button>
-    </template>
+    <el-row>
+      <el-col :span="12" class="graph-frame"><canvas id="graph-artist"></canvas></el-col>
+      <el-col :span="12" class="graph-frame"><canvas id="graph-mtime"></canvas></el-col>
+      <el-col :span="24" class="graph-frame"><canvas id="graph-tag-count"></canvas></el-col>
+    </el-row>
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, nextTick } from 'vue'
-import { nanoid } from 'nanoid'
-import G6 from '@antv/g6'
+import { useI18n } from 'vue-i18n'
+import Chart from 'chart.js/auto'
+
+const { t } = useI18n()
 
 const props = defineProps({
-  bookList: Array,
-  cat2letter: Object,
+  bookList: {
+    type: Array,
+    default: () => []
+  },
+  setting: Object,
   resolvedTranslation: Object
 })
 
 const emit = defineEmits(['search'])
 
 const dialogVisibleGraph = ref(false)
-let tagNodeData = []
 
-const displayTagGraph = () => {
-  let nodes = []
-  _.forEach(props.bookList, book=>{
-    let tags = _.pick(book?.tags, ['male', 'female', 'mixed'])
-    let tempNodes = []
-    _.forIn(tags, (list, cat)=>{
-      list.map(tag=>{
-        tempNodes.push(`${cat}##${tag}`)
-      })
-    })
-    nodes = nodes.concat(tempNodes)
-  })
-  let nodesObject = _.countBy(nodes)
-  let maxTagCount = _.max(_.values(nodesObject))
-  const colors = ['#BDD2FD', '#BDEFDB', '#C2C8D5', '#FBE5A2', '#F6C3B7', '#B6E3F5', '#D3C6EA', '#FFD8B8', '#AAD8D8', '#FFD6E7']
-  let tempNodeData = []
-  _.forIn(nodesObject, (count, label)=>{
-    let labelArray = _.split(label, '##')
-    try {
-      let letter = props.cat2letter[labelArray[0]] ? props.cat2letter[labelArray[0]] : labelArray[0]
-      tempNodeData.push({
-        id: nanoid(),
-        count,
-        size: Math.ceil(( count / maxTagCount * 14 ) ** 2 + 70),
-        oriSize: Math.ceil(( count / maxTagCount * 14 ) ** 2 + 70),
-        name: `${letter}:"${labelArray[1]}"$`,
-        shortName: `${letter}:"${labelArray[1]}"$`,
-        oriLabel: label,
-        label: `${props.resolvedTranslation[labelArray[0]]?.name || labelArray[0]}:${props.resolvedTranslation[labelArray[1]]?.name || labelArray[1]}`,
-        style:{fill: _.sample(colors)}
-      })
-    } catch {}
-  })
-  tagNodeData = _.takeRight(_.sortBy(tempNodeData, 'count'), 32)
-  tagNodeData = _.shuffle(tagNodeData)
-  let edges = []
-  let tempTagGroup = []
-  _.forEach(props.bookList, book=>{
-    let tags = _.pick(book?.tags, ['male', 'female', 'mixed', 'other'])
-    let tempTags = []
-    _.forIn(tags, (list, cat)=>{
-      _.forEach(list, tag=>{
-        let foundNode = _.find(tagNodeData, {oriLabel: `${cat}##${tag}`})
-        if (foundNode) {
-          tempTags.push(foundNode.id)
-        }
-      })
-    })
-    tempTags.sort()
-    for (let i = 0; i < tempTags.length; i++) {
-      for (let j = i + 1; j < tempTags.length; j++) {
-        let foundGroup = _.find(tempTagGroup, {set: tempTags[i] + '##' + tempTags[j]})
-        if (foundGroup) {
-          foundGroup.count += 1
-        } else {
-          tempTagGroup.push({
-            set: tempTags[i] + '##' + tempTags[j],
-            count: 1
-          })
-        }
-      }
-    }
-  })
-  let maxCount = _.max(tempTagGroup.map(g=>g.count))
-  let countLimit =  maxCount * 0.16
-  _.forIn(tempTagGroup, g=>{
-    if (g.count > countLimit) {
-      g.array = g.set.split('##')
-      edges.push({
-        source: g.array[0],
-        target: g.array[1],
-        style: {
-          lineWidth: Math.round(g.count / maxCount * 6)
-        }
-      })
-    }
-  })
+const resolveTags = (tags) => {
+  if (props.setting.showTranslation) return tags.map(tag => props.resolvedTranslation[tag]?.name || tag)
+  return tags
+}
+
+const displayTagGraph = async () => {
   dialogVisibleGraph.value = true
-  nextTick(()=>{
-    let graph = new G6.Graph({
-      container: 'tag-graph',
-      layout: {
-        type: 'force',
-        nodeStrength: 40,
-        edgeStrength: 0.01,
-        collideStrength: 1,
-        alphaDecay: 0.1,
-        nodeSpacing: 10,
-        preventOverlap: true,
-      },
-      defaultNode: {
-        style: {
-          stroke: '#6196FE',
-          lineWidth: 1
-        }
-      },
-      defaultEdge: {
-        type: 'line',
-        style: {
-          stroke: '#6196FE'
-        }
-      },
-      modes: {
-        default: ['drag-canvas', 'zoom-canvas', 'drag-node']
-      }
-    })
-    graph.data({nodes: tagNodeData, edges})
-    const refreshDragedNodePosition = (e)=>{
-      const model = e.item.get('model')
-      model.fx = e.x
-      model.fy = e.y
-    }
-    graph.on('node:dragstart', (e)=>{
-      graph.layout()
-      refreshDragedNodePosition(e)
-    })
-    graph.on('node:drag', (e)=>{
-      refreshDragedNodePosition(e)
-    })
-    graph.on('node:dragend', (e)=>{
-      e.item.get('model').fx = null
-      e.item.get('model').fy = null
-    })
-    graph.on('node:click', (e)=>{
-      const node = e.item
-      const states = node.getStates()
-      let clicked = false
-      const model = node.getModel()
-      _.find(tagNodeData, {id: model.id}).size = 270
-      let size = 270
-      states.forEach((state)=>{
-        if (state === 'click') {
-          clicked = true
-          size = model.oriSize
-          _.find(tagNodeData, {id: model.id}).size = model.oriSize
-        }
-      })
-      graph.setItemState(node, 'click', !clicked)
-      graph.getNodes().forEach((node)=>{
-        graph.updateItem(node, {
-          style: {
-            stroke: '#6196FE',
-            lineWidth: 1
-          }
-        })
-      })
-      if (!clicked) {
-        graph.updateItem(node, {
-          size,
-          style: {
-            stroke: '#FF0000',
-            lineWidth: 3
-          }
-        })
-        node.getNeighbors().forEach((node)=>{
-          graph.updateItem(node, {
-            style: {
-              stroke: '#FF0000',
-              lineWidth: 3
-            }
-          })
-        })
-      }
-      graph.layout()
-    })
-    graph.render()
-  })
-}
+  await nextTick()
+  const bookInfos = props.bookList.filter(book => !book.folderHide && !book.hiddenBook).map(book => ({
+    artists: book?.tags?.artist ? [...book.tags.artist] : [],
+    male: book?.tags?.male ? [...book.tags.male] : [],
+    female: book?.tags.female ? [...book.tags.female] : [],
+    mtime: `${new Date(book.mtime).getFullYear()}-${(new Date(book.mtime).getMonth() + 1).toString().padStart(2, 0)}`,
+  }))
 
-const geneRecommend = () => {
-  let tagGroup2 = _.filter(tagNodeData, n=>n.size >= 270)
-  let tagGroup3 = tagGroup2
-  dialogVisibleGraph.value = false
-  emit('search', `${tagGroup3.map(n=>n.shortName).join(' ')}`)
-}
-const destroyCanvas = () => {
-  document.querySelector('#tag-graph canvas').remove()
+  const artists = _(bookInfos.map(book => book.artists)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 20).value()
+  const chartArtist = new Chart(
+    document.getElementById('graph-artist'),
+    {
+      type: 'bar',
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        layout: {
+          padding: 10
+        },
+        onClick: (e, activeEls) => {
+          if (activeEls.length === 0) return
+          const artist = artists[activeEls[0].index][0]
+          emit('search', `a:"${artist}"$`)
+          dialogVisibleGraph.value = false
+        },
+      },
+      data: {
+        labels: resolveTags(artists.map(p => p[0])),
+        datasets: [{
+          label: t('c.artist'),
+          data: artists.map(p => p[1]),
+          backgroundColor: 'rgba(255, 205, 86, 0.2)',
+          borderColor: 'rgb(255, 205, 86)',
+          borderWidth: 1
+        }]
+      }
+    }
+  )
+
+  const mtime = _(bookInfos.map(book => book.mtime)).countBy().toPairs().sortBy(p => p[0]).value()
+  const chartMtime = new Chart(
+    document.getElementById('graph-mtime'),
+    {
+      type: 'line',
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        layout: {
+          padding: 10
+        },
+        onClick: (e, activeEls) => {
+          if (activeEls.length === 0) return
+          if (activeEls[0].index < mtime.length - 1) {
+            emit('search', `:mtime>${mtime[activeEls[0].index][0]} :mtime<${mtime[activeEls[0].index + 1][0]}`)
+          } else {
+            emit('search', `:mtime>${mtime[activeEls[0].index][0]}`)
+          }
+          dialogVisibleGraph.value = false
+        },
+      },
+      data: {
+        labels: mtime.map(p => p[0]),
+        datasets: [{
+          label: t('m.mtime'),
+          data: mtime.map(p => p[1]),
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          borderColor: 'rgb(75, 192, 192)',
+          borderWidth: 1,
+          fill: 'origin',
+        }]
+      }
+    }
+  )
+
+  const maleTags = _(bookInfos.map(book => book.male)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 18).value()
+  const femaleTags = _(bookInfos.map(book => book.female)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 18).value()
+  let tagData = maleTags.map(p => {p[2] = 'rgba(54, 162, 235, 0.2)'; p[3] = 'rgb(54, 162, 235)'; return p})
+    .concat(femaleTags.map(p => {p[2] = 'rgba(255, 99, 132, 0.2)'; p[3] = 'rgb(255, 99, 132)'; return p}))
+  tagData = _.sortBy(tagData, p => -p[1]).slice(0, 24)
+  const chartTagCount = new Chart(
+    document.getElementById('graph-tag-count'),
+    {
+      type: 'bar',
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        layout: {
+          padding: 10
+        },
+        onClick: (e, activeEls) => {
+          if (activeEls.length === 0) return
+          const tag = tagData[activeEls[0].index]
+          if (tag[3] === 'rgb(54, 162, 235)') {
+            emit('search', `m:"${tag[0]}"$`)
+          } else {
+            emit('search', `f:"${tag[0]}"$`)
+          }
+          dialogVisibleGraph.value = false
+        },
+      },
+      data: {
+        labels: resolveTags(tagData.map(p => p[0])),
+        datasets: [
+          {
+            label: t('m.tag'),
+            data: tagData.map(p => p[1]),
+            backgroundColor: tagData.map(p => p[2]),
+            borderColor: tagData.map(p => p[3]),
+            borderWidth: 1
+          },
+        ]
+      }
+    }
+  )
 }
 
 defineExpose({
@@ -215,7 +170,6 @@ defineExpose({
 </script>
 
 <style lang="stylus">
-#tag-graph
-  width: 100%
-  height: calc(100vh - 210px)
+.graph-frame, .graph-frame, .graph-frame
+  height: calc(50vh - 52px)
 </style>

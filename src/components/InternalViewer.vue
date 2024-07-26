@@ -665,6 +665,7 @@ defineExpose({
   opacity: 0.05
   position: fixed
   bottom: 1em
+  left: calc(50vw - 154px)
   transition-delay: 0.2s
   .el-button
     --el-button-bg-color: #f0f9eb66

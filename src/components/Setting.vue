@@ -144,6 +144,7 @@
                   <el-select placeholder=" " v-model="setting.language" @change="handleLanguageChange">
                     <el-option :label="$t('m.systemDefault')" value="default"></el-option>
                     <el-option label="zh-CN" value="zh-CN"></el-option>
+                    <el-option label="zh-TW" value="zh-TW"></el-option>
                     <el-option label="en-US" value="en-US"></el-option>
                   </el-select>
                 </template>
@@ -356,11 +357,11 @@
             <a href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager')">github</a>
           </el-descriptions-item>
           <el-descriptions-item :label="$t('m.help')+':'">
-            <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明')">github wiki</a>
+            <a v-if="['zh-CN', 'zh-TW'].includes($i18n.locale)" href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/中文说明')">github wiki</a>
             <a v-else href="#" @click="openLink('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction')">github wiki</a>
           </el-descriptions-item>
           <el-descriptions-item :label="$t('m.donation')+':'">
-            <a v-if="$i18n.locale === 'zh-CN'" href="#" @click="openLink('https://afdian.com/a/SeldonHorizon')">爱发电</a>
+            <a v-if="['zh-CN', 'zh-TW'].includes($i18n.locale)" href="#" @click="openLink('https://afdian.com/a/SeldonHorizon')">爱发电</a>
             <a v-else href="#" @click="openLink('https://www.buymeacoffee.com/schneehertz')">buy me a coffee</a>
           </el-descriptions-item>
         </el-descriptions>

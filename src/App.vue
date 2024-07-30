@@ -560,6 +560,7 @@ import * as linkify from 'linkifyjs'
 import { getWidth } from './utils.js'
 
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import zhTw  from 'element-plus/dist/locale/zh-tw.mjs'
 import en from 'element-plus/dist/locale/en.mjs'
 
 import Setting from './components/Setting.vue'
@@ -2344,6 +2345,10 @@ export default defineComponent({
         case 'zh-CN':
           this.locale = zhCn
           this.$i18n.locale = 'zh-CN'
+          break
+        case 'zh-TW':
+          this.locale = zhTw
+          this.$i18n.locale = 'zh-TW'
           break
         case 'en-US':
         default:

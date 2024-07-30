@@ -185,8 +185,8 @@ const imageStyleType = ref('scroll')
 const imageStyleFit = ref('window')
 const viewerReadingProgress = ref([])
 const currentImageId = ref('')
-const insertEmptyPage = ref(false)
-const insertEmptyPageIndex = ref(1)
+const insertEmptyPage = ref(true)
+const insertEmptyPageIndex = ref(0)
 const viewerImageList = ref([])
 const viewerImageListDouble = computed(() => {
   if (imageStyleType.value === 'double') {
@@ -245,8 +245,8 @@ const viewManga = (book, viewerHeight = '100%') => {
   viewerImageList.value = []
   receiveThumbnailList.value = []
   currentImageIndex.value = 0
-  insertEmptyPage.value = false
-  insertEmptyPageIndex.value = 1
+  insertEmptyPage.value = true
+  insertEmptyPageIndex.value = 0
   emit('selectBook', book)
   const loading = ElLoading.service({
     lock: true,

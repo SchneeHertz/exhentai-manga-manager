@@ -1006,6 +1006,7 @@ LANBrowsing.get('/', (req, res) => {
       res.redirect('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/LAN-Browsing')
       break
     case 'zh-CN':
+    case 'zh-TW':
     default:
       res.redirect('https://github.com/SchneeHertz/exhentai-manga-manager/wiki/%E5%B1%80%E5%9F%9F%E7%BD%91%E6%B5%8F%E8%A7%88')
       break

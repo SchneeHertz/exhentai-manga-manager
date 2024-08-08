@@ -30,19 +30,4 @@ app.use(createI18n({
   legacy: false,
   messages
 }))
-
-app.directive('lazy', {
-  mounted(el, binding) {
-    const observer = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          binding.value(binding.arg)
-          observer.unobserve(el)
-        }
-      })
-    })
-    observer.observe(el)
-  }
-})
-
 app.mount('#app')

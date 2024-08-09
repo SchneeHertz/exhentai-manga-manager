@@ -2608,7 +2608,7 @@ body
 .book-card
   display: inline-block
   width: 220px
-  min-height: 367px
+  min-height: 365px
   padding-bottom: 4px
   border: solid 1px var(--el-border-color)
   border-radius: 4px

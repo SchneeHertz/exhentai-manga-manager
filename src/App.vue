@@ -139,6 +139,8 @@
                   @click="searchFromTag(tag.tag, tag.cat)"
                   class="book-collect-tag"
                   :color="tag.color"
+                  size="small"
+                  effect="dark"
                 >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
               </div>
               <div>
@@ -339,17 +341,29 @@
             class="book-card-mark"
             @click="switchMark(book)"
           ><BookmarkTwotone /></el-icon>
-          <el-button-group class="outer-read-button-group">
-            <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-            <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
-          </el-button-group>
-          <el-tag
-            class="book-status-tag"
-            effect="plain"
-            :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-            @click="searchFromTag(book.status)"
-          >{{book.status}}</el-tag>
-          <el-rate v-model="book.rating"  v-if="!book.isCollection" size="small" allow-half @change="saveBook(book)"/>
+          <div class="collect-tag">
+            <el-tag
+              v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
+              @click="searchFromTag(tag.tag, tag.cat)"
+              class="book-collect-tag"
+              :color="tag.color"
+              size="small"
+              effect="dark"
+            >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
+          </div>
+          <div>
+            <el-button-group class="outer-read-button-group">
+              <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+              <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
+            </el-button-group>
+            <el-tag
+              class="book-status-tag"
+              effect="plain"
+              :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+              @click="searchFromTag(book.status)"
+            >{{book.status}}</el-tag>
+            <el-rate v-model="book.rating"  v-if="!book.isCollection" size="small" allow-half @change="saveBook(book)"/>
+          </div>
         </div>
       </div>
     </el-drawer>
@@ -1385,12 +1399,16 @@ export default defineComponent({
         let book = bookList[i]
         try {
           if (this.serviceAvailable) {
-            let resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
-              book.hash.toUpperCase(),
-              this.$refs.SearchDialogRef.returnTrimFileName(book),
-              server
-            )
-            this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
+            if (!book.url) {
+              let resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
+                book.hash.toUpperCase(),
+                this.$refs.SearchDialogRef.returnTrimFileName(book),
+                server
+              )
+              this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
+            } else {
+              this.getBookInfo(book)
+            }
             await timer(gap)
           }
         } catch (error) {
@@ -2616,12 +2634,15 @@ body
   position: relative
   .collect-tag
     overflow-x: hidden
-    margin: 0 10px
+    margin: 0 0 0 10px
     text-align: left
     .book-collect-tag
       cursor: pointer
       margin-right: 4px
       margin-bottom: 4px
+      border-width: 0
+      padding-left: 4px
+      padding-right: 4px
 .book-collection-tag
   position: absolute
   right: 1px

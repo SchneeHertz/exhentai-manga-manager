@@ -111,48 +111,64 @@
             class="book-card"
             v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide"
             :tabindex="index + 1"
+            v-lazy:[book.id]="loadBookCardContent"
           >
-            <p class="book-title"
-              @click="openBookDetail(book)"
-              @contextmenu="onMangaTitleContextMenu($event, book)"
-              :title="getDisplayTitle(book)"
-            >{{getDisplayTitle(book)}}</p>
-            <img
-              class="book-cover"
-              :src="book.coverPath"
-              @click="handleClickCover(book)"
-              @contextmenu="onBookContextMenu($event, book)"
-            />
-            <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
-            <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
-            <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
-            <el-icon
-              :size="30"
-              :color="book.mark ? '#E6A23C' : '#666666'"
-              class="book-card-mark" @click="switchMark(book)"
-            ><BookmarkTwotone /></el-icon>
-            <el-button-group class="outer-read-button-group">
-              <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-              <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
-            </el-button-group>
-            <el-tag
-              class="book-status-tag"
-              effect="plain"
-              :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-              @click="searchFromTag(book.status)"
-            >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
+            <template v-if="visibilityMap[book.id]">
+              <p class="book-title"
+                @click="openBookDetail(book)"
+                @contextmenu="onMangaTitleContextMenu($event, book)"
+                :title="getDisplayTitle(book)"
+              >{{getDisplayTitle(book)}}</p>
+              <img
+                class="book-cover"
+                :src="book.coverPath"
+                @click="handleClickCover(book)"
+                @contextmenu="onBookContextMenu($event, book)"
+              />
+              <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+              <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+              <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
+              <el-icon
+                :size="30"
+                :color="book.mark ? '#E6A23C' : '#666666'"
+                class="book-card-mark" @click="switchMark(book)"
+              ><BookmarkTwotone /></el-icon>
+              <div class="collect-tag">
+                <el-tag
+                  v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
+                  @click="searchFromTag(tag.tag, tag.cat)"
+                  class="book-collect-tag"
+                  :color="tag.color"
+                >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
+              </div>
+              <div>
+                <el-button-group class="outer-read-button-group">
+                  <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+                  <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
+                </el-button-group>
+                <el-tag
+                  class="book-status-tag"
+                  effect="plain"
+                  :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+                  @click="searchFromTag(book.status)"
+                >{{book.status}}</el-tag>
+                <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
+              </div>
+            </template>
           </div>
           <div
             class="book-card"
             v-if="book.isCollection && !book.folderHide"
             :tabindex="index + 1"
+            v-lazy:[book.id]="loadBookCardContent"
           >
-            <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
-            <p class="book-title" :title="book.title">{{book.title}}</p>
-            <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
-            <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
-            <el-rate v-model="book.rating" size="small" allow-half disabled/>
+            <template v-if="visibilityMap[book.id]">
+              <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
+              <p class="book-title" :title="book.title">{{book.title}}</p>
+              <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
+              <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
+              <el-rate v-model="book.rating" size="small" allow-half disabled/>
+            </template>
           </div>
         </div>
       </el-col>
@@ -533,6 +549,8 @@
     <Setting
       ref="SettingRef"
       :search-type-list="searchTypeList"
+      :tag-list-raw="tagListRaw"
+      :resolved-translation="resolvedTranslation"
       @update-setting="updateSetting"
       @handle-language-set="handleLanguageSet"
       @message="printMessage"
@@ -607,6 +625,7 @@ export default defineComponent({
       expandNodes: [],
       progress: 0,
       randomTags: [],
+      visibilityMap: {},
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -724,7 +743,7 @@ export default defineComponent({
         }
       })
     },
-    tagListForSelect () {
+    tagListRaw () {
       let tagArray = _(this.bookList.map(b => {
         return _.map(b.tags, (tags, cat) => {
           return _.map(tags, tag => `${cat}##${tag}`)
@@ -735,17 +754,32 @@ export default defineComponent({
       return uniqedTagArray.map(combinedTag => {
         let tagArray = _.split(combinedTag, '##')
         let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
-        let labelHeader = tagArray[0]
-        let labelTail = tagArray[1]
-        if (this.setting.showTranslation) {
-          labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
-          labelTail = this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]
-        }
         return {
-          label: `${labelHeader}:${labelTail} || ${letter}:"${tagArray[1]}"$`,
-          value: `${letter}:"${tagArray[1]}"$`
+          id: `${tagArray[0]}:${tagArray[1]}`,
+          letter,
+          cat: tagArray[0],
+          tag: tagArray[1],
         }
       })
+    },
+    tagListForSelect () {
+      if (this.setting.showTranslation) {
+        return this.tagListRaw.map(({letter, cat, tag}) => {
+          let labelHeader = cat === 'group' ? '团队' : this.resolvedTranslation[cat]?.name || cat
+          let labelTail = this.resolvedTranslation[tag]?.name || tag
+          return {
+            label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
+            value: `${letter}:"${tag}"$`
+          }
+        })
+      } else {
+        return this.tagListRaw.map(({letter, cat, tag}) => {
+          return {
+            label: `${cat}:${tag} || ${letter}:"${tag}"$`,
+            value: `${letter}:"${tag}"$`
+          }
+        })
+      }
     },
     tag2cat () {
       let temp = {}
@@ -1639,6 +1673,17 @@ export default defineComponent({
     },
     isChineseTranslatedManga (book) {
       return _.includes(book?.tags?.language, 'chinese') ? true : false
+    },
+    loadBookCardContent (id) {
+      this.visibilityMap[id] = true
+    },
+    filterCollectTag (tagObject) {
+      if (this.setting.showCollectTag) {
+        const collectTag = this.setting.collectTag || []
+        return collectTag.filter(tag => tagObject[tag.cat] && tagObject[tag.cat].includes(tag.tag))
+      } else {
+        return []
+      }
     },
     // home page
     chunkList () {
@@ -2563,11 +2608,20 @@ body
 .book-card
   display: inline-block
   width: 220px
-  height: 367px
+  min-height: 365px
+  padding-bottom: 4px
   border: solid 1px var(--el-border-color)
   border-radius: 4px
   margin: 6px 6px
   position: relative
+  .collect-tag
+    overflow-x: hidden
+    margin: 0 10px
+    text-align: left
+    .book-collect-tag
+      cursor: pointer
+      margin-right: 4px
+      margin-bottom: 4px
 .book-collection-tag
   position: absolute
   right: 1px

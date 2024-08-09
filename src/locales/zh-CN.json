@@ -145,7 +145,10 @@
     "keepReadingProgress": "保持阅读进度",
     "reverseLeftRight": "翻转左右翻页按键",
     "autoNextManga": "自动跳转到下一本",
-    "accelerator": "快捷键"
+    "accelerator": "快捷键",
+    "collectTag": "标签收藏",
+    "showCollectTag": "显示收藏标签",
+    "tagColor": "标签颜色"
   },
   "c": {
     "selectCollectionList": "选择collectionList.json",

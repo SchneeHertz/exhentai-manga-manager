@@ -133,17 +133,27 @@
                 :color="book.mark ? '#E6A23C' : '#666666'"
                 class="book-card-mark" @click="switchMark(book)"
               ><BookmarkTwotone /></el-icon>
-              <el-button-group class="outer-read-button-group">
-                <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-                <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
-              </el-button-group>
-              <el-tag
-                class="book-status-tag"
-                effect="plain"
-                :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-                @click="searchFromTag(book.status)"
-              >{{book.status}}</el-tag>
-              <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
+              <div class="collect-tag">
+                <el-tag
+                  v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
+                  @click="searchFromTag(tag.tag, tag.cat)"
+                  class="book-collect-tag"
+                  :color="tag.color"
+                >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
+              </div>
+              <div>
+                <el-button-group class="outer-read-button-group">
+                  <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+                  <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
+                </el-button-group>
+                <el-tag
+                  class="book-status-tag"
+                  effect="plain"
+                  :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+                  @click="searchFromTag(book.status)"
+                >{{book.status}}</el-tag>
+                <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
+              </div>
             </template>
           </div>
           <div
@@ -539,6 +549,8 @@
     <Setting
       ref="SettingRef"
       :search-type-list="searchTypeList"
+      :tag-list-raw="tagListRaw"
+      :resolved-translation="resolvedTranslation"
       @update-setting="updateSetting"
       @handle-language-set="handleLanguageSet"
       @message="printMessage"
@@ -731,7 +743,7 @@ export default defineComponent({
         }
       })
     },
-    tagListForSelect () {
+    tagListRaw () {
       let tagArray = _(this.bookList.map(b => {
         return _.map(b.tags, (tags, cat) => {
           return _.map(tags, tag => `${cat}##${tag}`)
@@ -742,17 +754,32 @@ export default defineComponent({
       return uniqedTagArray.map(combinedTag => {
         let tagArray = _.split(combinedTag, '##')
         let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
-        let labelHeader = tagArray[0]
-        let labelTail = tagArray[1]
-        if (this.setting.showTranslation) {
-          labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
-          labelTail = this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]
-        }
         return {
-          label: `${labelHeader}:${labelTail} || ${letter}:"${tagArray[1]}"$`,
-          value: `${letter}:"${tagArray[1]}"$`
+          id: `${tagArray[0]}:${tagArray[1]}`,
+          letter,
+          cat: tagArray[0],
+          tag: tagArray[1],
         }
       })
+    },
+    tagListForSelect () {
+      if (this.setting.showTranslation) {
+        return this.tagListRaw.map(({letter, cat, tag}) => {
+          let labelHeader = cat === 'group' ? '团队' : this.resolvedTranslation[cat]?.name || cat
+          let labelTail = this.resolvedTranslation[tag]?.name || tag
+          return {
+            label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
+            value: `${letter}:"${tag}"$`
+          }
+        })
+      } else {
+        return this.tagListRaw.map(({letter, cat, tag}) => {
+          return {
+            label: `${cat}:${tag} || ${letter}:"${tag}"$`,
+            value: `${letter}:"${tag}"$`
+          }
+        })
+      }
     },
     tag2cat () {
       let temp = {}
@@ -1649,6 +1676,14 @@ export default defineComponent({
     },
     loadBookCardContent (id) {
       this.visibilityMap[id] = true
+    },
+    filterCollectTag (tagObject) {
+      if (this.setting.showCollectTag) {
+        const collectTag = this.setting.collectTag || []
+        return collectTag.filter(tag => tagObject[tag.cat] && tagObject[tag.cat].includes(tag.tag))
+      } else {
+        return []
+      }
     },
     // home page
     chunkList () {
@@ -2573,11 +2608,20 @@ body
 .book-card
   display: inline-block
   width: 220px
-  height: 367px
+  min-height: 367px
+  padding-bottom: 4px
   border: solid 1px var(--el-border-color)
   border-radius: 4px
   margin: 6px 6px
   position: relative
+  .collect-tag
+    overflow-x: hidden
+    margin: 0 10px
+    text-align: left
+    .book-collect-tag
+      cursor: pointer
+      margin-right: 4px
+      margin-bottom: 4px
 .book-collection-tag
   position: absolute
   right: 1px

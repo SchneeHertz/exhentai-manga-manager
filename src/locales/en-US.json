@@ -145,7 +145,10 @@
     "keepReadingProgress": "Keep Reading Progress",
     "reverseLeftRight": "Reverse the left and right page-turning buttons",
     "autoNextManga": "Auto Next Manga",
-    "accelerator": "Accelerator"
+    "accelerator": "Accelerator",
+    "collectTag": "Collect Tag",
+    "showCollectTag": "Show Collect Tag",
+    "tagColor": "Tag Color"
   },
   "c": {
     "selectCollectionList": "Select collectionList.json",

@@ -137,9 +137,18 @@
       <el-tab-pane :label="$t('m.collectTag')" name="collectTag">
         <el-row :gutter="8">
           <el-col :span="24" class="setting-line collect-tag">
-            <el-tag v-for="tag in setting.collectTag" :key="tag.id" :color="tag.color" closable @close="removeTag(tag.id)">
-              {{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}
-            </el-tag>
+            <draggable
+              v-model="setting.collectTag"
+              item-key="id"
+              animation="200"
+              @change="saveSetting"
+            >
+              <template #item="{element}">
+                <el-tag :color="element.color" closable @close="removeTag(element.id)">
+                  {{element.letter}}:{{resolvedTranslation[element.tag]?.name || element.tag}}
+                </el-tag>
+              </template>
+            </draggable>
           </el-col>
           <el-col :span="24" class="setting-line collect-tag">
             <el-form :inline="true" :model="formTagAdd" :show-message="false">
@@ -416,6 +425,7 @@
 import { ref, onMounted, h, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
+import draggable from 'vuedraggable'
 
 import { version } from '../../package.json'
 import { gh_token } from '../../secret_key.json'

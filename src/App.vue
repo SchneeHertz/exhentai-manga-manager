@@ -1647,6 +1647,9 @@ export default defineComponent({
     isChineseTranslatedManga (book) {
       return _.includes(book?.tags?.language, 'chinese') ? true : false
     },
+    loadBookCardContent (id) {
+      this.visibilityMap[id] = true
+    },
     // home page
     chunkList () {
       this.currentPage = 1
@@ -1664,9 +1667,6 @@ export default defineComponent({
     },
     scrollMainPageTop () {
       document.getElementsByClassName('book-card-area')[0].scrollTop = 0
-    },
-    loadBookCardContent (id) {
-      this.visibilityMap[id] = true
     },
 
 

@@ -96,7 +96,7 @@ const createWindow = () => {
   return win
 }
 
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=65536')
 // app.disableHardwareAcceleration()
 app.whenReady().then(async () => {
   await Manga.sync()

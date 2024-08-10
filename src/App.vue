@@ -2619,7 +2619,9 @@ body
   margin: 4px 0
   justify-content: center
   .el-pagination--small .el-select
-    width: 120px
+    width: 110px
+    .el-select__wrapper
+      text-align: center
 
 .book-tag-area
   width: 100%

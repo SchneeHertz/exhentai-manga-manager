@@ -80,13 +80,13 @@
             <el-button type="primary" plain @click="saveCollection" :icon="Save16Regular" :title="$t('m.save')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="editCollectionView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
+            <el-button type="primary" plain @click="exitCollectionView" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
           <el-col :span="6"  v-if="!editTagView && !editCollectionView">
             <el-button plain @click="enterEditTagView" :icon="TagGroup" :title="$t('m.manageTag')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editTagView">
-            <el-button type="primary" plain @click="editTagView = false" :icon="MdExit" :title="$t('m.exit')"></el-button>
+            <el-button type="primary" plain @click="exitEditTagView" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
         </el-row>
       </el-col>
@@ -103,91 +103,95 @@
           v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
           class="book-card-frame"
+          v-lazy:[book.id]="loadBookCardContent"
         >
-          <!-- show book card when book isn't a collection, book isn't hidden because collected,
-            and book isn't hidden by user except sorting by onlyHiddenBook
-            and book isn't hidden by folder select -->
-          <div
-            class="book-card"
-            v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide"
-            :tabindex="index + 1"
-            v-lazy:[book.id]="loadBookCardContent"
-          >
-            <template v-if="visibilityMap[book.id]">
-              <p class="book-title"
-                @click="openBookDetail(book)"
-                @contextmenu="onMangaTitleContextMenu($event, book)"
-                :title="getDisplayTitle(book)"
-              >{{getDisplayTitle(book)}}</p>
-              <img
-                class="book-cover"
-                :src="book.coverPath"
-                @click="handleClickCover(book)"
-                @contextmenu="onBookContextMenu($event, book)"
-              />
-              <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
-              <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
-              <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
-              <el-icon
-                :size="30"
-                :color="book.mark ? '#E6A23C' : '#666666'"
-                class="book-card-mark" @click="switchMark(book)"
-              ><BookmarkTwotone /></el-icon>
-              <div class="collect-tag">
-                <el-tag
-                  v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
-                  @click="searchFromTag(tag.tag, tag.cat)"
-                  class="book-collect-tag"
-                  :color="tag.color"
-                  size="small"
-                  effect="dark"
-                >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
-              </div>
-              <div>
-                <el-button-group class="outer-read-button-group">
-                  <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-                  <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
-                </el-button-group>
-                <el-tag
-                  class="book-status-tag"
-                  effect="plain"
-                  :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-                  @click="searchFromTag(book.status)"
-                >{{book.status}}</el-tag>
-                <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
-              </div>
-            </template>
-          </div>
-          <div
-            class="book-card"
-            v-if="book.isCollection && !book.folderHide"
-            :tabindex="index + 1"
-            v-lazy:[book.id]="loadBookCardContent"
-          >
-            <template v-if="visibilityMap[book.id]">
+          <template v-if="visibilityMap[book.id]">
+            <!-- show book card when book isn't a collection, book isn't hidden because collected,
+              and book isn't hidden by user except sorting by onlyHiddenBook
+              and book isn't hidden by folder select -->
+            <div
+              class="book-card"
+              v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide"
+              :tabindex="index + 1"
+            >
+                <p class="book-title"
+                  @click="openBookDetail(book)"
+                  @contextmenu="onMangaTitleContextMenu($event, book)"
+                  :title="getDisplayTitle(book)"
+                >{{getDisplayTitle(book)}}</p>
+                <img
+                  class="book-cover"
+                  :src="book.coverPath"
+                  @click="handleClickCover(book)"
+                  @contextmenu="onBookContextMenu($event, book)"
+                />
+                <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+                <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+                <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
+                <el-icon
+                  :size="30"
+                  :color="book.mark ? '#E6A23C' : '#666666'"
+                  class="book-card-mark" @click="switchMark(book)"
+                ><BookmarkTwotone /></el-icon>
+                <div class="collect-tag">
+                  <el-tag
+                    v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
+                    @click="searchFromTag(tag.tag, tag.cat)"
+                    class="book-collect-tag"
+                    :color="tag.color"
+                    size="small"
+                    effect="dark"
+                  >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
+                </div>
+                <div>
+                  <el-button-group class="outer-read-button-group">
+                    <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+                    <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
+                  </el-button-group>
+                  <el-tag
+                    class="book-status-tag"
+                    effect="plain"
+                    :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+                    @click="searchFromTag(book.status)"
+                  >{{book.status}}</el-tag>
+                  <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
+                </div>
+            </div>
+            <div
+              class="book-card"
+              v-if="book.isCollection && !book.folderHide"
+              :tabindex="index + 1"
+            >
               <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
               <p class="book-title" :title="book.title">{{book.title}}</p>
               <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
               <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
               <el-rate v-model="book.rating" size="small" allow-half disabled/>
-            </template>
-          </div>
+            </div>
+          </template>
         </div>
       </el-col>
       <el-col :span="20" v-if="editCollectionView" class="book-collect-view"
         @mousedown="handleMouseDownForSelection" @mouseup="handleMouseUpForSelection('collect')" @mousemove="handleMouseMoveForSelection"
       >
-        <el-badge
-          :value="book.collected ? '✓' : '+'"
-          :type="book.collected ? 'success' : 'warning'"
+        <div
           v-for="book in visibleChunkDisplayBookListForCollectView" :key="book.id"
-          class="book-add-badge"
+          v-lazy:[book.id]="loadBookCardContent"
+          class="book-collect-card-frame"
         >
-          <div class="book-collect-card selectable-card" :id="book.id" @click="handleClickCollectBadge(book)">
-            <p class="book-collect-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
-            <img class="book-collect-cover" :src="book.coverPath"/>
-          </div>
-        </el-badge>
+          <template v-if="visibilityMap[book.id]">
+            <el-badge
+              :value="book.collected ? '✓' : '+'"
+              :type="book.collected ? 'success' : 'warning'"
+              class="book-add-badge"
+            >
+              <div class="book-collect-card selectable-card" :id="book.id" @click="handleClickCollectBadge(book)">
+                <p class="book-collect-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
+                <img class="book-collect-cover" :src="book.coverPath"/>
+              </div>
+            </el-badge>
+          </template>
+        </div>
       </el-col>
       <el-col :span="4" v-if="editCollectionView" class="book-collection">
         <el-select v-model="selectCollection" class="book-collection-select" filterable @change="handleSelectCollectionChange">
@@ -215,39 +219,44 @@
       <el-col :span="20" v-if="editTagView" class="book-tag-edit-view"
         @mousedown="handleMouseDownForSelection" @mouseup="handleMouseUpForSelection('tag')" @mousemove="handleMouseMoveForSelection"
       >
-        <el-popover
+        <div
           v-for="book in visibleChunkDisplayBookListForEditTagView" :key="book.id"
-          placement="left" :width="300" trigger="hover" :show-after="1000" :hide-after="100"
+          v-lazy:[book.id]="loadBookCardContent"
+          class="book-tag-edit-card-frame"
         >
-          <template #reference>
-            <el-badge
-              :value="book.selected ? '✓' : '+'"
-              :type="book.selected ? 'success' : 'warning'"
-              class="book-add-badge"
-            >
-              <div class="book-tag-edit-card selectable-card" @contextmenu="previewManga(book)" :id="book.id" @click="handleSelectBookBadge(book)">
-                <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
-                <img class="book-tag-edit-cover" :src="book.coverPath"/>
-              </div>
-            </el-badge>
+          <template v-if="visibilityMap[book.id]">
+            <el-popover placement="left" :width="300" trigger="hover" :show-after="1000" :hide-after="100">
+              <template #reference>
+                <el-badge
+                  :value="book.selected ? '✓' : '+'"
+                  :type="book.selected ? 'success' : 'warning'"
+                  class="book-add-badge"
+                >
+                  <div class="book-tag-edit-card selectable-card" @contextmenu="previewManga(book)" :id="book.id" @click="handleSelectBookBadge(book)">
+                    <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
+                    <img class="book-tag-edit-cover" :src="book.coverPath"/>
+                  </div>
+                </el-badge>
+              </template>
+              <el-descriptions :column="1" size="small" class="book-tag-edit-popover">
+                <el-descriptions-item :label="$t('m.pageCount')+':'">
+                  <el-tag class="book-tag" :type="book.pageDiff ? 'danger' : 'info'">{{book.pageCount}} | {{book.filecount}}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item :label="$t('m.metadataStatus')+':'">
+                  <el-tag class="book-tag" :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+                  @click="searchFromTag(book.status)">{{book.status}}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item :label="$t('m.category')+':'">
+                  <el-tag type="info" class="book-tag" @click="searchFromTag(book.category)">{{book.category}}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item v-for="(tagArr, key) in book.tags" :label="key + ':'" :key="key">
+                  <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag, key)"
+                  >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
+                </el-descriptions-item>
+              </el-descriptions>
+            </el-popover>
           </template>
-          <el-descriptions :column="1" size="small" class="book-tag-edit-popover">
-            <el-descriptions-item :label="$t('m.pageCount')+':'">
-              <el-tag class="book-tag" :type="book.pageDiff ? 'danger' : 'info'">{{book.pageCount}} | {{book.filecount}}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item :label="$t('m.metadataStatus')+':'">
-              <el-tag class="book-tag" :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-              @click="searchFromTag(book.status)">{{book.status}}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item :label="$t('m.category')+':'">
-              <el-tag type="info" class="book-tag" @click="searchFromTag(book.category)">{{book.category}}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item v-for="(tagArr, key) in book.tags" :label="key + ':'" :key="key">
-              <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag, key)"
-              >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
-            </el-descriptions-item>
-          </el-descriptions>
-        </el-popover>
+        </div>
       </el-col>
       <el-col :span="4" v-if="editTagView" class="book-tag-edit-operation" v-loading="updateTagsLoading">
         <el-space wrap class="book-tag-edit-buttons">
@@ -293,7 +302,7 @@
       <el-pagination
         v-model:currentPage="currentPage"
         v-model:page-size="setting.pageSize"
-        :page-sizes="[12, 24, 42, 72, 500, 5000]"
+        :page-sizes="[12, 24, 42, 72, 500, 5000, 1000000]"
         :small="true"
         layout="total, sizes, prev, pager, next, jumper"
         :total="displayBookCount"
@@ -1715,6 +1724,7 @@ export default defineComponent({
       this.scrollMainPageTop()
     },
     handleCurrentPageChange (currentPage) {
+      this.visibilityMap = {}
       this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, currentPage - 1)
       this.scrollMainPageTop()
     },
@@ -1806,8 +1816,13 @@ export default defineComponent({
       })
     },
     enterEditCollectionView () {
+      this.visibilityMap = {}
       this.editCollectionView = true
       if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
+    },
+    exitCollectionView () {
+      this.visibilityMap = {}
+      this.editCollectionView = false
     },
     addCollection () {
       ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {})
@@ -1900,9 +1915,14 @@ export default defineComponent({
 
     // group edit tags viewer
     enterEditTagView () {
+      this.visibilityMap = {}
       this.editTagView = true
       this.selectBookList = []
       this.displayBookList.forEach(book => book.selected = false)
+    },
+    exitEditTagView () {
+      this.visibilityMap = {}
+      this.editTagView = false
     },
     handleSelectBookBadge (book) {
       if (book.selected) {
@@ -2598,6 +2618,8 @@ body
 .pagination-bar
   margin: 4px 0
   justify-content: center
+  .el-pagination--small .el-select
+    width: 120px
 
 .book-tag-area
   width: 100%
@@ -2622,6 +2644,8 @@ body
     align-content: flex-start
 
 .book-card-frame
+  min-width: 220px
+  min-height: 365px
   display: inline-block
 .book-card
   display: inline-block
@@ -2693,6 +2717,10 @@ body
 .collection-edit-button
   margin-bottom: 2px
 
+.book-collect-card-frame, .book-tag-edit-card-frame
+  display: inline-block
+  min-width: 138px
+  min-height: 229px
 .book-collect-card, .book-tag-edit-card
   width: 138px
   height: 229px

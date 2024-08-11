@@ -2646,8 +2646,8 @@ body
     align-content: flex-start
 
 .book-card-frame
-  min-width: 220px
-  min-height: 365px
+  min-width: 234px
+  min-height: 383px
   display: inline-block
 .book-card
   display: inline-block

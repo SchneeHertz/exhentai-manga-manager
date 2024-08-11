@@ -144,7 +144,7 @@
               @change="saveSetting"
             >
               <template #item="{element}">
-                <el-tag :color="element.color" closable @close="removeTag(element.id)">
+                <el-tag :color="element.color" effect="dark" closable @close="removeTag(element.id)">
                   {{element.letter}}:{{resolvedTranslation[element.tag]?.name || element.tag}}
                 </el-tag>
               </template>
@@ -709,6 +709,7 @@ defineExpose({
   .el-tag
     margin-right: 8px
     margin-bottom: 8px
+    border-width: 0
 .setting-switch
   text-align: left
   margin-top: 6px

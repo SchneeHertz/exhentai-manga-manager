@@ -8,10 +8,10 @@ const { getArchivelist, solveBookTypeArchive, getImageListFromArchive, deleteIma
 const { getZipFilelist, solveBookTypeZip } = require('./zip.js')
 const { TEMP_PATH, COVER_PATH, VIEWER_PATH } = require('../modules/init_folder_setting.js')
 
-let getBookFilelist = async (library) => {
-  let folderList = await getFolderlist(library)
-  let archiveList = await getArchivelist(library)
-  let zipList = await getZipFilelist(library)
+const getBookFilelist = async (library) => {
+  const folderList = await getFolderlist(library)
+  const archiveList = await getArchivelist(library)
+  const zipList = await getZipFilelist(library)
   return [
     ...folderList.map(filepath => ({ filepath, type: 'folder' })),
     ...archiveList.map(filepath => ({ filepath, type: 'archive' })),
@@ -19,7 +19,7 @@ let getBookFilelist = async (library) => {
   ]
 }
 
-let geneCover = async (filepath, type) => {
+const geneCover = async (filepath, type) => {
   let targetFilePath, coverPath, tempCoverPath, pageCount, bundleSize, mtime
   switch (type) {
     case 'folder':
@@ -39,8 +39,8 @@ let geneCover = async (filepath, type) => {
       break
   }
 
-  let coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
-  let copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(tempCoverPath))
+  const coverHash = createHash('sha1').update(fs.readFileSync(tempCoverPath)).digest('hex')
+  const copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(tempCoverPath))
   await fs.promises.copyFile(tempCoverPath, copyTempCoverPath)
   await sharp(copyTempCoverPath, { failOnError: false })
     .resize(500, 707, {

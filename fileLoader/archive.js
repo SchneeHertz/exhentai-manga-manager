@@ -9,8 +9,8 @@ const { getRootPath } = require('../modules/utils.js')
 
 const _7z = path.join(getRootPath(), 'resources/extraResources/7z.exe')
 
-let getArchivelist = async (libraryPath)=>{
-  let list = globSync('**/*.@(rar|7z|cb7|cbr)', {
+const getArchivelist = async (libraryPath) => {
+  const list = globSync('**/*.@(rar|7z|cb7|cbr)', {
     cwd: libraryPath,
     nocase: true,
     follow: true,
@@ -19,16 +19,16 @@ let getArchivelist = async (libraryPath)=>{
   return list
 }
 
-let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
-  let tempFolder = path.join(TEMP_PATH, nanoid(8))
-  let output = await spawnPromise(_7z, ['l', filepath, '-slt', '-p123456'])
-  let pathlist = _.filter(output.split(/\r\n/), s=>_.startsWith(s, 'Path') && !_.includes(s, '__MACOSX'))
-  pathlist = pathlist.map(p=>{
-    let match = /(?<== ).*$/.exec(p)
+const solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH) => {
+  const tempFolder = path.join(TEMP_PATH, nanoid(8))
+  const output = await spawnPromise(_7z, ['l', filepath, '-slt', '-p123456'])
+  let pathlist = _.filter(output.split(/\r\n/), s => _.startsWith(s, 'Path') && !_.includes(s, '__MACOSX'))
+  pathlist = pathlist.map(p => {
+    const match = /(?<== ).*$/.exec(p)
     return match ? match[0] : ''
   })
-  let imageList = _.filter(pathlist, p=>['.jpg','.jpeg','.png','.webp','.avif', '.gif'].includes(path.extname(p).toLowerCase()))
-  imageList = imageList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  let imageList = _.filter(pathlist, p => ['.jpg','.jpeg','.png','.webp','.avif', '.gif'].includes(path.extname(p).toLowerCase()))
+  imageList = imageList.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
 
   let targetFile
   let targetFilePath
@@ -55,42 +55,42 @@ let solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH)=>{
 
   coverPath = path.join(COVER_PATH, nanoid() + '.webp')
 
-  let fileStat = await fs.promises.stat(filepath)
+  const fileStat = await fs.promises.stat(filepath)
   return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size, mtime: fileStat?.mtime}
 }
 
-let getImageListFromArchive = async (filepath, VIEWER_PATH)=>{
-  let tempFolder = path.join(VIEWER_PATH, nanoid(8))
+const getImageListFromArchive = async (filepath, VIEWER_PATH) => {
+  const tempFolder = path.join(VIEWER_PATH, nanoid(8))
   await spawnPromise(_7z, ['x', filepath, '-o' + tempFolder, '-p123456'])
   let list = globSync('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: tempFolder,
     nocase: true
   })
-  list = _.filter(list, s=>!_.includes(s, '__MACOSX'))
-  list = list.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f=>path.join(tempFolder, f))
+  list = _.filter(list, s => !_.includes(s, '__MACOSX'))
+  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f => path.join(tempFolder, f))
   return list
 }
 
-let deleteImageFromArchive = async (filename, filepath) => {
+const deleteImageFromArchive = async (filename, filepath) => {
   await spawnPromise(_7z, ['d', filepath, filename, '-p123456'])
   return true
 }
 
-let spawnPromise = (commmand, argument)=>{
-  return new Promise((resolve, reject)=>{
+const spawnPromise = (commmand, argument) => {
+  return new Promise((resolve, reject) => {
     const spawned = spawn(commmand, argument)
-    let output = []
-    spawned.on('error', data=>{
+    const output = []
+    spawned.on('error', data => {
       reject(data)
     })
-    spawned.on('exit', code=>{
+    spawned.on('exit', code => {
       if (code === 0) {
         setTimeout(() => resolve(output.join('\r\n')), 50)
       } else {
         reject('close code is ' + code)
       }
     })
-    spawned.stdout.on('data', data=>{
+    spawned.stdout.on('data', data => {
       output.push(iconv.decode(data, 'gbk'))
     })
   })

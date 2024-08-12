@@ -469,7 +469,7 @@ onMounted(() => {
 
 const selectLibraryPath = () => {
   ipcRenderer.invoke('select-folder', t('m.library'))
-  .then(res=>{
+  .then(res => {
     if (res) {
       setting.value.library = res
       saveSetting()
@@ -479,7 +479,7 @@ const selectLibraryPath = () => {
 
 const selectMetadataPath = () => {
   ipcRenderer.invoke('select-folder', t('m.metadataPath'))
-  .then(res=>{
+  .then(res => {
     setting.value.metadataPath = res
     saveSetting()
   })
@@ -487,7 +487,7 @@ const selectMetadataPath = () => {
 
 const selectImageExplorerPath = () => {
   ipcRenderer.invoke('select-file', t('m.imageViewer'))
-  .then(res=>{
+  .then(res => {
     if (res) {
       setting.value.imageExplorer = `"${res}"`
       saveSetting()
@@ -496,12 +496,12 @@ const selectImageExplorerPath = () => {
 }
 
 const loadTranslationFromEhTagTranslation = async () => {
-  let resultObject = {}
+  const resultObject = {}
   emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache') || "{}"))
   await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
   .then(res => res.json())
   .then(res => {
-    let sourceTranslationDatabase = res.data
+    const sourceTranslationDatabase = res.data
     _.forIn(sourceTranslationDatabase, cat => {
       _.forIn(cat.data, (value, key) => {
         resultObject[key] = _.pick(value, ['name', 'intro'])
@@ -549,8 +549,8 @@ const autoCheckUpdates = async (forceShowDialog) => {
   })
   .then(res => res.json())
   .then(res => {
-    let { tag_name, html_url, body } = res
-    let skipVersion = localStorage.getItem('skipVersion')
+    const { tag_name, html_url, body } = res
+    const skipVersion = localStorage.getItem('skipVersion')
     if (tag_name && tag_name !== 'v' + version && tag_name !== skipVersion) {
       ElMessageBox.confirm(
         h('pre', { innerHTML: body, style: 'font-family: Avenir, Helvetica, Arial, sans-serif'}),
@@ -561,7 +561,7 @@ const autoCheckUpdates = async (forceShowDialog) => {
           cancelButtonText: t('c.skipVersion')
         }
       )
-      .then(()=>{
+      .then(() => {
         ipcRenderer.invoke('open-url', html_url)
       })
       .catch((action) => {
@@ -589,7 +589,7 @@ const changeTheme = (classValue) => {
   document.documentElement.setAttribute('class', classValue)
 }
 const handleLanguageChange = (val) => {
-  ipcRenderer.invoke('get-locale').then(localeString=>{
+  ipcRenderer.invoke('get-locale').then(localeString => {
     let languageCode
     if (!val || (val === 'default')) {
       languageCode = localeString
@@ -612,14 +612,14 @@ const openLink = (link) => {
 
 
 const exportDatabase = async () => {
-  let folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
+  const folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
   await ipcRenderer.invoke('export-database', folder)
   emit('message', 'success', t('c.exportMessage'))
 }
 
 const importDatabase = async () => {
-  let collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'))
-  let metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'))
+  const collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'))
+  const metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'))
   await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
   emit('message', 'success', t('c.importMessage'))
 }
@@ -632,8 +632,8 @@ const formTagAdd = ref({
 const tagListForCollect = computed(() => {
   if (setting.value.showTranslation) {
     return props.tagListRaw.map(({letter, cat, tag, id}) => {
-      let labelHeader = cat === 'group' ? '团队' : props.resolvedTranslation[cat]?.name || cat
-      let labelTail = props.resolvedTranslation[tag]?.name || tag
+      const labelHeader = cat === 'group' ? '团队' : props.resolvedTranslation[cat]?.name || cat
+      const labelTail = props.resolvedTranslation[tag]?.name || tag
       return {
         label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
         value: id
@@ -663,7 +663,7 @@ const moderateSoftColors = [
 ]
 
 const addTagToCollect = () => {
-  let tag = props.tagListRaw.find(tag => tag.id === formTagAdd.value.tag)
+  const tag = props.tagListRaw.find(tag => tag.id === formTagAdd.value.tag)
   if (!setting.value.collectTag) setting.value.collectTag = []
   setting.value.collectTag.push({
     id: tag.id,

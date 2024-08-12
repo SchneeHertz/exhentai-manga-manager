@@ -5,8 +5,8 @@ const AdmZip = require('adm-zip')
 const { nanoid } = require('nanoid')
 const _ = require('lodash')
 
-let getZipFilelist = async (libraryPath)=>{
-  let list = globSync('**/*.@(zip|cbz)', {
+const getZipFilelist = async (libraryPath) => {
+  const list = globSync('**/*.@(zip|cbz)', {
     cwd: libraryPath,
     nocase: true,
     follow: true,
@@ -15,16 +15,16 @@ let getZipFilelist = async (libraryPath)=>{
   return list
 }
 
-let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
-  let tempFolder = path.join(TEMP_PATH, nanoid(8))
-  let zip = new AdmZip(filepath)
-  let zipFileList = zip.getEntries()
-  let findZFile = (entryName)=>{
-    return _.find(zipFileList, zFile=>zFile.entryName == entryName)
+const solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH) => {
+  const tempFolder = path.join(TEMP_PATH, nanoid(8))
+  const zip = new AdmZip(filepath)
+  const zipFileList = zip.getEntries()
+  const findZFile = (entryName) => {
+    return _.find(zipFileList, zFile => zFile.entryName == entryName)
   }
-  let fileList = zipFileList.map(zFile=>zFile.entryName)
-  let imageList = _.filter(fileList, filepath=>_.includes(['.jpg', ',jpeg', '.png', '.webp', '.avif', '.gif'], path.extname(filepath).toLowerCase()))
-  imageList = imageList.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  const fileList = zipFileList.map(zFile => zFile.entryName)
+  let imageList = _.filter(fileList, filepath => _.includes(['.jpg', ',jpeg', '.png', '.webp', '.avif', '.gif'], path.extname(filepath).toLowerCase()))
+  imageList = imageList.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
 
   let targetFile
   let targetFilePath
@@ -52,20 +52,20 @@ let solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH)=>{
 
   coverPath = path.join(COVER_PATH, nanoid() + '.webp')
 
-  let fileStat = await fs.promises.stat(filepath)
+  const fileStat = await fs.promises.stat(filepath)
   return {targetFilePath, tempCoverPath, coverPath, pageCount: imageList.length, bundleSize: fileStat?.size, mtime: fileStat?.mtime}
 }
 
-let getImageListFromZip = async (filepath, VIEWER_PATH)=>{
-  let zip = new AdmZip(filepath)
-  let tempFolder = path.join(VIEWER_PATH, nanoid(8))
+const getImageListFromZip = async (filepath, VIEWER_PATH) => {
+  const zip = new AdmZip(filepath)
+  const tempFolder = path.join(VIEWER_PATH, nanoid(8))
   zip.extractAllTo(tempFolder, true)
   let list = globSync('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: tempFolder,
     nocase: true
   })
-  list = _.filter(list, s=>!_.includes(s, '__MACOSX'))
-  list = list.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f=>path.join(tempFolder, f))
+  list = _.filter(list, s => !_.includes(s, '__MACOSX'))
+  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f => path.join(tempFolder, f))
   return list
 }
 

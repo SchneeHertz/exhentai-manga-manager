@@ -66,7 +66,7 @@ const openSearchDialog = (book, server) => {
 }
 
 const returnTrimFileName = (book) => {
-  let fileNameWithExtension = book.filepath.split(/[/\\]/).pop()
+  const fileNameWithExtension = book.filepath.split(/[/\\]/).pop()
   let fileNameWithoutExtension = fileNameWithExtension
   try {
     if (book.type !== 'folder') {
@@ -125,9 +125,9 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
 
 const resolveEhentaiResult = (htmlString) => {
   try {
-    let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.gl3c.glname')
+    const resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.gl3c.glname')
     ehSearchResultList.value = []
-    resultNodes.forEach((node)=>{
+    resultNodes.forEach((node) => {
       ehSearchResultList.value.push({
         title: node.querySelector('.glink').innerHTML,
         url: node.querySelector('a').getAttribute('href'),
@@ -145,10 +145,10 @@ const resolveEhentaiResult = (htmlString) => {
   }
 }
 const resolveHentagResult = (data) => {
-  let resultList = data.works.slice(0, 10)
+  const resultList = data.works.slice(0, 10)
   ehSearchResultList.value = []
-  resultList.forEach((result)=>{
-    let findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))
+  resultList.forEach((result) => {
+    const findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))
     if (findExUrl) {
       ehSearchResultList.value.push({
         title: result.title,

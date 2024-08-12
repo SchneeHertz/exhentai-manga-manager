@@ -60,16 +60,17 @@
             <div class="viewer-image-frame viewer-image-frame-double">
               <img
                 v-for="image in viewerImageListDouble[currentImageIndex]?.page"
+                :key="image.id"
                 :src="`${image.filepath}?id=${image.id}`"
                 class="viewer-image"
                 :style="{height: returnImageStyle(image).height}"
                 @contextmenu="onMangaImageContextMenu($event, image)"
               />
             </div>
-            <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page">
+            <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page" :key="image.id">
               <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
             </div>
-            <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page">
+            <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id">
               <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
             </div>
             <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
@@ -190,10 +191,10 @@ const insertEmptyPageIndex = ref(0)
 const viewerImageList = ref([])
 const viewerImageListDouble = computed(() => {
   if (imageStyleType.value === 'double') {
-    let result = []
+    const result = []
     let frame = {page: [], pageNumber: []}
     let pageNumber = 0
-    for (let image of viewerImageList.value) {
+    for (const image of viewerImageList.value) {
       pageNumber += 1
       if (image.width > image.height) {
         if (frame.page.length > 0) {
@@ -219,21 +220,21 @@ const viewerImageListDouble = computed(() => {
 
 const receiveThumbnailList = ref([])
 
-const thumbnailList = computed(()=>{
+const thumbnailList = computed(() => {
   return _.sortBy(receiveThumbnailList.value, 'index')
 })
 
 
-onMounted(()=>{
+onMounted(() => {
   viewerImageWidth.value = +localStorage.getItem('viewerImageWidth') || 0.9
   imageStyleType.value = localStorage.getItem('imageStyleType') || 'scroll'
   imageStyleFit.value = localStorage.getItem('imageStyleFit') || 'window'
   viewerReadingProgress.value = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
 
-  ipcRenderer.on('manga-image', (event, arg)=>{
+  ipcRenderer.on('manga-image', (event, arg) => {
     viewerImageList.value.push(arg)
   })
-  ipcRenderer.on('manga-thumbnail-image', (event, arg)=>{
+  ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
     receiveThumbnailList.value.push(arg)
   })
 })
@@ -267,7 +268,7 @@ const viewManga = (book, viewerHeight = '100%') => {
   })
 }
 
-let _currentImageIndex = ref(0)
+const _currentImageIndex = ref(0)
 const currentImageIndex = computed({
   get () {
     return _currentImageIndex.value
@@ -294,11 +295,11 @@ const currentImageIndex = computed({
 
 let storeDrawerScrollTop
 const switchThumbnail = (val) => {
-  setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
+  setTimeout(() => document.querySelector('.viewer-close-button').focus(), 500)
   if (imageStyleType.value === 'scroll') {
     if (!val) {
       if (storeDrawerScrollTop) {
-        nextTick(()=>{
+        nextTick(() => {
           document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = storeDrawerScrollTop
           storeDrawerScrollTop = undefined
         })
@@ -311,7 +312,7 @@ const switchThumbnail = (val) => {
 
 const drawerViewerBody = ref(null)
 
-const thumbnailWidth = computed(()=>{
+const thumbnailWidth = computed(() => {
   const innerWidth = drawerViewerBody.value ? drawerViewerBody.value.clientWidth : window.innerWidth
   return `${(innerWidth - 32) / (props.setting.thumbnailColumn || 10) - 10}px`
 })
@@ -319,7 +320,7 @@ const thumbnailWidth = computed(()=>{
 const returnImageStyle = (image) => {
   const innerWidth = drawerViewerBody.value ? drawerViewerBody.value.clientWidth : window.innerWidth
   const innerHeight = drawerViewerBody.value ? drawerViewerBody.value.clientHeight : window.innerHeight
-  const returnImageStyleObject = ({width, height})=>{
+  const returnImageStyleObject = ({width, height}) => {
     if (width) {
       return { width: width + 'px', height: (image.height * (width / image.width)) + 'px' }
     }
@@ -410,15 +411,15 @@ const returnImageStyle = (image) => {
 
 const initResize = (id, originWidth) => {
   if (imageStyleType.value === 'scroll') {
-    let element = document.getElementById(id)
-    let Resize = (e)=>{
+    const element = document.getElementById(id)
+    const Resize = (e) => {
       if (viewerImageWidth.value <= 2) {
         viewerImageWidth.value = _.round((e.clientX - element.offsetLeft) / innerWidth , 2)
       } else {
         viewerImageWidth.value = _.round((e.clientX - element.offsetLeft) / originWidth * 100 * window.devicePixelRatio, 0)
       }
     }
-    let stopResize = (e)=>{
+    const stopResize = (e) => {
       window.removeEventListener('mousemove', Resize, false)
       window.removeEventListener('mouseup', stopResize, false)
     }
@@ -430,7 +431,7 @@ const initResize = (id, originWidth) => {
 const getCurrentImageId = () => {
   if (imageStyleType.value === 'scroll') {
     let scrollTopValue = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
-    _.forEach(viewerImageList.value, (image)=>{
+    _.forEach(viewerImageList.value, (image) => {
       if (scrollTopValue < 0) {
         currentImageId.value = image.id
         return false
@@ -452,7 +453,7 @@ const getCurrentImageId = () => {
 const saveReadingProgress = () => {
   try {
     let currentImageId = getCurrentImageId()
-    let currentImageIndex = viewerImageList.value.findIndex(image=>image.id === currentImageId)
+    const currentImageIndex = viewerImageList.value.findIndex(image => image.id === currentImageId)
     if (currentImageIndex > props.bookDetail.pageCount - 6) {
       currentImageId = viewerImageList.value[0].id
     }
@@ -464,23 +465,23 @@ const saveReadingProgress = () => {
 const saveImageStyleType = () => {
   if (imageStyleType.value === 'double') emit('message', 'info', t('c.insertEmptyPageInfo'))
   localStorage.setItem('imageStyleType', imageStyleType.value)
-  setTimeout(()=>{
+  setTimeout(() => {
     handleClickThumbnail(currentImageId.value)
     document.querySelector('.viewer-close-button').focus()
   }, 500)
 }
 const saveImageStyleFit = () => {
   localStorage.setItem('imageStyleFit', imageStyleFit.value)
-  setTimeout(()=>document.querySelector('.viewer-close-button').focus(), 500)
+  setTimeout(() => document.querySelector('.viewer-close-button').focus(), 500)
 }
 
 const handleClickThumbnail = (id) => {
   showThumbnail.value = false
   let scrollTopValue = 0
   if (imageStyleType.value === 'scroll') {
-    _.forEach(viewerImageList.value, (image)=>{
+    _.forEach(viewerImageList.value, (image) => {
       if (image.id === id) {
-        nextTick(()=>document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = scrollTopValue)
+        nextTick(() => document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = scrollTopValue)
         return false
       }
       // 28 is the height of .viewer-image-page
@@ -493,7 +494,7 @@ const handleClickThumbnail = (id) => {
   } else if (imageStyleType.value === 'single') {
     currentImageIndex.value = _.findIndex(viewerImageList.value, {id: id})
   } else if (imageStyleType.value === 'double') {
-    _.forEach(viewerImageListDouble.value, (imageGroup, index)=>{
+    _.forEach(viewerImageListDouble.value, (imageGroup, index) => {
       if (_.find(imageGroup.page, {id: id})) {
         currentImageIndex.value = index
         return false
@@ -524,17 +525,17 @@ const handleViewerAreaClick = (event) => {
 }
 
 const handleJumpToReadingProgress = async (book) => {
-  let findProgress = viewerReadingProgress.value.find(progress=>progress.bookId === book.id)
+  const findProgress = viewerReadingProgress.value.find(progress => progress.bookId === book.id)
   if (findProgress) {
     const timer = ms => new Promise(res => setTimeout(res, ms))
     while (true) {
       if (imageStyleType.value === 'scroll' || imageStyleType.value === 'single') {
-        if (viewerImageList.value.findIndex(image=>image.id === findProgress.pageId) >= 0) {
+        if (viewerImageList.value.findIndex(image => image.id === findProgress.pageId) >= 0) {
           handleClickThumbnail(findProgress.pageId)
           break
         }
       } else if (imageStyleType.value === 'double') {
-        if (viewerImageListDouble.value.findIndex(imageGroup=>imageGroup.page.findIndex(page=>page.id === findProgress.pageId) >= 0) >= 0) {
+        if (viewerImageListDouble.value.findIndex(imageGroup => imageGroup.page.findIndex(page => page.id === findProgress.pageId) >= 0) >= 0) {
           handleClickThumbnail(findProgress.pageId)
           break
         }
@@ -566,10 +567,10 @@ const onMangaImageContextMenu = (e, image) => {
       {
         label: t('c.deleteImage'),
         onClick: async () => {
-          let deleteResult = await ipcRenderer.invoke('delete-image', image.filename, props.bookDetail.filepath, props.bookDetail.type)
+          const deleteResult = await ipcRenderer.invoke('delete-image', image.filename, props.bookDetail.filepath, props.bookDetail.type)
           if (deleteResult) {
-            viewerImageList.value = viewerImageList.value.filter(item=>item.id !== image.id)
-            receiveThumbnailList.value = receiveThumbnailList.value.filter(item=>item.id !== image.id)
+            viewerImageList.value = viewerImageList.value.filter(item => item.id !== image.id)
+            receiveThumbnailList.value = receiveThumbnailList.value.filter(item => item.id !== image.id)
             emit('rescanBook', props.bookDetail)
           } else {
             emit('message', 'error', t('c.deleteImageError'))

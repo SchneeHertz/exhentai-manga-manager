@@ -94,7 +94,7 @@
     <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView && !setting.disableRandomTag">
       <el-space size="small" id="random-tags">
         <el-button size="small" plain :icon="MdRefresh" @click="reloadRandomTags"></el-button>
-        <el-button v-for="tag in randomTags" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
+        <el-button v-for="tag in randomTags" :key="tag.value" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
       </el-space>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
@@ -642,7 +642,7 @@ export default defineComponent({
       locale: zhCn,
       searchString: '',
       sortValue: undefined,
-      _currentPage: 1,
+      $currentPage: 1,
       treeFilterText: '',
       folderTreeData: [],
       expandNodes: [],
@@ -733,16 +733,16 @@ export default defineComponent({
     },
     displaySelectCollectionList: {
       get () {
-        let list = this.selectCollectionObject.list.map(hash_id => _.filter(this.bookList, book => book.hash === hash_id || book.id === hash_id))
+        const list = this.selectCollectionObject.list.map(hash_id => _.filter(this.bookList, book => book.hash === hash_id || book.id === hash_id))
         return _.compact(_.flatten(list))
       },
       set (val) {
-        let list = [...new Set(val.map(b => b.hash))]
+        const list = [...new Set(val.map(b => b.hash))]
         this.selectCollectionObject.list = list
       }
     },
     tagList () {
-      let tagArray = _(this.bookList.filter(b => {
+      const tagArray = _(this.bookList.filter(b => {
         return !b.hiddenBook && !b.folderHide
       }).map(b => {
         return _.map(b.tags, (tags, cat) => {
@@ -750,10 +750,10 @@ export default defineComponent({
         })
       }))
       .flattenDeep().value()
-      let uniqedTagArray = [...new Set(tagArray)].sort()
+      const uniqedTagArray = [...new Set(tagArray)].sort()
       return uniqedTagArray.map(combinedTag => {
-        let tagArray = _.split(combinedTag, '##')
-        let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
+        const tagArray = _.split(combinedTag, '##')
+        const letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
         let labelHeader = tagArray[0]
         let labelTail = tagArray[1]
         if (this.setting.showTranslation) {
@@ -767,16 +767,16 @@ export default defineComponent({
       })
     },
     tagListRaw () {
-      let tagArray = _(this.bookList.map(b => {
+      const tagArray = _(this.bookList.map(b => {
         return _.map(b.tags, (tags, cat) => {
           return _.map(tags, tag => `${cat}##${tag}`)
         })
       }))
       .flattenDeep().value()
-      let uniqedTagArray = [...new Set(tagArray)].sort()
+      const uniqedTagArray = [...new Set(tagArray)].sort()
       return uniqedTagArray.map(combinedTag => {
-        let tagArray = _.split(combinedTag, '##')
-        let letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
+        const tagArray = _.split(combinedTag, '##')
+        const letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
         return {
           id: `${tagArray[0]}:${tagArray[1]}`,
           letter,
@@ -788,8 +788,8 @@ export default defineComponent({
     tagListForSelect () {
       if (this.setting.showTranslation) {
         return this.tagListRaw.map(({letter, cat, tag}) => {
-          let labelHeader = cat === 'group' ? '团队' : this.resolvedTranslation[cat]?.name || cat
-          let labelTail = this.resolvedTranslation[tag]?.name || tag
+          const labelHeader = cat === 'group' ? '团队' : this.resolvedTranslation[cat]?.name || cat
+          const labelTail = this.resolvedTranslation[tag]?.name || tag
           return {
             label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
             value: `${letter}:"${tag}"$`
@@ -805,40 +805,40 @@ export default defineComponent({
       }
     },
     tag2cat () {
-      let temp = {}
-      let tagArray = _(this.bookList.map(b=>{
-        return _.map(b.tags, (tags, cat)=>{
-          return _.map(tags, tag=>`${cat}##${tag}`)
+      const temp = {}
+      const tagArray = _(this.bookList.map(b => {
+        return _.map(b.tags, (tags, cat) => {
+          return _.map(tags, tag => `${cat}##${tag}`)
         })
       }))
       .flattenDeep().value()
-      let uniqedTagArray = [...new Set(tagArray)]
-      uniqedTagArray.forEach(combinedTag=>{
-        let tagArray = _.split(combinedTag, '##')
+      const uniqedTagArray = [...new Set(tagArray)]
+      uniqedTagArray.forEach(combinedTag => {
+        const tagArray = _.split(combinedTag, '##')
         temp[tagArray[1]] = tagArray[0]
       })
       return temp
     },
     customOptions () {
       return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
-        .map(str=>({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
+        .map(str => ({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
     },
     cookie () {
       return `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id};star=${this.setting.star}`
     },
     currentPage: {
       get () {
-        return this._currentPage
+        return this.$currentPage
       },
       set (val) {
-        let pageLimit = Math.ceil(this.displayBookCount / this.setting.pageSize)
+        const pageLimit = Math.ceil(this.displayBookCount / this.setting.pageSize)
         if (Number.isInteger(val)) {
           if (val < 1) {
-            this._currentPage = 1
+            this.$currentPage = 1
           } else if (val > pageLimit) {
-            this._currentPage = pageLimit
+            this.$currentPage = pageLimit
           } else {
-            this._currentPage = val
+            this.$currentPage = val
           }
         }
       }
@@ -854,7 +854,7 @@ export default defineComponent({
     },
   },
   mounted () {
-    ipcRenderer.on('send-message', (event, arg)=>{
+    ipcRenderer.on('send-message', (event, arg) => {
       this.printMessage('info', arg)
       if (arg.includes('failed')) {
         console.error(arg)
@@ -878,7 +878,7 @@ export default defineComponent({
     window.addEventListener('keydown', this.resolveKey)
     window.addEventListener('wheel', this.resolveWheel)
     window.addEventListener('mousedown', this.resolveMouseDown)
-    ipcRenderer.on('send-action', (event, arg)=>{
+    ipcRenderer.on('send-action', async (event, arg) => {
       switch (arg.action) {
         case 'setting':
           this.$refs.SettingRef.dialogVisibleSetting = true
@@ -897,12 +897,12 @@ export default defineComponent({
           break
         case 'tag-fail-non-tag-book':
           if (this.currentUI() === 'home') {
-            this.displayBookList.forEach(book => {
+            for (const book of this.displayBookList) {
               if (book.status === 'non-tag' && this.isBook(book) && this.isVisibleBook(book)) {
                 book.status = 'tag-failed'
-                this.saveBook(book)
+                await this.saveBook(book)
               }
-            })
+            }
           }
           break
       }
@@ -972,12 +972,12 @@ export default defineComponent({
     },
     jumpBookByTabindex (step, container) {
       try {
-        let activeElement = document.activeElement
+        const activeElement = document.activeElement
         if (!document.querySelector(container).contains(activeElement) || !activeElement.classList.contains('book-card')) {
           throw new Error('active element not in container or not book-card')
         }
-        let tabIndexNow = activeElement.getAttribute('tabindex')
-        let tabIndexNext = parseInt(tabIndexNow) + step
+        const tabIndexNow = activeElement.getAttribute('tabindex')
+        const tabIndexNext = parseInt(tabIndexNow) + step
         if (!(tabIndexNext >= 1)) throw new Error('detect illegal tabindex')
         document.querySelector(`${container} div[tabindex="${tabIndexNext}"]`).focus()
       } catch (error) {
@@ -1079,7 +1079,7 @@ export default defineComponent({
           this.jumpMangeDetail(-1)
         }
       }
-      let bookEachLine = Math.floor(getWidth(document.querySelector('.book-card-area div:first-child'), 'width') / getWidth(document.querySelector('.book-card'), 'full'))
+      const bookEachLine = Math.floor(getWidth(document.querySelector('.book-card-area div:first-child'), 'width') / getWidth(document.querySelector('.book-card'), 'full'))
       if (this.currentUI() === 'home') {
         if (event.key === 'Enter') {
           event.preventDefault()
@@ -1140,7 +1140,7 @@ export default defineComponent({
     },
     resolveWheel (event) {
       if (event.ctrlKey) {
-        let level = electronFunction['get-zoom-level']()
+        const level = electronFunction['get-zoom-level']()
         if (event.deltaY > 0) {
           electronFunction['set-zoom-level'](level - 1)
         } else {
@@ -1148,7 +1148,7 @@ export default defineComponent({
         }
       } else if (this.currentUI() === 'viewer-content') {
         if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
-          let element = document.querySelector('.viewer-drawer .el-drawer__body')
+          const element = document.querySelector('.viewer-drawer .el-drawer__body')
           if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
             this.$refs.InternalViewerRef.currentImageIndex += 1
             element.scrollTop = 0
@@ -1167,10 +1167,10 @@ export default defineComponent({
       ipcRenderer.invoke('switch-fullscreen')
     },
     customChunk (list, size, index) {
-      let result = []
+      const result = []
       let count = 0
       let countIndex = 0
-      _.forEach(list, book=>{
+      _.forEach(list, (book) => {
         if (countIndex === index) result.push(book)
         if (this.isVisibleBook(book)) count++
         if (count >= size) {
@@ -1185,12 +1185,12 @@ export default defineComponent({
       return filepath.split(/[/\\]/).pop()
     },
     returnFileName (book) {
-      let fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
+      const fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
       if (book.type === 'folder') return fileNameWithExtension
       return fileNameWithExtension.split('.').slice(0, -1).join('.')
     },
     sortList(label) {
-      return (a, b)=>{
+      return (a, b) => {
         if (_.get(a, label) && _.get(b, label)) {
           if (_.get(a, label) > _.get(b, label)) {
             return -1
@@ -1216,13 +1216,11 @@ export default defineComponent({
       })
     },
     async loadBookList (scan) {
-      return await ipcRenderer.invoke('load-book-list', scan)
-        .then(res => {
-          this.bookList = this.prepareBookList(res)
-          this.loadCollectionList()
-          this.geneFolderTree()
-          this.selectBookList = []
-        })
+      const res = await ipcRenderer.invoke('load-book-list', scan)
+      this.bookList = this.prepareBookList(res)
+      this.loadCollectionList()
+      this.geneFolderTree()
+      this.selectBookList = []
     },
     saveBook (book) {
       return ipcRenderer.invoke('save-book', _.cloneDeep(book))
@@ -1246,7 +1244,7 @@ export default defineComponent({
       }
     },
     updateWindowTitle (book) {
-      let title = this.getDisplayTitle(book)
+      const title = this.getDisplayTitle(book)
       ipcRenderer.invoke('update-window-title', title)
     },
     isBook (book) {
@@ -1262,7 +1260,7 @@ export default defineComponent({
 
     // metadata
     resolveSearchResult (bookId, url, type) {
-      let book = _.find(this.bookList, {id: bookId})
+      const book = _.find(this.bookList, {id: bookId})
       if (type === 'hentag') {
         book.url = url
         this.getBookInfoFromHentag(book)
@@ -1273,9 +1271,8 @@ export default defineComponent({
       this.$refs.SearchDialogRef.dialogVisibleEhSearch = false
     },
     async getBookInfoFromHentag (book) {
-      let data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`)
-      .then(res => res.json())
-      let tags = {}
+      const data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`).then(res => res.json())
+      const tags = {}
       data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
       data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody => parody.name) : ''
       data.characters.length > 0 ? tags['character'] = data.characters.map(character => character.name) : ''
@@ -1285,7 +1282,7 @@ export default defineComponent({
       data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag => femaleTag.name) : ''
       if (data.otherTags.length > 0) {
         data.otherTags.forEach(({ name }) => {
-          let cat = this.tag2cat[name]
+          const cat = this.tag2cat[name]
           if (cat) {
             if (tags[cat]) {
               tags[cat].push(name)
@@ -1311,8 +1308,8 @@ export default defineComponent({
       await this.saveBook(book)
     },
     async getBookInfoFromEh (book) {
-      let match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
-      ipcRenderer.invoke('post-data-ex', {
+      const match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
+      const res = await ipcRenderer.invoke('post-data-ex', {
         url: 'https://api.e-hentai.org/api.php',
         data: {
           'method': 'gdata',
@@ -1323,54 +1320,52 @@ export default defineComponent({
         },
         cookie: this.cookie
       })
-      .then(async res=>{
-        try {
-          _.assign(
-            book,
-            _.pick(JSON.parse(res).gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
-          )
-          book.posted = +book.posted
-          book.filecount = +book.filecount
-          book.rating = +book.rating
-          book.title = he.decode(book.title)
-          book.title_jpn = he.decode(book.title_jpn)
-          let tagObject = _.groupBy(book.tags, tag=>{
-            let result = /(.+):/.exec(tag)
+      try {
+        _.assign(
+          book,
+          _.pick(JSON.parse(res).gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
+        )
+        book.posted = +book.posted
+        book.filecount = +book.filecount
+        book.rating = +book.rating
+        book.title = he.decode(book.title)
+        book.title_jpn = he.decode(book.title_jpn)
+        const tagObject = _.groupBy(book.tags, tag => {
+          const result = /(.+):/.exec(tag)
+          if (result) {
+            return /(.+):/.exec(tag)[1]
+          } else {
+            return 'misc'
+          }
+        })
+        _.forIn(tagObject, (arr, key) => {
+          tagObject[key] = arr.map(tag => {
+            const result = /:(.+)$/.exec(tag)
             if (result) {
-              return /(.+):/.exec(tag)[1]
+              return /:(.+)$/.exec(tag)[1]
             } else {
-              return 'misc'
+              return tag
             }
           })
-          _.forIn(tagObject, (arr, key)=>{
-            tagObject[key] = arr.map(tag=>{
-              let result = /:(.+)$/.exec(tag)
-              if (result) {
-                return /:(.+)$/.exec(tag)[1]
-              } else {
-                return tag
-              }
-            })
-          })
-          book.tags = tagObject
-          book.status = 'tagged'
+        })
+        book.tags = tagObject
+        book.status = 'tagged'
+        await this.saveBook(book)
+      } catch (e) {
+        console.log(e)
+        if (_.includes(res, 'Your IP address has been')) {
+          book.status = 'non-tag'
+          this.printMessage('error', 'Your IP address has been temporarily banned')
           await this.saveBook(book)
-        } catch (e) {
-          console.log(e)
-          if (_.includes(res, 'Your IP address has been')) {
-            book.status = 'non-tag'
-            this.printMessage('error', 'Your IP address has been temporarily banned')
-            await this.saveBook(book)
-            this.serviceAvailable = false
-          } else {
-            book.status = 'tag-failed'
-            this.printMessage('error', 'Get tag failed')
-            await this.saveBook(book)
-          }
+          this.serviceAvailable = false
+        } else {
+          book.status = 'tag-failed'
+          this.printMessage('error', 'Get tag failed')
+          await this.saveBook(book)
         }
-      })
+      }
     },
-    resetMetadata (book) {
+    async resetMetadata (book) {
       book.title = this.returnFileName(book)
       book.title_jpn = ''
       book.posted = 0
@@ -1381,7 +1376,7 @@ export default defineComponent({
       book.tags = {}
       book.status = 'non-tag'
       book.url = ''
-      this.saveBook(book)
+      await this.saveBook(book)
     },
     getBookInfo (book) {
       if (book.url.startsWith('https://hentag.com')) {
@@ -1391,7 +1386,7 @@ export default defineComponent({
       }
     },
     async getBooksMetadata (bookList, gap) {
-      let server = this.setting.defaultScraper || 'exhentai'
+      const server = this.setting.defaultScraper || 'exhentai'
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
       const messageInstance = ElMessage({
@@ -1405,11 +1400,11 @@ export default defineComponent({
       })
       for (let i = 0; i < bookList.length; i++) {
         ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
-        let book = bookList[i]
+        const book = bookList[i]
         try {
           if (this.serviceAvailable) {
             if (!book.url) {
-              let resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
+              const resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
                 book.hash.toUpperCase(),
                 this.$refs.SearchDialogRef.returnTrimFileName(book),
                 server
@@ -1432,9 +1427,9 @@ export default defineComponent({
     getBookListMetadata () {
       let bookList
       if (this.setting.batchTagfailedBook) {
-        bookList = this.bookList.filter(book=>book.status === 'tag-failed' || book.status === 'non-tag')
+        bookList = this.bookList.filter(book => book.status === 'tag-failed' || book.status === 'non-tag')
       } else {
-        bookList = this.bookList.filter(book=>book.status === 'non-tag')
+        bookList = this.bookList.filter(book => book.status === 'non-tag')
       }
       if (this.setting.onlyGetMetadataOfSelectedFolder) {
         bookList = bookList.filter(book => !book.folderHide)
@@ -1525,30 +1520,30 @@ export default defineComponent({
     // home search
     querySearch (queryString, callback) {
       let result = []
-      let options = this.customOptions.concat(this.tagList)
+      const options = this.customOptions.concat(this.tagList)
       if (queryString) {
-        let keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
+        const keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
         if (!_.isEmpty(keywords)) {
-          let nextKeyword = queryString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g, '').trim()
+          const nextKeyword = queryString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g, '').trim()
           if (nextKeyword[0] === '-' || nextKeyword[0] === '~') {
-            result = _.filter(options, str=>{
+            result = _.filter(options, (str) => {
               return _.includes(str.value.toLowerCase(), nextKeyword.slice(1).toLowerCase())
               || _.includes(str.label.toLowerCase(), nextKeyword.slice(1).toLowerCase())
             })
           } else {
-            result = _.filter(options, str=>{
+            result = _.filter(options, (str) => {
               return _.includes(str.value.toLowerCase(), nextKeyword.toLowerCase())
               || _.includes(str.label.toLowerCase(), nextKeyword.toLowerCase())
             })
           }
         } else {
           if (queryString[0] === '-' || queryString[0] === '~') {
-            result = _.filter(options, str=>{
+            result = _.filter(options, (str) => {
               return _.includes(str.value.toLowerCase(), queryString.slice(1).toLowerCase())
               || _.includes(str.label.toLowerCase(), queryString.slice(1).toLowerCase())
             })
           } else {
-            result = _.filter(options, str=>{
+            result = _.filter(options, (str) => {
               return _.includes(str.value.toLowerCase(), queryString.toLowerCase())
               || _.includes(str.label.toLowerCase(), queryString.toLowerCase())
             })
@@ -1568,7 +1563,7 @@ export default defineComponent({
     handleInput (val) {
       try {
         if (/^[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$$/.test(val) && this.searchString.trim() !== val.trim()) {
-          let keywords = [...this.searchString.trim().matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
+          const keywords = [...this.searchString.trim().matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
           if (!_.isEmpty(keywords)) {
             const keyword = this.searchString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g, '').trim()
             const matches = this.searchString.match(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g)
@@ -1600,11 +1595,11 @@ export default defineComponent({
     searchBook () {
       const checkCondition = (bookString, bookDate) => {
         const searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
-        const orCondition = _.filter(searchStringArray, str=>str.startsWith('~'))
-        const andCondition = _.filter(searchStringArray, str=>!str.startsWith('~'))
-        return _.some([andCondition, ...orCondition], (condition)=>{
+        const orCondition = _.filter(searchStringArray, (str) => str.startsWith('~'))
+        const andCondition = _.filter(searchStringArray, (str) => !str.startsWith('~'))
+        return _.some([andCondition, ...orCondition], (condition) => {
           if (_.isArray(condition)) {
-            return _.every(condition, (str)=>{
+            return _.every(condition, (str) => {
               try {
                 if (_.startsWith(str, '-')) {
                   return !bookString.includes(str.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
@@ -1629,15 +1624,15 @@ export default defineComponent({
           }
         })
       }
-      this.displayBookList = _.filter(this.bookList, (book)=>{
+      this.displayBookList = _.filter(this.bookList, (book) => {
         const bookString = JSON.stringify(
           _.assign(
             {},
             _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff']),
             {
-              tags: _.map(book.tags, (tags, cat)=>{
+              tags: _.map(book.tags, (tags, cat) => {
                 const letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
-                return _.map(tags, tag=>`${letter}:${tag}`).concat(_.map(tags, tag=>`${cat}:${tag}`))
+                return _.map(tags, (tag) => `${letter}:${tag}`).concat(_.map(tags, (tag) => `${cat}:${tag}`))
               })
             }
           )
@@ -1660,7 +1655,7 @@ export default defineComponent({
       this.dialogVisibleBookDetail = false
       this.drawerVisibleCollection = false
       if (cat) {
-        let letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
+        const letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
         this.searchString = `${letter}:"${tag}"$`
       } else {
         this.searchString = `"${tag}"$`
@@ -1694,9 +1689,9 @@ export default defineComponent({
           break
       }
     },
-    switchMark (book) {
+    async switchMark (book) {
       book.mark = !book.mark
-      this.saveBook(book)
+      await this.saveBook(book)
     },
     isChineseTranslatedManga (book) {
       return _.includes(book?.tags?.language, 'chinese') ? true : false
@@ -1740,16 +1735,13 @@ export default defineComponent({
         this.geneFolderTree()
       }
     },
-    geneFolderTree () {
-      let bookList = _.filter(_.cloneDeep(this.bookList), book=>!book.isCollection)
-      ipcRenderer.invoke('get-folder-tree', bookList)
-      .then(data=>{
-        this.folderTreeData = data
-      })
+    async geneFolderTree () {
+      const bookList = _.filter(_.cloneDeep(this.bookList), book => !book.isCollection)
+      this.folderTreeData = await ipcRenderer.invoke('get-folder-tree', bookList)
     },
     async selectFolderTreeNode (selectNode) {
-      let clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath
-      this.bookList.map(book=>book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+      const clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath
+      this.bookList.map(book => book.folderHide = !book.filepath.startsWith(clickLibraryPath))
       this.chunkList()
     },
     handleNodeExpand (nodeObject) {
@@ -1758,7 +1750,7 @@ export default defineComponent({
       localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
     },
     handleNodeCollapse (nodeObject) {
-      this.expandNodes = _.filter(this.expandNodes, path=>path !== nodeObject.folderPath)
+      this.expandNodes = _.filter(this.expandNodes, (path) => path !== nodeObject.folderPath)
       localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
     },
     filterTreeNode (val, data) {
@@ -1773,47 +1765,44 @@ export default defineComponent({
     },
 
     // collection view function
-    loadCollectionList () {
-      ipcRenderer.invoke('load-collection-list')
-      .then(res => {
-        this.collectionList = res
-        _.forEach(this.collectionList, collection => {
-          let collectBook = _.compact(collection.list.map(hash_id => {
-            return _.filter(this.bookList, book => book.id === hash_id || book.hash === hash_id)
-          }))
-          collectBook = _.flatten(collectBook)
-          collection.list = [...new Set(collectBook.map(book => book.hash))]
-          collectBook.map(book => book.collectionHide = true)
-          let date = _.last(_.compact(_.sortBy(collectBook.map(book => book.date))))
-          let posted = _.last(_.compact(_.sortBy(collectBook.map(book => book.posted))))
-          let rating = _.last(_.compact(_.sortBy(collectBook.map(book => book.rating))))
-          let mtime = _.last(_.compact(_.sortBy(collectBook.map(book => book.mtime))))
-          let mark = _.some(collectBook, 'mark')
-          let tags = _.mergeWith({}, ...collectBook.map(book => book.tags), (obj, src) => {
-            if (_.isArray(obj) && _.isArray(src)) {
-              return [...new Set(obj.concat(src))]
-            } else {
-              return src
-            }
-          })
-          let title_jpn = collectBook.map(book => book.title+book.title_jpn).join(',')
-          let filepath = collectBook.map(book => book.filepath).join(',')
-          let category = [...new Set(collectBook.map(book => book.category))].join(',')
-          let status = [...new Set(collectBook.map(book => book.status))].join(',')
-          if (!_.isEmpty(collectBook)) {
-            this.bookList.push({
-              title: collection.title,
-              id: collection.id,
-              coverPath: collectBook?.[0]?.coverPath,
-              date, posted, rating, mtime, mark, tags, title_jpn, category, status,
-              list: collection.list,
-              filepath,
-              isCollection: true
-            })
+    async loadCollectionList () {
+      this.collectionList = await ipcRenderer.invoke('load-collection-list')
+      _.forEach(this.collectionList, collection => {
+        let collectBook = _.compact(collection.list.map(hash_id => {
+          return _.filter(this.bookList, book => book.id === hash_id || book.hash === hash_id)
+        }))
+        collectBook = _.flatten(collectBook)
+        collection.list = [...new Set(collectBook.map(book => book.hash))]
+        collectBook.map(book => book.collectionHide = true)
+        const date = _.last(_.compact(_.sortBy(collectBook.map(book => book.date))))
+        const posted = _.last(_.compact(_.sortBy(collectBook.map(book => book.posted))))
+        const rating = _.last(_.compact(_.sortBy(collectBook.map(book => book.rating))))
+        const mtime = _.last(_.compact(_.sortBy(collectBook.map(book => book.mtime))))
+        const mark = _.some(collectBook, 'mark')
+        const tags = _.mergeWith({}, ...collectBook.map(book => book.tags), (obj, src) => {
+          if (_.isArray(obj) && _.isArray(src)) {
+            return [...new Set(obj.concat(src))]
+          } else {
+            return src
           }
         })
-        this.handleSortChange(this.sortValue, this.bookList)
+        const title_jpn = collectBook.map(book => book.title+book.title_jpn).join(',')
+        const filepath = collectBook.map(book => book.filepath).join(',')
+        const category = [...new Set(collectBook.map(book => book.category))].join(',')
+        const status = [...new Set(collectBook.map(book => book.status))].join(',')
+        if (!_.isEmpty(collectBook)) {
+          this.bookList.push({
+            title: collection.title,
+            id: collection.id,
+            coverPath: collectBook?.[0]?.coverPath,
+            date, posted, rating, mtime, mark, tags, title_jpn, category, status,
+            list: collection.list,
+            filepath,
+            isCollection: true
+          })
+        }
       })
+      this.handleSortChange(this.sortValue, this.bookList)
     },
     enterEditCollectionView () {
       this.visibilityMap = {}
@@ -1827,7 +1816,7 @@ export default defineComponent({
     addCollection () {
       ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {})
       .then(({ value }) => {
-        let id = nanoid()
+        const id = nanoid()
         this.collectionList.push({
           id,
           title: value,
@@ -1867,14 +1856,12 @@ export default defineComponent({
         book.collected = false
       })
     },
-    saveCollection () {
-      this.collectionList = _.filter(this.collectionList, c=>!_.isEmpty(_.compact(c.list)))
-      ipcRenderer.invoke('save-collection-list', _.cloneDeep(this.collectionList))
-      .then(()=>{
-        this.loadBookList(false)
-        this.selectCollection = undefined,
-        this.selectCollectionObject = { list: [] }
-      })
+    async saveCollection () {
+      this.collectionList = _.filter(this.collectionList, c => !_.isEmpty(_.compact(c.list)))
+      await ipcRenderer.invoke('save-collection-list', _.cloneDeep(this.collectionList))
+      this.loadBookList(false)
+      this.selectCollection = undefined,
+      this.selectCollectionObject = { list: [] }
       this.editCollectionView = false
     },
     handleSelectCollectionChange (val) {
@@ -1890,7 +1877,7 @@ export default defineComponent({
       })
     },
     handleClickCollectBadge (book) {
-      let findBooks = _.filter(this.displayBookList, b => b.id === book.hash || b.hash === book.hash)
+      const findBooks = _.filter(this.displayBookList, b => b.id === book.hash || b.hash === book.hash)
       if (book.collected) {
         findBooks.forEach(book => book.collected = false)
         this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, hash => hash !== book.id && hash !== book.hash)
@@ -1901,7 +1888,7 @@ export default defineComponent({
     },
     openCollection (collection) {
       this.drawerVisibleCollection = true
-      this.openCollectionBookList = _.compact(_.flatten(collection.list.map(hash_id=>{
+      this.openCollectionBookList = _.compact(_.flatten(collection.list.map(hash_id => {
         return _.filter(this.bookList, book => book.id === hash_id || book.hash === hash_id)
       })))
       this.openCollectionTitle = collection.title
@@ -1946,12 +1933,12 @@ export default defineComponent({
     },
     handleMouseMoveForSelection (e) {
       if (this.isSelecting) {
-        let endX = e.pageX
-        let endY = e.pageY
-        let left = Math.min(endX, this.startX)
-        let top = Math.min(endY, this.startY)
-        let width = Math.abs(endX - this.startX)
-        let height = Math.abs(endY - this.startY)
+        const endX = e.pageX
+        const endY = e.pageY
+        const left = Math.min(endX, this.startX)
+        const top = Math.min(endY, this.startY)
+        const width = Math.abs(endX - this.startX)
+        const height = Math.abs(endY - this.startY)
         this.$refs.selectionBox.style.left = `${left}px`
         this.$refs.selectionBox.style.top = `${top}px`
         this.$refs.selectionBox.style.width = `${width}px`
@@ -1969,7 +1956,7 @@ export default defineComponent({
             itemRect.top < rect.bottom &&
             itemRect.bottom > rect.top
           ) {
-            let book = this.chunkDisplayBookList.find(book => book.id === item.id)
+            const book = this.chunkDisplayBookList.find(book => book.id === item.id)
             if (view === 'tag') {
               if (book.selected) {
                 book.selected = false
@@ -1979,7 +1966,7 @@ export default defineComponent({
                 this.selectBookList.push(item.id)
               }
             } else if (view === 'collect') {
-              let findBooks = _.filter(this.displayBookList, b => b.id === book.hash || b.hash === book.hash)
+              const findBooks = _.filter(this.displayBookList, b => b.id === book.hash || b.hash === book.hash)
               if (book.collected) {
                 findBooks.forEach(book => book.collected = false)
                 this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, hash => hash !== book.id && hash !== book.hash)
@@ -2033,7 +2020,7 @@ export default defineComponent({
         this.updateTagsLoading = true
         const tags = this.resolveGroupTagSelected()
         for (const id of this.selectBookList) {
-          let book = _.find(this.displayBookList, {id})
+          const book = _.find(this.displayBookList, {id})
           if (!_.has(book, 'tags')) book.tags = {}
           for (const { category, tag } of tags) {
             if (_.has(book.tags, category)) {
@@ -2059,10 +2046,10 @@ export default defineComponent({
         this.updateTagsLoading = true
         const tags = this.resolveGroupTagSelected()
         for (const id of this.selectBookList) {
-          let book = _.find(this.displayBookList, {id})
+          const book = _.find(this.displayBookList, {id})
           for (const { category, tag } of tags) {
             if (_.has(book.tags, category)) {
-              book.tags[category] = _.filter(book.tags[category], t=>t !== tag)
+              book.tags[category] = _.filter(book.tags[category], t => t !== tag)
             }
           }
           await this.saveBook(book)
@@ -2079,7 +2066,7 @@ export default defineComponent({
       try {
         this.updateTagsLoading = true
         for (const id of this.selectBookList) {
-          let book = _.find(this.displayBookList, {id})
+          const book = _.find(this.displayBookList, {id})
           book.category = this.categorySelected
           await this.saveBook(book)
         }
@@ -2095,7 +2082,7 @@ export default defineComponent({
       try {
         this.updateTagsLoading = true
         for (const id of this.selectBookList) {
-          let book = _.find(this.displayBookList, {id})
+          const book = _.find(this.displayBookList, {id})
           book.status = this.statusSelected
           await this.saveBook(book)
         }
@@ -2142,11 +2129,9 @@ export default defineComponent({
         for (const id of this.selectBookList) {
           const book = _.find(this.displayBookList, {id})
           if (book) {
-            await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
-            .then((bookInfo) => {
-              _.assign(book, bookInfo)
-              this.saveBook(book)
-            })
+            const bookInfo = await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
+            _.assign(book, bookInfo)
+            await this.saveBook(book)
           }
         }
         this.printMessage('success', this.$t('c.rescanSuccess'))
@@ -2193,19 +2178,17 @@ export default defineComponent({
       }
     },
     async rescanBook (book) {
-      await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
-      .then((bookInfo) => {
-        _.assign(book, bookInfo)
-        this.saveBook(book)
-        this.printMessage('success', this.$t('c.rescanSuccess'))
-      })
+      const bookInfo = await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
+      _.assign(book, bookInfo)
+      await this.saveBook(book)
+      this.printMessage('success', this.$t('c.rescanSuccess'))
     },
     async deleteBook (book) {
       await ipcRenderer.invoke('delete-local-book', book.filepath)
-      .finally(()=>{
+      .finally(() => {
         this.dialogVisibleBookDetail = false
         if (book.collectionHide) {
-          _.forEach(this.collectionList, collection=>{
+          _.forEach(this.collectionList, (collection) => {
             collection.list = _.filter(collection.list, hash_id => hash_id !== book.id && hash_id !== book.hash)
           })
           this.openCollectionBookList = _.filter(this.openCollectionBookList, bookOfCollection => {
@@ -2213,9 +2196,9 @@ export default defineComponent({
           })
           this.saveCollection()
         } else {
-          let findBookInBookList = _.findIndex(this.bookList, b=>b.filepath === book.filepath)
+          const findBookInBookList = _.findIndex(this.bookList, b => b.filepath === book.filepath)
           this.bookList.splice(findBookInBookList, 1)
-          this.displayBookList = _.filter(this.displayBookList, b=>b.filepath !== book.filepath)
+          this.displayBookList = _.filter(this.displayBookList, b => b.filepath !== book.filepath)
           this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
         }
       })
@@ -2256,13 +2239,13 @@ export default defineComponent({
           url,
           cookie: this.cookie
         })
-        .then(res=>{
+        .then(res => {
           this.comments = []
-          let commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
-          commentElements.forEach(e=>{
-            let author = e.querySelector('.c2 .c3').textContent
-            let scoreTail = e.querySelectorAll('.c2 .nosel')
-            let score = scoreTail[scoreTail.length - 1].textContent
+          const commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
+          commentElements.forEach(e => {
+            const author = e.querySelector('.c2 .c3').textContent
+            const scoreTail = e.querySelectorAll('.c2 .nosel')
+            const score = scoreTail[scoreTail.length - 1].textContent
             let content = e.querySelector('.c6').innerHTML
             content = content.replace(/<br>/gi, '\n')
             content = content.replace(/<.+?>/gi, '')
@@ -2284,21 +2267,21 @@ export default defineComponent({
       this.editingTag = !this.editingTag
       if (this.editingTag) {
         if (!_.has(this.bookDetail, 'tags')) this.bookDetail.tags = {}
-        let tempTagGroup = {}
-        _.forEach(this.bookList.map(b=>b.tags), (tagObject)=>{
-          _.forIn(tagObject, (tagArray, tagCat)=>{
+        const tempTagGroup = {}
+        _.forEach(this.bookList.map(b => b.tags), (tagObject) => {
+          _.forIn(tagObject, (tagArray, tagCat) => {
             if (_.isArray(tagArray)) {
               if (_.has(tempTagGroup, tagCat)) {
-                tagArray.forEach(tag=>tempTagGroup[tagCat].add(tag))
+                tagArray.forEach(tag => tempTagGroup[tagCat].add(tag))
               } else {
                 tempTagGroup[tagCat] = new Set(tagArray)
               }
             }
           })
         })
-        let showTranslation = this.setting.showTranslation
-        _.forIn(tempTagGroup, (tagSet, tagCat)=>{
-          tempTagGroup[tagCat] = [...tagSet].sort().map(tag=>({
+        const showTranslation = this.setting.showTranslation
+        _.forIn(tempTagGroup, (tagSet, tagCat) => {
+          tempTagGroup[tagCat] = [...tagSet].sort().map(tag => ({
             value: tag,
             label: `${showTranslation ? (this.resolvedTranslation[tag]?.name || tag ) + ' || ' : ''}${tag}`
           }))
@@ -2309,7 +2292,7 @@ export default defineComponent({
       }
     },
     saveBookTags (book) {
-      _.forIn(book.tags, (tagarr, tagCat)=>{
+      _.forIn(book.tags, (tagarr, tagCat) => {
         if (_.isEmpty(tagarr)) {
           delete book.tags[tagCat]
         }
@@ -2334,18 +2317,16 @@ export default defineComponent({
       ipcRenderer.invoke('copy-text-to-clipboard', JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
     },
     async pasteTagClipboard (book) {
-      let text = await ipcRenderer.invoke('read-text-from-clipboard')
+      const text = await ipcRenderer.invoke('read-text-from-clipboard')
       _.assign(book, JSON.parse(text))
-      this.saveBook(book)
+      await this.saveBook(book)
     },
 
     // internal viewer
-    useNewCover (filepath) {
-      ipcRenderer.invoke('use-new-cover', filepath)
-        .then((coverPath)=>{
-          this.bookDetail.coverPath = coverPath
-          this.saveBook(this.bookDetail)
-        })
+    async useNewCover (filepath) {
+      const coverPath = ipcRenderer.invoke('use-new-cover', filepath)
+      this.bookDetail.coverPath = coverPath
+      await this.saveBook(this.bookDetail)
     },
     selectBook (book) {
       this.bookDetail = book
@@ -2357,11 +2338,11 @@ export default defineComponent({
     },
     toNextManga (step) {
       this.handleStopReadManga()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
-      let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
-      let indexNext = indexNow + step
+      const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
+      const indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
+      const indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {
-        let selectBook = activeBookList[indexNext]
+        const selectBook = activeBookList[indexNext]
         setTimeout(() => {
           this.bookDetail = selectBook
           this.$refs.InternalViewerRef.viewManga(selectBook)
@@ -2374,8 +2355,8 @@ export default defineComponent({
     },
     toNextMangaRandom () {
       this.handleStopReadManga()
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
-      let selectBook = _.sample(activeBookList)
+      const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
+      const selectBook = _.sample(activeBookList)
       setTimeout(() => {
         this.bookDetail = selectBook
         this.$refs.InternalViewerRef.viewManga(selectBook)
@@ -2384,9 +2365,9 @@ export default defineComponent({
       }, 500)
     },
     jumpMangeDetail (step) {
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
-      let indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
-      let indexNext = indexNow + step
+      const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
+      const indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
+      const indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {
         this.openBookDetail(activeBookList[indexNext])
       } else {
@@ -2394,7 +2375,7 @@ export default defineComponent({
       }
     },
     jumpMangeDetailRandom () {
-      let activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
+      const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
       this.openBookDetail(_.sample(activeBookList))
     },
 
@@ -2406,19 +2387,16 @@ export default defineComponent({
     saveSetting () {
       ipcRenderer.invoke('save-setting', _.cloneDeep(this.setting))
     },
-    forceGeneBookList () {
+    async forceGeneBookList () {
       this.$refs.SettingRef.dialogVisibleSetting = false
       localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
-      ipcRenderer.invoke('force-gene-book-list')
-      .then(res=>{
-        this.bookList = res
-        this.loadCollectionList()
-        this.printMessage('success', this.$t('c.rebuildMessage'))
-      })
+      this.bookList = await ipcRenderer.invoke('force-gene-book-list')
+      this.loadCollectionList()
+      this.printMessage('success', this.$t('c.rebuildMessage'))
     },
-    patchLocalMetadata () {
-      ipcRenderer.invoke('patch-local-metadata')
-      .then(()=>this.loadBookList())
+    async patchLocalMetadata () {
+      await ipcRenderer.invoke('patch-local-metadata')
+      this.loadBookList()
     },
     updateSetting (setting) {
       this.setting = setting
@@ -2442,17 +2420,14 @@ export default defineComponent({
     },
 
     // import/export
-    importMetadataFromSqlite () {
-      ipcRenderer.invoke('import-sqlite', _.cloneDeep(this.bookList))
-      .then(result=>{
-        let {success, bookList} = result
-        if (success) {
-          this.bookList = bookList
-          this.printMessage('success', this.$t('c.importMessage'))
-        } else {
-          this.printMessage('info', this.$t('c.canceled'))
-        }
-      })
+    async importMetadataFromSqlite () {
+      const {success, bookList} = await ipcRenderer.invoke('import-sqlite', _.cloneDeep(this.bookList))
+      if (success) {
+        this.bookList = bookList
+        this.printMessage('success', this.$t('c.importMessage'))
+      } else {
+        this.printMessage('info', this.$t('c.canceled'))
+      }
     },
 
     // contextmenu
@@ -2536,11 +2511,11 @@ export default defineComponent({
     },
     onMangaCommentContextMenu (e, comment) {
       e.preventDefault()
-      let foundLink = linkify.find(comment, 'url')
+      const foundLink = linkify.find(comment, 'url')
       if (!_.isEmpty(foundLink)) {
-        let items = foundLink.map(l=>({
+        const items = foundLink.map(l => ({
           label: `${this.$t('c.redirect')} ${l.href}`,
-          onClick: ()=>{
+          onClick: () => {
             ipcRenderer.invoke('open-url', l.href)
           }
         }))

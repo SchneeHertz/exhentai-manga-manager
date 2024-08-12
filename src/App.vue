@@ -642,7 +642,7 @@ export default defineComponent({
       locale: zhCn,
       searchString: '',
       sortValue: undefined,
-      $currentPage: 1,
+      currentPage_: 1,
       treeFilterText: '',
       folderTreeData: [],
       expandNodes: [],
@@ -828,17 +828,17 @@ export default defineComponent({
     },
     currentPage: {
       get () {
-        return this.$currentPage
+        return this.currentPage_
       },
       set (val) {
         const pageLimit = Math.ceil(this.displayBookCount / this.setting.pageSize)
         if (Number.isInteger(val)) {
           if (val < 1) {
-            this.$currentPage = 1
+            this.currentPage_ = 1
           } else if (val > pageLimit) {
-            this.$currentPage = pageLimit
+            this.currentPage_ = pageLimit
           } else {
-            this.$currentPage = val
+            this.currentPage_ = val
           }
         }
       }

@@ -186,7 +186,13 @@
     "confirmDelete": "将漫画从软件中移除并删除本地文件, 确定？",
     "rescanSuccess": "重新扫描完成",
     "gettingMetadata": "获取元数据中...",
-    "artist": "作者"
+    "artist": "作者",
+    "scanComplete": "扫描完成",
+    "ipBanned": "IP被临时封禁，请切换IP或稍后再试",
+    "getMetadataFailed": "获取元数据失败",
+    "getMetadataComplete": "获取元数据完成",
+    "outOfRange": "超出范围",
+    "useTranslationCache": "使用翻译缓存"
   },
   "ac": {
     "Global": "全局",

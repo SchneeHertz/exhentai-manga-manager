@@ -152,7 +152,7 @@
   },
   "c": {
     "selectCollectionList": "Select collectionList.json",
-    "selectMetadataSqlite": "Se;ect metadata.sqlite",
+    "selectMetadataSqlite": "Select metadata.sqlite",
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
     "exportFolder": "Choose the folder to export metadata and collectionList.json",
     "exportMessage": "Export completed, please go to the selected folder to view collectionList.json and metadata.sqlite.",
@@ -186,7 +186,13 @@
     "confirmDelete": "Remove the manga from app and delete the local file, OK?",
     "rescanSuccess": "Rescan successful",
     "gettingMetadata": "Getting metadata...",
-    "artist": "Artist"
+    "artist": "Artist",
+    "scanComplete": "Scan complete",
+    "ipBanned": "IP is temporarily banned, please switch IP or try again later",
+    "getMetadataFailed": "Get metadata failed",
+    "getMetadataComplete": "Get metadata complete",
+    "outOfRange": "Out of range",
+    "useTranslationCache": "Use translation cache"
   },
   "ac": {
     "Global": "Global",

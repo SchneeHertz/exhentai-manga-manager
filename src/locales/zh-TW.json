@@ -186,7 +186,13 @@
     "confirmDelete": "將漫畫從應用中移除並刪除本地檔案, 確定？",
     "rescanSuccess": "重新掃描完成",
     "gettingMetadata": "獲取元數據中...",
-    "artist": "作者"
+    "artist": "作者",
+    "scanComplete": "掃描完成",
+    "ipBanned": "IP被臨時封禁，請切換IP或稍後再試",
+    "getMetadataFailed": "獲取元數據失敗",
+    "getMetadataComplete": "獲取元數據完成",
+    "outOfRange": "超出範圍",
+    "useTranslationCache": "使用翻譯快取"
   },
   "ac": {
     "Global": "全域",

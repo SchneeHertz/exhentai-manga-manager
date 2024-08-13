@@ -1223,6 +1223,7 @@ export default defineComponent({
       this.loadCollectionList()
       this.geneFolderTree()
       this.selectBookList = []
+      if (scan) this.printMessage('success', this.$t('c.scanComplete'))
     },
     saveBook (book) {
       return ipcRenderer.invoke('save-book', _.cloneDeep(book))
@@ -1357,12 +1358,12 @@ export default defineComponent({
         console.log(e)
         if (_.includes(res, 'Your IP address has been')) {
           book.status = 'non-tag'
-          this.printMessage('error', 'Your IP address has been temporarily banned')
+          this.printMessage('error', this.$t('c.ipBanned'))
           await this.saveBook(book)
           this.serviceAvailable = false
         } else {
           book.status = 'tag-failed'
-          this.printMessage('error', 'Get tag failed')
+          this.printMessage('error', this.$t('c.getMetadataFailed'))
           await this.saveBook(book)
         }
       }
@@ -1425,6 +1426,7 @@ export default defineComponent({
       }
       messageInstance.close()
       ipcRenderer.invoke('set-progress-bar', -1)
+      this.printMessage('success', this.$t('c.getMetadataComplete'))
     },
     getBookListMetadata () {
       let bookList
@@ -2352,7 +2354,7 @@ export default defineComponent({
           if (this.setting.showComment) this.getComments(selectBook.url)
         }, 500)
       } else {
-        this.printMessage('info', 'out of range')
+        this.printMessage('info', this.$t('c.outOfRange'))
       }
     },
     toNextMangaRandom () {
@@ -2373,7 +2375,7 @@ export default defineComponent({
       if (indexNext >= 0 && indexNext < activeBookList.length) {
         this.openBookDetail(activeBookList[indexNext])
       } else {
-        this.printMessage('info', 'out of range')
+        this.printMessage('info', this.$t('c.outOfRange'))
       }
     },
     jumpMangeDetailRandom () {

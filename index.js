@@ -210,10 +210,11 @@ const clearFolder = async (Folder) => {
 // library and metadata
 ipcMain.handle('load-book-list', async (event, scan) => {
   if (scan) {
+    sendMessageToWebContents('Start loading library')
+
     const bookList = await Manga.findAll({ raw: true })
     bookList.forEach(b => b.exist = false)
 
-    sendMessageToWebContents('start loading library')
     let list = await getBookFilelist(setting.library)
     if (!_.isEmpty(setting.excludeFile)) {
       let excludeRe
@@ -225,7 +226,7 @@ ipcMain.handle('load-book-list', async (event, scan) => {
       }
     }
     const listLength = list.length
-    sendMessageToWebContents(`load ${listLength} book from library`)
+    sendMessageToWebContents(`Load ${listLength} book from library`)
 
     for (let i = 0; i < listLength; i++) {
       try {
@@ -263,7 +264,7 @@ ipcMain.handle('load-book-list', async (event, scan) => {
           await clearFolder(TEMP_PATH)
         }
       } catch (e) {
-        sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
+        sendMessageToWebContents(`Load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
       }
     }
     await clearFolder(TEMP_PATH)
@@ -292,7 +293,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
   await Manga.destroy({ truncate: true })
   await clearFolder(TEMP_PATH)
   await clearFolder(COVER_PATH)
-  sendMessageToWebContents('start loading library')
+  sendMessageToWebContents('Start loading library')
   let list = await getBookFilelist(setting.library)
   if (!_.isEmpty(setting.excludeFile)) {
     let excludeRe
@@ -304,7 +305,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
     }
   }
   const listLength = list.length
-  sendMessageToWebContents(`load ${listLength} book from library`)
+  sendMessageToWebContents(`Load ${listLength} book from library`)
   for (let i = 0; i < listLength; i++) {
     try {
       const { filepath, type } = list[i]
@@ -330,7 +331,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
       if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
       setProgressBar(i / listLength)
     } catch (e) {
-      sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
+      sendMessageToWebContents(`Load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
     }
   }
   await clearFolder(TEMP_PATH)
@@ -359,7 +360,7 @@ ipcMain.handle('patch-local-metadata', async (event, arg) => {
       if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
       setProgressBar(i / bookListLength)
     } catch (e) {
-      sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)
+      sendMessageToWebContents(`Patch ${bookList[i].filepath} failed because ${e}`)
     }
   }
 
@@ -379,7 +380,7 @@ ipcMain.handle('patch-local-metadata-by-book', async (event, book) => {
       return Promise.resolve({ coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
     }
   } catch (e) {
-    sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+    sendMessageToWebContents(`Patch ${book.filepath} failed because ${e}`)
     await clearFolder(TEMP_PATH)
     return Promise.reject()
   }
@@ -397,7 +398,7 @@ ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
         return res.text()
       })
       .catch(e => {
-        sendMessageToWebContents(`get ex page failed because ${e}`)
+        sendMessageToWebContents(`Get ex page failed because ${e}`)
       })
   } else {
     return await fetch(url, {
@@ -409,7 +410,7 @@ ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
         return res.text()
       })
       .catch(e => {
-        sendMessageToWebContents(`get ex page failed because ${e}`)
+        sendMessageToWebContents(`Get ex page failed because ${e}`)
       })
   }
 })
@@ -429,7 +430,7 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
         return res.text()
       })
       .catch(e => {
-        sendMessageToWebContents(`get ex data failed because ${e}`)
+        sendMessageToWebContents(`Get ex data failed because ${e}`)
       })
   } else {
     return await fetch(url, {
@@ -444,7 +445,7 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
         return res.text()
       })
       .catch(e => {
-        sendMessageToWebContents(`get ex data failed because ${e}`)
+        sendMessageToWebContents(`Get ex data failed because ${e}`)
       })
   }
 })
@@ -514,7 +515,7 @@ ipcMain.handle('use-new-cover', async (event, filepath) => {
     .toFile(coverPath)
     return coverPath
   } catch (e) {
-    sendMessageToWebContents(`generate cover from ${filepath} failed because ${e}`)
+    sendMessageToWebContents(`Generate cover from ${filepath} failed because ${e}`)
   }
 })
 

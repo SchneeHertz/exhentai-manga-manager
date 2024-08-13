@@ -512,7 +512,7 @@ const loadTranslationFromEhTagTranslation = async () => {
   })
   .catch((error) => {
     console.log(error)
-    emit('message', 'warning', 'use translation from cache')
+    emit('message', 'warning', t('c.useTranslationCache'))
   })
 }
 

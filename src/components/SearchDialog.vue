@@ -138,9 +138,9 @@ const resolveEhentaiResult = (htmlString) => {
   } catch (e) {
     console.log(e)
     if (htmlString.includes('Your IP address has been')) {
-      emit('message', 'error', 'Your IP address has been temporarily banned')
+      emit('message', 'error', t('c.ipBanned'))
     } else {
-      emit('message', 'error', 'Get tag failed')
+      emit('message', 'error', t('c.getMetadataFailed'))
     }
   }
 }

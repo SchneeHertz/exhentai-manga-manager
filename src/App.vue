@@ -105,13 +105,13 @@
           class="book-card-frame"
           v-lazy:[book.id]="loadBookCardContent"
         >
-          <template v-if="visibilityMap[book.id]">
+          <transition name="pop">
             <!-- show book card when book isn't a collection, book isn't hidden because collected,
               and book isn't hidden by user except sorting by onlyHiddenBook
               and book isn't hidden by folder select -->
             <div
               class="book-card"
-              v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide"
+              v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide && visibilityMap[book.id]"
               :tabindex="index + 1"
             >
                 <p class="book-title"
@@ -159,7 +159,7 @@
             </div>
             <div
               class="book-card"
-              v-if="book.isCollection && !book.folderHide"
+              v-else-if="book.isCollection && !book.folderHide && visibilityMap[book.id]"
               :tabindex="index + 1"
             >
               <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
@@ -168,7 +168,7 @@
               <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
               <el-rate v-model="book.rating" size="small" allow-half disabled/>
             </div>
-          </template>
+          </transition>
         </div>
       </el-col>
       <el-col :span="20" v-if="editCollectionView" class="book-collect-view"
@@ -179,8 +179,9 @@
           v-lazy:[book.id]="loadBookCardContent"
           class="book-collect-card-frame"
         >
-          <template v-if="visibilityMap[book.id]">
+          <transition name="pop">
             <el-badge
+              v-if="visibilityMap[book.id]"
               :value="book.collected ? '✓' : '+'"
               :type="book.collected ? 'success' : 'warning'"
               class="book-add-badge"
@@ -190,7 +191,7 @@
                 <img class="book-collect-cover" :src="book.coverPath"/>
               </div>
             </el-badge>
-          </template>
+          </transition>
         </div>
       </el-col>
       <el-col :span="4" v-if="editCollectionView" class="book-collection">
@@ -224,38 +225,39 @@
           v-lazy:[book.id]="loadBookCardContent"
           class="book-tag-edit-card-frame"
         >
-          <template v-if="visibilityMap[book.id]">
-            <el-popover placement="left" :width="300" trigger="hover" :show-after="1000" :hide-after="100">
-              <template #reference>
-                <el-badge
-                  :value="book.selected ? '✓' : '+'"
-                  :type="book.selected ? 'success' : 'warning'"
-                  class="book-add-badge"
-                >
-                  <div class="book-tag-edit-card selectable-card" @contextmenu="previewManga(book)" :id="book.id" @click="handleSelectBookBadge(book)">
-                    <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
+          <transition name="pop">
+            <el-badge
+              v-if="visibilityMap[book.id]"
+              :value="book.selected ? '✓' : '+'"
+              :type="book.selected ? 'success' : 'warning'"
+              class="book-add-badge"
+            >
+              <div class="book-tag-edit-card selectable-card" @contextmenu="previewManga(book)" :id="book.id" @click="handleSelectBookBadge(book)">
+                <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
+                <el-popover placement="left" :width="300" trigger="hover" :show-after="1000" :hide-after="100">
+                  <template #reference>
                     <img class="book-tag-edit-cover" :src="book.coverPath"/>
-                  </div>
-                </el-badge>
-              </template>
-              <el-descriptions :column="1" size="small" class="book-tag-edit-popover">
-                <el-descriptions-item :label="$t('m.pageCount')+':'">
-                  <el-tag class="book-tag" :type="book.pageDiff ? 'danger' : 'info'">{{book.pageCount}} | {{book.filecount}}</el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item :label="$t('m.metadataStatus')+':'">
-                  <el-tag class="book-tag" :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-                  @click="searchFromTag(book.status)">{{book.status}}</el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item :label="$t('m.category')+':'">
-                  <el-tag type="info" class="book-tag" @click="searchFromTag(book.category)">{{book.category}}</el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item v-for="(tagArr, key) in book.tags" :label="key + ':'" :key="key">
-                  <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag, key)"
-                  >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
-                </el-descriptions-item>
-              </el-descriptions>
-            </el-popover>
-          </template>
+                  </template>
+                  <el-descriptions :column="1" size="small" class="book-tag-edit-popover">
+                    <el-descriptions-item :label="$t('m.pageCount')+':'">
+                      <el-tag class="book-tag" :type="book.pageDiff ? 'danger' : 'info'">{{book.pageCount}} | {{book.filecount}}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item :label="$t('m.metadataStatus')+':'">
+                      <el-tag class="book-tag" :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+                      @click="searchFromTag(book.status)">{{book.status}}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item :label="$t('m.category')+':'">
+                      <el-tag type="info" class="book-tag" @click="searchFromTag(book.category)">{{book.category}}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item v-for="(tagArr, key) in book.tags" :label="key + ':'" :key="key">
+                      <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag, key)"
+                      >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </el-popover>
+              </div>
+            </el-badge>
+          </transition>
         </div>
       </el-col>
       <el-col :span="4" v-if="editTagView" class="book-tag-edit-operation" v-loading="updateTagsLoading">
@@ -2543,6 +2545,13 @@ body
     background-position: -100%
   to
     background-position: 100%
+
+.pop-enter-active, .pop-leave-active
+  transition: transform 0.5s ease, opacity 0.5s ease
+
+.pop-enter-from, .pop-leave-to
+  transform: scale(0.9)
+  opacity: 0
 
 .text-red
   color: red !important

@@ -2557,10 +2557,9 @@ body
     background-position: 100%
 
 .pop-enter-active, .pop-leave-active
-  transition: transform 0.5s ease, opacity 0.5s ease
+  transition: opacity 0.3s ease
 
 .pop-enter-from, .pop-leave-to
-  transform: scale(0.9)
   opacity: 0
 
 .text-red

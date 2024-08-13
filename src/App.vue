@@ -30,10 +30,12 @@
         <el-button :icon="MdShuffle" plain @click="shuffleBook" :title="$t('m.shuffle')"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdRefresh" plain @click="loadBookList(true)" :title="$t('m.manualScan')"></el-button>
+        <el-button type="primary" :icon="MdRefresh" plain :title="$t('m.manualScan')"
+          @click="loadBookList(true)" :loading="buttonLoadBookListLoading"></el-button>
       </el-col>
       <el-col :span="1">
-        <el-button type="primary" :icon="MdCodeDownload" plain @click="getBookListMetadata()" :title="$t('m.batchGetMetadata')"></el-button>
+        <el-button type="primary" :icon="MdCodeDownload" plain :title="$t('m.batchGetMetadata')"
+          @click="getBookListMetadata()" :loading="buttonGetMetadatasLoading"></el-button>
       </el-col>
       <el-col :span="1">
         <el-button :icon="ArrowTrendingLines20Filled" plain @click="$refs.TagGraphRef.displayTagGraph()" :title="$t('m.tagAnalysis')"></el-button>
@@ -651,6 +653,8 @@ export default defineComponent({
       progress: 0,
       randomTags: [],
       visibilityMap: {},
+      buttonLoadBookListLoading: false,
+      buttonGetMetadatasLoading: false,
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
@@ -1218,11 +1222,13 @@ export default defineComponent({
       })
     },
     async loadBookList (scan) {
+      this.buttonLoadBookListLoading = true
       const res = await ipcRenderer.invoke('load-book-list', scan)
       this.bookList = this.prepareBookList(res)
       this.loadCollectionList()
       this.geneFolderTree()
       this.selectBookList = []
+      this.buttonLoadBookListLoading = false
       if (scan) this.printMessage('success', this.$t('c.scanComplete'))
     },
     saveBook (book) {
@@ -1428,7 +1434,8 @@ export default defineComponent({
       ipcRenderer.invoke('set-progress-bar', -1)
       this.printMessage('success', this.$t('c.getMetadataComplete'))
     },
-    getBookListMetadata () {
+    async getBookListMetadata () {
+      this.buttonGetMetadatasLoading = true
       let bookList
       if (this.setting.batchTagfailedBook) {
         bookList = this.bookList.filter(book => book.status === 'tag-failed' || book.status === 'non-tag')
@@ -1438,7 +1445,8 @@ export default defineComponent({
       if (this.setting.onlyGetMetadataOfSelectedFolder) {
         bookList = bookList.filter(book => !book.folderHide)
       }
-      this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
+      await this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
+      this.buttonGetMetadatasLoading = false
     },
 
     // home header

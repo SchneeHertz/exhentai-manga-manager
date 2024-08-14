@@ -146,7 +146,7 @@ const redirectSearch = (bookHash, title, server = 'e-hentai') => {
       url = `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=161`
       break
     case 'hentag':
-      url = `https://hentag.com/public/api/vault-search?t=${encodeURI(title)}`
+      url = `https://hentag.com/?t=${encodeURI(title)}`
       break
   }
   ipcRenderer.invoke('open-url', url)

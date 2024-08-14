@@ -98,6 +98,7 @@
     "getTagbyUrl": "用網址獲取元數據",
     "copyTagClipboard": "複製標籤資訊到剪貼簿",
     "pasteTagClipboard": "從剪貼簿貼上標籤資訊",
+    "getMetadataFromClipboardLink": "從複製的連結獲取元數據",
     "directEnter": "點擊封面進入",
     "detailPage": "詳細頁面",
     "internalViewer": "內置閱讀器",

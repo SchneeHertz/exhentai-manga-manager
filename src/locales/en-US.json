@@ -98,6 +98,7 @@
     "getTagbyUrl": "Get Tag by Url",
     "copyTagClipboard": "Copy Tag to Clipboard",
     "pasteTagClipboard": "Paste Tag from Clipboard",
+    "getMetadataFromClipboardLink": "Get Metadata from Copied Link",
     "directEnter": "Click Cover To",
     "detailPage": "Detail Page",
     "internalViewer": "Internal Viewer",

@@ -2333,6 +2333,14 @@ export default defineComponent({
       _.assign(book, JSON.parse(text))
       await this.saveBook(book)
     },
+    async getMetadataFromClipboardLink (book) {
+      const text = await ipcRenderer.invoke('read-text-from-clipboard')
+      const url = text.trim()
+      if (url) {
+        book.url = url
+        this.getBookInfo(book)
+      }
+    },
 
     // internal viewer
     async useNewCover (filepath) {
@@ -2489,6 +2497,12 @@ export default defineComponent({
             label: this.$t('m.pasteTagClipboard'),
             onClick: () => {
               this.pasteTagClipboard(book)
+            }
+          },
+          {
+            label: this.$t('m.getMetadataFromClipboardLink'),
+            onClick: () => {
+              this.getMetadataFromClipboardLink(book)
             }
           },
         ]

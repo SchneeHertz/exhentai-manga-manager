@@ -116,8 +116,8 @@ const displayTagGraph = async () => {
     }
   )
 
-  const maleTags = _(bookInfos.map(book => book.male)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 18).value()
-  const femaleTags = _(bookInfos.map(book => book.female)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 18).value()
+  const maleTags = _(bookInfos.map(book => book.male)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 24).value()
+  const femaleTags = _(bookInfos.map(book => book.female)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 24).value()
   let tagData = maleTags.map(p => {p[2] = 'rgba(54, 162, 235, 0.2)'; p[3] = 'rgb(54, 162, 235)'; return p})
     .concat(femaleTags.map(p => {p[2] = 'rgba(255, 99, 132, 0.2)'; p[3] = 'rgb(255, 99, 132)'; return p}))
   tagData = _.sortBy(tagData, p => -p[1]).slice(0, 24)

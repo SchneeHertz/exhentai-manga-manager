@@ -46,6 +46,7 @@
       <el-col :span="3">
         <el-select :placeholder="$t('m.sort_filter')" @change="handleSortChange" clearable v-model="sortValue">
           <el-option-group :label="$t('m.filter')">
+            <el-option :label="$t('m.all')" value="all"></el-option>
             <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
             <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
             <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
@@ -60,6 +61,8 @@
             <el-option :label="$t('m.postTimeDescend')" value="postDescend"></el-option>
             <el-option :label="$t('m.ratingAscend')" value="scoreAscend"></el-option>
             <el-option :label="$t('m.ratingDescend')" value="scoreDescend"></el-option>
+            <el-option :label="$t('m.readCountAscend')" value="readCountAscend"></el-option>
+            <el-option :label="$t('m.readCountDescend')" value="readCountDescend"></el-option>
             <el-option :label="$t('m.artistAscend')" value="artistAscend"></el-option>
             <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
             <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
@@ -127,7 +130,7 @@
                   @click="handleClickCover(book)"
                   @contextmenu="onBookContextMenu($event, book)"
                 />
-                <el-tag class="book-card-language" size="small" :type="isChineseTranslatedManga(book) ? 'danger' : 'info'">{{book.readCount}}</el-tag>
+                <el-tag class="book-card-language" size="small" :type="isChineseTranslatedManga(book) ? 'danger' : 'primary'">{{book.readCount}}</el-tag>
                 <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
                 <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
                 <el-icon
@@ -345,7 +348,7 @@
             @click="handleClickCover(book)"
             @contextmenu="onBookContextMenu($event, book)"
           />
-          <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+          <el-tag class="book-card-language" size="small" :type="isChineseTranslatedManga(book) ? 'danger' : 'primary'">{{book.readCount}}</el-tag>
           <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
           <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
           <el-icon
@@ -1507,6 +1510,14 @@ export default defineComponent({
           this.displayBookList = bookList.toSorted(this.sortList('rating'))
           this.chunkList()
           break
+        case 'readCountAscend':
+          this.displayBookList = bookList.toSorted(this.sortList('readCount')).toReversed()
+          this.chunkList()
+          break
+        case 'readCountDescend':
+          this.displayBookList = bookList.toSorted(this.sortList('readCount'))
+          this.chunkList()
+          break
         case 'artistAscend':
           this.displayBookList = bookList.toSorted(this.sortList('tags.artist')).toReversed()
           this.chunkList()
@@ -1523,6 +1534,7 @@ export default defineComponent({
           this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a), undefined, {numeric: true, sensitivity: 'base'}))
           this.chunkList()
           break
+        case 'all':
         default:
           this.displayBookList = this.bookList
           this.chunkList()
@@ -1606,7 +1618,7 @@ export default defineComponent({
       }
     },
     searchBook () {
-      const checkCondition = (bookString, bookDate) => {
+      const checkCondition = (bookString, bookInfo) => {
         const searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
         const orCondition = _.filter(searchStringArray, (str) => str.startsWith('~'))
         const andCondition = _.filter(searchStringArray, (str) => !str.startsWith('~'))
@@ -1619,9 +1631,23 @@ export default defineComponent({
                 } else if (_.startsWith(str, ':')) {
                   const type = str.slice(1, 6)
                   if (str[6] === '>') {
-                    return bookDate[type] >= new Date(str.slice(7))
+                    switch (type) {
+                      case 'mtime':
+                      case 'atime':
+                      case 'ptime':
+                        return bookInfo[type] >= new Date(str.slice(7))
+                      case 'count':
+                        return bookInfo[type] > parseInt(str.slice(7))
+                    }
                   } else if (str[6] === '<') {
-                    return bookDate[type] <= new Date(str.slice(7))
+                    switch (type) {
+                      case 'mtime':
+                      case 'atime':
+                      case 'ptime':
+                        return bookInfo[type] <= new Date(str.slice(7))
+                      case 'count':
+                        return bookInfo[type] < parseInt(str.slice(7))
+                    }
                   } else {
                     return false
                   }
@@ -1650,12 +1676,13 @@ export default defineComponent({
             }
           )
         ).toLowerCase()
-        const bookDate = {
+        const bookInfo = {
           mtime: new Date(book.mtime),
           atime: new Date(book.date),
-          ptime: new Date(book.posted * 1000)
+          ptime: new Date(book.posted * 1000),
+          count: book.readCount
         }
-        return checkCondition(bookString, bookDate)
+        return checkCondition(bookString, bookInfo)
       })
       if (!this.sortValue) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)

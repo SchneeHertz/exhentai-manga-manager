@@ -175,7 +175,8 @@ const emit = defineEmits([
   'message',
   'updateOptions',
   'updateWindowTitle',
-  'rescanBook'
+  'rescanBook',
+  'saveBook'
 ])
 
 const drawerVisibleViewer = ref(false)
@@ -258,6 +259,8 @@ const viewManga = (book, viewerHeight = '100%') => {
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
   .then(() => {
     drawerVisibleViewer.value = true
+    book.readCount += 1
+    emit('saveBook', book)
     if (props.setting.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
   })
   .catch(err => {

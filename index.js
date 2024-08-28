@@ -33,6 +33,20 @@ if (setting.metadataPath) {
   metadataSqliteFile = path.join(STORE_PATH, './metadata.sqlite')
 }
 let Metadata = prepareMetadataModel(metadataSqliteFile)
+const getColumns = async (sequelize, tableName) => {
+  const query = `PRAGMA table_info(${tableName})`
+  const [results] = await sequelize.query(query)
+  return results.map(column => column.name)
+}
+;(async () => {
+  const columns = await getColumns(Manga.sequelize, 'Mangas')
+  if (['hiddenBook', 'readCount'].some(c => !columns.includes(c))) {
+    await Manga.sync({ alter: true })
+  } else {
+    await Manga.sync()
+  }
+  await Metadata.sync()
+})()
 
 const logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
 const logStdout = process.stdout
@@ -99,8 +113,6 @@ const createWindow = () => {
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=65536')
 // app.disableHardwareAcceleration()
 app.whenReady().then(async () => {
-  await Manga.sync()
-  await Metadata.sync()
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
   mainWindow = createWindow()

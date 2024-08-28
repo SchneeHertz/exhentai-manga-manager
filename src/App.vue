@@ -127,7 +127,7 @@
                   @click="handleClickCover(book)"
                   @contextmenu="onBookContextMenu($event, book)"
                 />
-                <el-tag class="book-card-language" size="small" type="danger" v-show="isChineseTranslatedManga(book)">ZH</el-tag>
+                <el-tag class="book-card-language" size="small" :type="isChineseTranslatedManga(book) ? 'danger' : 'info'">{{book.readCount}}</el-tag>
                 <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
                 <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
                 <el-icon
@@ -534,6 +534,7 @@
       @message="printMessage"
       @update-window-title="updateWindowTitle"
       @rescan-book="rescanBook"
+      @save-book="saveBook"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
       :title="$t('m.folderTree')"
@@ -2184,6 +2185,8 @@ export default defineComponent({
     openLocalBook (book) {
       this.bookDetail = book
       if (this.setting.imageExplorer) {
+        this.bookDetail.readCount += 1
+        this.saveBook(this.bookDetail)
         ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
       } else {
         this.$refs.InternalViewerRef.viewManga(book)

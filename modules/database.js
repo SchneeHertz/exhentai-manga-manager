@@ -42,6 +42,10 @@ const prepareMangaModel = (databasePath) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
+    readCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
     exist: {
       type: DataTypes.BOOLEAN,
       defaultValue: true

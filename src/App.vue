@@ -46,7 +46,7 @@
       <el-col :span="3">
         <el-select :placeholder="$t('m.sort_filter')" @change="handleSortChange" clearable v-model="sortValue">
           <el-option-group :label="$t('m.filter')">
-            <el-option :label="$t('m.all')" value="all"></el-option>
+            <el-option :label="$t('m.all')" value=""></el-option>
             <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
             <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
             <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
@@ -99,7 +99,7 @@
     <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView && !setting.disableRandomTag">
       <el-space size="small" id="random-tags">
         <el-button size="small" plain :icon="MdRefresh" @click="reloadRandomTags"></el-button>
-        <el-button v-for="tag in randomTags" :key="tag.value" size="small" plain @click="handleClickTagInRandom(tag)">{{ tag.label }}</el-button>
+        <el-button v-for="tag in randomTags" :key="tag.value" size="small" plain @click="handleSearchString(tag.value)">{{ tag.label }}</el-button>
       </el-space>
     </el-row>
     <el-row :gutter="20" class="book-card-area">
@@ -130,8 +130,12 @@
                   @click="handleClickCover(book)"
                   @contextmenu="onBookContextMenu($event, book)"
                 />
-                <el-tag class="book-card-language" size="small" :type="isChineseTranslatedManga(book) ? 'danger' : 'primary'">{{book.readCount}}</el-tag>
-                <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+                <el-tag class="book-card-language" size="small"
+                  :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
+                  :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
+                  @click="handleSearchString(`:count=${book.readCount}`)"
+                >{{book.readCount}}</el-tag>
+                <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="handleSearchString('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
                 <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
                 <el-icon
                   :size="30"
@@ -348,8 +352,12 @@
             @click="handleClickCover(book)"
             @contextmenu="onBookContextMenu($event, book)"
           />
-          <el-tag class="book-card-language" size="small" :type="isChineseTranslatedManga(book) ? 'danger' : 'primary'">{{book.readCount}}</el-tag>
-          <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="searchFromTag('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+          <el-tag class="book-card-language" size="small"
+            :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
+            :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
+            @click="handleSearchString(`:count=${book.readCount}`)"
+          >{{book.readCount}}</el-tag>
+          <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="handleSearchString('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
           <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
           <el-icon
             :size="30"
@@ -567,7 +575,7 @@
       :book-list="displayBookList"
       :setting="setting"
       :resolved-translation="resolvedTranslation"
-      @search="handleSearchTags"
+      @search="handleSearchString"
     ></Graph>
     <SearchDialog
       ref="SearchDialogRef"
@@ -1534,7 +1542,6 @@ export default defineComponent({
           this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a), undefined, {numeric: true, sensitivity: 'base'}))
           this.chunkList()
           break
-        case 'all':
         default:
           this.displayBookList = this.bookList
           this.chunkList()
@@ -1626,9 +1633,7 @@ export default defineComponent({
           if (_.isArray(condition)) {
             return _.every(condition, (str) => {
               try {
-                if (_.startsWith(str, '-')) {
-                  return !bookString.includes(str.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
-                } else if (_.startsWith(str, ':')) {
+                if (_.startsWith(str, ':')) {
                   const type = str.slice(1, 6)
                   if (str[6] === '>') {
                     switch (type) {
@@ -1648,9 +1653,20 @@ export default defineComponent({
                       case 'count':
                         return bookInfo[type] < parseInt(str.slice(7))
                     }
+                  } else if (str[6] === '=') {
+                    switch (type) {
+                      case 'mtime':
+                      case 'atime':
+                      case 'ptime':
+                        return bookInfo[type].toLocaleDateString() === new Date(str.slice(7)).toLocaleDateString()
+                      case 'count':
+                        return bookInfo[type] === parseInt(str.slice(7))
+                    }
                   } else {
                     return false
                   }
+                } else if (_.startsWith(str, '-')) {
+                  return !bookString.includes(str.slice(1).replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
                 } else {
                   return bookString.includes(str.replace(/["']/g, '').replace(/[$]/g, '"').toLowerCase())
                 }
@@ -1691,6 +1707,10 @@ export default defineComponent({
         this.displayBookList.forEach(book => book.selected = false)
       }
     },
+    handleSearchString (string) {
+      this.searchString = string
+      this.searchBook()
+    },
     searchFromTag (tag, cat) {
       this.dialogVisibleBookDetail = false
       this.drawerVisibleCollection = false
@@ -1700,10 +1720,6 @@ export default defineComponent({
       } else {
         this.searchString = `"${tag}"$`
       }
-      this.searchBook()
-    },
-    handleClickTagInRandom (tag) {
-      this.searchString = tag.value
       this.searchBook()
     },
     reloadRandomTags () {
@@ -1798,11 +1814,6 @@ export default defineComponent({
       return data.label.includes(val)
     },
 
-    // tag analysis and recommand search
-    handleSearchTags (string) {
-      this.searchString = string
-      this.searchBook()
-    },
 
     // collection view function
     async loadCollectionList () {
@@ -2719,12 +2730,15 @@ body
   line-height: 18px
 .book-card-mark, .book-detail-star, .book-card-language, .book-card-pagecount
   position: absolute
+  cursor: pointer
 .book-card-language
-  left: 11px
-  top: 53px
+  left: 10px
+  top: 52px
+  border-radius: 3px 0 3px 0
 .book-card-pagecount
-  left: 11px
-  top: 314px
+  left: 10px
+  top: 315px
+  border-radius: 0 3px 0 3px
 .book-card-mark
   right: 4px
   top: 40px

@@ -314,7 +314,7 @@
         v-model:currentPage="currentPage"
         v-model:page-size="setting.pageSize"
         :page-sizes="[12, 24, 42, 72, 500, 5000, 1000000]"
-        :small="true"
+        size="small"
         layout="total, sizes, prev, pager, next, jumper"
         :total="displayBookCount"
         @size-change="handleSizeChange"
@@ -428,6 +428,7 @@
               <el-descriptions-item :label="$t('m.fileSize')+':'">
                 {{Math.floor(bookDetail.bundleSize / 1048576)}} | {{Math.floor(bookDetail.filesize / 1048576)}} MB
               </el-descriptions-item>
+              <el-descriptions-item :label="$t('m.readCount')+':'">{{bookDetail.readCount}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.mtime')+':'">{{new Date(bookDetail.mtime).toLocaleString("zh-CN")}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.postTime')+':'">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
             </el-descriptions>
@@ -1801,13 +1802,15 @@ export default defineComponent({
       this.chunkList()
     },
     handleNodeExpand (nodeObject) {
-      this.expandNodes.push(nodeObject.folderPath)
-      this.expandNodes = [...new Set(this.expandNodes)]
-      localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
+      let expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
+      expandNodes.push(nodeObject.folderPath)
+      expandNodes = [...new Set(expandNodes)]
+      localStorage.setItem('expandNodes', JSON.stringify(expandNodes))
     },
     handleNodeCollapse (nodeObject) {
-      this.expandNodes = _.filter(this.expandNodes, (path) => path !== nodeObject.folderPath)
-      localStorage.setItem('expandNodes', JSON.stringify(this.expandNodes))
+      let expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
+      expandNodes = expandNodes.filter(path => !path.includes(nodeObject.folderPath))
+      localStorage.setItem('expandNodes', JSON.stringify(expandNodes))
     },
     filterTreeNode (val, data) {
       if (!val) return true

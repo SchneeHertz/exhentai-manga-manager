@@ -152,7 +152,8 @@
     "accelerator": "快捷鍵",
     "collectTag": "標籤收藏",
     "showCollectTag": "顯示收藏標籤",
-    "tagColor": "標籤顏色"
+    "tagColor": "標籤顏色",
+    "readCount": "閱讀次數"
   },
   "c": {
     "selectCollectionList": "選擇collectionList.json",

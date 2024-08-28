@@ -152,7 +152,8 @@
     "accelerator": "Accelerator",
     "collectTag": "Collect Tag",
     "showCollectTag": "Show Collect Tag",
-    "tagColor": "Tag Color"
+    "tagColor": "Tag Color",
+    "readCount": "Reading Count"
   },
   "c": {
     "selectCollectionList": "Select collectionList.json",

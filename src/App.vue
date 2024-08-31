@@ -1714,6 +1714,8 @@ export default defineComponent({
       }
     },
     handleSearchString (string) {
+      this.dialogVisibleBookDetail = false
+      this.drawerVisibleCollection = false
       this.searchString = string
       this.searchBook()
     },

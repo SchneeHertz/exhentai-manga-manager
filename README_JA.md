@@ -28,6 +28,8 @@
 
 注意：現在、このソフトウェアは日本語のインターフェースをサポートしていません。
 
+**[説明書](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)**
+
 </div>
 
 ![cover.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/cover_en.jpg)
@@ -36,8 +38,6 @@
 ![viewer.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/viewer.jpg)
 ![viewer2.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/viewer2.jpg)
 ![thumbnails.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/thumbnails.jpg)
-
-**説明書: [wiki](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/English-Instruction)**
 
 **[Discord](https://discord.gg/pS9jR8C8f6) へようこそ**
 

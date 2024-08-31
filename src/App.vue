@@ -174,6 +174,11 @@
               <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
               <p class="book-title" :title="book.title">{{book.title}}</p>
               <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
+              <el-tag class="book-card-language" size="small"
+                :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
+                :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
+                @click="handleSearchString(`:count=${book.readCount}`)"
+              >{{book.readCount}}</el-tag>
               <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
               <el-rate v-model="book.rating" size="small" allow-half disabled/>
             </div>
@@ -1833,6 +1838,8 @@ export default defineComponent({
         const rating = _.last(_.compact(_.sortBy(collectBook.map(book => book.rating))))
         const mtime = _.last(_.compact(_.sortBy(collectBook.map(book => book.mtime))))
         const mark = _.some(collectBook, 'mark')
+        const pageDiff = _.some(collectBook, 'pageDiff') ? true : undefined
+        const readCount = _.max(collectBook.map(book => book.readCount))
         const tags = _.mergeWith({}, ...collectBook.map(book => book.tags), (obj, src) => {
           if (_.isArray(obj) && _.isArray(src)) {
             return [...new Set(obj.concat(src))]
@@ -1849,7 +1856,7 @@ export default defineComponent({
             title: collection.title,
             id: collection.id,
             coverPath: collectBook?.[0]?.coverPath,
-            date, posted, rating, mtime, mark, tags, title_jpn, category, status,
+            date, posted, rating, mtime, mark, tags, title_jpn, category, status, pageDiff, readCount,
             list: collection.list,
             filepath,
             isCollection: true

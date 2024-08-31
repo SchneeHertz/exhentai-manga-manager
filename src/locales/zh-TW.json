@@ -6,6 +6,7 @@
     "sort_filter": "排序/篩選",
     "filter": "篩選",
     "sort": "排序",
+    "all": "全部",
     "bookmarkOnly": "僅收藏",
     "collectionOnly": "僅合集",
     "hiddenOnly": "僅隱藏",
@@ -15,6 +16,8 @@
     "postTimeDescend": "上傳時間降序",
     "ratingAscend": "評分升序",
     "ratingDescend": "評分降序",
+    "readCountAscend": "閱讀次數升序",
+    "readCountDescend": "閱讀次數降序",
     "artistAscend": "作者升序",
     "artistDescend": "作者降序",
     "titleAscend": "標題升序",
@@ -98,6 +101,7 @@
     "getTagbyUrl": "用網址獲取元數據",
     "copyTagClipboard": "複製標籤資訊到剪貼簿",
     "pasteTagClipboard": "從剪貼簿貼上標籤資訊",
+    "getMetadataFromClipboardLink": "從複製的連結獲取元數據",
     "directEnter": "點擊封面進入",
     "detailPage": "詳細頁面",
     "internalViewer": "內置閱讀器",
@@ -145,7 +149,11 @@
     "keepReadingProgress": "保持閱讀進度",
     "reverseLeftRight": "反轉左右翻頁按鍵",
     "autoNextManga": "自動跳轉到下一本",
-    "accelerator": "快捷鍵"
+    "accelerator": "快捷鍵",
+    "collectTag": "標籤收藏",
+    "showCollectTag": "顯示收藏標籤",
+    "tagColor": "標籤顏色",
+    "readCount": "閱讀次數"
   },
   "c": {
     "selectCollectionList": "選擇collectionList.json",
@@ -183,7 +191,13 @@
     "confirmDelete": "將漫畫從應用中移除並刪除本地檔案, 確定？",
     "rescanSuccess": "重新掃描完成",
     "gettingMetadata": "獲取元數據中...",
-    "artist": "作者"
+    "artist": "作者",
+    "scanComplete": "掃描完成",
+    "ipBanned": "IP被臨時封禁，請切換IP或稍後再試",
+    "getMetadataFailed": "獲取元數據失敗",
+    "getMetadataComplete": "獲取元數據完成",
+    "outOfRange": "超出範圍",
+    "useTranslationCache": "使用翻譯快取"
   },
   "ac": {
     "Global": "全域",

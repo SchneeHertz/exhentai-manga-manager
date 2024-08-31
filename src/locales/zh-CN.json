@@ -6,6 +6,7 @@
     "sort_filter": "排序/筛选",
     "filter": "筛选",
     "sort": "排序",
+    "all": "全部",
     "bookmarkOnly": "仅收藏",
     "collectionOnly": "仅合集",
     "hiddenOnly": "仅隐藏",
@@ -15,6 +16,8 @@
     "postTimeDescend": "上传时间倒序",
     "ratingAscend": "评分正序",
     "ratingDescend": "评分倒序",
+    "readCountAscend": "阅读次数正序",
+    "readCountDescend": "阅读次数倒序",
     "artistAscend": "作者正序",
     "artistDescend": "作者倒序",
     "titleAscend": "标题正序",
@@ -98,6 +101,7 @@
     "getTagbyUrl": "用网址获取元数据",
     "copyTagClipboard": "复制标签信息到剪贴板",
     "pasteTagClipboard": "从剪贴板粘贴标签信息",
+    "getMetadataFromClipboardLink": "从复制的链接获取元数据",
     "directEnter": "点击封面进入",
     "detailPage": "详情页",
     "internalViewer": "内置阅读器",
@@ -145,7 +149,11 @@
     "keepReadingProgress": "保持阅读进度",
     "reverseLeftRight": "翻转左右翻页按键",
     "autoNextManga": "自动跳转到下一本",
-    "accelerator": "快捷键"
+    "accelerator": "快捷键",
+    "collectTag": "标签收藏",
+    "showCollectTag": "显示收藏标签",
+    "tagColor": "标签颜色",
+    "readCount": "阅读次数"
   },
   "c": {
     "selectCollectionList": "选择collectionList.json",
@@ -183,7 +191,13 @@
     "confirmDelete": "将漫画从软件中移除并删除本地文件, 确定？",
     "rescanSuccess": "重新扫描完成",
     "gettingMetadata": "获取元数据中...",
-    "artist": "作者"
+    "artist": "作者",
+    "scanComplete": "扫描完成",
+    "ipBanned": "IP被临时封禁，请切换IP或稍后再试",
+    "getMetadataFailed": "获取元数据失败",
+    "getMetadataComplete": "获取元数据完成",
+    "outOfRange": "超出范围",
+    "useTranslationCache": "使用翻译缓存"
   },
   "ac": {
     "Global": "全局",

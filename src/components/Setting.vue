@@ -134,6 +134,49 @@
           </el-col>
         </el-row>
       </el-tab-pane>
+      <el-tab-pane :label="$t('m.collectTag')" name="collectTag">
+        <el-row :gutter="8">
+          <el-col :span="24" class="setting-line collect-tag">
+            <draggable
+              v-model="setting.collectTag"
+              item-key="id"
+              animation="200"
+              @change="saveSetting"
+            >
+              <template #item="{element}">
+                <el-tag :color="element.color" effect="dark" closable @close="removeTag(element.id)">
+                  {{element.letter}}:{{resolvedTranslation[element.tag]?.name || element.tag}}
+                </el-tag>
+              </template>
+            </draggable>
+          </el-col>
+          <el-col :span="24" class="setting-line collect-tag">
+            <el-form :inline="true" :model="formTagAdd" :show-message="false">
+              <el-form-item :label="$t('m.tag')">
+                <el-select-v2
+                  v-model="formTagAdd.tag"
+                  filterable clearable :height="340"
+                  style="width: 500px"
+                  :options="tagListForCollect"
+                ></el-select-v2>
+              </el-form-item>
+              <el-form-item :label="$t('m.tagColor')">
+                <el-color-picker v-model="formTagAdd.color" show-alpha :predefine="moderateSoftColors"/>
+              </el-form-item>
+              <el-form-item>
+                <el-button plain @click="addTagToCollect">{{$t('m.addTag')}}</el-button>
+              </el-form-item>
+            </el-form>
+          </el-col>
+          <el-col :span="24" class="setting-switch">
+            <el-switch
+              v-model="setting.showCollectTag"
+              :active-text="$t('m.showCollectTag')"
+              @change="saveSetting"
+            />
+          </el-col>
+        </el-row>
+      </el-tab-pane>
       <el-tab-pane :label="$t('m.advanced')" name="advanced">
         <el-row :gutter="8">
           <el-col :span="24">
@@ -379,9 +422,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, h } from 'vue'
+import { ref, onMounted, h, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
+import draggable from 'vuedraggable'
 
 import { version } from '../../package.json'
 import { gh_token } from '../../secret_key.json'
@@ -390,7 +434,7 @@ import NameFormItem from './NameFormItem.vue'
 
 const { t } = useI18n()
 
-const props = defineProps(['searchTypeList'])
+const props = defineProps(['searchTypeList', 'tagListRaw', 'resolvedTranslation'])
 
 const emit = defineEmits([
   'updateSetting',
@@ -425,7 +469,7 @@ onMounted(() => {
 
 const selectLibraryPath = () => {
   ipcRenderer.invoke('select-folder', t('m.library'))
-  .then(res=>{
+  .then(res => {
     if (res) {
       setting.value.library = res
       saveSetting()
@@ -435,7 +479,7 @@ const selectLibraryPath = () => {
 
 const selectMetadataPath = () => {
   ipcRenderer.invoke('select-folder', t('m.metadataPath'))
-  .then(res=>{
+  .then(res => {
     setting.value.metadataPath = res
     saveSetting()
   })
@@ -443,7 +487,7 @@ const selectMetadataPath = () => {
 
 const selectImageExplorerPath = () => {
   ipcRenderer.invoke('select-file', t('m.imageViewer'))
-  .then(res=>{
+  .then(res => {
     if (res) {
       setting.value.imageExplorer = `"${res}"`
       saveSetting()
@@ -452,12 +496,12 @@ const selectImageExplorerPath = () => {
 }
 
 const loadTranslationFromEhTagTranslation = async () => {
-  let resultObject = {}
+  const resultObject = {}
   emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache') || "{}"))
   await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
   .then(res => res.json())
   .then(res => {
-    let sourceTranslationDatabase = res.data
+    const sourceTranslationDatabase = res.data
     _.forIn(sourceTranslationDatabase, cat => {
       _.forIn(cat.data, (value, key) => {
         resultObject[key] = _.pick(value, ['name', 'intro'])
@@ -468,7 +512,7 @@ const loadTranslationFromEhTagTranslation = async () => {
   })
   .catch((error) => {
     console.log(error)
-    emit('message', 'warning', 'use translation from cache')
+    emit('message', 'warning', t('c.useTranslationCache'))
   })
 }
 
@@ -505,8 +549,8 @@ const autoCheckUpdates = async (forceShowDialog) => {
   })
   .then(res => res.json())
   .then(res => {
-    let { tag_name, html_url, body } = res
-    let skipVersion = localStorage.getItem('skipVersion')
+    const { tag_name, html_url, body } = res
+    const skipVersion = localStorage.getItem('skipVersion')
     if (tag_name && tag_name !== 'v' + version && tag_name !== skipVersion) {
       ElMessageBox.confirm(
         h('pre', { innerHTML: body, style: 'font-family: Avenir, Helvetica, Arial, sans-serif'}),
@@ -517,7 +561,7 @@ const autoCheckUpdates = async (forceShowDialog) => {
           cancelButtonText: t('c.skipVersion')
         }
       )
-      .then(()=>{
+      .then(() => {
         ipcRenderer.invoke('open-url', html_url)
       })
       .catch((action) => {
@@ -545,7 +589,7 @@ const changeTheme = (classValue) => {
   document.documentElement.setAttribute('class', classValue)
 }
 const handleLanguageChange = (val) => {
-  ipcRenderer.invoke('get-locale').then(localeString=>{
+  ipcRenderer.invoke('get-locale').then(localeString => {
     let languageCode
     if (!val || (val === 'default')) {
       languageCode = localeString
@@ -568,16 +612,74 @@ const openLink = (link) => {
 
 
 const exportDatabase = async () => {
-  let folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
+  const folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
   await ipcRenderer.invoke('export-database', folder)
   emit('message', 'success', t('c.exportMessage'))
 }
 
 const importDatabase = async () => {
-  let collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'))
-  let metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'))
+  const collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'))
+  const metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'))
   await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
   emit('message', 'success', t('c.importMessage'))
+}
+
+const formTagAdd = ref({
+  tag: null,
+  color: '#42A5F5'
+})
+
+const tagListForCollect = computed(() => {
+  if (setting.value.showTranslation) {
+    return props.tagListRaw.map(({letter, cat, tag, id}) => {
+      const labelHeader = cat === 'group' ? '团队' : props.resolvedTranslation[cat]?.name || cat
+      const labelTail = props.resolvedTranslation[tag]?.name || tag
+      return {
+        label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
+        value: id
+      }
+    })
+  } else {
+    return props.tagListRaw.map(({letter, cat, tag, id}) => {
+      return {
+        label: `${cat}:${tag} || ${letter}:"${tag}"$`,
+        value: id
+      }
+    })
+  }
+})
+
+const moderateSoftColors = [
+  '#FF6F61', // 略微柔和但鲜艳的珊瑚红
+  '#F48FB1', // 鲜明的粉红色
+  '#42A5F5', // 鲜艳的蓝色
+  '#66BB6A', // 鲜艳的绿色
+  '#FFCA28', // 亮黄色
+  '#AB47BC', // 鲜亮的紫色
+  '#26A69A', // 热带青色
+  '#FFA726', // 鲜亮的橙色
+  '#8D6E63', // 保存自然的棕色
+  '#78909C'  // 鲜明的灰蓝色
+]
+
+const addTagToCollect = () => {
+  const tag = props.tagListRaw.find(tag => tag.id === formTagAdd.value.tag)
+  if (!setting.value.collectTag) setting.value.collectTag = []
+  setting.value.collectTag.push({
+    id: tag.id,
+    letter: tag.letter,
+    cat: tag.cat,
+    tag: tag.tag,
+    color: formTagAdd.value.color
+  })
+  setting.value.collectTag = _.uniqBy(setting.value.collectTag, 'id')
+  formTagAdd.value.tag = null
+  saveSetting()
+}
+
+const removeTag = (id) => {
+  setting.value.collectTag = setting.value.collectTag.filter(tag => tag.id !== id)
+  saveSetting()
 }
 
 const dialogVisibleSetting = ref(false)
@@ -601,6 +703,13 @@ defineExpose({
 .setting-line.regexp
   .el-input__inner
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace
+.setting-line.collect-tag
+  .el-form-item
+    margin-bottom: 0
+  .el-tag
+    margin-right: 8px
+    margin-bottom: 8px
+    border-width: 0
 .setting-switch
   text-align: left
   margin-top: 6px

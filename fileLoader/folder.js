@@ -17,8 +17,8 @@ const dirSize = async dir => {
   return (await Promise.all(filesize)).flat(Infinity).reduce((i, size) => i + size, 0)
 }
 
-let getFolderlist = async (libraryPath)=>{
-  let imageList = globIterate('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
+const getFolderlist = async (libraryPath) => {
+  const imageList = globIterate('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: libraryPath,
     nocase: true,
     follow: true,
@@ -32,36 +32,36 @@ let getFolderlist = async (libraryPath)=>{
   return list
 }
 
-let solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH)=>{
+const solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH) => {
   let list = globSync('*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: folderpath,
     nocase: true
   })
-  list = list.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f=>path.join(folderpath, f))
+  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f => path.join(folderpath, f))
   let targetFilePath
   if (list.length > 8) {
     targetFilePath = list[7]
   } else {
     targetFilePath = list[0]
   }
-  let tempCoverPath = list[0]
-  let coverPath = path.join(COVER_PATH, nanoid() + '.webp')
-  let fileStat = await stat(folderpath)
-  let bundleSize = await dirSize(folderpath)
+  const tempCoverPath = list[0]
+  const coverPath = path.join(COVER_PATH, nanoid() + '.webp')
+  const fileStat = await stat(folderpath)
+  const bundleSize = await dirSize(folderpath)
   return {targetFilePath, tempCoverPath, coverPath, pageCount: list.length, bundleSize, mtime: fileStat?.mtime}
 }
 
-let getImageListFromFolder = async (folderpath, VIEWER_PATH)=>{
+const getImageListFromFolder = async (folderpath, VIEWER_PATH) => {
   let list = globSync('*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: folderpath,
     nocase: true
   })
-  list = list.sort((a,b)=>a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f=>path.join(folderpath, f))
+  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f => path.join(folderpath, f))
   return list
 }
 
-let deleteImageFromFolder = async (filename, folderpath) => {
-  let filepath = path.join(folderpath, filename)
+const deleteImageFromFolder = async (filename, folderpath) => {
+  const filepath = path.join(folderpath, filename)
   await shell.trashItem(filepath)
   return true
 }

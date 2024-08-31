@@ -1,7 +1,7 @@
 {
   "name": "exhentai-manga-manager",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.6.1",
   "author": "SchneeHertz",
   "description": "Tag-based management, reading manga downloaded from ExHentai",
   "repository": {
@@ -77,7 +77,10 @@
     "chart.js": "^4.4.3",
     "electron": "^26.2.3",
     "electron-builder": "^24.6.4",
-    "element-plus": "^2.7.5",
+    "element-plus": "^2.8.1",
+    "eslint": "^9.9.0",
+    "eslint-plugin-vue": "^9.27.0",
+    "globals": "^15.9.0",
     "he": "^1.2.0",
     "linkifyjs": "^3.0.5",
     "stylus": "^0.57.0",

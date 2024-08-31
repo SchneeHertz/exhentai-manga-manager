@@ -26,6 +26,8 @@
 
 中文介绍 | [English Readme](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README_EN.md) | [日本語の説明](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/README_JA.md)
 
+**[FAQ](https://github.com/SchneeHertz/exhentai-manga-manager/wiki/FAQ)**
+
 </div>
 
 ![cover.jpg](https://raw.githubusercontent.com/SchneeHertz/exhentai-manga-manager/master/screenshots/cover.jpg)

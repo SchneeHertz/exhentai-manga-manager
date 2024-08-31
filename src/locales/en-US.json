@@ -6,6 +6,7 @@
     "sort_filter": "Sort/Filter",
     "filter": "Filter",
     "sort": "Sort",
+    "all": "All",
     "bookmarkOnly": "Bookmark Only",
     "collectionOnly": "Collection Only",
     "hiddenOnly": "Hidden Only",
@@ -15,6 +16,8 @@
     "postTimeDescend": "PostTime Descend",
     "ratingAscend": "Rating Ascend",
     "ratingDescend": "Rating Descend",
+    "readCountAscend": "ReadCount Ascend",
+    "readCountDescend": "ReadCount Descend",
     "artistAscend": "Artist Ascend",
     "artistDescend": "Artist Descend",
     "titleAscend": "Title Ascend",
@@ -98,6 +101,7 @@
     "getTagbyUrl": "Get Tag by Url",
     "copyTagClipboard": "Copy Tag to Clipboard",
     "pasteTagClipboard": "Paste Tag from Clipboard",
+    "getMetadataFromClipboardLink": "Get Metadata from Copied Link",
     "directEnter": "Click Cover To",
     "detailPage": "Detail Page",
     "internalViewer": "Internal Viewer",
@@ -145,11 +149,15 @@
     "keepReadingProgress": "Keep Reading Progress",
     "reverseLeftRight": "Reverse the left and right page-turning buttons",
     "autoNextManga": "Auto Next Manga",
-    "accelerator": "Accelerator"
+    "accelerator": "Accelerator",
+    "collectTag": "Collect Tag",
+    "showCollectTag": "Show Collect Tag",
+    "tagColor": "Tag Color",
+    "readCount": "Reading Count"
   },
   "c": {
     "selectCollectionList": "Select collectionList.json",
-    "selectMetadataSqlite": "Se;ect metadata.sqlite",
+    "selectMetadataSqlite": "Select metadata.sqlite",
     "importMessage": "Import is complete, if the imported data have collections, you need to open and edit the collection and save it manually",
     "exportFolder": "Choose the folder to export metadata and collectionList.json",
     "exportMessage": "Export completed, please go to the selected folder to view collectionList.json and metadata.sqlite.",
@@ -183,7 +191,13 @@
     "confirmDelete": "Remove the manga from app and delete the local file, OK?",
     "rescanSuccess": "Rescan successful",
     "gettingMetadata": "Getting metadata...",
-    "artist": "Artist"
+    "artist": "Artist",
+    "scanComplete": "Scan complete",
+    "ipBanned": "IP is temporarily banned, please switch IP or try again later",
+    "getMetadataFailed": "Get metadata failed",
+    "getMetadataComplete": "Get metadata complete",
+    "outOfRange": "Out of range",
+    "useTranslationCache": "Use translation cache"
   },
   "ac": {
     "Global": "Global",

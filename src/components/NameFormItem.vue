@@ -27,11 +27,11 @@ export default {
     initStyle: Object,
     prependWidth: {
       type: String,
-      default: ()=>'4em'
+      default: () => '4em'
     },
     appendWidth: {
       type: String,
-      default: ()=>'4em'
+      default: () => '4em'
     }
   }
 }

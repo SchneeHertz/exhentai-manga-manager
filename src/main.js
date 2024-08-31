@@ -30,4 +30,41 @@ app.use(createI18n({
   legacy: false,
   messages
 }))
+
+// 创建一个共享的 IntersectionObserver 实例
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target
+      const callback = el._lazyCallback
+      const arg = el._lazyArg
+
+      if (callback && typeof callback === 'function') {
+        callback(arg)
+      }
+      observer.unobserve(el)
+    }
+  })
+}, {
+  threshold: 0.1
+})
+
+app.directive('lazy', {
+  mounted(el, binding) {
+    // 将回调和参数存储在元素上，以便在观察者中访问
+    el._lazyCallback = binding.value
+    el._lazyArg = binding.arg
+
+    // 添加元素到 IntersectionObserver 中
+    observer.observe(el)
+  },
+  unmounted(el) {
+    // 取消观察元素并清理
+    observer.unobserve(el)
+    delete el._lazyCallback
+    delete el._lazyArg
+  }
+})
+
+
 app.mount('#app')

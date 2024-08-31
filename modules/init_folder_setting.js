@@ -8,9 +8,9 @@ let STORE_PATH = app.getPath('userData')
 if (!fs.existsSync(STORE_PATH)) {
   fs.mkdirSync(STORE_PATH)
 }
-let rootPath = getRootPath()
+const rootPath = getRootPath()
 try {
-  let dataPath = path.join(rootPath, 'data')
+  const dataPath = path.join(rootPath, 'data')
   fs.accessSync(dataPath)
   STORE_PATH = dataPath
 } catch {

@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="dialogVisibleEhSearch"
-    width="60%"
+    width="60vw"
     :title="$t('m.search')"
     destroy-on-close
     class="dialog-search"
@@ -25,6 +25,12 @@
           @click="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
         />
       </el-form-item>
+      <el-form-item>
+        <el-button
+          type="primary" plain :icon="Link"
+          @click="redirectSearch(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+        />
+      </el-form-item>
     </el-form>
     <div v-loading="searchResultLoading">
       <div class="search-result" v-if="ehSearchResultList.length > 0">
@@ -43,6 +49,7 @@
 <script setup>
 import { ref } from 'vue'
 import { Search32Filled } from '@vicons/fluent'
+import { Link } from '@element-plus/icons-vue'
 
 const props = defineProps(['cookie', 'searchTypeList', 'setting'])
 
@@ -66,7 +73,7 @@ const openSearchDialog = (book, server) => {
 }
 
 const returnTrimFileName = (book) => {
-  let fileNameWithExtension = book.filepath.split(/[/\\]/).pop()
+  const fileNameWithExtension = book.filepath.split(/[/\\]/).pop()
   let fileNameWithoutExtension = fileNameWithExtension
   try {
     if (book.type !== 'folder') {
@@ -123,11 +130,33 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
   return resultList
 }
 
+const redirectSearch = (bookHash, title, server = 'e-hentai') => {
+  let url
+  switch (server) {
+    case 'e-hentai':
+      url = `https://e-hentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=161`
+      break
+    case 'exhentai':
+      url = `https://exhentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=161`
+      break
+    case 'e-search':
+      url = `https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=161`
+      break
+    case 'exsearch':
+      url = `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=161`
+      break
+    case 'hentag':
+      url = `https://hentag.com/?t=${encodeURI(title)}`
+      break
+  }
+  ipcRenderer.invoke('open-url', url)
+}
+
 const resolveEhentaiResult = (htmlString) => {
   try {
-    let resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.gl3c.glname')
+    const resultNodes = new DOMParser().parseFromString(htmlString, 'text/html').querySelectorAll('.gl3c.glname')
     ehSearchResultList.value = []
-    resultNodes.forEach((node)=>{
+    resultNodes.forEach((node) => {
       ehSearchResultList.value.push({
         title: node.querySelector('.glink').innerHTML,
         url: node.querySelector('a').getAttribute('href'),
@@ -138,17 +167,17 @@ const resolveEhentaiResult = (htmlString) => {
   } catch (e) {
     console.log(e)
     if (htmlString.includes('Your IP address has been')) {
-      emit('message', 'error', 'Your IP address has been temporarily banned')
+      emit('message', 'error', t('c.ipBanned'))
     } else {
-      emit('message', 'error', 'Get tag failed')
+      emit('message', 'error', t('c.getMetadataFailed'))
     }
   }
 }
 const resolveHentagResult = (data) => {
-  let resultList = data.works.slice(0, 10)
+  const resultList = data.works.slice(0, 10)
   ehSearchResultList.value = []
-  resultList.forEach((result)=>{
-    let findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))
+  resultList.forEach((result) => {
+    const findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))
     if (findExUrl) {
       ehSearchResultList.value.push({
         title: result.title,
@@ -180,7 +209,7 @@ defineExpose({
   .el-form-item
     margin-right: 4px
   .search-input
-    width: calc(60vw - 106px)
+    width: calc(60vw - 152px)
   .search-type-select
     width: 160px
   .search-result-ind

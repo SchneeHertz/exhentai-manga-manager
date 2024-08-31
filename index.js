@@ -33,6 +33,20 @@ if (setting.metadataPath) {
   metadataSqliteFile = path.join(STORE_PATH, './metadata.sqlite')
 }
 let Metadata = prepareMetadataModel(metadataSqliteFile)
+const getColumns = async (sequelize, tableName) => {
+  const query = `PRAGMA table_info(${tableName})`
+  const [results] = await sequelize.query(query)
+  return results.map(column => column.name)
+}
+;(async () => {
+  const columns = await getColumns(Manga.sequelize, 'Mangas')
+  if (['hiddenBook', 'readCount'].some(c => !columns.includes(c))) {
+    await Manga.sync({ alter: true })
+  } else {
+    await Manga.sync()
+  }
+  await Metadata.sync()
+})()
 
 const logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
 const logStdout = process.stdout
@@ -60,7 +74,7 @@ let mainWindow
 let screenWidth
 let sendImageLock = false
 const createWindow = () => {
-  let mainWindowState = windowStateKeeper({
+  const mainWindowState = windowStateKeeper({
     defaultWidth: 1560,
     defaultHeight: 1000
   })
@@ -83,11 +97,11 @@ const createWindow = () => {
   }
   win.setMenuBarVisibility(false)
   win.setAutoHideMenuBar(true)
-  let menu = Menu.buildFromTemplate(prepareTemplate(win))
+  const menu = Menu.buildFromTemplate(prepareTemplate(win))
   Menu.setApplicationMenu(menu)
   win.webContents.on('did-finish-load', () => {
-    let name = require('./package.json').name
-    let version = require('./package.json').version
+    const name = require('./package.json').name
+    const version = require('./package.json').version
     win.setTitle(name + ' ' + version)
   })
   win.once('ready-to-show', () => {
@@ -96,11 +110,9 @@ const createWindow = () => {
   return win
 }
 
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=8192')
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=65536')
 // app.disableHardwareAcceleration()
 app.whenReady().then(async () => {
-  await Manga.sync()
-  await Metadata.sync()
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
   mainWindow = createWindow()
@@ -134,8 +146,8 @@ process.on('exit', () => {
 // base function
 const loadBookListFromBrFile = async () => {
   try {
-    let buffer = await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json.br'))
-    let decodeBuffer = await promisify(brotliDecompress)(buffer)
+    const buffer = await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json.br'))
+    const decodeBuffer = await promisify(brotliDecompress)(buffer)
     return JSON.parse(decodeBuffer.toString())
   } catch {
     return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), { encoding: 'utf-8' }))
@@ -143,7 +155,7 @@ const loadBookListFromBrFile = async () => {
 }
 
 const loadLegecyBookListFromFile = async () => {
-  let bookList = await loadBookListFromBrFile()
+  const bookList = await loadBookListFromBrFile()
   try {
     shell.trashItem(path.join(STORE_PATH, 'bookList.json.br'))
     shell.trashItem(path.join(STORE_PATH, 'bookList.json'))
@@ -162,10 +174,10 @@ const loadBookListFromDatabase = async () => {
   }
   let metadataList = await Metadata.findAll()
   metadataList = metadataList.map(m => m.toJSON())
-  let bookListLength = bookList.length
+  const bookListLength = bookList.length
   for (let i = 0; i < bookListLength; i++) {
-    let book = bookList[i]
-    let findMetadata = metadataList.find(m=>m.hash === book.hash)
+    const book = bookList[i]
+    const findMetadata = metadataList.find(m => m.hash === book.hash)
     if (findMetadata) {
       Object.assign(book, findMetadata)
     } else {
@@ -210,10 +222,11 @@ const clearFolder = async (Folder) => {
 // library and metadata
 ipcMain.handle('load-book-list', async (event, scan) => {
   if (scan) {
+    sendMessageToWebContents('Start loading library')
+
     const bookList = await Manga.findAll({ raw: true })
     bookList.forEach(b => b.exist = false)
 
-    sendMessageToWebContents('start loading library')
     let list = await getBookFilelist(setting.library)
     if (!_.isEmpty(setting.excludeFile)) {
       let excludeRe
@@ -224,18 +237,18 @@ ipcMain.handle('load-book-list', async (event, scan) => {
         console.log('Illegal regular expressions')
       }
     }
-    let listLength = list.length
-    sendMessageToWebContents(`load ${listLength} book from library`)
+    const listLength = list.length
+    sendMessageToWebContents(`Load ${listLength} book from library`)
 
     for (let i = 0; i < listLength; i++) {
       try {
-        let { filepath, type } = list[i]
-        let foundData = bookList.find(b => b.filepath === filepath)
+        const { filepath, type } = list[i]
+        const foundData = bookList.find(b => b.filepath === filepath)
         if (foundData === undefined) {
-          let id = nanoid()
-          let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
+          const id = nanoid()
+          const { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
           if (targetFilePath && coverPath) {
-            let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+            const hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
             const newBook = {
               title: path.basename(filepath),
               coverPath,
@@ -263,24 +276,24 @@ ipcMain.handle('load-book-list', async (event, scan) => {
           await clearFolder(TEMP_PATH)
         }
       } catch (e) {
-        sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
+        sendMessageToWebContents(`Load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
       }
     }
     await clearFolder(TEMP_PATH)
 
     const existData = bookList.filter(b => b.exist === true)
     try {
-      let coverList = await fs.promises.readdir(COVER_PATH)
-      let existCoverList = existData.map(b => b.coverPath)
-      let removeCoverList = _.difference(coverList.map(p => path.join(COVER_PATH, p)), existCoverList)
-      for (let coverPath of removeCoverList) {
+      const coverList = await fs.promises.readdir(COVER_PATH)
+      const existCoverList = existData.map(b => b.coverPath)
+      const removeCoverList = _.difference(coverList.map(p => path.join(COVER_PATH, p)), existCoverList)
+      for (const coverPath of removeCoverList) {
         await fs.promises.rm(coverPath)
       }
     } catch (err) {
       console.log(err)
     }
     const removeData = bookList.filter(b => b.exist === false)
-    for (let book of removeData) {
+    for (const book of removeData) {
       await Manga.destroy({ where: { id: book.id } })
     }
     setProgressBar(-1)
@@ -292,7 +305,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
   await Manga.destroy({ truncate: true })
   await clearFolder(TEMP_PATH)
   await clearFolder(COVER_PATH)
-  sendMessageToWebContents('start loading library')
+  sendMessageToWebContents('Start loading library')
   let list = await getBookFilelist(setting.library)
   if (!_.isEmpty(setting.excludeFile)) {
     let excludeRe
@@ -303,15 +316,15 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
       console.log('Illegal regular expressions')
     }
   }
-  let listLength = list.length
-  sendMessageToWebContents(`load ${listLength} book from library`)
+  const listLength = list.length
+  sendMessageToWebContents(`Load ${listLength} book from library`)
   for (let i = 0; i < listLength; i++) {
     try {
-      let { filepath, type } = list[i]
-      let id = nanoid()
-      let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
+      const { filepath, type } = list[i]
+      const id = nanoid()
+      const { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
       if (targetFilePath && coverPath) {
-        let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+        const hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         await Manga.create({
           title: path.basename(filepath),
           coverPath,
@@ -330,7 +343,7 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
       if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
       setProgressBar(i / listLength)
     } catch (e) {
-      sendMessageToWebContents(`load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
+      sendMessageToWebContents(`Load ${list[i].filepath} failed because ${e}, ${i + 1} of ${listLength}`)
     }
   }
   await clearFolder(TEMP_PATH)
@@ -340,26 +353,26 @@ ipcMain.handle('force-gene-book-list', async (event, arg) => {
 })
 
 ipcMain.handle('patch-local-metadata', async (event, arg) => {
-  let bookList = await loadBookListFromDatabase()
-  let bookListLength = bookList.length
+  const bookList = await loadBookListFromDatabase()
+  const bookListLength = bookList.length
   await clearFolder(TEMP_PATH)
   await clearFolder(COVER_PATH)
 
   for (let i = 0; i < bookListLength; i++) {
     try {
-      let book = bookList[i]
+      const book = bookList[i]
       let { filepath, type } = book
       if (!type) type = 'archive'
-      let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
+      const { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
       if (targetFilePath && coverPath) {
-        let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+        const hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
         _.assign(book, { type, coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
         await saveBookToDatabase(book)
       }
       if ((i + 1) % 50 === 0) await clearFolder(TEMP_PATH)
       setProgressBar(i / bookListLength)
     } catch (e) {
-      sendMessageToWebContents(`patch ${bookList[i].filepath} failed because ${e}`)
+      sendMessageToWebContents(`Patch ${bookList[i].filepath} failed because ${e}`)
     }
   }
 
@@ -372,14 +385,14 @@ ipcMain.handle('patch-local-metadata-by-book', async (event, book) => {
   let { filepath, type } = book
   if (!type) type = 'archive'
   try {
-    let { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
+    const { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
     if (targetFilePath && coverPath) {
-      let hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+      const hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
       await clearFolder(TEMP_PATH)
       return Promise.resolve({ coverPath, hash, pageCount, bundleSize, mtime: mtime.toJSON(), coverHash })
     }
   } catch (e) {
-    sendMessageToWebContents(`patch ${book.filepath} failed because ${e}`)
+    sendMessageToWebContents(`Patch ${book.filepath} failed because ${e}`)
     await clearFolder(TEMP_PATH)
     return Promise.reject()
   }
@@ -393,11 +406,11 @@ ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
       },
       agent: new HttpsProxyAgent(setting.proxy)
     })
-      .then(res=>{
+      .then(res => {
         return res.text()
       })
       .catch(e => {
-        sendMessageToWebContents(`get ex page failed because ${e}`)
+        sendMessageToWebContents(`Get ex page failed because ${e}`)
       })
   } else {
     return await fetch(url, {
@@ -405,11 +418,11 @@ ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
         Cookie: cookie
       }
     })
-      .then(res=>{
+      .then(res => {
         return res.text()
       })
       .catch(e => {
-        sendMessageToWebContents(`get ex page failed because ${e}`)
+        sendMessageToWebContents(`Get ex page failed because ${e}`)
       })
   }
 })
@@ -425,11 +438,11 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
       },
       agent: new HttpsProxyAgent(setting.proxy)
     })
-      .then(res=>{
+      .then(res => {
         return res.text()
       })
       .catch(e => {
-        sendMessageToWebContents(`get ex data failed because ${e}`)
+        sendMessageToWebContents(`Get ex data failed because ${e}`)
       })
   } else {
     return await fetch(url, {
@@ -440,11 +453,11 @@ ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
         'Content-Type': 'application/json'
       }
     })
-      .then(res=>{
+      .then(res => {
         return res.text()
       })
       .catch(e => {
-        sendMessageToWebContents(`get ex data failed because ${e}`)
+        sendMessageToWebContents(`Get ex data failed because ${e}`)
       })
   }
 })
@@ -455,16 +468,16 @@ ipcMain.handle('save-book', async (event, book) => {
 
 // home
 ipcMain.handle('get-folder-tree', async (event, bookList) => {
-  let folderList = [...new Set(bookList.map(b => path.dirname(b.filepath)))]
-  let librarySplitPathsLength = setting.library.split(path.sep).length - 1
-  let bookPathSplitList = folderList.sort().map(fp => fp.split(path.sep).slice(librarySplitPathsLength))
-  let folderTreeObject = {}
-  for (let folders of bookPathSplitList) {
+  const folderList = [...new Set(bookList.map(b => path.dirname(b.filepath)))]
+  const librarySplitPathsLength = setting.library.split(path.sep).length - 1
+  const bookPathSplitList = folderList.sort().map(fp => fp.split(path.sep).slice(librarySplitPathsLength))
+  const folderTreeObject = {}
+  for (const folders of bookPathSplitList) {
     _.set(folderTreeObject, folders.map(f => '_' + f), {})
   }
-  let resolveTree = (preRoot, tree, initFolder) => {
+  const resolveTree = (preRoot, tree, initFolder) => {
     _.forIn(tree, (node, label) => {
-      let trueLabel = label.slice(1)
+      const trueLabel = label.slice(1)
       if (_.isEmpty(node)) {
         preRoot.push({
           label: trueLabel,
@@ -502,8 +515,8 @@ ipcMain.handle('show-file', async (event, filepath) => {
 })
 
 ipcMain.handle('use-new-cover', async (event, filepath) => {
-  let copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(filepath))
-  let coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
+  const copyTempCoverPath = path.join(TEMP_PATH, nanoid(8) + path.extname(filepath))
+  const coverPath = path.join(COVER_PATH, nanoid() + path.extname(filepath))
   try {
     await fs.promises.copyFile(filepath, copyTempCoverPath)
     await sharp(copyTempCoverPath, { failOnError: false })
@@ -514,7 +527,7 @@ ipcMain.handle('use-new-cover', async (event, filepath) => {
     .toFile(coverPath)
     return coverPath
   } catch (e) {
-    sendMessageToWebContents(`generate cover from ${filepath} failed because ${e}`)
+    sendMessageToWebContents(`Generate cover from ${filepath} failed because ${e}`)
   }
 })
 
@@ -533,20 +546,20 @@ ipcMain.handle('delete-local-book', async (event, filepath) => {
 ipcMain.handle('load-manga-image-list', async (event, book) => {
   await clearFolder(VIEWER_PATH)
 
-  let { filepath, type, id: bookId } = book
-  let list = await getImageListByBook(filepath, type)
+  const { filepath, type, id: bookId } = book
+  const list = await getImageListByBook(filepath, type)
 
   sendImageLock = true
   ;(async () => {
     // 384 is the default 4K screen width divided by the default number of thumbnail columns
-    let thumbnailWidth = _.isFinite(screenWidth / setting.thumbnailColumn) ? Math.floor(screenWidth / setting.thumbnailColumn) : 384
-    let widthLimit = _.isNumber(setting.widthLimit) ? Math.ceil(setting.widthLimit) : screenWidth
+    const thumbnailWidth = _.isFinite(screenWidth / setting.thumbnailColumn) ? Math.floor(screenWidth / setting.thumbnailColumn) : 384
+    const widthLimit = _.isNumber(setting.widthLimit) ? Math.ceil(setting.widthLimit) : screenWidth
     for (let index = 1; index <= list.length; index++) {
       if (sendImageLock) {
         let imageFilepath = list[index - 1]
-        let extname = path.extname(imageFilepath)
+        const extname = path.extname(imageFilepath)
         if (imageFilepath.search(/[%#]/) >= 0 || type === 'folder') {
-          let newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(8)}${extname}`)
+          const newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(8)}${extname}`)
           await fs.promises.copyFile(imageFilepath, newFilepath)
           imageFilepath = newFilepath
         }
@@ -554,7 +567,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
         if (widthLimit !== 0 && width > widthLimit) {
           height = Math.floor(height * (widthLimit / width))
           width = widthLimit
-          let resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}.jpg`)
+          const resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}.jpg`)
           switch (extname) {
             case '.gif':
               break
@@ -566,7 +579,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
               break
           }
         }
-        let filename = path.basename(list[index - 1])
+        const filename = path.basename(list[index - 1])
         mainWindow.webContents.send('manga-image', {
           id: `${bookId}_${index}`,
           index,
@@ -574,7 +587,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           filepath: imageFilepath,
           width, height
         })
-        ;(async ()=>{
+        ;(async () => {
           let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
           switch (extname) {
             case '.gif':
@@ -611,7 +624,7 @@ ipcMain.handle('delete-image', async (event, filename, filepath, type) => {
 
 // setting
 ipcMain.handle('select-folder', async (event, title) => {
-  let result = await dialog.showOpenDialog(mainWindow, {
+  const result = await dialog.showOpenDialog(mainWindow, {
     title,
     properties: ['openDirectory']
   })
@@ -623,7 +636,7 @@ ipcMain.handle('select-folder', async (event, title) => {
 })
 
 ipcMain.handle('select-file', async (event, title) => {
-  let result = await dialog.showOpenDialog(mainWindow, {
+  const result = await dialog.showOpenDialog(mainWindow, {
     title,
     properties: ['openFile']
   })
@@ -670,7 +683,7 @@ ipcMain.handle('export-database', async (event, folder) => {
 })
 
 ipcMain.handle('import-database', async (event, arg) => {
-  let { collectionListPath, metadataSqlitePath } = arg
+  const { collectionListPath, metadataSqlitePath } = arg
   await Metadata.sequelize.close()
   await fs.promises.copyFile(collectionListPath, path.join(STORE_PATH, 'collectionList.json'))
   await fs.promises.copyFile(metadataSqlitePath, metadataSqliteFile)
@@ -679,7 +692,7 @@ ipcMain.handle('import-database', async (event, arg) => {
 })
 
 ipcMain.handle('import-sqlite', async (event, bookList) => {
-  let result = await dialog.showOpenDialog(mainWindow, {
+  const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile']
   })
   if (!result.canceled) {
@@ -688,12 +701,12 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
       driver: sqlite3.Database
     })
     try {
-      let re = /'/g
-      let bookListLength = bookList.length
+      const re = /'/g
+      const bookListLength = bookList.length
       for (let i = 0; i < bookListLength; i++) {
-        let book = bookList[i]
+        const book = bookList[i]
         if (book.status !== 'tagged') {
-          let metadata = await db.get('SELECT * FROM gallery WHERE thumb LIKE ?', `%${book.coverHash}%`)
+          const metadata = await db.get('SELECT * FROM gallery WHERE thumb LIKE ?', `%${book.coverHash}%`)
           if (metadata) {
             metadata.tags = {
               language: metadata.language ? JSON.parse(metadata.language.replace(re, '\"')) : undefined,
@@ -759,8 +772,8 @@ ipcMain.handle('read-text-from-clipboard', async () => {
 })
 
 ipcMain.handle('update-window-title', async (event, title) => {
-  let name = require('./package.json').name
-  let version = require('./package.json').version
+  const name = require('./package.json').name
+  const version = require('./package.json').version
   if (title) {
     mainWindow.setTitle(name + ' ' + version + ' | ' + title)
   } else {

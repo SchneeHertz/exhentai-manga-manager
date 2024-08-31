@@ -7,6 +7,6 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 })
 
 contextBridge.exposeInMainWorld('electronFunction', {
-  'get-zoom-level': ()=>webFrame.getZoomLevel(),
-  'set-zoom-level': (level)=>webFrame.setZoomLevel(level)
+  'get-zoom-level': () => webFrame.getZoomLevel(),
+  'set-zoom-level': (level) => webFrame.setZoomLevel(level)
 })

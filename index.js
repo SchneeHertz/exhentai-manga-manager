@@ -179,6 +179,7 @@ const loadBookListFromDatabase = async () => {
     const book = bookList[i]
     const findMetadata = metadataList.find(m => m.hash === book.hash)
     if (findMetadata) {
+      if (book.status === 'non-tag' && findMetadata.status !== 'non-tag') await Manga.update(findMetadata, { where: { id: book.id } })
       Object.assign(book, findMetadata)
     } else {
       setProgressBar((i + 1) / bookListLength)

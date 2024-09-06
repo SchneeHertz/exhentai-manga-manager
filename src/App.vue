@@ -1186,7 +1186,10 @@ export default defineComponent({
       if (event.button === 3) {
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
         // clear search result when at home page
-        if (this.currentUI() === 'home') this.handleSearchStringChange()
+        if (this.currentUI() === 'home') {
+          this.handleSearchStringChange()
+          this.$refs.treeRef.setCurrentKey('')
+        }
       }
     },
     switchFullscreen () {

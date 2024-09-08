@@ -241,8 +241,10 @@ onMounted(() => {
 })
 
 const drawerHeight = ref('100%')
+const readyDestroyViewer = ref(false)
 
 const viewManga = (book, viewerHeight = '100%') => {
+  readyDestroyViewer.value = false
   drawerHeight.value = viewerHeight
   viewerImageList.value = []
   receiveThumbnailList.value = []
@@ -453,7 +455,10 @@ const getCurrentImageId = () => {
   }
   return currentImageId.value
 }
+
+
 const saveReadingProgress = () => {
+  readyDestroyViewer.value = true
   try {
     let currentImageId = getCurrentImageId()
     const currentImageIndex = viewerImageList.value.findIndex(image => image.id === currentImageId)
@@ -531,7 +536,7 @@ const handleJumpToReadingProgress = async (book) => {
   const findProgress = viewerReadingProgress.value.find(progress => progress.bookId === book.id)
   if (findProgress) {
     const timer = ms => new Promise(res => setTimeout(res, ms))
-    while (true) {
+    while (!readyDestroyViewer.value) {
       if (imageStyleType.value === 'scroll' || imageStyleType.value === 'single') {
         if (viewerImageList.value.findIndex(image => image.id === findProgress.pageId) >= 0) {
           handleClickThumbnail(findProgress.pageId)

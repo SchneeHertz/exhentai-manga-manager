@@ -150,7 +150,11 @@ const loadBookListFromBrFile = async () => {
     const decodeBuffer = await promisify(brotliDecompress)(buffer)
     return JSON.parse(decodeBuffer.toString())
   } catch {
-    return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), { encoding: 'utf-8' }))
+    try {
+      return JSON.parse(await fs.promises.readFile(path.join(STORE_PATH, 'bookList.json'), { encoding: 'utf-8' }))
+    } catch {
+      return []
+    }
   }
 }
 
@@ -179,6 +183,7 @@ const loadBookListFromDatabase = async () => {
     const book = bookList[i]
     const findMetadata = metadataList.find(m => m.hash === book.hash)
     if (findMetadata) {
+      if (book.status === 'non-tag' && findMetadata.status !== 'non-tag') await Manga.update(findMetadata, { where: { id: book.id } })
       Object.assign(book, findMetadata)
     } else {
       setProgressBar((i + 1) / bookListLength)

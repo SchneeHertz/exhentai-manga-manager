@@ -1245,13 +1245,18 @@ export default defineComponent({
       })
     },
     async loadBookList (scan) {
-      this.buttonLoadBookListLoading = true
-      const res = await ipcRenderer.invoke('load-book-list', scan)
-      this.bookList = this.prepareBookList(res)
-      this.loadCollectionList()
-      this.geneFolderTree()
-      this.selectBookList = []
-      this.buttonLoadBookListLoading = false
+      try {
+        this.buttonLoadBookListLoading = true
+        const res = await ipcRenderer.invoke('load-book-list', scan)
+        this.bookList = this.prepareBookList(res)
+        this.loadCollectionList()
+        this.geneFolderTree()
+        this.selectBookList = []
+        this.buttonLoadBookListLoading = false
+      } catch (error) {
+        this.buttonLoadBookListLoading = false
+        console.error(error)
+      }
       if (scan) this.printMessage('success', this.$t('c.scanComplete'))
     },
     saveBook (book) {
@@ -1458,18 +1463,23 @@ export default defineComponent({
       this.printMessage('success', this.$t('c.getMetadataComplete'))
     },
     async getBookListMetadata () {
-      this.buttonGetMetadatasLoading = true
-      let bookList
-      if (this.setting.batchTagfailedBook) {
-        bookList = this.bookList.filter(book => book.status === 'tag-failed' || book.status === 'non-tag')
-      } else {
-        bookList = this.bookList.filter(book => book.status === 'non-tag')
+      try {
+        this.buttonGetMetadatasLoading = true
+        let bookList
+        if (this.setting.batchTagfailedBook) {
+          bookList = this.bookList.filter(book => book.status === 'tag-failed' || book.status === 'non-tag')
+        } else {
+          bookList = this.bookList.filter(book => book.status === 'non-tag')
+        }
+        if (this.setting.onlyGetMetadataOfSelectedFolder) {
+          bookList = bookList.filter(book => !book.folderHide)
+        }
+        await this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
+        this.buttonGetMetadatasLoading = false
+      } catch (error) {
+        this.buttonGetMetadatasLoading = false
+        console.error(error)
       }
-      if (this.setting.onlyGetMetadataOfSelectedFolder) {
-        bookList = bookList.filter(book => !book.folderHide)
-      }
-      await this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
-      this.buttonGetMetadatasLoading = false
     },
 
     // home header

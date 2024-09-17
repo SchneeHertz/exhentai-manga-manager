@@ -454,7 +454,7 @@ onMounted(() => {
 
       // set default value
       if (res.autoCheckUpdates === undefined) setting.value.autoCheckUpdates = true
-      if (res.trimTitleRegExp === undefined) setting.value.trimTitleRegExp = '\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
+      if (res.trimTitleRegExp === undefined) setting.value.trimTitleRegExp = '^\\d+[-]?\\s*|\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
       if (res.defaultScraper === undefined) setting.value.defaultScraper = 'exhentai'
       saveSetting()
 

@@ -9,7 +9,7 @@
       <el-form-item>
         <el-input
           v-model="searchStringDialog"
-          @keyup.enter="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+          @keyup.enter="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog, bookDetail.filepath)"
           class="search-input"
         >
           <template #append>
@@ -22,13 +22,13 @@
       <el-form-item>
         <el-button
           type="primary" plain :icon="Search32Filled"
-          @click="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+          @click="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog, bookDetail.filepath)"
         />
       </el-form-item>
       <el-form-item>
         <el-button
           type="primary" plain :icon="Link"
-          @click="redirectSearch(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+          @click="redirectSearch(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog, bookDetail.filepath)"
         />
       </el-form-item>
     </el-form>
@@ -69,7 +69,7 @@ const openSearchDialog = (book, server) => {
   if (server) searchTypeDialog.value = server
   ehSearchResultList.value = []
   searchStringDialog.value = returnTrimFileName(bookDetail.value)
-  getBookListFromWeb(bookDetail.value.hash.toUpperCase(), searchStringDialog.value, searchTypeDialog.value)
+  getBookListFromWeb(bookDetail.value.hash.toUpperCase(), searchStringDialog.value, searchTypeDialog.value, bookDetail.value.filepath)
 }
 
 const returnTrimFileName = (book) => {
@@ -88,7 +88,7 @@ const returnTrimFileName = (book) => {
   return fileNameWithoutExtension
 }
 
-const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
+const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath = '') => {
   let resultList = []
   searchResultLoading.value = true
   if (server === 'e-hentai') {
@@ -125,12 +125,35 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
     .then(res => {
       return resolveHentagResult(res)
     })
+  } else if (server === '.ehviewer') {
+    const ehviewerData = await ipcRenderer.invoke('get-ehviewer-data', bookPath);
+    console.log('ehviewerData:', ehviewerData);
+
+    if (ehviewerData) {
+      const url = `https://exhentai.org/g/${ehviewerData.gid}/${ehviewerData.token}/`;
+      const cookie = props.cookie;
+      
+      resultList = await ipcRenderer.invoke('get-ex-webpage', { url, cookie })
+        .then(res => {
+          console.log('Response:', res);
+          const resolvedResult = resolveEhviewerResult(res, url);
+          console.log('Resolved Result:', resolvedResult);
+          return resolvedResult;
+        });
+    } else {
+      console.log('No ehviewer data found, fallback to e-hentai search:', bookPath)
+      resultList = await fetch(`https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=161`)
+      .then(res => res.text())
+      .then(res => {
+        return resolveEhentaiResult(res)
+      })
+    }
   }
   searchResultLoading.value = false
   return resultList
 }
 
-const redirectSearch = (bookHash, title, server = 'e-hentai') => {
+const redirectSearch = (bookHash, title, server = 'e-hentai', bookPath = '') => {
   let url
   switch (server) {
     case 'e-hentai':
@@ -147,6 +170,16 @@ const redirectSearch = (bookHash, title, server = 'e-hentai') => {
       break
     case 'hentag':
       url = `https://hentag.com/?t=${encodeURI(title)}`
+      break
+    case '.ehviewer':
+        const ehviewerData = ipcRenderer.invoke('get-ehviewer-data', bookPath)
+        if (ehviewerData) {
+          url = `https://exhentai.org/g/${ehviewerData.gid}/${ehviewerData.token}/`
+          ipcRenderer.invoke('open-url', url)
+        } else {
+          console.log('No ehviewer data found for, fallback to e-hentai search:', bookPath)
+          url = `https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=161`
+        }
       break
   }
   ipcRenderer.invoke('open-url', url)
@@ -173,6 +206,30 @@ const resolveEhentaiResult = (htmlString) => {
     }
   }
 }
+const resolveEhviewerResult = (htmlString, url) => {
+  try {
+    const resultNodes = new DOMParser().parseFromString(htmlString, 'text/html');
+    const nodes = resultNodes.querySelectorAll('.gm');
+    ehSearchResultList.value = [];
+
+    nodes.forEach((node) => {
+      ehSearchResultList.value.push({
+        title: node.querySelector('#gj')?.innerHTML || node.querySelector('#gn')?.innerHTML || 'Untitled',
+        url: url,
+        type: 'e-hentai'
+      });
+    });
+
+    return ehSearchResultList.value;
+  } catch (e) {
+    console.log(e);
+    if (htmlString.includes('Your IP address has been')) {
+      emit('message', 'error', t('c.ipBanned'));
+    } else {
+      emit('message', 'error', t('c.getMetadataFailed'));
+    }
+  }
+};
 const resolveHentagResult = (data) => {
   const resultList = data.works.slice(0, 10)
   ehSearchResultList.value = []

@@ -733,6 +733,7 @@ export default defineComponent({
         { label: "exhentai(keyword)", value: "exsearch" },
         { label: "e-hentai(keyword)", value: "e-search" },
         { label: "hentag(keyword)", value: "hentag" },
+        { label: "exhentai(.ehviewer file from EhViewer)", value: ".ehviewer" },
       ],
       keyMap: {
         normal: {
@@ -1440,21 +1441,25 @@ export default defineComponent({
         const book = bookList[i]
         try {
           if (this.serviceAvailable) {
-            if (!book.url) {
+            if (book && !book.url) {
               const resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
                 book.hash.toUpperCase(),
                 this.$refs.SearchDialogRef.returnTrimFileName(book),
-                server
+                server,
+                book.filepath
               )
+              console.log('resultList', resultList)
               this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
-            } else {
+            } else if (book) {
               this.getBookInfo(book)
             }
             await timer(gap)
           }
         } catch (error) {
-          book.status = 'tag-failed'
-          await this.saveBook(book)
+          if (book) {
+            book.status = 'tag-failed'
+            await this.saveBook(book)
+          }
           console.error(error)
         }
       }
@@ -2317,7 +2322,8 @@ export default defineComponent({
       if (url) {
         ipcRenderer.invoke('get-ex-webpage', {
           url,
-          cookie: this.cookie
+          cookie: this.cookie,
+          bookPath: this.bookDetail.filepath
         })
         .then(res => {
           this.comments = []

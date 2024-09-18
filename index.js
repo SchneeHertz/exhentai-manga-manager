@@ -404,24 +404,28 @@ ipcMain.handle('patch-local-metadata-by-book', async (event, book) => {
 })
 
 // Function to read the .ehviewer file
-ipcMain.handle('get-ehviewer-data', async (event, dir) => {
+function getEhviewerDataManually(dir) {
   try {
-    const filePath = dir.endsWith('/') ? `${dir}.ehviewer` : `${dir}/.ehviewer`;
+    const filePath = path.join(dir, '.ehviewer')
     if (fs.existsSync(filePath)) {
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      const lines = fileContent.split('\n');
+      const fileContent = fs.readFileSync(filePath, 'utf-8')
+      const lines = fileContent.split('\n')
       if (lines.length >= 4) {
-        const gid = lines[2].trim();
-        const token = lines[3].trim();
-        return { gid, token };
+        const gid = lines[2].trim()
+        const token = lines[3].trim()
+        return { gid, token }
       }
     }
-    return null;
+    return null
   } catch (error) {
-    console.error('Failed to read .ehviewer file:', error);
-    return null;
+    console.error('Failed to read .ehviewer file:', error)
+    return null
   }
-});
+}
+
+ipcMain.handle('get-ehviewer-data', async (event, dir) => {
+  return getEhviewerDataManually(dir)
+})
 
 ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
   if (setting.proxy) {
@@ -731,17 +735,20 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
       for (let i = 0; i < bookListLength; i++) {
         const book = bookList[i]
         if (book.status !== 'tagged') {
-          // 获取ehviewer数据
-          let dirname = book.filepath
-          const ehviewerData = getEhviewerDataManually(dirname)
-          const { gid, token } = ehviewerData || {}
           let metadata
-          if (gid && token) {
-            metadata = await db.get('SELECT * FROM gallery WHERE gid = ? AND token = ?', [gid, token])
-          } else {
+          // 当book type为folder时，尝试获取.ehviewer数据
+          if (book.type === 'folder') {
+            const dirname = book.filepath
+            const ehviewerData = getEhviewerDataManually(dirname)
+            const { gid, token } = ehviewerData || {}
+            if (gid && token) {
+              metadata = await db.get('SELECT * FROM gallery WHERE gid = ? AND token = ?', [gid, token])
+            }
+          }
+          if (metadata === undefined) {
             metadata = await db.get('SELECT * FROM gallery WHERE thumb LIKE ?', `%${book.coverHash}%`)
           }
-          
+
           if (metadata) {
             metadata.tags = {
               language: metadata.language ? JSON.parse(metadata.language.replace(re, '\"')) : undefined,
@@ -784,24 +791,6 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
   }
 })
 
-function getEhviewerDataManually(dir) {
-  try {
-    const filePath = dir.endsWith('/') ? `${dir}.ehviewer` : `${dir}/.ehviewer`
-    if (fs.existsSync(filePath)) {
-      const fileContent = fs.readFileSync(filePath, 'utf-8')
-      const lines = fileContent.split('\n')
-      if (lines.length >= 4) {
-        const gid = lines[2].trim()
-        const token = lines[3].trim()
-        return { gid, token }
-      }
-    }
-    return null
-  } catch (error) {
-    console.error('Failed to read .ehviewer file:', error)
-    return null
-  }
-}
 
 // tools
 

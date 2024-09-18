@@ -149,6 +149,7 @@
     "keepReadingProgress": "Keep Reading Progress",
     "reverseLeftRight": "Reverse the left and right page-turning buttons",
     "autoNextManga": "Auto Next Manga",
+    "defaultInsertEmptyPage": "Default Insert Empty Page in Double Page Mode",
     "accelerator": "Accelerator",
     "collectTag": "Collect Tag",
     "showCollectTag": "Show Collect Tag",

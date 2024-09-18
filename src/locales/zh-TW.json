@@ -149,6 +149,7 @@
     "keepReadingProgress": "保持閱讀進度",
     "reverseLeftRight": "反轉左右翻頁按鍵",
     "autoNextManga": "自動跳轉到下一本",
+    "defaultInsertEmptyPage": "雙頁模式默認在首頁插入空白頁",
     "accelerator": "快捷鍵",
     "collectTag": "標籤收藏",
     "showCollectTag": "顯示收藏標籤",

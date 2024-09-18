@@ -249,7 +249,7 @@ const viewManga = (book, viewerHeight = '100%') => {
   viewerImageList.value = []
   receiveThumbnailList.value = []
   currentImageIndex.value = 0
-  insertEmptyPage.value = true
+  insertEmptyPage.value = props.setting.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
   emit('selectBook', book)
   const loading = ElLoading.service({

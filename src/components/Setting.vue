@@ -132,6 +132,13 @@
               @change="saveSetting"
             />
           </el-col>
+          <el-col :span="24" class="setting-switch">
+            <el-switch
+              v-model="setting.defaultInsertEmptyPage"
+              :active-text="$t('m.defaultInsertEmptyPage')"
+              @change="saveSetting"
+            />
+          </el-col>
         </el-row>
       </el-tab-pane>
       <el-tab-pane :label="$t('m.collectTag')" name="collectTag">
@@ -456,6 +463,7 @@ onMounted(() => {
       if (res.autoCheckUpdates === undefined) setting.value.autoCheckUpdates = true
       if (res.trimTitleRegExp === undefined) setting.value.trimTitleRegExp = '\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
       if (res.defaultScraper === undefined) setting.value.defaultScraper = 'exhentai'
+      if (res.defaultInsertEmptyPage === undefined) setting.value.defaultInsertEmptyPage = true
       saveSetting()
 
       // default action

@@ -28,7 +28,7 @@
       <el-form-item>
         <el-button
           type="primary" plain :icon="Link"
-          @click="redirectSearch(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog, bookDetail.filepath)"
+          @click="redirectSearch(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
         />
       </el-form-item>
     </el-form>
@@ -126,26 +126,15 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
       return resolveHentagResult(res)
     })
   } else if (server === '.ehviewer') {
-    const ehviewerData = await ipcRenderer.invoke('get-ehviewer-data', bookPath);
+    const ehviewerData = await ipcRenderer.invoke('get-ehviewer-data', bookPath)
     console.log('ehviewerData:', ehviewerData);
 
+    ehSearchResultList.value = []
     if (ehviewerData) {
-      const url = `https://exhentai.org/g/${ehviewerData.gid}/${ehviewerData.token}/`;
-      const cookie = props.cookie;
-      
-      resultList = await ipcRenderer.invoke('get-ex-webpage', { url, cookie })
-        .then(res => {
-          console.log('Response:', res);
-          const resolvedResult = resolveEhviewerResult(res, url);
-          console.log('Resolved Result:', resolvedResult);
-          return resolvedResult;
-        });
-    } else {
-      console.log('No ehviewer data found, fallback to e-hentai search:', bookPath)
-      resultList = await fetch(`https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=161`)
-      .then(res => res.text())
-      .then(res => {
-        return resolveEhentaiResult(res)
+      ehSearchResultList.value.push({
+        title,
+        url: `https://exhentai.org/g/${ehviewerData.gid}/${ehviewerData.token}/`,
+        type: 'e-hentai'
       })
     }
   }
@@ -153,7 +142,7 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
   return resultList
 }
 
-const redirectSearch = (bookHash, title, server = 'e-hentai', bookPath = '') => {
+const redirectSearch = (bookHash, title, server = 'e-hentai') => {
   let url
   switch (server) {
     case 'e-hentai':
@@ -165,21 +154,12 @@ const redirectSearch = (bookHash, title, server = 'e-hentai', bookPath = '') => 
     case 'e-search':
       url = `https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=161`
       break
+    case '.ehviewer':
     case 'exsearch':
       url = `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=161`
       break
     case 'hentag':
       url = `https://hentag.com/?t=${encodeURI(title)}`
-      break
-    case '.ehviewer':
-        const ehviewerData = ipcRenderer.invoke('get-ehviewer-data', bookPath)
-        if (ehviewerData) {
-          url = `https://exhentai.org/g/${ehviewerData.gid}/${ehviewerData.token}/`
-          ipcRenderer.invoke('open-url', url)
-        } else {
-          console.log('No ehviewer data found for, fallback to e-hentai search:', bookPath)
-          url = `https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=161`
-        }
       break
   }
   ipcRenderer.invoke('open-url', url)
@@ -206,30 +186,7 @@ const resolveEhentaiResult = (htmlString) => {
     }
   }
 }
-const resolveEhviewerResult = (htmlString, url) => {
-  try {
-    const resultNodes = new DOMParser().parseFromString(htmlString, 'text/html');
-    const nodes = resultNodes.querySelectorAll('.gm');
-    ehSearchResultList.value = [];
 
-    nodes.forEach((node) => {
-      ehSearchResultList.value.push({
-        title: node.querySelector('#gj')?.innerHTML || node.querySelector('#gn')?.innerHTML || 'Untitled',
-        url: url,
-        type: 'e-hentai'
-      });
-    });
-
-    return ehSearchResultList.value;
-  } catch (e) {
-    console.log(e);
-    if (htmlString.includes('Your IP address has been')) {
-      emit('message', 'error', t('c.ipBanned'));
-    } else {
-      emit('message', 'error', t('c.getMetadataFailed'));
-    }
-  }
-};
 const resolveHentagResult = (data) => {
   const resultList = data.works.slice(0, 10)
   ehSearchResultList.value = []

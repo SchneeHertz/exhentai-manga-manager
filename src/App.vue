@@ -2412,7 +2412,7 @@ export default defineComponent({
 
     // internal viewer
     async useNewCover (filepath) {
-      const coverPath = ipcRenderer.invoke('use-new-cover', filepath)
+      const coverPath = await ipcRenderer.invoke('use-new-cover', filepath)
       this.bookDetail.coverPath = coverPath
       await this.saveBook(this.bookDetail)
     },

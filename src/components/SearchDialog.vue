@@ -131,11 +131,12 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
 
     ehSearchResultList.value = []
     if (ehviewerData) {
-      ehSearchResultList.value.push({
+      resultList = [{
         title,
         url: `https://exhentai.org/g/${ehviewerData.gid}/${ehviewerData.token}/`,
         type: 'e-hentai'
-      })
+      }]
+      ehSearchResultList.value = resultList
     }
   }
   searchResultLoading.value = false

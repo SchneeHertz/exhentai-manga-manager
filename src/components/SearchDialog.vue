@@ -127,7 +127,6 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
     })
   } else if (server === '.ehviewer') {
     const ehviewerData = await ipcRenderer.invoke('get-ehviewer-data', bookPath)
-    console.log('ehviewerData:', ehviewerData);
 
     ehSearchResultList.value = []
     if (ehviewerData) {

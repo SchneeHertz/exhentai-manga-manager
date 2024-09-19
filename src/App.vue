@@ -1448,18 +1448,15 @@ export default defineComponent({
                 server,
                 book.filepath
               )
-              console.log('resultList', resultList)
               this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
-            } else if (book) {
+            } else {
               this.getBookInfo(book)
             }
             await timer(gap)
           }
         } catch (error) {
-          if (book) {
-            book.status = 'tag-failed'
-            await this.saveBook(book)
-          }
+          book.status = 'tag-failed'
+          await this.saveBook(book)
           console.error(error)
         }
       }

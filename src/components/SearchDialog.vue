@@ -9,7 +9,7 @@
       <el-form-item>
         <el-input
           v-model="searchStringDialog"
-          @keyup.enter="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+          @keyup.enter="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog, bookDetail.filepath)"
           class="search-input"
         >
           <template #append>
@@ -22,7 +22,7 @@
       <el-form-item>
         <el-button
           type="primary" plain :icon="Search32Filled"
-          @click="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog)"
+          @click="getBookListFromWeb(bookDetail.hash.toUpperCase(), searchStringDialog, searchTypeDialog, bookDetail.filepath)"
         />
       </el-form-item>
       <el-form-item>
@@ -69,7 +69,7 @@ const openSearchDialog = (book, server) => {
   if (server) searchTypeDialog.value = server
   ehSearchResultList.value = []
   searchStringDialog.value = returnTrimFileName(bookDetail.value)
-  getBookListFromWeb(bookDetail.value.hash.toUpperCase(), searchStringDialog.value, searchTypeDialog.value)
+  getBookListFromWeb(bookDetail.value.hash.toUpperCase(), searchStringDialog.value, searchTypeDialog.value, bookDetail.value.filepath)
 }
 
 const returnTrimFileName = (book) => {
@@ -88,7 +88,7 @@ const returnTrimFileName = (book) => {
   return fileNameWithoutExtension
 }
 
-const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
+const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath = '') => {
   let resultList = []
   searchResultLoading.value = true
   if (server === 'e-hentai') {
@@ -125,6 +125,18 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai') => {
     .then(res => {
       return resolveHentagResult(res)
     })
+  } else if (server === '.ehviewer') {
+    const ehviewerData = await ipcRenderer.invoke('get-ehviewer-data', bookPath)
+
+    ehSearchResultList.value = []
+    if (ehviewerData) {
+      resultList = [{
+        title,
+        url: `https://exhentai.org/g/${ehviewerData.gid}/${ehviewerData.token}/`,
+        type: 'e-hentai'
+      }]
+      ehSearchResultList.value = resultList
+    }
   }
   searchResultLoading.value = false
   return resultList
@@ -142,6 +154,7 @@ const redirectSearch = (bookHash, title, server = 'e-hentai') => {
     case 'e-search':
       url = `https://e-hentai.org/?f_search=${encodeURI(title)}&f_cats=161`
       break
+    case '.ehviewer':
     case 'exsearch':
       url = `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=161`
       break
@@ -173,6 +186,7 @@ const resolveEhentaiResult = (htmlString) => {
     }
   }
 }
+
 const resolveHentagResult = (data) => {
   const resultList = data.works.slice(0, 10)
   ehSearchResultList.value = []

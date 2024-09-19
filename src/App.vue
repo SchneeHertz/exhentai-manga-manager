@@ -733,6 +733,7 @@ export default defineComponent({
         { label: "exhentai(keyword)", value: "exsearch" },
         { label: "e-hentai(keyword)", value: "e-search" },
         { label: "hentag(keyword)", value: "hentag" },
+        { label: "exhentai(.ehviewer file from EhViewer)", value: ".ehviewer" },
       ],
       keyMap: {
         normal: {
@@ -1444,7 +1445,8 @@ export default defineComponent({
               const resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
                 book.hash.toUpperCase(),
                 this.$refs.SearchDialogRef.returnTrimFileName(book),
-                server
+                server,
+                book.filepath
               )
               this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
             } else {

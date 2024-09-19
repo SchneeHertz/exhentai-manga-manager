@@ -1441,7 +1441,7 @@ export default defineComponent({
         const book = bookList[i]
         try {
           if (this.serviceAvailable) {
-            if (book && !book.url) {
+            if (!book.url) {
               const resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
                 book.hash.toUpperCase(),
                 this.$refs.SearchDialogRef.returnTrimFileName(book),
@@ -2322,8 +2322,7 @@ export default defineComponent({
       if (url) {
         ipcRenderer.invoke('get-ex-webpage', {
           url,
-          cookie: this.cookie,
-          bookPath: this.bookDetail.filepath
+          cookie: this.cookie
         })
         .then(res => {
           this.comments = []

@@ -854,7 +854,8 @@ const formatTags = (tags) => {
 LANBrowsing.get('/api/search', async (req, res) => {
   try {
     const filter = req.query.filter || ''
-    const start = parseInt(req.query.start) || 0
+    const start = parseInt(req.query.start, 10) || 0
+    const length = parseInt(req.query.length, 10) || 100
 
     // 读取并搜索数据库
     mangas = await loadBookListFromDatabase()
@@ -870,7 +871,7 @@ LANBrowsing.get('/api/search', async (req, res) => {
     filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
 
     // 格式化响应数据
-    const responseData = filterMangas.slice(start, start + 100).map(manga => ({
+    const responseData = filterMangas.slice(start, start + length).map(manga => ({
       arcid: manga.hash,
       extension: path.extname(manga.filepath),
       filename: path.basename(manga.filepath),
@@ -881,7 +882,8 @@ LANBrowsing.get('/api/search', async (req, res) => {
       size: manga.filesize,
       summary: null,
       tags: manga.tags ? formatTags(manga.tags) : '',
-      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`,
+      url: manga.url
     }))
     res.json({
       data: responseData,

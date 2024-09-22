@@ -1058,6 +1058,19 @@ LANBrowsing.get('/api/archives/:hash/page', async (req, res) => {
   }
 })
 
+// 处理webview请求
+LANBrowsing.get('/reader', async (req, res) => {
+  const id = req.query.id
+  const manga = await Manga.findOne({where: {hash: id}})
+
+  // 重定向至manga.url
+  if (manga && manga.url) {
+    res.redirect(manga.url.replace('exhentai', 'e-hentai'))
+  } else {
+    res.status(404).send('Manga not found')
+  }
+})
+
 LANBrowsing.get('/', (req, res) => {
   switch (setting.language) {
     case 'en-US':

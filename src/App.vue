@@ -1495,15 +1495,15 @@ export default defineComponent({
       if (!bookList) bookList = this.displayBookList
       switch(val){
         case 'mark':
-          this.displayBookList = _.filter(bookList, 'mark')
+          this.displayBookList = _.filter(this.bookList, 'mark')
           this.chunkList()
           break
         case 'collection':
-          this.displayBookList = _.filter(bookList, 'isCollection')
+          this.displayBookList = _.filter(this.bookList, 'isCollection')
           this.chunkList()
           break
         case 'hidden':
-          this.displayBookList = _.filter(bookList, 'hiddenBook')
+          this.displayBookList = _.filter(this.bookList, 'hiddenBook')
           this.chunkList()
           break
         case 'shuffle':

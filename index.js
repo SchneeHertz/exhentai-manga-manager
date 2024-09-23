@@ -702,6 +702,11 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
       }
     }
   }
+  if (receiveSetting.startOnLogin !== setting.startOnLogin) {
+    app.setLoginItemSettings({
+      openAtLogin: receiveSetting.startOnLogin
+    })
+  }
   setting = receiveSetting
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 })

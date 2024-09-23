@@ -329,22 +329,22 @@
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
-              v-model="setting.showComment"
-              :active-text="$t('m.showComment')"
+              v-model="setting.startOnLogin"
+              :active-text="$t('m.startOnLogin')"
               @change="saveSetting"
-            />
-          </el-col>
-          <el-col :span="6" class="setting-switch">
-            <el-switch
-              v-model="setting.showTranslation"
-              :active-text="$t('m.tagTranslate')"
-              @change="handleTranslationSettingChange"
             />
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
               v-model="setting.autoCheckUpdates"
               :active-text="$t('m.autoCheckUpdates')"
+              @change="saveSetting"
+            />
+          </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.enabledLANBrowsing"
+              :active-text="$t('m.enabledLANBrowsing')"
               @change="saveSetting"
             />
           </el-col>
@@ -364,15 +364,22 @@
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
-              v-model="setting.skipDeleteConfirm"
-              :active-text="$t('m.skipDeleteConfirm')"
+              v-model="setting.showComment"
+              :active-text="$t('m.showComment')"
               @change="saveSetting"
             />
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
-              v-model="setting.enabledLANBrowsing"
-              :active-text="$t('m.enabledLANBrowsing')"
+              v-model="setting.showTranslation"
+              :active-text="$t('m.tagTranslate')"
+              @change="handleTranslationSettingChange"
+            />
+          </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.skipDeleteConfirm"
+              :active-text="$t('m.skipDeleteConfirm')"
               @change="saveSetting"
             />
           </el-col>

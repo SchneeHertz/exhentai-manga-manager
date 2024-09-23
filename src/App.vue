@@ -180,6 +180,7 @@
                 @click="handleSearchString(`:count=${book.readCount}`)"
               >{{book.readCount}}</el-tag>
               <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
+              <el-tag class="book-card-pagecount" size="small" type="info">{{ book.chapterCount }}C</el-tag>
               <el-rate v-model="book.rating" size="small" allow-half disabled/>
             </div>
           </transition>
@@ -1878,7 +1879,8 @@ export default defineComponent({
             date, posted, rating, mtime, mark, tags, title_jpn, category, status, pageDiff, readCount,
             list: collection.list,
             filepath,
-            isCollection: true
+            isCollection: true,
+            chapterCount: collection?.list?.length
           })
         }
       })

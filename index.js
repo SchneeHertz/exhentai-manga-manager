@@ -875,7 +875,7 @@ LANBrowsing.get('/api/search', async (req, res) => {
     let filterMangas
     if (filter) {
       filterMangas = mangas.filter(manga => {
-        return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff'])).toLowerCase().includes(filter.toLowerCase())
+        return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url'])).toLowerCase().includes(filter.toLowerCase())
         || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
       })
     } else {
@@ -898,8 +898,10 @@ LANBrowsing.get('/api/search', async (req, res) => {
       title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`,
       url: manga.url
     }))
+    const hash = createHash('md5').update(JSON.stringify(responseData)).digest('hex')
     res.json({
       data: responseData,
+      hash,
       draw: 0,
       recordsFiltered: responseData.length,
       recordsTotal: filterMangas.length

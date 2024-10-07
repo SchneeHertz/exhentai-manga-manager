@@ -340,59 +340,61 @@
           <el-button type="primary" :icon="Edit" plain link class="collection-edit-button" @click="editCurrentCollection"/>
         </div>
       </template>
-      <div
-        v-for="(book, index) in openCollectionBookList"
-        :key="book.id"
-        class="book-card-frame"
-      >
-        <div class="book-card" :tabindex="index + 1">
-          <p
-            class="book-title"
-            @click="openBookDetail(book)"
-            @contextmenu="onMangaTitleContextMenu($event, book)"
-            :title="getDisplayTitle(book)"
-          >{{getDisplayTitle(book)}}</p>
-          <img
-            class="book-cover"
-            :src="book.coverPath"
-            @click="handleClickCover(book)"
-            @contextmenu="onBookContextMenu($event, book)"
-          />
-          <el-tag class="book-card-language" size="small"
-            :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
-            :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
-            @click="handleSearchString(`:count=${book.readCount}`)"
-          >{{book.readCount}}</el-tag>
-          <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="handleSearchString('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
-          <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
-          <el-icon
-            :size="30"
-            :color="book.mark ? '#E6A23C' : '#666666'"
-            class="book-card-mark"
-            @click="switchMark(book)"
-          ><BookmarkTwotone /></el-icon>
-          <div class="collect-tag">
-            <el-tag
-              v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
-              @click="searchFromTag(tag.tag, tag.cat)"
-              class="book-collect-tag"
-              :color="tag.color"
-              size="small"
-              effect="dark"
-            >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
-          </div>
-          <div>
-            <el-button-group class="outer-read-button-group">
-              <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-              <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
-            </el-button-group>
-            <el-tag
-              class="book-status-tag"
-              effect="plain"
-              :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-              @click="searchFromTag(book.status)"
-            >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating"  v-if="!book.isCollection" size="small" allow-half @change="saveBook(book)"/>
+      <div class="collection-book-card-list">
+        <div
+          v-for="(book, index) in openCollectionBookList"
+          :key="book.id"
+          class="book-card-frame"
+        >
+          <div class="book-card" :tabindex="index + 1">
+            <p
+              class="book-title"
+              @click="openBookDetail(book)"
+              @contextmenu="onMangaTitleContextMenu($event, book)"
+              :title="getDisplayTitle(book)"
+            >{{getDisplayTitle(book)}}</p>
+            <img
+              class="book-cover"
+              :src="book.coverPath"
+              @click="handleClickCover(book)"
+              @contextmenu="onBookContextMenu($event, book)"
+            />
+            <el-tag class="book-card-language" size="small"
+              :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
+              :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
+              @click="handleSearchString(`:count=${book.readCount}`)"
+            >{{book.readCount}}</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="handleSearchString('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
+            <el-icon
+              :size="30"
+              :color="book.mark ? '#E6A23C' : '#666666'"
+              class="book-card-mark"
+              @click="switchMark(book)"
+            ><BookmarkTwotone /></el-icon>
+            <div class="collect-tag">
+              <el-tag
+                v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
+                @click="searchFromTag(tag.tag, tag.cat)"
+                class="book-collect-tag"
+                :color="tag.color"
+                size="small"
+                effect="dark"
+              >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
+            </div>
+            <div>
+              <el-button-group class="outer-read-button-group">
+                <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+                <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
+              </el-button-group>
+              <el-tag
+                class="book-status-tag"
+                effect="plain"
+                :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+                @click="searchFromTag(book.status)"
+              >{{book.status}}</el-tag>
+              <el-rate v-model="book.rating"  v-if="!book.isCollection" size="small" allow-half @change="saveBook(book)"/>
+            </div>
           </div>
         </div>
       </div>
@@ -2723,6 +2725,12 @@ body
     flex-wrap: wrap
     justify-content: center
     align-content: flex-start
+
+.collection-book-card-list
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  align-content: flex-start
 
 .book-card-frame
   min-width: 234px

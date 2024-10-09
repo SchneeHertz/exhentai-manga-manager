@@ -8,9 +8,11 @@
     class="viewer-drawer"
     modal-class="viewer-drawer-modal"
   >
-    <div class="drawer-viewer-body" ref="drawerViewerBody">
+    <div class="drawer-viewer-body"
+      ref="drawerViewerBody"
+      @click="handleViewerAreaClick"
+    >
       <div class="drawer-image-content"
-        @click="handleViewerAreaClick"
         v-if="!showThumbnail"
         v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"

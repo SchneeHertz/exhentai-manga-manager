@@ -1005,7 +1005,7 @@ export default defineComponent({
           throw new Error('active element not in container or not book-card')
         }
         const tabIndexNow = activeElement.getAttribute('tabindex')
-        const tabIndexNext = parseInt(tabIndexNow) + step
+        const tabIndexNext = parseInt(tabIndexNow, 10) + step
         if (!(tabIndexNext >= 1)) throw new Error('detect illegal tabindex')
         document.querySelector(`${container} div[tabindex="${tabIndexNext}"]`).focus()
       } catch (error) {
@@ -1668,7 +1668,7 @@ export default defineComponent({
                       case 'ptime':
                         return bookInfo[type] >= new Date(str.slice(7))
                       case 'count':
-                        return bookInfo[type] > parseInt(str.slice(7))
+                        return bookInfo[type] > parseInt(str.slice(7), 10)
                     }
                   } else if (str[6] === '<') {
                     switch (type) {
@@ -1677,7 +1677,7 @@ export default defineComponent({
                       case 'ptime':
                         return bookInfo[type] <= new Date(str.slice(7))
                       case 'count':
-                        return bookInfo[type] < parseInt(str.slice(7))
+                        return bookInfo[type] < parseInt(str.slice(7), 10)
                     }
                   } else if (str[6] === '=') {
                     switch (type) {
@@ -1686,7 +1686,7 @@ export default defineComponent({
                       case 'ptime':
                         return bookInfo[type].toLocaleDateString() === new Date(str.slice(7)).toLocaleDateString()
                       case 'count':
-                        return bookInfo[type] === parseInt(str.slice(7))
+                        return bookInfo[type] === parseInt(str.slice(7), 10)
                     }
                   } else {
                     return false

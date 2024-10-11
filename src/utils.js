@@ -6,9 +6,9 @@ function getWidth (el, type) {
     return el.offsetWidth
   const s = window.getComputedStyle(el, null)
   if (type === 'width') // .width()
-    return el.clientWidth - parseInt(s.getPropertyValue('padding-left')) - parseInt(s.getPropertyValue('padding-right'))
+    return el.clientWidth - parseInt(s.getPropertyValue('padding-left'), 10) - parseInt(s.getPropertyValue('padding-right'), 10)
   else if (type === 'full') // .outerWidth(includeMargins = true)
-    return el.offsetWidth + parseInt(s.getPropertyValue('margin-left')) + parseInt(s.getPropertyValue('margin-right'))
+    return el.offsetWidth + parseInt(s.getPropertyValue('margin-left'), 10) + parseInt(s.getPropertyValue('margin-right'), 10)
   return null
 }
 

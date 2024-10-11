@@ -842,14 +842,6 @@ ipcMain.on('get-path-sep', async (event, arg) => {
 const LANBrowsing = express()
 const port = 23786
 
-LANBrowsing.use((req, res, next) => {
-  // 设置CORS 头
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Methods', 'GET')
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
-  next()
-})
-
 // 设置静态文件夹
 const staticFilePath = path.resolve(STORE_PATH, 'public')
 fs.mkdirSync(staticFilePath, { recursive: true })

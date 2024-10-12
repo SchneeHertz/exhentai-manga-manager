@@ -1726,7 +1726,7 @@ export default defineComponent({
         }
         return checkCondition(bookString, bookInfo)
       })
-      if (!this.sortValue) this.sortValue = 'addDescend'
+      if (!this.sortValue || ['mark', 'hidden', 'collection'].includes(this.sortValue)) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)
       if (this.currentUI() === 'edit-group-tag') {
         this.selectBookList = []

@@ -109,6 +109,7 @@
           :key="book.id"
           class="book-card-frame"
           v-lazy:[book.id]="loadBookCardContent"
+          :tabindex="index + 1"
         >
           <transition name="pop">
             <!-- show book card when book isn't a collection, book isn't hidden because collected,
@@ -117,7 +118,6 @@
             <div
               class="book-card"
               v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide && visibilityMap[book.id]"
-              :tabindex="index + 1"
             >
                 <p class="book-title"
                   @click="openBookDetail(book)"
@@ -1002,8 +1002,8 @@ export default defineComponent({
     jumpBookByTabindex (step, container) {
       try {
         const activeElement = document.activeElement
-        if (!document.querySelector(container).contains(activeElement) || !activeElement.classList.contains('book-card')) {
-          throw new Error('active element not in container or not book-card')
+        if (!document.querySelector(container).contains(activeElement)) {
+          throw new Error('active element not in container')
         }
         const tabIndexNow = activeElement.getAttribute('tabindex')
         const tabIndexNext = parseInt(tabIndexNow, 10) + step

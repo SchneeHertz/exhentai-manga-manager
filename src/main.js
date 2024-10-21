@@ -45,8 +45,6 @@ const observer = new IntersectionObserver((entries) => {
       observer.unobserve(el)
     }
   })
-}, {
-  threshold: 0.1
 })
 
 app.directive('lazy', {

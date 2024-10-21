@@ -504,6 +504,7 @@
                 <el-descriptions-item :label="$t('m.title')+':'">{{bookDetail.title_jpn}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.englishTitle')+':'">{{bookDetail.title}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.fileLocation')+':'">{{returnDirname(bookDetail.filepath)}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.category')+':'">
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
@@ -1221,6 +1222,9 @@ export default defineComponent({
       const fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
       if (book.type === 'folder') return fileNameWithExtension
       return fileNameWithExtension.split('.').slice(0, -1).join('.')
+    },
+    returnDirname (filepath) {
+      return filepath.split(/[/\\]/).slice(0, -1).join(this.pathSep)
     },
     sortList(label) {
       return (a, b) => {

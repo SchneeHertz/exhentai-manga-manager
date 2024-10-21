@@ -63,6 +63,7 @@
     "englishTitle": "英文标题",
     "japaneseTitle": "日文标题",
     "filename": "文件名",
+    "fileLocation": "文件位置",
     "category": "类别",
     "setting": "设置",
     "library": "库文件夹",

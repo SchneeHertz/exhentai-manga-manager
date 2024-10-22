@@ -277,6 +277,14 @@
               </el-input>
             </div>
           </el-col>
+          <el-col :span="24">
+            <NameFormItem class="setting-line" prependWidth="110px">
+              <template #prepend>{{$t('m.customCss')}}</template>
+              <template #default>
+                <el-input v-model="setting.customCss" :placeholder="$t('m.customCssPlaceholder')" @change="saveSetting" :rows="2" type="textarea"></el-input>
+              </template>
+            </NameFormItem>
+          </el-col>
           <el-col :span="4">
             <div class="setting-line">
               <el-popconfirm
@@ -479,6 +487,7 @@ onMounted(() => {
       if (res.showTranslation) loadTranslationFromEhTagTranslation()
       if (res.autoCheckUpdates) autoCheckUpdates(false)
       if (res.enabledLANBrowsing) ipcRenderer.invoke('enable-LAN-browsing')
+      if (res.customCss) electronFunction['insert-css'](res.customCss)
     })
 })
 

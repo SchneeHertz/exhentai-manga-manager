@@ -7,7 +7,7 @@
     >
       <slot name="prepend"></slot>
     </div>
-    <div class="name-select__body">
+    <div class="name-select__body" :class="inputWrapperClass">
       <slot></slot>
     </div>
     <div
@@ -32,6 +32,14 @@ export default {
     appendWidth: {
       type: String,
       default: () => '4em'
+    }
+  },
+  computed: {
+    inputWrapperClass() {
+      return {
+        'has-prepend': !!this.$slots.prepend,
+        'has-append': !!this.$slots.append,
+      }
     }
   }
 }
@@ -78,8 +86,13 @@ export default {
 </style>
 
 <style lang="stylus">
-.name-select__body
-  .el-input__inner, .el-textarea__inner
-    border-bottom-left-radius: 0
-    border-top-left-radius: 0
+.name-select__body.has-prepend .el-input__inner,
+.name-select__body.has-prepend .el-textarea__inner
+  border-top-left-radius: 0
+  border-bottom-left-radius: 0
+
+.name-select__body.has-append .el-input__inner,
+.name-select__body.has-append .el-textarea__inner
+  border-top-right-radius: 0
+  border-bottom-right-radius: 0
 </style>

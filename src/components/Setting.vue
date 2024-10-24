@@ -278,10 +278,13 @@
             </div>
           </el-col>
           <el-col :span="24">
-            <NameFormItem class="setting-line" prependWidth="110px">
+            <NameFormItem class="setting-line" prependWidth="110px" appendWidth="0">
               <template #prepend>{{$t('m.customCss')}}</template>
               <template #default>
-                <el-input v-model="setting.customCss" :placeholder="$t('m.customCssPlaceholder')" @change="saveSetting" :rows="2" type="textarea"></el-input>
+                <el-input v-model="setting.customCss" :placeholder="$t('m.customCssPlaceholder')" @change="saveSetting" :rows="2" type="textarea" ></el-input>
+              </template>
+              <template #append>
+                <el-button text :icon="MdRefresh" @click="reloadWindow"></el-button>
               </template>
             </NameFormItem>
           </el-col>
@@ -448,6 +451,7 @@ import { ref, onMounted, h, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
+import { MdRefresh } from '@vicons/ionicons4'
 
 import { version } from '../../package.json'
 import { gh_token } from '../../secret_key.json'
@@ -704,6 +708,10 @@ const addTagToCollect = () => {
 const removeTag = (id) => {
   setting.value.collectTag = setting.value.collectTag.filter(tag => tag.id !== id)
   saveSetting()
+}
+
+const reloadWindow = () => {
+  window.location.reload()
 }
 
 const dialogVisibleSetting = ref(false)

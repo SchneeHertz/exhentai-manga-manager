@@ -20,29 +20,29 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'NameFormItem',
-  props: {
-    initStyle: Object,
-    prependWidth: {
-      type: String,
-      default: () => '4em'
-    },
-    appendWidth: {
-      type: String,
-      default: () => '4em'
-    }
+<script setup>
+import { computed, useSlots } from 'vue'
+
+defineProps({
+  initStyle: Object,
+  prependWidth: {
+    type: String,
+    default: () => '4em'
   },
-  computed: {
-    inputWrapperClass() {
-      return {
-        'has-prepend': !!this.$slots.prepend,
-        'has-append': !!this.$slots.append,
-      }
-    }
+  appendWidth: {
+    type: String,
+    default: () => '4em'
   }
-}
+})
+
+const slots = useSlots()
+
+const inputWrapperClass = computed(() => {
+  return {
+    'has-prepend': !!slots.prepend,
+    'has-append': !!slots.append,
+  }
+})
 </script>
 
 <style lang="stylus" scoped>

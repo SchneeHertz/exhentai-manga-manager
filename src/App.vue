@@ -109,6 +109,7 @@
           :key="book.id"
           class="book-card-frame"
           v-lazy:[book.id]="loadBookCardContent"
+          :tabindex="index + 1"
         >
           <transition name="pop">
             <!-- show book card when book isn't a collection, book isn't hidden because collected,
@@ -117,7 +118,6 @@
             <div
               class="book-card"
               v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide && visibilityMap[book.id]"
-              :tabindex="index + 1"
             >
                 <p class="book-title"
                   @click="openBookDetail(book)"
@@ -180,6 +180,7 @@
                 @click="handleSearchString(`:count=${book.readCount}`)"
               >{{book.readCount}}</el-tag>
               <el-icon :size="30" :color="book.mark ? '#E6A23C' : '#666666'" class="book-card-mark"><BookmarkTwotone /></el-icon>
+              <el-tag class="book-card-pagecount" size="small" type="info">{{ book.chapterCount }}C</el-tag>
               <el-rate v-model="book.rating" size="small" allow-half disabled/>
             </div>
           </transition>
@@ -339,59 +340,61 @@
           <el-button type="primary" :icon="Edit" plain link class="collection-edit-button" @click="editCurrentCollection"/>
         </div>
       </template>
-      <div
-        v-for="(book, index) in openCollectionBookList"
-        :key="book.id"
-        class="book-card-frame"
-      >
-        <div class="book-card" :tabindex="index + 1">
-          <p
-            class="book-title"
-            @click="openBookDetail(book)"
-            @contextmenu="onMangaTitleContextMenu($event, book)"
-            :title="getDisplayTitle(book)"
-          >{{getDisplayTitle(book)}}</p>
-          <img
-            class="book-cover"
-            :src="book.coverPath"
-            @click="handleClickCover(book)"
-            @contextmenu="onBookContextMenu($event, book)"
-          />
-          <el-tag class="book-card-language" size="small"
-            :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
-            :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
-            @click="handleSearchString(`:count=${book.readCount}`)"
-          >{{book.readCount}}</el-tag>
-          <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="handleSearchString('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
-          <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
-          <el-icon
-            :size="30"
-            :color="book.mark ? '#E6A23C' : '#666666'"
-            class="book-card-mark"
-            @click="switchMark(book)"
-          ><BookmarkTwotone /></el-icon>
-          <div class="collect-tag">
-            <el-tag
-              v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
-              @click="searchFromTag(tag.tag, tag.cat)"
-              class="book-collect-tag"
-              :color="tag.color"
-              size="small"
-              effect="dark"
-            >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
-          </div>
-          <div>
-            <el-button-group class="outer-read-button-group">
-              <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
-              <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
-            </el-button-group>
-            <el-tag
-              class="book-status-tag"
-              effect="plain"
-              :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-              @click="searchFromTag(book.status)"
-            >{{book.status}}</el-tag>
-            <el-rate v-model="book.rating"  v-if="!book.isCollection" size="small" allow-half @change="saveBook(book)"/>
+      <div class="collection-book-card-list">
+        <div
+          v-for="(book, index) in openCollectionBookList"
+          :key="book.id"
+          class="book-card-frame"
+        >
+          <div class="book-card" :tabindex="index + 1">
+            <p
+              class="book-title"
+              @click="openBookDetail(book)"
+              @contextmenu="onMangaTitleContextMenu($event, book)"
+              :title="getDisplayTitle(book)"
+            >{{getDisplayTitle(book)}}</p>
+            <img
+              class="book-cover"
+              :src="book.coverPath"
+              @click="handleClickCover(book)"
+              @contextmenu="onBookContextMenu($event, book)"
+            />
+            <el-tag class="book-card-language" size="small"
+              :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
+              :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
+              @click="handleSearchString(`:count=${book.readCount}`)"
+            >{{book.readCount}}</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="danger" v-if="book.pageDiff" @click="handleSearchString('pageDiff')">{{book.pageCount}}|{{book.filecount}}P</el-tag>
+            <el-tag class="book-card-pagecount" size="small" type="info" v-else>{{ book.pageCount }}P</el-tag>
+            <el-icon
+              :size="30"
+              :color="book.mark ? '#E6A23C' : '#666666'"
+              class="book-card-mark"
+              @click="switchMark(book)"
+            ><BookmarkTwotone /></el-icon>
+            <div class="collect-tag">
+              <el-tag
+                v-for="tag in filterCollectTag(book.tags)" :key="tag.id"
+                @click="searchFromTag(tag.tag, tag.cat)"
+                class="book-collect-tag"
+                :color="tag.color"
+                size="small"
+                effect="dark"
+              >{{tag.letter}}:{{resolvedTranslation[tag.tag]?.name || tag.tag}}</el-tag>
+            </div>
+            <div>
+              <el-button-group class="outer-read-button-group">
+                <el-button type="success" size="small" class="outer-read-button" plain @click="openLocalBook(book)">{{$t('m.re')}}</el-button>
+                <el-button type="success" size="small" class="outer-read-button" plain @click="$refs.InternalViewerRef.viewManga(book)">{{$t('m.ad')}}</el-button>
+              </el-button-group>
+              <el-tag
+                class="book-status-tag"
+                effect="plain"
+                :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
+                @click="searchFromTag(book.status)"
+              >{{book.status}}</el-tag>
+              <el-rate v-model="book.rating"  v-if="!book.isCollection" size="small" allow-half @change="saveBook(book)"/>
+            </div>
           </div>
         </div>
       </div>
@@ -501,6 +504,7 @@
                 <el-descriptions-item :label="$t('m.title')+':'">{{bookDetail.title_jpn}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.englishTitle')+':'">{{bookDetail.title}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
+                <el-descriptions-item :label="$t('m.fileLocation')+':'">{{returnDirname(bookDetail.filepath)}}</el-descriptions-item>
                 <el-descriptions-item :label="$t('m.category')+':'">
                   <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
                 </el-descriptions-item>
@@ -998,11 +1002,11 @@ export default defineComponent({
     jumpBookByTabindex (step, container) {
       try {
         const activeElement = document.activeElement
-        if (!document.querySelector(container).contains(activeElement) || !activeElement.classList.contains('book-card')) {
-          throw new Error('active element not in container or not book-card')
+        if (!document.querySelector(container).contains(activeElement)) {
+          throw new Error('active element not in container')
         }
         const tabIndexNow = activeElement.getAttribute('tabindex')
-        const tabIndexNext = parseInt(tabIndexNow) + step
+        const tabIndexNext = parseInt(tabIndexNow, 10) + step
         if (!(tabIndexNext >= 1)) throw new Error('detect illegal tabindex')
         document.querySelector(`${container} div[tabindex="${tabIndexNext}"]`).focus()
       } catch (error) {
@@ -1218,6 +1222,9 @@ export default defineComponent({
       const fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
       if (book.type === 'folder') return fileNameWithExtension
       return fileNameWithExtension.split('.').slice(0, -1).join('.')
+    },
+    returnDirname (filepath) {
+      return filepath.split(/[/\\]/).slice(0, -1).join(this.pathSep)
     },
     sortList(label) {
       return (a, b) => {
@@ -1494,15 +1501,15 @@ export default defineComponent({
       if (!bookList) bookList = this.displayBookList
       switch(val){
         case 'mark':
-          this.displayBookList = _.filter(bookList, 'mark')
+          this.displayBookList = _.filter(this.bookList, 'mark')
           this.chunkList()
           break
         case 'collection':
-          this.displayBookList = _.filter(bookList, 'isCollection')
+          this.displayBookList = _.filter(this.bookList, 'isCollection')
           this.chunkList()
           break
         case 'hidden':
-          this.displayBookList = _.filter(bookList, 'hiddenBook')
+          this.displayBookList = _.filter(this.bookList, 'hiddenBook')
           this.chunkList()
           break
         case 'shuffle':
@@ -1665,7 +1672,7 @@ export default defineComponent({
                       case 'ptime':
                         return bookInfo[type] >= new Date(str.slice(7))
                       case 'count':
-                        return bookInfo[type] > parseInt(str.slice(7))
+                        return bookInfo[type] > parseInt(str.slice(7), 10)
                     }
                   } else if (str[6] === '<') {
                     switch (type) {
@@ -1674,7 +1681,7 @@ export default defineComponent({
                       case 'ptime':
                         return bookInfo[type] <= new Date(str.slice(7))
                       case 'count':
-                        return bookInfo[type] < parseInt(str.slice(7))
+                        return bookInfo[type] < parseInt(str.slice(7), 10)
                     }
                   } else if (str[6] === '=') {
                     switch (type) {
@@ -1683,7 +1690,7 @@ export default defineComponent({
                       case 'ptime':
                         return bookInfo[type].toLocaleDateString() === new Date(str.slice(7)).toLocaleDateString()
                       case 'count':
-                        return bookInfo[type] === parseInt(str.slice(7))
+                        return bookInfo[type] === parseInt(str.slice(7), 10)
                     }
                   } else {
                     return false
@@ -1723,7 +1730,7 @@ export default defineComponent({
         }
         return checkCondition(bookString, bookInfo)
       })
-      if (!this.sortValue) this.sortValue = 'addDescend'
+      if (!this.sortValue || ['mark', 'hidden', 'collection'].includes(this.sortValue)) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)
       if (this.currentUI() === 'edit-group-tag') {
         this.selectBookList = []
@@ -1878,7 +1885,8 @@ export default defineComponent({
             date, posted, rating, mtime, mark, tags, title_jpn, category, status, pageDiff, readCount,
             list: collection.list,
             filepath,
-            isCollection: true
+            isCollection: true,
+            chapterCount: collection?.list?.length
           })
         }
       })
@@ -2414,7 +2422,7 @@ export default defineComponent({
 
     // internal viewer
     async useNewCover (filepath) {
-      const coverPath = ipcRenderer.invoke('use-new-cover', filepath)
+      const coverPath = await ipcRenderer.invoke('use-new-cover', filepath)
       this.bookDetail.coverPath = coverPath
       await this.saveBook(this.bookDetail)
     },
@@ -2721,6 +2729,12 @@ body
     flex-wrap: wrap
     justify-content: center
     align-content: flex-start
+
+.collection-book-card-list
+  display: flex
+  flex-wrap: wrap
+  justify-content: center
+  align-content: flex-start
 
 .book-card-frame
   min-width: 234px

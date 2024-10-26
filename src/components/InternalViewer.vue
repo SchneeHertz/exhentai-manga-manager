@@ -8,9 +8,11 @@
     class="viewer-drawer"
     modal-class="viewer-drawer-modal"
   >
-    <div class="drawer-viewer-body" ref="drawerViewerBody">
+    <div class="drawer-viewer-body"
+      ref="drawerViewerBody"
+      @click="handleViewerAreaClick"
+    >
       <div class="drawer-image-content"
-        @click="handleViewerAreaClick"
         v-if="!showThumbnail"
         v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"
@@ -249,7 +251,7 @@ const viewManga = (book, viewerHeight = '100%') => {
   viewerImageList.value = []
   receiveThumbnailList.value = []
   currentImageIndex.value = 0
-  insertEmptyPage.value = true
+  insertEmptyPage.value = props.setting.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
   emit('selectBook', book)
   const loading = ElLoading.service({
@@ -616,6 +618,9 @@ defineExpose({
 .drawer-viewer-body
   width: 100%
   height: 100%
+  display: flex
+  align-items: center
+  justify-content: center
 
 .viewer-close-button
   position: absolute

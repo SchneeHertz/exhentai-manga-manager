@@ -7,7 +7,7 @@
     >
       <slot name="prepend"></slot>
     </div>
-    <div class="name-select__body">
+    <div class="name-select__body" :class="inputWrapperClass">
       <slot></slot>
     </div>
     <div
@@ -20,21 +20,29 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'NameFormItem',
-  props: {
-    initStyle: Object,
-    prependWidth: {
-      type: String,
-      default: () => '4em'
-    },
-    appendWidth: {
-      type: String,
-      default: () => '4em'
-    }
+<script setup>
+import { computed, useSlots } from 'vue'
+
+defineProps({
+  initStyle: Object,
+  prependWidth: {
+    type: String,
+    default: () => '4em'
+  },
+  appendWidth: {
+    type: String,
+    default: () => '4em'
   }
-}
+})
+
+const slots = useSlots()
+
+const inputWrapperClass = computed(() => {
+  return {
+    'has-prepend': !!slots.prepend,
+    'has-append': !!slots.append,
+  }
+})
 </script>
 
 <style lang="stylus" scoped>
@@ -78,8 +86,13 @@ export default {
 </style>
 
 <style lang="stylus">
-.name-select__body
-  .el-input__inner, .el-textarea__inner
-    border-bottom-left-radius: 0
-    border-top-left-radius: 0
+.name-select__body.has-prepend .el-input__inner,
+.name-select__body.has-prepend .el-textarea__inner
+  border-top-left-radius: 0
+  border-bottom-left-radius: 0
+
+.name-select__body.has-append .el-input__inner,
+.name-select__body.has-append .el-textarea__inner
+  border-top-right-radius: 0
+  border-bottom-right-radius: 0
 </style>

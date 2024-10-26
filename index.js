@@ -702,6 +702,11 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
       }
     }
   }
+  if (receiveSetting.startOnLogin !== setting.startOnLogin) {
+    app.setLoginItemSettings({
+      openAtLogin: receiveSetting.startOnLogin
+    })
+  }
   setting = receiveSetting
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 })
@@ -854,14 +859,15 @@ const formatTags = (tags) => {
 LANBrowsing.get('/api/search', async (req, res) => {
   try {
     const filter = req.query.filter || ''
-    const start = parseInt(req.query.start) || 0
+    const start = parseInt(req.query.start, 10) || 0
+    const length = parseInt(req.query.length, 10) || 100
 
     // 读取并搜索数据库
     mangas = await loadBookListFromDatabase()
     let filterMangas
     if (filter) {
       filterMangas = mangas.filter(manga => {
-        return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff'])).toLowerCase().includes(filter.toLowerCase())
+        return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url'])).toLowerCase().includes(filter.toLowerCase())
         || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
       })
     } else {
@@ -870,7 +876,7 @@ LANBrowsing.get('/api/search', async (req, res) => {
     filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
 
     // 格式化响应数据
-    const responseData = filterMangas.slice(start, start + 100).map(manga => ({
+    const responseData = filterMangas.slice(start, start + length).map(manga => ({
       arcid: manga.hash,
       extension: path.extname(manga.filepath),
       filename: path.basename(manga.filepath),
@@ -881,10 +887,13 @@ LANBrowsing.get('/api/search', async (req, res) => {
       size: manga.filesize,
       summary: null,
       tags: manga.tags ? formatTags(manga.tags) : '',
-      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`,
+      url: manga.url
     }))
+    const hash = createHash('md5').update(JSON.stringify(responseData)).digest('hex')
     res.json({
       data: responseData,
+      hash,
       draw: 0,
       recordsFiltered: responseData.length,
       recordsTotal: filterMangas.length
@@ -1053,6 +1062,19 @@ LANBrowsing.get('/api/archives/:hash/page', async (req, res) => {
   } catch (err) {
     console.error(err)
     res.status(500).send('Error processing file')
+  }
+})
+
+// 处理webview请求
+LANBrowsing.get('/reader', async (req, res) => {
+  const id = req.query.id
+  const manga = await Manga.findOne({where: {hash: id}})
+
+  // 重定向至manga.url
+  if (manga && manga.url) {
+    res.redirect(manga.url.replace('exhentai', 'e-hentai'))
+  } else {
+    res.status(404).send('Manga not found')
   }
 })
 

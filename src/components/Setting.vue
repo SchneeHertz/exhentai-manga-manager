@@ -132,6 +132,13 @@
               @change="saveSetting"
             />
           </el-col>
+          <el-col :span="24" class="setting-switch">
+            <el-switch
+              v-model="setting.defaultInsertEmptyPage"
+              :active-text="$t('m.defaultInsertEmptyPage')"
+              @change="saveSetting"
+            />
+          </el-col>
         </el-row>
       </el-tab-pane>
       <el-tab-pane :label="$t('m.collectTag')" name="collectTag">
@@ -270,6 +277,17 @@
               </el-input>
             </div>
           </el-col>
+          <el-col :span="24">
+            <NameFormItem class="setting-line" prependWidth="110px" appendWidth="0">
+              <template #prepend>{{$t('m.customCss')}}</template>
+              <template #default>
+                <el-input v-model="setting.customCss" :placeholder="$t('m.customCssPlaceholder')" @change="saveSetting" :rows="2" type="textarea" ></el-input>
+              </template>
+              <template #append>
+                <el-button text :icon="MdRefresh" @click="reloadWindow"></el-button>
+              </template>
+            </NameFormItem>
+          </el-col>
           <el-col :span="4">
             <div class="setting-line">
               <el-popconfirm
@@ -322,22 +340,22 @@
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
-              v-model="setting.showComment"
-              :active-text="$t('m.showComment')"
+              v-model="setting.startOnLogin"
+              :active-text="$t('m.startOnLogin')"
               @change="saveSetting"
-            />
-          </el-col>
-          <el-col :span="6" class="setting-switch">
-            <el-switch
-              v-model="setting.showTranslation"
-              :active-text="$t('m.tagTranslate')"
-              @change="handleTranslationSettingChange"
             />
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
               v-model="setting.autoCheckUpdates"
               :active-text="$t('m.autoCheckUpdates')"
+              @change="saveSetting"
+            />
+          </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.enabledLANBrowsing"
+              :active-text="$t('m.enabledLANBrowsing')"
               @change="saveSetting"
             />
           </el-col>
@@ -357,15 +375,22 @@
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
-              v-model="setting.skipDeleteConfirm"
-              :active-text="$t('m.skipDeleteConfirm')"
+              v-model="setting.showComment"
+              :active-text="$t('m.showComment')"
               @change="saveSetting"
             />
           </el-col>
           <el-col :span="6" class="setting-switch">
             <el-switch
-              v-model="setting.enabledLANBrowsing"
-              :active-text="$t('m.enabledLANBrowsing')"
+              v-model="setting.showTranslation"
+              :active-text="$t('m.tagTranslate')"
+              @change="handleTranslationSettingChange"
+            />
+          </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.skipDeleteConfirm"
+              :active-text="$t('m.skipDeleteConfirm')"
               @change="saveSetting"
             />
           </el-col>
@@ -426,6 +451,7 @@ import { ref, onMounted, h, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
+import { MdRefresh } from '@vicons/ionicons4'
 
 import { version } from '../../package.json'
 import { gh_token } from '../../secret_key.json'
@@ -456,6 +482,7 @@ onMounted(() => {
       if (res.autoCheckUpdates === undefined) setting.value.autoCheckUpdates = true
       if (res.trimTitleRegExp === undefined) setting.value.trimTitleRegExp = '^\\d+[-]?\\s*|\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
       if (res.defaultScraper === undefined) setting.value.defaultScraper = 'exhentai'
+      if (res.defaultInsertEmptyPage === undefined) setting.value.defaultInsertEmptyPage = true
       saveSetting()
 
       // default action
@@ -464,6 +491,7 @@ onMounted(() => {
       if (res.showTranslation) loadTranslationFromEhTagTranslation()
       if (res.autoCheckUpdates) autoCheckUpdates(false)
       if (res.enabledLANBrowsing) ipcRenderer.invoke('enable-LAN-browsing')
+      if (res.customCss) electronFunction['insert-css'](res.customCss)
     })
 })
 
@@ -680,6 +708,10 @@ const addTagToCollect = () => {
 const removeTag = (id) => {
   setting.value.collectTag = setting.value.collectTag.filter(tag => tag.id !== id)
   saveSetting()
+}
+
+const reloadWindow = () => {
+  window.location.reload()
 }
 
 const dialogVisibleSetting = ref(false)

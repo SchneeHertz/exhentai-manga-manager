@@ -65,9 +65,11 @@
 - Show library folder structure, view mangas by folder
 - Support importing exhentai overall metadata database backup
 - Built-in image viewer supports single page, double page, and scroll browsing.
-- Copy Metadata from ExHentai Page[Script](https://sleazyfork.org/zh-CN/scripts/472321-%E6%8F%90%E5%8F%96e-hentai%E7%94%BB%E5%BB%8A%E5%85%83%E6%95%B0%E6%8D%AE)
 - Tag Frequency Analysis
 - Local Area Network Browsing
+- Supporting scripts
+  - [Copy Metadata from ExHentai Gallery Page](https://sleazyfork.org/zh-CN/scripts/472321)
+  - [Highlight Gallery in Libary](https://greasyfork.org/zh-CN/scripts/510077)
 
 ## TODO
 - Rename and move manga files according to rules

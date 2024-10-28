@@ -36,7 +36,7 @@
             <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </div>
-        <div v-else-if="imageStyleType === 'single'">
+        <div v-else-if="imageStyleType === 'single'" class="image-frame-outside">
           <div class="image-frame">
             <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
               <img
@@ -57,7 +57,7 @@
             />
           </div>
         </div>
-        <div v-else-if="imageStyleType === 'double'">
+        <div v-else-if="imageStyleType === 'double'" class="image-frame-outside">
           <div class="image-frame">
             <div class="viewer-image-frame viewer-image-frame-double">
               <img
@@ -618,10 +618,10 @@ defineExpose({
 .drawer-viewer-body
   width: 100%
   height: 100%
-  display: flex
-  align-items: center
-  justify-content: center
-
+  .image-frame-outside
+    height: 100%
+    display: flex
+    justify-content: center
 .viewer-close-button
   position: absolute
   top: 28px

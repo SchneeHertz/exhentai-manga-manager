@@ -131,7 +131,6 @@
                   @contextmenu="onBookContextMenu($event, book)"
                 />
                 <el-tag class="book-card-language" size="small"
-                  :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
                   :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
                   @click="handleSearchString(`:count=${book.readCount}`)"
                 >{{book.readCount}}</el-tag>
@@ -175,7 +174,6 @@
               <p class="book-title" :title="book.title">{{book.title}}</p>
               <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
               <el-tag class="book-card-language" size="small"
-                :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
                 :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
                 @click="handleSearchString(`:count=${book.readCount}`)"
               >{{book.readCount}}</el-tag>
@@ -360,7 +358,6 @@
               @contextmenu="onBookContextMenu($event, book)"
             />
             <el-tag class="book-card-language" size="small"
-              :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
               :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
               @click="handleSearchString(`:count=${book.readCount}`)"
             >{{book.readCount}}</el-tag>

@@ -53,7 +53,7 @@ import { Link } from '@element-plus/icons-vue'
 
 const props = defineProps(['cookie', 'searchTypeList', 'setting'])
 
-const emit = defineEmits(['message', 'resolveSearchResult'])
+const emit = defineEmits(['message', 'resolveSearchResult', 'serviceAvailable'])
 
 const dialogVisibleEhSearch = ref(false)
 const searchResultLoading = ref(false)
@@ -180,6 +180,7 @@ const resolveEhentaiResult = (htmlString) => {
   } catch (e) {
     console.log(e)
     if (htmlString.includes('Your IP address has been')) {
+      emit('serviceAvailable', false)
       emit('message', 'error', t('c.ipBanned'))
     } else {
       emit('message', 'error', t('c.getMetadataFailed'))

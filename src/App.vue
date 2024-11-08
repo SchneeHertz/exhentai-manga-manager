@@ -591,6 +591,7 @@
       :setting="setting"
       @message="printMessage"
       @resolve-search-result="resolveSearchResult"
+      @service-available="setServiceAvailable"
     ></SearchDialog>
     <Setting
       ref="SettingRef"
@@ -1306,11 +1307,14 @@ export default defineComponent({
       if (type === 'hentag') {
         book.url = url
         this.getBookInfoFromHentag(book)
-      } else {
+      } else if (type === 'e-hentai') {
         book.url = url
         this.getBookInfoFromEh(book)
       }
       this.$refs.SearchDialogRef.dialogVisibleEhSearch = false
+    },
+    setServiceAvailable (value) {
+      this.serviceAvailable = value
     },
     async getBookInfoFromHentag (book) {
       const data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`).then(res => res.json())
@@ -1423,7 +1427,7 @@ export default defineComponent({
     getBookInfo (book) {
       if (book.url.startsWith('https://hentag.com')) {
         this.getBookInfoFromHentag(book)
-      } else {
+      } else if (book.url.includes('exhentai') || book.url.includes('e-hentai')) {
         this.getBookInfoFromEh(book)
       }
     },

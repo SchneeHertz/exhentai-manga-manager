@@ -10,13 +10,13 @@
   >
     <div class="drawer-viewer-body"
       ref="drawerViewerBody"
-      @click="handleViewerAreaClick"
     >
       <div class="drawer-image-content"
         v-if="!showThumbnail"
         v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"
         element-loading-background="transparent"
+        @click="handleViewerAreaClick"
       >
         <div v-if="imageStyleType === 'scroll'">
           <div

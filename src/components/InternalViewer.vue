@@ -352,36 +352,36 @@ const returnImageStyle = (image) => {
             if (props.setting.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight - 1})
             } else {
-              // 28,30 is the height of .viewer-image-page
-              return returnImageStyleObject({height: innerHeight - 30})
+              // minus 36 for the height of .viewer-image-page
+              return returnImageStyleObject({height: innerHeight - 36})
             }
           }
           case 'width': {
-            // 18 is the width of scrollbar
+            // minus 32 for the width of scrollbar
             if (image.width > image.height) {
-              return returnImageStyleObject({width: innerWidth - 18})
+              return returnImageStyleObject({width: innerWidth - 32})
             } else {
-              return returnImageStyleObject({width: (innerWidth - 18) / 2})
+              return returnImageStyleObject({width: (innerWidth - 32) / 2})
             }
           }
           case 'window': {
             if (image.width > image.height) {
               if (image.width / image.height > windowRatio) {
-                return returnImageStyleObject({width: innerWidth - 18})
+                return returnImageStyleObject({width: innerWidth - 32})
               } else {
                 if (props.setting.hidePageNumber) {
                   return returnImageStyleObject({height: innerHeight})
                 } else {
-                  return returnImageStyleObject({height: innerHeight - 30})
+                  return returnImageStyleObject({height: innerHeight - 36})
                 }
               }
             } else if (image.width * 2 / image.height > windowRatio) {
-              return returnImageStyleObject({width: (innerWidth - 18) / 2 })
+              return returnImageStyleObject({width: (innerWidth - 32) / 2 })
             } else {
               if (props.setting.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight - 1})
               } else {
-                return returnImageStyleObject({height: innerHeight - 30})
+                return returnImageStyleObject({height: innerHeight - 36})
               }
             }
           }
@@ -393,20 +393,20 @@ const returnImageStyle = (image) => {
             if (props.setting.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight})
             } else {
-              return returnImageStyleObject({height: innerHeight - 30})
+              return returnImageStyleObject({height: innerHeight - 36})
             }
           }
           case 'width': {
-            return returnImageStyleObject({width: innerWidth - 18})
+            return returnImageStyleObject({width: innerWidth - 32})
           }
           case 'window': {
             if (image.width / image.height > windowRatio) {
-              return returnImageStyleObject({width: innerWidth - 18})
+              return returnImageStyleObject({width: innerWidth - 32})
             } else {
               if (props.setting.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight})
               } else {
-                return returnImageStyleObject({height: innerHeight - 30})
+                return returnImageStyleObject({height: innerHeight - 36})
               }
             }
           }
@@ -619,7 +619,7 @@ defineExpose({
   width: 100%
   height: 100%
   .image-frame-outside
-    height: 100%
+    height: 100vh
     display: flex
     justify-content: center
 .viewer-close-button

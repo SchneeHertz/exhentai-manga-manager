@@ -664,10 +664,11 @@ ipcMain.handle('select-folder', async (event, title) => {
   }
 })
 
-ipcMain.handle('select-file', async (event, title) => {
+ipcMain.handle('select-file', async (event, title, filters) => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title,
-    properties: ['openFile']
+    properties: ['openFile'],
+    filters
   })
   if (!result.canceled) {
     return result.filePaths[0]
@@ -727,7 +728,8 @@ ipcMain.handle('import-database', async (event, arg) => {
 
 ipcMain.handle('import-sqlite', async (event, bookList) => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile']
+    properties: ['openFile'],
+    filters: [{ name: 'SQLite', extensions: ['sqlite'] }]
   })
   if (!result.canceled) {
     const db = await open({

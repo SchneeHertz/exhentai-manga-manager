@@ -1829,7 +1829,7 @@ export default defineComponent({
       this.folderTreeData = await ipcRenderer.invoke('get-folder-tree', bookList)
     },
     async selectFolderTreeNode (selectNode) {
-      const clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath
+      const clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath + this.pathSep
       this.bookList.map(book => book.folderHide = !book.filepath.startsWith(clickLibraryPath))
       this.chunkList()
     },

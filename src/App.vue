@@ -67,6 +67,8 @@
             <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
             <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
             <el-option :label="$t('m.titleDescend')" value="titleDescend"></el-option>
+            <el-option :label="$t('m.pageAscend')" value="pageAscend"></el-option>
+            <el-option :label="$t('m.pageDescend')" value="pageDescend"></el-option>
           </el-option-group>
         </el-select>
       </el-col>
@@ -1573,6 +1575,14 @@ export default defineComponent({
           this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a), undefined, {numeric: true, sensitivity: 'base'}))
           this.chunkList()
           break
+        case 'pageAscend':
+          this.displayBookList = bookList.toSorted(this.sortList('pageCount')).toReversed()
+          this.chunkList()
+          break
+        case 'pageDescend':
+          this.displayBookList = bookList.toSorted(this.sortList('pageCount'))
+          this.chunkList()
+          break
         default:
           this.displayBookList = this.bookList
           this.chunkList()
@@ -1871,6 +1881,7 @@ export default defineComponent({
         const mark = _.some(collectBook, 'mark')
         const pageDiff = _.some(collectBook, 'pageDiff') ? true : undefined
         const readCount = _.max(collectBook.map(book => book.readCount))
+        const pageCount = _.sum(collectBook.map(book => book.pageCount))
         const tags = _.mergeWith({}, ...collectBook.map(book => book.tags), (obj, src) => {
           if (_.isArray(obj) && _.isArray(src)) {
             return [...new Set(obj.concat(src))]
@@ -1887,7 +1898,7 @@ export default defineComponent({
             title: collection.title,
             id: collection.id,
             coverPath: collectBook?.[0]?.coverPath,
-            date, posted, rating, mtime, mark, tags, title_jpn, category, status, pageDiff, readCount,
+            date, posted, rating, mtime, mark, tags, title_jpn, category, status, pageDiff, readCount, pageCount,
             list: collection.list,
             filepath,
             isCollection: true,

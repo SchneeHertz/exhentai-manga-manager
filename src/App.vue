@@ -1415,15 +1415,15 @@ export default defineComponent({
     },
     async resetMetadata (book) {
       book.title = this.returnFileName(book)
-      book.title_jpn = ''
-      book.posted = 0
-      book.filecount = 0
-      book.rating = 0
-      book.filesize = 0
-      book.category = ''
+      book.title_jpn = null
+      book.posted = null
+      book.filecount = null
+      book.rating = null
+      book.filesize = null
+      book.category = null
       book.tags = {}
       book.status = 'non-tag'
-      book.url = ''
+      book.url = null
       await this.saveBook(book)
     },
     getBookInfo (book) {

@@ -435,59 +435,57 @@ ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
       },
       agent: new HttpsProxyAgent(setting.proxy)
     })
-      .then(res => {
-        return res.text()
-      })
-      .catch(e => {
-        sendMessageToWebContents(`Get ex page failed because ${e}`)
-      })
+    .then(async res => {
+      const result = await res.text()
+      if (!result) throw new Error('Empty response, maybe the cookie is expired')
+      return result
+    })
+    .catch(e => {
+      sendMessageToWebContents(`Get ex page failed because ${e}`)
+    })
   } else {
     return await fetch(url, {
       headers: {
         Cookie: cookie
       }
     })
-      .then(res => {
-        return res.text()
-      })
-      .catch(e => {
-        sendMessageToWebContents(`Get ex page failed because ${e}`)
-      })
+    .then(async res => {
+      const result = await res.text()
+      if (!result) throw new Error('Empty response, maybe the cookie is expired')
+      return result
+    })
+    .catch(e => {
+      sendMessageToWebContents(`Get ex page failed because ${e}`)
+    })
   }
 })
 
-ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
+ipcMain.handle('post-data-ex', async (event, { url, data }) => {
   if (setting.proxy) {
     return await fetch(url, {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
-        Cookie: cookie,
         'Content-Type': 'application/json'
       },
       agent: new HttpsProxyAgent(setting.proxy)
     })
-      .then(res => {
-        return res.text()
-      })
-      .catch(e => {
-        sendMessageToWebContents(`Get ex data failed because ${e}`)
-      })
+    .then(res => res.text())
+    .catch(e => {
+      sendMessageToWebContents(`Get ex data failed because ${e}`)
+    })
   } else {
     return await fetch(url, {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
-        Cookie: cookie,
         'Content-Type': 'application/json'
       }
     })
-      .then(res => {
-        return res.text()
-      })
-      .catch(e => {
-        sendMessageToWebContents(`Get ex data failed because ${e}`)
-      })
+    .then(res => res.text())
+    .catch(e => {
+      sendMessageToWebContents(`Get ex data failed because ${e}`)
+    })
   }
 })
 

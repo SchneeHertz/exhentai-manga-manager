@@ -1365,8 +1365,7 @@ export default defineComponent({
               [+match[1], match[2]]
           ],
           'namespace': 1
-        },
-        cookie: this.cookie
+        }
       })
       try {
         _.assign(

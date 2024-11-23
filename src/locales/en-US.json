@@ -22,6 +22,8 @@
     "artistDescend": "Artist Descend",
     "titleAscend": "Title Ascend",
     "titleDescend": "Title Descend",
+    "pageAscend": "Page Ascend",
+    "pageDescend": "Page Descend",
     "manageCollection": "Manage Collection",
     "addCollection": "Add Collection",
     "editCollection": "Edit Collection",

@@ -67,6 +67,8 @@
             <el-option :label="$t('m.artistDescend')" value="artistDescend"></el-option>
             <el-option :label="$t('m.titleAscend')" value="titleAscend"></el-option>
             <el-option :label="$t('m.titleDescend')" value="titleDescend"></el-option>
+            <el-option :label="$t('m.pageAscend')" value="pageAscend"></el-option>
+            <el-option :label="$t('m.pageDescend')" value="pageDescend"></el-option>
           </el-option-group>
         </el-select>
       </el-col>
@@ -131,7 +133,6 @@
                   @contextmenu="onBookContextMenu($event, book)"
                 />
                 <el-tag class="book-card-language" size="small"
-                  :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
                   :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
                   @click="handleSearchString(`:count=${book.readCount}`)"
                 >{{book.readCount}}</el-tag>
@@ -175,7 +176,6 @@
               <p class="book-title" :title="book.title">{{book.title}}</p>
               <img class="book-cover" :src="book.coverPath" @click="openCollection(book)"/>
               <el-tag class="book-card-language" size="small"
-                :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
                 :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
                 @click="handleSearchString(`:count=${book.readCount}`)"
               >{{book.readCount}}</el-tag>
@@ -360,7 +360,6 @@
               @contextmenu="onBookContextMenu($event, book)"
             />
             <el-tag class="book-card-language" size="small"
-              :effect="isChineseTranslatedManga(book) ? 'dark' : 'light'"
               :type="isChineseTranslatedManga(book) ? 'danger' : 'info'"
               @click="handleSearchString(`:count=${book.readCount}`)"
             >{{book.readCount}}</el-tag>
@@ -594,6 +593,7 @@
       :setting="setting"
       @message="printMessage"
       @resolve-search-result="resolveSearchResult"
+      @service-available="setServiceAvailable"
     ></SearchDialog>
     <Setting
       ref="SettingRef"
@@ -1309,11 +1309,14 @@ export default defineComponent({
       if (type === 'hentag') {
         book.url = url
         this.getBookInfoFromHentag(book)
-      } else {
+      } else if (type === 'e-hentai') {
         book.url = url
         this.getBookInfoFromEh(book)
       }
       this.$refs.SearchDialogRef.dialogVisibleEhSearch = false
+    },
+    setServiceAvailable (value) {
+      this.serviceAvailable = value
     },
     async getBookInfoFromHentag (book) {
       const data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`).then(res => res.json())
@@ -1412,21 +1415,21 @@ export default defineComponent({
     },
     async resetMetadata (book) {
       book.title = this.returnFileName(book)
-      book.title_jpn = ''
-      book.posted = 0
-      book.filecount = 0
-      book.rating = 0
-      book.filesize = 0
-      book.category = ''
+      book.title_jpn = null
+      book.posted = null
+      book.filecount = null
+      book.rating = null
+      book.filesize = null
+      book.category = null
       book.tags = {}
       book.status = 'non-tag'
-      book.url = ''
+      book.url = null
       await this.saveBook(book)
     },
     getBookInfo (book) {
       if (book.url.startsWith('https://hentag.com')) {
         this.getBookInfoFromHentag(book)
-      } else {
+      } else if (book.url.includes('exhentai') || book.url.includes('e-hentai')) {
         this.getBookInfoFromEh(book)
       }
     },
@@ -1572,6 +1575,14 @@ export default defineComponent({
           this.displayBookList = bookList.toSorted((a, b) => this.getDisplayTitle(b).localeCompare(this.getDisplayTitle(a), undefined, {numeric: true, sensitivity: 'base'}))
           this.chunkList()
           break
+        case 'pageAscend':
+          this.displayBookList = bookList.toSorted(this.sortList('pageCount')).toReversed()
+          this.chunkList()
+          break
+        case 'pageDescend':
+          this.displayBookList = bookList.toSorted(this.sortList('pageCount'))
+          this.chunkList()
+          break
         default:
           this.displayBookList = this.bookList
           this.chunkList()
@@ -1586,7 +1597,7 @@ export default defineComponent({
       if (queryString) {
         const keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
         if (!_.isEmpty(keywords)) {
-          const nextKeyword = queryString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g, '').trim()
+          const nextKeyword = queryString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\(\)\w\d一-龟]+"\$/g, '').trim()
           if (nextKeyword[0] === '-' || nextKeyword[0] === '~') {
             result = _.filter(options, (str) => {
               return _.includes(str.value.toLowerCase(), nextKeyword.slice(1).toLowerCase())
@@ -1624,11 +1635,11 @@ export default defineComponent({
     },
     handleInput (val) {
       try {
-        if (/^[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$$/.test(val) && this.searchString.trim() !== val.trim()) {
+        if (/^[\w\d一-龟]+:"[- ._\(\)\w\d一-龟]+"\$$/.test(val) && this.searchString.trim() !== val.trim()) {
           const keywords = [...this.searchString.trim().matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
           if (!_.isEmpty(keywords)) {
-            const keyword = this.searchString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g, '').trim()
-            const matches = this.searchString.match(/(~|-)?[\w\d一-龟]+:"[- ._\w\d一-龟]+"\$/g)
+            const keyword = this.searchString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\(\)\w\d一-龟]+"\$/g, '').trim()
+            const matches = this.searchString.match(/(~|-)?[\w\d一-龟]+:"[- ._\(\)\w\d一-龟]+"\$/g)
             if (keyword[0] === '-') {
               this.searchString = matches.concat([`-${val}`]).join(' ')
             } else if (keyword[0] === '~') {
@@ -1828,8 +1839,12 @@ export default defineComponent({
       this.folderTreeData = await ipcRenderer.invoke('get-folder-tree', bookList)
     },
     async selectFolderTreeNode (selectNode) {
-      const clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath
-      this.bookList.map(book => book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+      if (selectNode.folderPath) {
+        const clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath + this.pathSep
+        this.bookList.map(book => book.folderHide = !book.filepath.startsWith(clickLibraryPath))
+      } else {
+        this.bookList.map(book => book.folderHide = false)
+      }
       this.chunkList()
     },
     handleNodeExpand (nodeObject) {
@@ -1866,6 +1881,7 @@ export default defineComponent({
         const mark = _.some(collectBook, 'mark')
         const pageDiff = _.some(collectBook, 'pageDiff') ? true : undefined
         const readCount = _.max(collectBook.map(book => book.readCount))
+        const pageCount = _.sum(collectBook.map(book => book.pageCount))
         const tags = _.mergeWith({}, ...collectBook.map(book => book.tags), (obj, src) => {
           if (_.isArray(obj) && _.isArray(src)) {
             return [...new Set(obj.concat(src))]
@@ -1882,7 +1898,7 @@ export default defineComponent({
             title: collection.title,
             id: collection.id,
             coverPath: collectBook?.[0]?.coverPath,
-            date, posted, rating, mtime, mark, tags, title_jpn, category, status, pageDiff, readCount,
+            date, posted, rating, mtime, mark, tags, title_jpn, category, status, pageDiff, readCount, pageCount,
             list: collection.list,
             filepath,
             isCollection: true,
@@ -2090,7 +2106,7 @@ export default defineComponent({
     resolveGroupTagSelected () {
       const letter2cat = _.invert(this.cat2letter)
       let tags = this.groupTagSelected.map(tag => {
-        const match = /([\w\d一-龟]+):"([- ._\w\d一-龟]+)"\$/.exec(tag)
+        const match = /([\w\d一-龟]+):"([- ._\(\)\w\d一-龟]+)"\$/.exec(tag)
         if (match[1] && match[2]) {
           return {
             category: letter2cat[match[1]] ? letter2cat[match[1]] : match[1],

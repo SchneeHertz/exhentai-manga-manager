@@ -10,13 +10,13 @@
   >
     <div class="drawer-viewer-body"
       ref="drawerViewerBody"
-      @click="handleViewerAreaClick"
     >
       <div class="drawer-image-content"
         v-if="!showThumbnail"
         v-loading="viewerImageList.length === 0"
         element-loading-text="Loading"
         element-loading-background="transparent"
+        @click="handleViewerAreaClick"
       >
         <div v-if="imageStyleType === 'scroll'">
           <div
@@ -36,7 +36,7 @@
             <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </div>
-        <div v-else-if="imageStyleType === 'single'">
+        <div v-else-if="imageStyleType === 'single'" class="image-frame-outside">
           <div class="image-frame">
             <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
               <img
@@ -57,7 +57,7 @@
             />
           </div>
         </div>
-        <div v-else-if="imageStyleType === 'double'">
+        <div v-else-if="imageStyleType === 'double'" class="image-frame-outside">
           <div class="image-frame">
             <div class="viewer-image-frame viewer-image-frame-double">
               <img
@@ -352,36 +352,36 @@ const returnImageStyle = (image) => {
             if (props.setting.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight - 1})
             } else {
-              // 28,30 is the height of .viewer-image-page
-              return returnImageStyleObject({height: innerHeight - 30})
+              // minus 36 for the height of .viewer-image-page
+              return returnImageStyleObject({height: innerHeight - 36})
             }
           }
           case 'width': {
-            // 18 is the width of scrollbar
+            // minus 32 for the width of scrollbar
             if (image.width > image.height) {
-              return returnImageStyleObject({width: innerWidth - 18})
+              return returnImageStyleObject({width: innerWidth - 32})
             } else {
-              return returnImageStyleObject({width: (innerWidth - 18) / 2})
+              return returnImageStyleObject({width: (innerWidth - 32) / 2})
             }
           }
           case 'window': {
             if (image.width > image.height) {
               if (image.width / image.height > windowRatio) {
-                return returnImageStyleObject({width: innerWidth - 18})
+                return returnImageStyleObject({width: innerWidth - 32})
               } else {
                 if (props.setting.hidePageNumber) {
                   return returnImageStyleObject({height: innerHeight})
                 } else {
-                  return returnImageStyleObject({height: innerHeight - 30})
+                  return returnImageStyleObject({height: innerHeight - 36})
                 }
               }
             } else if (image.width * 2 / image.height > windowRatio) {
-              return returnImageStyleObject({width: (innerWidth - 18) / 2 })
+              return returnImageStyleObject({width: (innerWidth - 32) / 2 })
             } else {
               if (props.setting.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight - 1})
               } else {
-                return returnImageStyleObject({height: innerHeight - 30})
+                return returnImageStyleObject({height: innerHeight - 36})
               }
             }
           }
@@ -393,20 +393,20 @@ const returnImageStyle = (image) => {
             if (props.setting.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight})
             } else {
-              return returnImageStyleObject({height: innerHeight - 30})
+              return returnImageStyleObject({height: innerHeight - 36})
             }
           }
           case 'width': {
-            return returnImageStyleObject({width: innerWidth - 18})
+            return returnImageStyleObject({width: innerWidth - 32})
           }
           case 'window': {
             if (image.width / image.height > windowRatio) {
-              return returnImageStyleObject({width: innerWidth - 18})
+              return returnImageStyleObject({width: innerWidth - 32})
             } else {
               if (props.setting.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight})
               } else {
-                return returnImageStyleObject({height: innerHeight - 30})
+                return returnImageStyleObject({height: innerHeight - 36})
               }
             }
           }
@@ -618,10 +618,10 @@ defineExpose({
 .drawer-viewer-body
   width: 100%
   height: 100%
-  display: flex
-  align-items: center
-  justify-content: center
-
+  .image-frame-outside
+    height: 100vh
+    display: flex
+    justify-content: center
 .viewer-close-button
   position: absolute
   top: 28px

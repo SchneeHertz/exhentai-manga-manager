@@ -22,6 +22,8 @@
     "artistDescend": "作者降序",
     "titleAscend": "標題升序",
     "titleDescend": "標題降序",
+    "pageAscend": "頁數升序",
+    "pageDescend": "頁數降序",
     "manageCollection": "管理合集",
     "addCollection": "新增合集",
     "editCollection": "編輯合集",

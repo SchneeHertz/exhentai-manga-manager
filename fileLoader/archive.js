@@ -61,7 +61,7 @@ const solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH) => {
 
 const getImageListFromArchive = async (filepath, VIEWER_PATH) => {
   const tempFolder = path.join(VIEWER_PATH, nanoid(8))
-  await spawnPromise(_7z, ['x', filepath, '-o' + tempFolder, '-p123456'])
+  await spawnPromise(_7z, ['x', filepath, '-o' + tempFolder, '-p123456'], 2 * 60 * 1000)
   let list = globSync('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: tempFolder,
     nocase: true
@@ -76,14 +76,14 @@ const deleteImageFromArchive = async (filename, filepath) => {
   return true
 }
 
-const spawnPromise = (commmand, argument) => {
+const spawnPromise = (commmand, argument, timeoutMs = 30 * 1000) => {
   return new Promise((resolve, reject) => {
     const spawned = spawn(commmand, argument)
     const output = []
     const timeout = setTimeout(() => {
       spawned.kill()
       reject('7z return timeout')
-    }, 60 * 1000) // 1分钟超时
+    }, timeoutMs) // 默认30s超时
 
     spawned.on('error', data => {
       clearTimeout(timeout)

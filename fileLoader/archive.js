@@ -80,10 +80,17 @@ const spawnPromise = (commmand, argument) => {
   return new Promise((resolve, reject) => {
     const spawned = spawn(commmand, argument)
     const output = []
+    const timeout = setTimeout(() => {
+      spawned.kill()
+      reject('7z return timeout')
+    }, 60 * 1000) // 1分钟超时
+
     spawned.on('error', data => {
+      clearTimeout(timeout)
       reject(data)
     })
     spawned.on('exit', code => {
+      clearTimeout(timeout)
       if (code === 0) {
         setTimeout(() => resolve(output.join('\r\n')), 50)
       } else {

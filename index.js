@@ -50,10 +50,16 @@ const getColumns = async (sequelize, tableName) => {
 
 const logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
 const logStdout = process.stdout
+const logStderr = process.stderr
 
 console.log = (...message) => {
   logFile.write(format(...message) + '\n')
   logStdout.write(format(...message) + '\n')
+}
+
+console.error = (...message) => {
+  logFile.write(format(...message) + '\n')
+  logStderr.write(format(...message) + '\n')
 }
 
 process

@@ -525,7 +525,9 @@ const selectImageExplorerPath = () => {
 
 const loadTranslationFromEhTagTranslation = async () => {
   const resultObject = {}
-  emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache') || "{}"))
+  const translationCache = JSON.parse(localStorage.getItem('translationCache') || "{}")
+  emit('handleResolveTranslationUpdate', translationCache)
+  ipcRenderer.invoke('update-tag-translation', translationCache)
   await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
   .then(res => res.json())
   .then(res => {
@@ -536,6 +538,7 @@ const loadTranslationFromEhTagTranslation = async () => {
       })
     })
     emit('handleResolveTranslationUpdate', resultObject)
+    ipcRenderer.invoke('update-tag-translation', resultObject)
     localStorage.setItem('translationCache', JSON.stringify(resultObject))
   })
   .catch((error) => {

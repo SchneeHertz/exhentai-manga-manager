@@ -880,30 +880,30 @@ let tagTranslation = undefined
 
 // sort
 function compareItems(a, b, sortKey, ascending = false) {
-  const sortConfig = sortkey_map[sortKey];
+  const sortConfig = sortkey_map[sortKey]
   if (!sortConfig) {
-    throw new Error(`Invalid sort key: ${sortKey}`);
+    throw new Error(`Invalid sort key: ${sortKey}`)
   }
 
-  const { key, type } = sortConfig;
+  const { key, type } = sortConfig
 
-  let valA = a[key];
-  let valB = b[key];
+  let valA = a[key]
+  let valB = b[key]
 
   if (type === "number") {
-    valA = Number(valA) || 0;
-    valB = Number(valB) || 0;
+    valA = Number(valA) || 0
+    valB = Number(valB) || 0
   } else if (type === "date") {
-    valA = new Date(valA).getTime() || 0;
-    valB = new Date(valB).getTime() || 0;
+    valA = new Date(valA).getTime() || 0
+    valB = new Date(valB).getTime() || 0
   } else {
-    valA = String(valA || "");
-    valB = String(valB || "");
+    valA = String(valA || "")
+    valB = String(valB || "")
   }
 
-  if (valA < valB) return ascending ? -1 : 1;
-  if (valA > valB) return ascending ? 1 : -1;
-  return 0;
+  if (valA < valB) return ascending ? -1 : 1
+  if (valA > valB) return ascending ? 1 : -1
+  return 0
 }
 
 // 格式化标签
@@ -946,7 +946,7 @@ const loadTranslationFromEhTagTranslation = async () => {
     const sourceTranslationDatabase = res.data
     _.forIn(sourceTranslationDatabase, cat => {
       _.forIn(cat.data, (value, key) => {
-        resultObject[key] = _.pick(value, ['name', 'intro']);
+        resultObject[key] = _.pick(value, ['name', 'intro'])
       })
     })
 
@@ -958,7 +958,7 @@ const loadTranslationFromEhTagTranslation = async () => {
       JSON.stringify({ mtime: currentTime, data: resultObject }, null, 2)
     )
   } catch (error) {
-    console.error('Failed to load translation:', error);
+    console.error('Failed to load translation:', error)
 
     if (fs.existsSync(CACHE_FILE)) {
       console.log('Using expired local cache as a fallback')

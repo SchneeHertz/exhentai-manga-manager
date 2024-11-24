@@ -850,13 +850,71 @@ fs.mkdirSync(staticFilePath, { recursive: true })
 LANBrowsing.use('/static', express.static(staticFilePath))
 
 let mangas = []
+let tagTranslation = undefined
 
 // 格式化标签
 const formatTags = (tags) => {
   return Object.entries(tags)
-    .map(([key, values]) => values.map(value => `${key}:${value}`).join(', '))
+    .map(([key, values]) => values.map(value => `${key}:${tagTranslation?.[value]?.name ?? value}`).join(', '))
     .join(', ')
 }
+
+const loadTranslationFromEhTagTranslation = async () => {
+  const CACHE_FILE = path.join(STORE_PATH, 'ehTagTranslationCache.json')
+  // 3 天缓存有效期
+  const CACHE_EXPIRATION = 3 * 24 * 60 * 60 * 1000
+
+  let resultObject = {}
+  const currentTime = Date.now()
+
+  // 当已存在 tag 数据时, 跳过缓存
+  if (tagTranslation) {
+    console.log('tagTranslation is already loaded')
+    return
+  }
+
+  try {
+    if (fs.existsSync(CACHE_FILE)) {
+      const cacheData = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'))
+      const { mtime, data } = cacheData
+
+      if (currentTime - mtime < CACHE_EXPIRATION) {
+        console.log('Loading data from local cache')
+        tagTranslation = data
+        return
+      }
+    }
+
+    console.log('Cache expired or missing, fetching new data...')
+    const response = await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
+    const res = await response.json()
+
+    const sourceTranslationDatabase = res.data
+    _.forIn(sourceTranslationDatabase, cat => {
+      _.forIn(cat.data, (value, key) => {
+        resultObject[key] = _.pick(value, ['name', 'intro']);
+      })
+    })
+
+    tagTranslation = resultObject
+
+    // 缓存 tag 文件
+    fs.writeFileSync(
+      CACHE_FILE,
+      JSON.stringify({ mtime: currentTime, data: resultObject }, null, 2)
+    )
+  } catch (error) {
+    console.error('Failed to load translation:', error);
+
+    if (fs.existsSync(CACHE_FILE)) {
+      console.log('Using expired local cache as a fallback')
+      const cacheData = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'))
+      tagTranslation = cacheData.data
+    }
+  }
+}
+
+loadTranslationFromEhTagTranslation()
 
 LANBrowsing.get('/api/search', async (req, res) => {
   try {
@@ -871,14 +929,13 @@ LANBrowsing.get('/api/search', async (req, res) => {
       filterMangas = mangas.filter(manga => {
         return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url'])).toLowerCase().includes(filter.toLowerCase())
         || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
-      })
+      }).toSorted((a, b) => -(a.date - b.date)).slice(start, start + length)
     } else {
-      filterMangas = mangas
+      filterMangas = mangas.toSorted((a, b) => -(a.date - b.date))
     }
-    filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
 
     // 格式化响应数据
-    const responseData = filterMangas.slice(start, start + length).map(manga => ({
+    const responseData = filterMangas.map(manga => ({
       arcid: manga.hash,
       extension: path.extname(manga.filepath),
       filename: path.basename(manga.filepath),
@@ -890,7 +947,7 @@ LANBrowsing.get('/api/search', async (req, res) => {
       summary: null,
       tags: manga.tags ? formatTags(manga.tags) : '',
       title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`,
-      url: manga.url
+      url: manga.url,
     }))
     const hash = createHash('md5').update(JSON.stringify(responseData)).digest('hex')
     res.json({

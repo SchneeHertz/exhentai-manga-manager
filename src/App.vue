@@ -903,6 +903,7 @@ export default defineComponent({
     })
     this.pathSep = ipcRenderer.sendSync('get-path-sep')
     this.sortValue = localStorage.getItem('sortValue')
+    this.sortValue = this.sortValue === 'null' ? undefined : this.sortValue === 'undefined' ? undefined : this.sortValue
     this.expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
     window.addEventListener('keydown', this.resolveKey)
     window.addEventListener('wheel', this.resolveWheel)

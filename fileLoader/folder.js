@@ -21,6 +21,7 @@ const getFolderlist = async (libraryPath) => {
   const imageList = globIterate('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: libraryPath,
     nocase: true,
+    nodir: true,
     follow: true,
     absolute: true
   })

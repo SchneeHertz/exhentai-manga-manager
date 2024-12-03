@@ -13,6 +13,7 @@ const getArchivelist = async (libraryPath) => {
   const list = globSync('**/*.@(rar|7z|cb7|cbr)', {
     cwd: libraryPath,
     nocase: true,
+    nodir: true,
     follow: true,
     absolute: true
   })

@@ -9,6 +9,7 @@ const getZipFilelist = async (libraryPath) => {
   const list = globSync('**/*.@(zip|cbz)', {
     cwd: libraryPath,
     nocase: true,
+    nodir: true,
     follow: true,
     absolute: true
   })

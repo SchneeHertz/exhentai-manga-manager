@@ -14,6 +14,9 @@ import { ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Chart from 'chart.js/auto'
 
+import { useAppStore } from '../pinia.js'
+const appStore = useAppStore()
+
 const { t } = useI18n()
 
 const props = defineProps({
@@ -21,7 +24,6 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  setting: Object,
   resolvedTranslation: Object
 })
 
@@ -30,7 +32,7 @@ const emit = defineEmits(['search'])
 const dialogVisibleGraph = ref(false)
 
 const resolveTags = (tags) => {
-  if (props.setting.showTranslation) return tags.map(tag => props.resolvedTranslation[tag]?.name || tag)
+  if (appStore.setting.showTranslation) return tags.map(tag => props.resolvedTranslation[tag]?.name || tag)
   return tags
 }
 

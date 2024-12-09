@@ -33,7 +33,7 @@
               />
               <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
             </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!appStore.setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </div>
         <div v-else-if="imageStyleType === 'single'" class="image-frame-outside">
@@ -46,7 +46,7 @@
                 @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex])"
               />
             </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!appStore.setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
             <img
               :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
               class="viewer-image-preload"
@@ -75,7 +75,7 @@
             <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id">
               <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
             </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!appStore.setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
           </div>
         </div>
       </div>
@@ -164,9 +164,12 @@ import { Close } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
 import ContextMenu from '@imengyu/vue3-context-menu'
 
+import { useAppStore } from '../pinia.js'
+const appStore = useAppStore()
+
 const { t } = useI18n()
 
-const props = defineProps(['setting', 'keyMap', 'bookDetail'])
+const props = defineProps(['keyMap', 'bookDetail'])
 
 const emit = defineEmits([
   'handleStopReadManga',
@@ -251,13 +254,13 @@ const viewManga = (book, viewerHeight = '100%') => {
   viewerImageList.value = []
   receiveThumbnailList.value = []
   currentImageIndex.value = 0
-  insertEmptyPage.value = props.setting.defaultInsertEmptyPage
+  insertEmptyPage.value = appStore.setting.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
   emit('selectBook', book)
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',
-    background: _.includes(props.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+    background: _.includes(appStore.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
   })
   emit('updateWindowTitle', book)
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
@@ -265,7 +268,7 @@ const viewManga = (book, viewerHeight = '100%') => {
     drawerVisibleViewer.value = true
     book.readCount += 1
     emit('saveBook', book)
-    if (props.setting.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
+    if (appStore.setting.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
   })
   .catch(err => {
     console.log(err)
@@ -292,7 +295,7 @@ const currentImageIndex = computed({
         _currentImageIndex.value = 0
       } else if (val > listLength - 1 && listLength >= 1) {
         _currentImageIndex.value = listLength - 1
-        if (props.setting.autoNextManga) emit('toNextManga', 1)
+        if (appStore.setting.autoNextManga) emit('toNextManga', 1)
       } else {
         _currentImageIndex.value = val
       }
@@ -321,7 +324,7 @@ const drawerViewerBody = ref(null)
 
 const thumbnailWidth = computed(() => {
   const innerWidth = drawerViewerBody.value ? drawerViewerBody.value.clientWidth : window.innerWidth
-  return `${(innerWidth - 32) / (props.setting.thumbnailColumn || 10) - 10}px`
+  return `${(innerWidth - 32) / (appStore.setting.thumbnailColumn || 10) - 10}px`
 })
 
 const returnImageStyle = (image) => {
@@ -349,7 +352,7 @@ const returnImageStyle = (image) => {
       case 'double': {
         switch (imageStyleFit.value) {
           case 'height': {
-            if (props.setting.hidePageNumber) {
+            if (appStore.setting.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight - 1})
             } else {
               // minus 36 for the height of .viewer-image-page
@@ -369,7 +372,7 @@ const returnImageStyle = (image) => {
               if (image.width / image.height > windowRatio) {
                 return returnImageStyleObject({width: innerWidth - 32})
               } else {
-                if (props.setting.hidePageNumber) {
+                if (appStore.setting.hidePageNumber) {
                   return returnImageStyleObject({height: innerHeight})
                 } else {
                   return returnImageStyleObject({height: innerHeight - 36})
@@ -378,7 +381,7 @@ const returnImageStyle = (image) => {
             } else if (image.width * 2 / image.height > windowRatio) {
               return returnImageStyleObject({width: (innerWidth - 32) / 2 })
             } else {
-              if (props.setting.hidePageNumber) {
+              if (appStore.setting.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight - 1})
               } else {
                 return returnImageStyleObject({height: innerHeight - 36})
@@ -390,7 +393,7 @@ const returnImageStyle = (image) => {
       case 'single': {
         switch (imageStyleFit.value) {
           case 'height': {
-            if (props.setting.hidePageNumber) {
+            if (appStore.setting.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight})
             } else {
               return returnImageStyleObject({height: innerHeight - 36})
@@ -403,7 +406,7 @@ const returnImageStyle = (image) => {
             if (image.width / image.height > windowRatio) {
               return returnImageStyleObject({width: innerWidth - 32})
             } else {
-              if (props.setting.hidePageNumber) {
+              if (appStore.setting.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight})
               } else {
                 return returnImageStyleObject({height: innerHeight - 36})
@@ -444,7 +447,7 @@ const getCurrentImageId = () => {
         return false
       }
       // 28 is the height of .viewer-image-page
-      if (props.setting.hidePageNumber) {
+      if (appStore.setting.hidePageNumber) {
         scrollTopValue -= parseFloat(returnImageStyle(image).height)
       } else {
         scrollTopValue -= parseFloat(returnImageStyle(image).height) + 28
@@ -495,7 +498,7 @@ const handleClickThumbnail = (id) => {
         return false
       }
       // 28 is the height of .viewer-image-page
-      if (props.setting.hidePageNumber) {
+      if (appStore.setting.hidePageNumber) {
         scrollTopValue += parseFloat(returnImageStyle(image).height)
       } else {
         scrollTopValue += parseFloat(returnImageStyle(image).height) + 28
@@ -518,7 +521,7 @@ const handleViewerAreaClick = (event) => {
   if (showThumbnail.value === false) {
     if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
       let click
-      if (props.setting.reverseLeftRight) {
+      if (appStore.setting.reverseLeftRight) {
         ;({ click } = props.keyMap.reverse)
       } else {
         ;({ click } = props.keyMap.normal)

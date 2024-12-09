@@ -51,7 +51,10 @@ import { ref } from 'vue'
 import { Search32Filled } from '@vicons/fluent'
 import { Link } from '@element-plus/icons-vue'
 
-const props = defineProps(['cookie', 'searchTypeList', 'setting'])
+import { useAppStore } from '../pinia.js'
+const appStore = useAppStore()
+
+const props = defineProps(['cookie', 'searchTypeList'])
 
 const emit = defineEmits(['message', 'resolveSearchResult', 'serviceAvailable'])
 
@@ -63,7 +66,7 @@ const ehSearchResultList = ref([])
 const bookDetail = ref({})
 
 const openSearchDialog = (book, server) => {
-  if (!searchTypeDialog.value) searchTypeDialog.value = props.setting.defaultScraper || 'exhentai'
+  if (!searchTypeDialog.value) searchTypeDialog.value = appStore.setting.defaultScraper || 'exhentai'
   dialogVisibleEhSearch.value = true
   bookDetail.value = _.cloneDeep(book)
   if (server) searchTypeDialog.value = server
@@ -79,8 +82,8 @@ const returnTrimFileName = (book) => {
     if (book.type !== 'folder') {
       fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.')
     }
-    if (props.setting.trimTitleRegExp) {
-      return fileNameWithoutExtension.replace(new RegExp(props.setting.trimTitleRegExp, 'g'), '')
+    if (appStore.setting.trimTitleRegExp) {
+      return fileNameWithoutExtension.replace(new RegExp(appStore.setting.trimTitleRegExp, 'g'), '')
     }
   } catch (e) {
     console.log(e)

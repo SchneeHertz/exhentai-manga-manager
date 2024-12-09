@@ -458,12 +458,16 @@ import { gh_token } from '../../secret_key.json'
 import { acceleratorInfo } from '../utils.js'
 import NameFormItem from './NameFormItem.vue'
 
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '../pinia.js'
+const appStore = useAppStore()
+const { setting } = storeToRefs(appStore)
+
 const { t } = useI18n()
 
 const props = defineProps(['searchTypeList', 'tagListRaw', 'resolvedTranslation'])
 
 const emit = defineEmits([
-  'updateSetting',
   'handleLanguageSet',
   'message',
   'forceGeneBookList',
@@ -472,7 +476,6 @@ const emit = defineEmits([
   'handleResolveTranslationUpdate'
 ])
 
-const setting = ref({})
 onMounted(() => {
   ipcRenderer.invoke('load-setting')
     .then(async (res) => {
@@ -630,7 +633,6 @@ const handleLanguageChange = (val) => {
 }
 
 const saveSetting = () => {
-  emit('updateSetting', setting.value)
   ipcRenderer.invoke('save-setting', _.cloneDeep(setting.value))
 }
 

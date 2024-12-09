@@ -543,7 +543,6 @@
     </el-dialog>
     <InternalViewer
       ref="InternalViewerRef"
-      :setting="setting"
       :key-map="keyMap"
       :book-detail="bookDetail"
       @handle-stop-read-manga="handleStopReadManga"
@@ -582,7 +581,6 @@
     <Graph
       ref="TagGraphRef"
       :book-list="displayBookList"
-      :setting="setting"
       :resolved-translation="resolvedTranslation"
       @search="handleSearchString"
     ></Graph>
@@ -590,7 +588,6 @@
       ref="SearchDialogRef"
       :cookie="cookie"
       :search-type-list="searchTypeList"
-      :setting="setting"
       @message="printMessage"
       @resolve-search-result="resolveSearchResult"
       @service-available="setServiceAvailable"
@@ -600,7 +597,6 @@
       :search-type-list="searchTypeList"
       :tag-list-raw="tagListRaw"
       :resolved-translation="resolvedTranslation"
-      @update-setting="updateSetting"
       @handle-language-set="handleLanguageSet"
       @message="printMessage"
       @force-gene-book-list="forceGeneBookList"
@@ -634,6 +630,9 @@ import Setting from './components/Setting.vue'
 import Graph from './components/Graph.vue'
 import InternalViewer from './components/InternalViewer.vue'
 import SearchDialog from './components/SearchDialog.vue'
+
+import { mapWritableState } from 'pinia'
+import { useAppStore } from './pinia.js'
 
 export default defineComponent({
   components: {
@@ -699,7 +698,6 @@ export default defineComponent({
       editingTag: false,
       editTagOptions: [],
       // setting
-      setting: {},
       serviceAvailable: true,
       // dict
       cat2letter: {
@@ -754,6 +752,9 @@ export default defineComponent({
     }
   },
   computed: {
+    ...mapWritableState(useAppStore, [
+      'setting'
+    ]),
     displayBookCount () {
       if (this.sortValue === 'hidden') {
         return _.sumBy(this.displayBookList, book => book.hiddenBook ? 1 : 0)

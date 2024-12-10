@@ -170,7 +170,6 @@
             <div
               class="book-card"
               v-else-if="book.isCollection && !book.folderHide && visibilityMap[book.id]"
-              :tabindex="index + 1"
             >
               <el-tag effect="dark" type="warning" class="book-collection-tag">{{$t('m.collection')}}</el-tag>
               <p class="book-title" :title="book.title">{{book.title}}</p>
@@ -415,7 +414,6 @@
     />
     <InternalViewer
       ref="InternalViewerRef"
-      :key-map="keyMap"
       @handle-stop-read-manga="handleStopReadManga"
       @to-next-manga="toNextManga"
       @to-next-manga-random="toNextMangaRandom"
@@ -435,7 +433,6 @@
     <SearchDialog
       ref="SearchDialogRef"
       @resolve-search-result="resolveSearchResult"
-      @service-available="setServiceAvailable"
     ></SearchDialog>
     <Setting
       ref="SettingRef"
@@ -525,37 +522,12 @@ export default defineComponent({
       startX: undefined,
       startY: undefined,
       isSelecting: false,
-      // setting
-      serviceAvailable: true,
-      // dict
-      cat2letter: {
-        language: 'l',
-        parody: 'p',
-        character: 'c',
-        group: 'g',
-        artist: 'a',
-        female: 'f',
-        male: 'm',
-        mixed: 'x',
-        other: 'o',
-        cosplayer: 'cos'
-      },
-      keyMap: {
-        normal: {
-          next: 'ArrowRight',
-          prev: 'ArrowLeft',
-          click: 1
-        },
-        reverse: {
-          next: 'ArrowLeft',
-          prev: 'ArrowRight',
-          click: -1
-        }
-      }
     }
   },
   computed: {
     ...mapWritableState(useAppStore, [
+      'cat2letter',
+      'keyMap',
       'statusOption',
       'categoryOption',
       'setting',
@@ -567,6 +539,7 @@ export default defineComponent({
       'chunkDisplayBookList',
       'collectionList',
       'openCollectionBookList',
+      'serviceAvailable',
     ]),
     displayBookCount () {
       if (this.sortValue === 'hidden') {
@@ -1098,9 +1071,6 @@ export default defineComponent({
         this.getBookInfoFromEh(book)
       }
       this.$refs.SearchDialogRef.dialogVisibleEhSearch = false
-    },
-    setServiceAvailable (value) {
-      this.serviceAvailable = value
     },
     async getBookInfoFromHentag (book) {
       const data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`).then(res => res.json())

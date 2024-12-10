@@ -181,7 +181,7 @@ const resolveEhentaiResult = (htmlString) => {
   } catch (e) {
     console.log(e)
     if (htmlString.includes('Your IP address has been')) {
-      emit('serviceAvailable', false)
+      appStore.serviceAvailable = false
       appStore.printMessage('error', t('c.ipBanned'))
     } else {
       appStore.printMessage('error', t('c.getMetadataFailed'))

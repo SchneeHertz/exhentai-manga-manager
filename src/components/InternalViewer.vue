@@ -169,8 +169,6 @@ const appStore = useAppStore()
 
 const { t } = useI18n()
 
-const props = defineProps(['keyMap'])
-
 const emit = defineEmits([
   'handleStopReadManga',
   'toNextManga',
@@ -520,9 +518,9 @@ const handleViewerAreaClick = (event) => {
     if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
       let click
       if (appStore.setting.reverseLeftRight) {
-        ;({ click } = props.keyMap.reverse)
+        ;({ click } = appStore.keyMap.reverse)
       } else {
-        ;({ click } = props.keyMap.normal)
+        ;({ click } = appStore.keyMap.normal)
       }
       if(event.clientX > innerWidth / 2) {
         currentImageIndex.value += click

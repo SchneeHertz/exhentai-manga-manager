@@ -4,7 +4,7 @@
     <el-button class="fullscreen-button" circle :icon="FullScreen" size="large" @click="switchFullscreen"></el-button>
     <el-row :gutter="20" class="book-search-bar">
       <el-col :span="1" :offset="2">
-        <el-button type="primary" :icon="TreeViewAlt" plain @click="openFolderTree" :title="$t('m.folderTree')"></el-button>
+        <el-button type="primary" :icon="TreeViewAlt" plain @click="$refs.FolderTreeRef.openFolderTree()" :title="$t('m.folderTree')"></el-button>
       </el-col>
       <el-col :span="8">
         <el-autocomplete
@@ -424,29 +424,10 @@
       @update-window-title="updateWindowTitle"
       @rescan-book="rescanBook"
     ></InternalViewer>
-    <el-drawer v-model="sideVisibleFolderTree"
-      :title="$t('m.folderTree')"
-      direction="ltr"
-      :size="setting.folderTreeWidth ? setting.folderTreeWidth : '20%'"
-      modal-class="side-tree-modal"
-    >
-      <el-input
-        class="folder-search"
-        v-model="treeFilterText"
-        clearable
-      ></el-input>
-      <el-tree
-        ref="treeRef"
-        :data="folderTreeData"
-        node-key="folderPath"
-        :default-expanded-keys="expandNodes"
-        :expand-on-click-node="false"
-        :filter-node-method="filterTreeNode"
-        @node-expand="handleNodeExpand"
-        @node-collapse="handleNodeCollapse"
-        @current-change="selectFolderTreeNode"
-      ></el-tree>
-    </el-drawer>
+    <FolderTree
+      ref="FolderTreeRef"
+      @chunk-list="chunkList"
+    />
     <Graph
       ref="TagGraphRef"
       @search="handleSearchString"
@@ -492,6 +473,7 @@ import Graph from './components/Graph.vue'
 import InternalViewer from './components/InternalViewer.vue'
 import SearchDialog from './components/SearchDialog.vue'
 import BookDetailDialog from './components/BookDetailDialog.vue'
+import FolderTree from './components/FolderTree.vue'
 
 import { mapWritableState, mapActions } from 'pinia'
 import { useAppStore } from './pinia.js'
@@ -504,7 +486,8 @@ export default defineComponent({
     Graph,
     InternalViewer,
     SearchDialog,
-    BookDetailDialog
+    BookDetailDialog,
+    FolderTree,
   },
   setup () {
     return {
@@ -517,7 +500,6 @@ export default defineComponent({
   data () {
     return {
       dialogVisibleBookDetail: false,
-      sideVisibleFolderTree: false,
       editCollectionView: false,
       editTagView: false,
       drawerVisibleCollection: false,
@@ -526,9 +508,6 @@ export default defineComponent({
       searchString: '',
       sortValue: undefined,
       currentPage_: 1,
-      treeFilterText: '',
-      folderTreeData: [],
-      expandNodes: [],
       progress: 0,
       randomTags: [],
       visibilityMap: {},
@@ -736,7 +715,6 @@ export default defineComponent({
     })
     this.sortValue = localStorage.getItem('sortValue')
     this.sortValue = this.sortValue === 'null' ? undefined : this.sortValue === 'undefined' ? undefined : this.sortValue
-    this.expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
     window.addEventListener('keydown', this.resolveKey)
     window.addEventListener('wheel', this.resolveWheel)
     window.addEventListener('mousedown', this.resolveMouseDown)
@@ -782,9 +760,6 @@ export default defineComponent({
     tagList () {
       this.reloadRandomTags()
     },
-    treeFilterText (value) {
-      this.$refs.treeRef.filter(value)
-    },
   },
   methods: {
     ...mapActions(useAppStore, [
@@ -825,7 +800,7 @@ export default defineComponent({
       if (this.$refs.TagGraphRef.dialogVisibleGraph) {
         return 'tag-graph'
       }
-      if (this.sideVisibleFolderTree) {
+      if (this.$refs.FolderTreeRef.sideVisibleFolderTree) {
         return 'folder-tree'
       }
       if (this.editCollectionView) {
@@ -1033,7 +1008,7 @@ export default defineComponent({
         // clear search result when at home page
         if (this.currentUI() === 'home') {
           this.handleSearchStringChange()
-          this.$refs.treeRef.setCurrentKey('')
+          this.$refs.FolderTreeRef.resetSelect()
         }
       }
     },
@@ -1080,7 +1055,7 @@ export default defineComponent({
         const res = await ipcRenderer.invoke('load-book-list', scan)
         this.bookList = this.prepareBookList(res)
         this.loadCollectionList()
-        this.geneFolderTree()
+        this.$refs.FolderTreeRef.geneFolderTree()
         this.selectBookList = []
         this.buttonLoadBookListLoading = false
       } catch (error) {
@@ -1623,43 +1598,6 @@ export default defineComponent({
     },
     scrollMainPageTop () {
       document.getElementsByClassName('book-card-area')[0].scrollTop = 0
-    },
-
-
-    // folder tree
-    openFolderTree () {
-      this.sideVisibleFolderTree = !this.sideVisibleFolderTree
-      if (this.sideVisibleFolderTree && _.isEmpty(this.folderTreeData)) {
-        this.geneFolderTree()
-      }
-    },
-    async geneFolderTree () {
-      const bookList = _.filter(_.cloneDeep(this.bookList), book => !book.isCollection)
-      this.folderTreeData = await ipcRenderer.invoke('get-folder-tree', bookList)
-    },
-    async selectFolderTreeNode (selectNode) {
-      if (selectNode.folderPath) {
-        const clickLibraryPath = this.setting.library + this.pathSep + selectNode.folderPath + this.pathSep
-        this.bookList.map(book => book.folderHide = !book.filepath.startsWith(clickLibraryPath))
-      } else {
-        this.bookList.map(book => book.folderHide = false)
-      }
-      this.chunkList()
-    },
-    handleNodeExpand (nodeObject) {
-      let expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
-      expandNodes.push(nodeObject.folderPath)
-      expandNodes = [...new Set(expandNodes)]
-      localStorage.setItem('expandNodes', JSON.stringify(expandNodes))
-    },
-    handleNodeCollapse (nodeObject) {
-      let expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
-      expandNodes = expandNodes.filter(path => !path.includes(nodeObject.folderPath))
-      localStorage.setItem('expandNodes', JSON.stringify(expandNodes))
-    },
-    filterTreeNode (val, data) {
-      if (!val) return true
-      return data.label.includes(val)
     },
 
 
@@ -2365,12 +2303,6 @@ body
   margin-left: 2em
   float: right
 
-.side-tree-modal
-  background-color: var(--el-mask-color-extra-light)
-  .el-drawer__body
-    padding-top: 0
-  .folder-search
-    margin-bottom: 8px
 
 .pagination-bar
   margin: 4px 0
@@ -2457,9 +2389,6 @@ body
 .book-card-mark
   right: 4px
   top: 40px
-.book-detail-star
-  right: -6px
-  top: -14px
 .book-cover
   border-radius: 4px
   width: 200px

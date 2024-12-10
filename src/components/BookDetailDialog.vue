@@ -400,6 +400,9 @@ defineExpose({
     .next-manga-pane:hover, .prev-manga-pane:hover
       opacity: 1
       transition-delay: 0s
+    .book-detail-star
+      right: -6px
+      top: -14px
   .edit-line
     margin: 4px 0
     .el-select, .el-select-v2

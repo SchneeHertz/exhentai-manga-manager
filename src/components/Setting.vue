@@ -473,7 +473,6 @@ const emit = defineEmits([
   'forceGeneBookList',
   'patchLocalMetadata',
   'importMetadataFromSqlite',
-  'handleResolveTranslationUpdate'
 ])
 
 onMounted(() => {
@@ -528,7 +527,7 @@ const selectImageExplorerPath = () => {
 
 const loadTranslationFromEhTagTranslation = async () => {
   const resultObject = {}
-  emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache') || "{}"))
+  resolvedTranslation.value = JSON.parse(localStorage.getItem('translationCache') || "{}")
   await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
   .then(res => res.json())
   .then(res => {
@@ -538,7 +537,7 @@ const loadTranslationFromEhTagTranslation = async () => {
         resultObject[key] = _.pick(value, ['name', 'intro'])
       })
     })
-    emit('handleResolveTranslationUpdate', resultObject)
+    resolvedTranslation.value = resultObject
     localStorage.setItem('translationCache', JSON.stringify(resultObject))
   })
   .catch((error) => {
@@ -551,7 +550,7 @@ const handleTranslationSettingChange = (val) => {
   if (val) {
     loadTranslationFromEhTagTranslation()
   } else {
-    emit('handleResolveTranslationUpdate', {})
+    resolvedTranslation.value =  {}
   }
   saveSetting()
 }
@@ -721,7 +720,8 @@ const activeSettingPanel = ref('general')
 
 defineExpose({
   dialogVisibleSetting,
-  activeSettingPanel
+  activeSettingPanel,
+  saveSetting
 })
 
 </script>

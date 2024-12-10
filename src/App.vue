@@ -351,7 +351,6 @@
       @force-gene-book-list="forceGeneBookList"
       @patch-local-metadata="patchLocalMetadata"
       @import-metadata-from-sqlite="importMetadataFromSqlite"
-      @handle-resolve-translation-update="handleResolveTranslationUpdate"
     ></Setting>
   </el-config-provider>
 </template>
@@ -1450,7 +1449,7 @@ export default defineComponent({
     },
     handleSizeChange () {
       this.chunkList()
-      this.saveSetting()
+      this.$refs.SettingRef.saveSetting()
       this.scrollMainPageTop()
     },
     handleCurrentPageChange (currentPage) {
@@ -1943,12 +1942,6 @@ export default defineComponent({
 
 
     // setting
-    handleResolveTranslationUpdate (val) {
-      this.resolvedTranslation = val
-    },
-    saveSetting () {
-      ipcRenderer.invoke('save-setting', _.cloneDeep(this.setting))
-    },
     async forceGeneBookList () {
       this.$refs.SettingRef.dialogVisibleSetting = false
       localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
@@ -1959,9 +1952,6 @@ export default defineComponent({
     async patchLocalMetadata () {
       await ipcRenderer.invoke('patch-local-metadata')
       this.loadBookList()
-    },
-    updateSetting (setting) {
-      this.setting = setting
     },
     handleLanguageSet (languageCode) {
       switch (languageCode) {

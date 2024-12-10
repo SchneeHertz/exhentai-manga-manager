@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { cloneDeep } from 'lodash'
 import { ElMessage } from 'element-plus'
 
 export const useAppStore = defineStore('appStore', {
@@ -99,11 +98,35 @@ export const useAppStore = defineStore('appStore', {
           return book.title_jpn || book.title || this.returnFileName(book)
       }
     },
+    async resetMetadata (book) {
+      book.title = this.returnFileName(book)
+      book.title_jpn = null
+      book.posted = null
+      book.filecount = null
+      book.rating = null
+      book.filesize = null
+      book.category = null
+      book.tags = {}
+      book.status = 'non-tag'
+      book.url = null
+      await this.saveBook(book)
+    },
     saveBook (book) {
-      return ipcRenderer.invoke('save-book', cloneDeep(book))
+      return ipcRenderer.invoke('save-book', _.cloneDeep(book))
     },
     async switchMark (book) {
       book.mark = !book.mark
+      await this.saveBook(book)
+    },
+    isChineseTranslatedManga (book) {
+      return _.includes(book?.tags?.language, 'chinese') ? true : false
+    },
+    copyTagClipboard (book) {
+      ipcRenderer.invoke('copy-text-to-clipboard', JSON.stringify(_.pick(book, ['tags', 'status', 'category'])))
+    },
+    async pasteTagClipboard (book) {
+      const text = await ipcRenderer.invoke('read-text-from-clipboard')
+      _.assign(book, JSON.parse(text))
       await this.saveBook(book)
     },
   }

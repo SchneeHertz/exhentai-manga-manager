@@ -14,8 +14,10 @@ import { ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Chart from 'chart.js/auto'
 
+import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
+const { setting, resolvedTranslation, displayBookList } = storeToRefs(appStore)
 
 const { t } = useI18n()
 
@@ -24,14 +26,14 @@ const emit = defineEmits(['search'])
 const dialogVisibleGraph = ref(false)
 
 const resolveTags = (tags) => {
-  if (appStore.setting.showTranslation) return tags.map(tag => appStore.resolvedTranslation[tag]?.name || tag)
+  if (setting.value.showTranslation) return tags.map(tag => resolvedTranslation.value[tag]?.name || tag)
   return tags
 }
 
 const displayTagGraph = async () => {
   dialogVisibleGraph.value = true
   await nextTick()
-  const bookInfos = appStore.displayBookList.filter(book => !book.folderHide && !book.hiddenBook).map(book => ({
+  const bookInfos = displayBookList.value.filter(book => !book.folderHide && !book.hiddenBook).map(book => ({
     artists: book?.tags?.artist ? [...book.tags.artist] : [],
     male: book?.tags?.male ? [...book.tags.male] : [],
     female: book?.tags.female ? [...book.tags.female] : [],

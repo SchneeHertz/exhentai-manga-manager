@@ -14,7 +14,7 @@
         >
           <template #append>
             <el-select class="search-type-select" v-model="searchTypeDialog">
-              <el-option v-for="searchType in appStore.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+              <el-option v-for="searchType in searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
             </el-select>
           </template>
         </el-input>
@@ -51,8 +51,11 @@ import { ref } from 'vue'
 import { Search32Filled } from '@vicons/fluent'
 import { Link } from '@element-plus/icons-vue'
 
+import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
+const { searchTypeList, setting, cookie, serviceAvailable } = storeToRefs(appStore)
+const { printMessage } = appStore
 
 const emit = defineEmits(['resolveSearchResult', 'serviceAvailable'])
 
@@ -64,7 +67,7 @@ const ehSearchResultList = ref([])
 const bookDetail = ref({})
 
 const openSearchDialog = (book, server) => {
-  if (!searchTypeDialog.value) searchTypeDialog.value = appStore.setting.defaultScraper || 'exhentai'
+  if (!searchTypeDialog.value) searchTypeDialog.value = setting.value.defaultScraper || 'exhentai'
   dialogVisibleEhSearch.value = true
   bookDetail.value = _.cloneDeep(book)
   if (server) searchTypeDialog.value = server
@@ -80,8 +83,8 @@ const returnTrimFileName = (book) => {
     if (book.type !== 'folder') {
       fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.')
     }
-    if (appStore.setting.trimTitleRegExp) {
-      return fileNameWithoutExtension.replace(new RegExp(appStore.setting.trimTitleRegExp, 'g'), '')
+    if (setting.value.trimTitleRegExp) {
+      return fileNameWithoutExtension.replace(new RegExp(setting.value.trimTitleRegExp, 'g'), '')
     }
   } catch (e) {
     console.log(e)
@@ -101,7 +104,7 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
   } else if (server === 'exhentai') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
       url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=161`,
-      cookie: appStore.cookie
+      cookie: cookie.value
     })
     .then(res => {
       return resolveEhentaiResult(res)
@@ -115,7 +118,7 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
   } else if (server === 'exsearch') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
       url: `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=161`,
-      cookie: appStore.cookie
+      cookie: cookie.value
     })
     .then(res => {
       return resolveEhentaiResult(res)
@@ -181,10 +184,10 @@ const resolveEhentaiResult = (htmlString) => {
   } catch (e) {
     console.log(e)
     if (htmlString.includes('Your IP address has been')) {
-      appStore.serviceAvailable = false
-      appStore.printMessage('error', t('c.ipBanned'))
+      serviceAvailable.value = false
+      printMessage('error', t('c.ipBanned'))
     } else {
-      appStore.printMessage('error', t('c.getMetadataFailed'))
+      printMessage('error', t('c.getMetadataFailed'))
     }
   }
 }

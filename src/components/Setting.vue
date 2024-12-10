@@ -152,7 +152,7 @@
             >
               <template #item="{element}">
                 <el-tag :color="element.color" effect="dark" closable @close="removeTag(element.id)">
-                  {{element.letter}}:{{appStore.resolvedTranslation[element.tag]?.name || element.tag}}
+                  {{element.letter}}:{{resolvedTranslation[element.tag]?.name || element.tag}}
                 </el-tag>
               </template>
             </draggable>
@@ -235,7 +235,7 @@
                 <template #prepend><span class="setting-label">{{$t('m.defaultScraper')}}</span></template>
                 <template #append>
                   <el-select v-model="setting.defaultScraper" @change="saveSetting">
-                    <el-option v-for="searchType in appStore.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+                    <el-option v-for="searchType in searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
                   </el-select>
                 </template>
               </el-input>
@@ -461,7 +461,8 @@ import NameFormItem from './NameFormItem.vue'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
-const { setting } = storeToRefs(appStore)
+const { searchTypeList, setting, resolvedTranslation } = storeToRefs(appStore)
+const { printMessage } = appStore
 
 const { t } = useI18n()
 
@@ -542,7 +543,7 @@ const loadTranslationFromEhTagTranslation = async () => {
   })
   .catch((error) => {
     console.log(error)
-    appStore.printMessage('warning', t('c.useTranslationCache'))
+    printMessage('warning', t('c.useTranslationCache'))
   })
 }
 
@@ -559,13 +560,13 @@ const testProxy = async () => {
   await fetch('https://e-hentai.org')
   .then((res) => {
     if (res.status === 200) {
-      appStore.printMessage('success', t('c.proxyWorking'))
+      printMessage('success', t('c.proxyWorking'))
     } else {
-      appStore.printMessage('error', `Error ${res.status}: ` + t('c.proxyNotWorking'))
+      printMessage('error', `Error ${res.status}: ` + t('c.proxyNotWorking'))
     }
   })
   .catch((error) => {
-    appStore.printMessage('error', t('c.proxyNotWorking'))
+    printMessage('error', t('c.proxyNotWorking'))
   })
 }
 
@@ -643,14 +644,14 @@ const openLink = (link) => {
 const exportDatabase = async () => {
   const folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
   await ipcRenderer.invoke('export-database', folder)
-  appStore.printMessage('success', t('c.exportMessage'))
+  printMessage('success', t('c.exportMessage'))
 }
 
 const importDatabase = async () => {
   const collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'), [{name: 'JSON', extensions: ['json']}])
   const metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'), [{name: 'SQLite', extensions: ['sqlite']}])
   await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
-  appStore.printMessage('success', t('c.importMessage'))
+  printMessage('success', t('c.importMessage'))
 }
 
 const formTagAdd = ref({
@@ -661,8 +662,8 @@ const formTagAdd = ref({
 const tagListForCollect = computed(() => {
   if (setting.value.showTranslation) {
     return props.tagListRaw.map(({letter, cat, tag, id}) => {
-      const labelHeader = cat === 'group' ? '团队' : appStore.resolvedTranslation[cat]?.name || cat
-      const labelTail = appStore.resolvedTranslation[tag]?.name || tag
+      const labelHeader = cat === 'group' ? '团队' : resolvedTranslation.value[cat]?.name || cat
+      const labelTail = resolvedTranslation.value[tag]?.name || tag
       return {
         label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
         value: id

@@ -33,7 +33,7 @@
               />
               <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
             </div>
-            <div class="viewer-image-page" v-if="!appStore.setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
           </div>
         </div>
         <div v-else-if="imageStyleType === 'single'" class="image-frame-outside">
@@ -46,7 +46,7 @@
                 @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex])"
               />
             </div>
-            <div class="viewer-image-page" v-if="!appStore.setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
             <img
               :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
               class="viewer-image-preload"
@@ -75,7 +75,7 @@
             <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id">
               <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
             </div>
-            <div class="viewer-image-page" v-if="!appStore.setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
+            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
           </div>
         </div>
       </div>
@@ -164,8 +164,11 @@ import { Close } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
 import ContextMenu from '@imengyu/vue3-context-menu'
 
+import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
+const { keyMap, setting, bookDetail } = storeToRefs(appStore)
+const { printMessage, saveBook } = appStore
 
 const { t } = useI18n()
 
@@ -250,21 +253,21 @@ const viewManga = (book, viewerHeight = '100%') => {
   viewerImageList.value = []
   receiveThumbnailList.value = []
   currentImageIndex.value = 0
-  insertEmptyPage.value = appStore.setting.defaultInsertEmptyPage
+  insertEmptyPage.value = setting.value.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
   emit('selectBook', book)
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',
-    background: _.includes(appStore.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+    background: _.includes(setting.value.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
   })
   emit('updateWindowTitle', book)
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
   .then(() => {
     drawerVisibleViewer.value = true
     book.readCount += 1
-    appStore.saveBook(book)
-    if (appStore.setting.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
+    saveBook(book)
+    if (setting.value.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
   })
   .catch(err => {
     console.log(err)
@@ -291,7 +294,7 @@ const currentImageIndex = computed({
         _currentImageIndex.value = 0
       } else if (val > listLength - 1 && listLength >= 1) {
         _currentImageIndex.value = listLength - 1
-        if (appStore.setting.autoNextManga) emit('toNextManga', 1)
+        if (setting.value.autoNextManga) emit('toNextManga', 1)
       } else {
         _currentImageIndex.value = val
       }
@@ -320,7 +323,7 @@ const drawerViewerBody = ref(null)
 
 const thumbnailWidth = computed(() => {
   const innerWidth = drawerViewerBody.value ? drawerViewerBody.value.clientWidth : window.innerWidth
-  return `${(innerWidth - 32) / (appStore.setting.thumbnailColumn || 10) - 10}px`
+  return `${(innerWidth - 32) / (setting.value.thumbnailColumn || 10) - 10}px`
 })
 
 const returnImageStyle = (image) => {
@@ -348,7 +351,7 @@ const returnImageStyle = (image) => {
       case 'double': {
         switch (imageStyleFit.value) {
           case 'height': {
-            if (appStore.setting.hidePageNumber) {
+            if (setting.value.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight - 1})
             } else {
               // minus 36 for the height of .viewer-image-page
@@ -368,7 +371,7 @@ const returnImageStyle = (image) => {
               if (image.width / image.height > windowRatio) {
                 return returnImageStyleObject({width: innerWidth - 32})
               } else {
-                if (appStore.setting.hidePageNumber) {
+                if (setting.value.hidePageNumber) {
                   return returnImageStyleObject({height: innerHeight})
                 } else {
                   return returnImageStyleObject({height: innerHeight - 36})
@@ -377,7 +380,7 @@ const returnImageStyle = (image) => {
             } else if (image.width * 2 / image.height > windowRatio) {
               return returnImageStyleObject({width: (innerWidth - 32) / 2 })
             } else {
-              if (appStore.setting.hidePageNumber) {
+              if (setting.value.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight - 1})
               } else {
                 return returnImageStyleObject({height: innerHeight - 36})
@@ -389,7 +392,7 @@ const returnImageStyle = (image) => {
       case 'single': {
         switch (imageStyleFit.value) {
           case 'height': {
-            if (appStore.setting.hidePageNumber) {
+            if (setting.value.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight})
             } else {
               return returnImageStyleObject({height: innerHeight - 36})
@@ -402,7 +405,7 @@ const returnImageStyle = (image) => {
             if (image.width / image.height > windowRatio) {
               return returnImageStyleObject({width: innerWidth - 32})
             } else {
-              if (appStore.setting.hidePageNumber) {
+              if (setting.value.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight})
               } else {
                 return returnImageStyleObject({height: innerHeight - 36})
@@ -443,7 +446,7 @@ const getCurrentImageId = () => {
         return false
       }
       // 28 is the height of .viewer-image-page
-      if (appStore.setting.hidePageNumber) {
+      if (setting.value.hidePageNumber) {
         scrollTopValue -= parseFloat(returnImageStyle(image).height)
       } else {
         scrollTopValue -= parseFloat(returnImageStyle(image).height) + 28
@@ -463,16 +466,16 @@ const saveReadingProgress = () => {
   try {
     let currentImageId = getCurrentImageId()
     const currentImageIndex = viewerImageList.value.findIndex(image => image.id === currentImageId)
-    if (currentImageIndex > appStore.bookDetail.pageCount - 6) {
+    if (currentImageIndex > bookDetail.value.pageCount - 6) {
       currentImageId = viewerImageList.value[0].id
     }
-    viewerReadingProgress.value.unshift({bookId: appStore.bookDetail.id, pageId: currentImageId})
+    viewerReadingProgress.value.unshift({bookId: bookDetail.value.id, pageId: currentImageId})
     localStorage.setItem('viewerReadingProgress', JSON.stringify(viewerReadingProgress.value.slice(0, 1000)))
   } catch {}
 }
 
 const saveImageStyleType = () => {
-  if (imageStyleType.value === 'double') appStore.printMessage('info', t('c.insertEmptyPageInfo'))
+  if (imageStyleType.value === 'double') printMessage('info', t('c.insertEmptyPageInfo'))
   localStorage.setItem('imageStyleType', imageStyleType.value)
   setTimeout(() => {
     handleClickThumbnail(currentImageId.value)
@@ -494,7 +497,7 @@ const handleClickThumbnail = (id) => {
         return false
       }
       // 28 is the height of .viewer-image-page
-      if (appStore.setting.hidePageNumber) {
+      if (setting.value.hidePageNumber) {
         scrollTopValue += parseFloat(returnImageStyle(image).height)
       } else {
         scrollTopValue += parseFloat(returnImageStyle(image).height) + 28
@@ -517,10 +520,10 @@ const handleViewerAreaClick = (event) => {
   if (showThumbnail.value === false) {
     if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
       let click
-      if (appStore.setting.reverseLeftRight) {
-        ;({ click } = appStore.keyMap.reverse)
+      if (setting.value.reverseLeftRight) {
+        ;({ click } = keyMap.value.reverse)
       } else {
-        ;({ click } = appStore.keyMap.normal)
+        ;({ click } = keyMap.value.normal)
       }
       if(event.clientX > innerWidth / 2) {
         currentImageIndex.value += click
@@ -549,7 +552,7 @@ const handleJumpToReadingProgress = async (book) => {
           break
         }
       }
-      if (viewerImageList.value.length > book.pageCount - 5 || appStore.bookDetail.id !== book.id) break
+      if (viewerImageList.value.length > book.pageCount - 5 || bookDetail.value.id !== book.id) break
       await timer(500)
     }
   }
@@ -576,13 +579,13 @@ const onMangaImageContextMenu = (e, image) => {
       {
         label: t('c.deleteImage'),
         onClick: async () => {
-          const deleteResult = await ipcRenderer.invoke('delete-image', image.filename, appStore.bookDetail.filepath, appStore.bookDetail.type)
+          const deleteResult = await ipcRenderer.invoke('delete-image', image.filename, bookDetail.value.filepath, bookDetail.value.type)
           if (deleteResult) {
             viewerImageList.value = viewerImageList.value.filter(item => item.id !== image.id)
             receiveThumbnailList.value = receiveThumbnailList.value.filter(item => item.id !== image.id)
-            emit('rescanBook', appStore.bookDetail)
+            emit('rescanBook', bookDetail.value)
           } else {
-            appStore.printMessage('error', t('c.deleteImageError'))
+            printMessage('error', t('c.deleteImageError'))
           }
         }
       }

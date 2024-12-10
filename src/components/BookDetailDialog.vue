@@ -5,7 +5,7 @@
   >
     <template #header>
       <p class="detail-book-title">
-        <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="$emit('onMangaTitleContextMenu', $event, bookDetail)">{{appStore.getDisplayTitle(bookDetail)}}</span>
+        <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">{{getDisplayTitle(bookDetail)}}</span>
       </p>
     </template>
     <el-row :gutter="20" class="book-detail-card">
@@ -20,13 +20,13 @@
           <el-icon
             :size="30"
             :color="bookDetail.mark ? '#E6A23C' : '#666666'"
-            class="book-detail-star" @click="appStore.switchMark(bookDetail)"
+            class="book-detail-star" @click="switchMark(bookDetail)"
           ><BookmarkTwotone /></el-icon>
           <div class="next-manga-pane" @click="$emit('jumpMangeDetail', 1)"><el-icon text><CaretRight20Regular /></el-icon></div>
           <div class="prev-manga-pane" @click="$emit('jumpMangeDetail', -1)"><el-icon text><CaretLeft20Regular /></el-icon></div>
         </el-row>
         <el-row :gutter="20" class="book-detail-rate">
-          <el-rate v-model="bookDetail.rating" size="large" allow-half @change="appStore.saveBook(bookDetail)"/>
+          <el-rate v-model="bookDetail.rating" size="large" allow-half @change="saveBook(bookDetail)"/>
         </el-row>
         <el-row class="book-detail-function">
           <el-descriptions :column="1">
@@ -65,22 +65,22 @@
         <el-scrollbar class="book-tag-frame">
           <div v-if="editingTag">
             <div class="edit-line">
-              <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')" @change="appStore.saveBook(bookDetail)"></el-input>
+              <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')" @change="saveBook(bookDetail)"></el-input>
             </div>
             <div class="edit-line">
-              <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')" @change="appStore.saveBook(bookDetail)"></el-input>
+              <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')" @change="saveBook(bookDetail)"></el-input>
             </div>
             <div class="edit-line">
-              <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')" @change="appStore.saveBook(bookDetail)">
-                <el-option v-for="status in appStore.statusOption" :value="status" :key="status" :label="status" />
+              <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')" @change="saveBook(bookDetail)">
+                <el-option v-for="status in statusOption" :value="status" :key="status" :label="status" />
               </el-select>
             </div>
             <div class="edit-line">
-              <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')" @change="appStore.saveBook(bookDetail)"></el-input>
+              <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')" @change="saveBook(bookDetail)"></el-input>
             </div>
             <div class="edit-line">
-              <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="appStore.saveBook(bookDetail)" clearable>
-                <el-option v-for="cat in appStore.categoryOption" :value="cat" :key="cat" :label="cat" />
+              <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)" clearable>
+                <el-option v-for="cat in categoryOption" :value="cat" :key="cat" :label="cat" />
               </el-select>
             </div>
             <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
@@ -94,16 +94,16 @@
             <el-space wrap class="tag-edit-buttons">
               <el-button @click="addTagCat">{{$t('m.addCategory')}}</el-button>
               <el-button @click="$emit('getBookInfo', bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
-              <el-button @click="$emit('resetMetadata', bookDetail)">{{$t('m.resetMetadata')}}</el-button>
-              <el-button @click="$emit('copyTagClipboard', bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
-              <el-button @click="$emit('pasteTagClipboard', bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
+              <el-button @click="resetMetadata(bookDetail)">{{$t('m.resetMetadata')}}</el-button>
+              <el-button @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
+              <el-button @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
             </el-space>
           </div>
           <div v-else>
             <el-descriptions :column="1">
               <el-descriptions-item :label="$t('m.title')+':'">{{bookDetail.title_jpn}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.englishTitle')+':'">{{bookDetail.title}}</el-descriptions-item>
-              <el-descriptions-item :label="$t('m.filename')+':'">{{appStore.returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
+              <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.fileLocation')+':'">{{returnDirname(bookDetail.filepath)}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.category')+':'">
                 <el-tag type="info" class="book-tag" @click="$emit('searchFromTag', bookDetail.category)">{{bookDetail.category}}</el-tag>
@@ -158,23 +158,32 @@ import ContextMenu from '@imengyu/vue3-context-menu'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
-const { setting, bookDetail, resolvedTranslation,
+const {
+  setting, bookDetail, resolvedTranslation,
   bookList, displayBookList, collectionList, openCollectionBookList,
+  statusOption, categoryOption,
+  pathSep,
 } = storeToRefs(appStore)
+const {
+  printMessage,
+  saveBook,
+  returnFileNameWithExt,
+  getDisplayTitle,
+  resetMetadata,
+  switchMark,
+  copyTagClipboard,
+  pasteTagClipboard,
+} = appStore
 
 const { t } = useI18n()
 
 const emit = defineEmits([
-  'onMangaTitleContextMenu',
   'openContentView',
   'openThumbnailView',
   'saveCollection',
   'chunkBookList',
   'openSearchDialog',
   'getBookInfo',
-  'resetMetadata',
-  'copyTagClipboard',
-  'pasteTagClipboard',
   'searchFromTag',
   'jumpMangeDetail',
 ])
@@ -192,12 +201,12 @@ const openUrl = (url) => {
 }
 const triggerHiddenBook = async (book) => {
   book.hiddenBook = !book.hiddenBook
-  await appStore.saveBook(book)
+  await saveBook(book)
 }
 
 
 const returnDirname = (filepath) => {
-  return filepath.split(/[/\\]/).slice(0, -1).join(appStore.pathSep)
+  return filepath.split(/[/\\]/).slice(0, -1).join(pathSep.value)
 }
 
 const showFile = (filepath) => {
@@ -207,7 +216,7 @@ const openLocalBook = (book) => {
   bookDetail.value = book
   if (setting.value.imageExplorer) {
     bookDetail.value.readCount += 1
-    appStore.saveBook(bookDetail.value)
+    saveBook(bookDetail.value)
     ipcRenderer.invoke('open-local-book', bookDetail.value.filepath)
   } else {
     emit('openContentView', book)
@@ -216,8 +225,8 @@ const openLocalBook = (book) => {
 const rescanBook = async (book) => {
   const bookInfo = await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
   _.assign(book, bookInfo)
-  await appStore.saveBook(book)
-  appStore.printMessage('success', t('c.rescanSuccess'))
+  await saveBook(book)
+  printMessage('success', t('c.rescanSuccess'))
 }
 const deleteBook = async (book) => {
   await ipcRenderer.invoke('delete-local-book', book.filepath)
@@ -329,7 +338,7 @@ const saveBookTags = (book) => {
       delete book.tags[tagCat]
     }
   })
-  appStore.saveBook(book)
+  saveBook(book)
 }
 const addTagCat = () => {
   ElMessageBox.prompt(t('c.inputCategoryName'), t('m.addCategory'), {
@@ -340,10 +349,38 @@ const addTagCat = () => {
     tagGroup.value[value] = []
   })
   .catch(() => {
-    appStore.printMessage('info', t('c.canceled'))
+    printMessage('info', t('c.canceled'))
   })
 }
 
+
+const onMangaTitleContextMenu = (e, book) => {
+  e.preventDefault()
+  ContextMenu.showContextMenu({
+    x: e.x,
+    y: e.y,
+    items: [
+      {
+        label: t('c.copyTitleToClipboard'),
+        onClick: () => {
+          ipcRenderer.invoke('copy-text-to-clipboard', book.title_jpn || book.title)
+        }
+      },
+      {
+        label: t('c.copyLinkToClipboard'),
+        onClick: () => {
+          ipcRenderer.invoke('copy-text-to-clipboard', book.url)
+        }
+      },
+      {
+        label: t('c.copyTitleAndLinkToClipboard'),
+        onClick: () => {
+          ipcRenderer.invoke('copy-text-to-clipboard', `${book.title_jpn || book.title}\n${book.url}\n`)
+        }
+      },
+    ]
+  })
+}
 
 const onMangaCommentContextMenu = (e, comment) => {
   e.preventDefault()
@@ -365,8 +402,12 @@ const onMangaCommentContextMenu = (e, comment) => {
 
 defineExpose({
   openBookDetail,
+  openLocalBook,
   rescanBook,
-  getComments
+  getComments,
+  showFile,
+  deleteLocalBook,
+  triggerHiddenBook,
 })
 
 </script>
@@ -423,6 +464,8 @@ defineExpose({
       opacity: 1
       transition-delay: 0s
     .book-detail-star
+      position: absolute
+      cursor: pointer
       right: -6px
       top: -14px
   .edit-line

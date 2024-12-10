@@ -30,7 +30,7 @@ import { ref, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
-const { setting, bookList } = storeToRefs(appStore)
+const { setting, bookList, pathSep } = storeToRefs(appStore)
 
 const emit = defineEmits(['chunkList'])
 
@@ -49,7 +49,7 @@ const geneFolderTree = async () => {
 }
 const selectFolderTreeNode = async (selectNode) => {
   if (selectNode.folderPath) {
-    const clickLibraryPath = setting.value.library + appStore.pathSep + selectNode.folderPath + appStore.pathSep
+    const clickLibraryPath = setting.value.library + pathSep.value + selectNode.folderPath + pathSep.value
     bookList.value.map(book => book.folderHide = !book.filepath.startsWith(clickLibraryPath))
   } else {
     bookList.value.map(book => book.folderHide = false)

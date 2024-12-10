@@ -408,7 +408,6 @@ export default defineComponent({
   },
   data () {
     return {
-      dialogVisibleBookDetail: false,
       editCollectionView: false,
       editTagView: false,
       drawerVisibleCollection: false,
@@ -678,7 +677,7 @@ export default defineComponent({
           return 'viewer-content'
         }
       }
-      if (this.dialogVisibleBookDetail) {
+      if (this.$refs.BookDetailDialogRef.dialogVisibleBookDetail) {
         if (this.editingTag) {
           return 'edit-tag'
         } else {
@@ -1405,13 +1404,13 @@ export default defineComponent({
       }
     },
     handleSearchString (string) {
-      this.dialogVisibleBookDetail = false
+      this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
       this.drawerVisibleCollection = false
       this.searchString = string
       this.searchBook()
     },
     searchFromTag (tag, cat) {
-      this.dialogVisibleBookDetail = false
+      this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
       this.drawerVisibleCollection = false
       if (cat) {
         const letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat

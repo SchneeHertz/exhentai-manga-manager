@@ -401,6 +401,7 @@ const onMangaCommentContextMenu = (e, comment) => {
 }
 
 defineExpose({
+  dialogVisibleBookDetail,
   openBookDetail,
   openLocalBook,
   rescanBook,

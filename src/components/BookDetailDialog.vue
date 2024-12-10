@@ -181,7 +181,7 @@ const emit = defineEmits([
   'openContentView',
   'openThumbnailView',
   'saveCollection',
-  'chunkBookList',
+  'handleRemoveBookDisplay',
   'openSearchDialog',
   'getBookInfo',
   'searchFromTag',
@@ -244,7 +244,7 @@ const deleteBook = async (book) => {
       const findBookInBookList = _.findIndex(bookList.value, b => b.filepath === book.filepath)
       bookList.value.splice(findBookInBookList, 1)
       displayBookList.value = _.filter(displayBookList.value, b => b.filepath !== book.filepath)
-      emit('chunkBookList')
+      emit('handleRemoveBookDisplay')
     }
   })
 }

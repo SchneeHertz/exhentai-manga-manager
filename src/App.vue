@@ -316,7 +316,7 @@
       @open-content-view="openContentView"
       @open-thumbnail-view="openThumbnailView"
       @save-collection="saveCollection"
-      @chunk-book-list="handleCurrentPageChange"
+      @handle-remove-book-display="handleRemoveBookDisplay"
       @open-search-dialog="openSearchDialog"
       @get-book-info="getBookInfo"
       @search-from-tag="searchFromTag"
@@ -1870,6 +1870,9 @@ export default defineComponent({
     },
     openSearchDialog (book) {
       this.$refs.SearchDialogRef.openSearchDialog(book)
+    },
+    handleRemoveBookDisplay () {
+      this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
     },
 
     // copy and paste tag

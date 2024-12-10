@@ -122,7 +122,7 @@
               v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide && visibilityMap[book.id]"
             >
                 <p class="book-title"
-                  @click="openBookDetail(book)"
+                  @click="$refs.BookDetailDialogRef.openBookDetail(book)"
                   @contextmenu="onMangaTitleContextMenu($event, book)"
                   :title="getDisplayTitle(book)"
                 >{{getDisplayTitle(book)}}</p>
@@ -349,7 +349,7 @@
           <div class="book-card" :tabindex="index + 1">
             <p
               class="book-title"
-              @click="openBookDetail(book)"
+              @click="$refs.BookDetailDialogRef.openBookDetail(book)"
               @contextmenu="onMangaTitleContextMenu($event, book)"
               :title="getDisplayTitle(book)"
             >{{getDisplayTitle(book)}}</p>
@@ -398,162 +398,31 @@
         </div>
       </div>
     </el-drawer>
-    <el-dialog v-model="dialogVisibleBookDetail"
-      fullscreen
-      class="dialog-detail"
-    >
-      <template #header>
-        <p class="detail-book-title">
-          <span class="url-link" @click="openUrl(bookDetail.url)" @contextmenu="onMangaTitleContextMenu($event, bookDetail)">{{getDisplayTitle(bookDetail)}}</span>
-        </p>
-      </template>
-      <el-row :gutter="20" class="book-detail-card">
-        <el-col :span="6">
-          <el-row class="book-detail-function book-detail-cover-frame">
-            <img
-              class="book-detail-cover"
-              :src="bookDetail.coverPath"
-              @click="openContentView(bookDetail)"
-              @contextmenu="openThumbnailView(bookDetail)"
-            />
-            <el-icon
-              :size="30"
-              :color="bookDetail.mark ? '#E6A23C' : '#666666'"
-              class="book-detail-star" @click="switchMark(bookDetail)"
-            ><BookmarkTwotone /></el-icon>
-            <div class="next-manga-pane" @click="jumpMangeDetail(1)"><el-icon text><CaretRight20Regular /></el-icon></div>
-            <div class="prev-manga-pane" @click="jumpMangeDetail(-1)"><el-icon text><CaretLeft20Regular /></el-icon></div>
-          </el-row>
-          <el-row :gutter="20" class="book-detail-rate">
-            <el-rate v-model="bookDetail.rating" size="large" allow-half @change="saveBook(bookDetail)"/>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-descriptions :column="1">
-              <el-descriptions-item :label="$t('m.pageCount')+':'" :class-name="bookDetail.pageDiff ? 'text-red' : ''">
-                {{bookDetail.pageCount}} | {{bookDetail.filecount}}
-              </el-descriptions-item>
-              <el-descriptions-item :label="$t('m.fileSize')+':'">
-                {{Math.floor(bookDetail.bundleSize / 1048576)}} | {{Math.floor(bookDetail.filesize / 1048576)}} MB
-              </el-descriptions-item>
-              <el-descriptions-item :label="$t('m.readCount')+':'">{{bookDetail.readCount}}</el-descriptions-item>
-              <el-descriptions-item :label="$t('m.mtime')+':'">{{new Date(bookDetail.mtime).toLocaleString("zh-CN")}}</el-descriptions-item>
-              <el-descriptions-item :label="$t('m.postTime')+':'">{{new Date(bookDetail.posted * 1000).toLocaleString("zh-CN")}}</el-descriptions-item>
-            </el-descriptions>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-button-group style="margin-right: 12px;">
-              <el-button type="success" style="padding-right: 0;" plain @click="openLocalBook(bookDetail)">{{$t('m.re')}}</el-button>
-              <el-button type="success" style="padding-left: 0;" plain @click="$refs.InternalViewerRef.viewManga(bookDetail)">{{$t('m.ad')}}</el-button>
-            </el-button-group>
-            <el-button plain @click="triggerShowComment">{{setting.showComment ? $t('m.hideComment') : $t('m.showComment')}}</el-button>
-            <el-button type="primary" plain @click="editTags">{{editingTag ? $t('m.showTag') : $t('m.editTag')}}</el-button>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-button type="primary" plain
-              @click="$refs.SearchDialogRef.openSearchDialog(bookDetail)"
-            >{{$t('m.getMetadata')}}</el-button>
-            <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
-          </el-row>
-          <el-row class="book-detail-function">
-            <el-button type="danger" plain @click="deleteLocalBook(bookDetail)">{{$t('m.deleteFile')}}</el-button>
-            <el-button plain @click="rescanBook(bookDetail)">{{$t('m.rescan')}}</el-button>
-            <el-button type="primary" plain @click="showFile(bookDetail.filepath)">{{$t('m.openMangaFileLocation')}}</el-button>
-          </el-row>
-        </el-col>
-        <el-col :span="setting.showComment ? 10 : 18">
-          <el-scrollbar class="book-tag-frame">
-            <div v-if="editingTag">
-              <div class="edit-line">
-                <el-input v-model="bookDetail.title_jpn" :placeholder="$t('m.title')" @change="saveBook(bookDetail)"></el-input>
-              </div>
-              <div class="edit-line">
-                <el-input v-model="bookDetail.title" :placeholder="$t('m.englishTitle')" @change="saveBook(bookDetail)"></el-input>
-              </div>
-              <div class="edit-line">
-                <el-select v-model="bookDetail.status" :placeholder="$t('m.metadataStatus')" @change="saveBook(bookDetail)">
-                  <el-option v-for="status in statusOption" :value="status" :key="status" :label="status" />
-                </el-select>
-              </div>
-              <div class="edit-line">
-                <el-input v-model="bookDetail.url" :placeholder="$t('m.ehexAddress')" @change="saveBook(bookDetail)"></el-input>
-              </div>
-              <div class="edit-line">
-                <el-select v-model="bookDetail.category" :placeholder="$t('m.category')" @change="saveBook(bookDetail)" clearable>
-                  <el-option v-for="cat in categoryOption" :value="cat" :key="cat" :label="cat" />
-                </el-select>
-              </div>
-              <div class="edit-line" v-for="(arr, key) in tagGroup" :key="key">
-                <el-select-v2
-                  v-model="bookDetail.tags[key]" :placeholder="key" @change="saveBookTags(bookDetail)"
-                  filterable clearable allow-create multiple :reserve-keyword="false" :height="340"
-                  :options="arr"
-                >
-                </el-select-v2>
-              </div>
-              <el-space wrap class="tag-edit-buttons">
-                <el-button @click="addTagCat">{{$t('m.addCategory')}}</el-button>
-                <el-button @click="getBookInfo(bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
-                <el-button @click="resetMetadata(bookDetail)">{{$t('m.resetMetadata')}}</el-button>
-                <el-button @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
-                <el-button @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>
-              </el-space>
-            </div>
-            <div v-else>
-              <el-descriptions :column="1">
-                <el-descriptions-item :label="$t('m.title')+':'">{{bookDetail.title_jpn}}</el-descriptions-item>
-                <el-descriptions-item :label="$t('m.englishTitle')+':'">{{bookDetail.title}}</el-descriptions-item>
-                <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
-                <el-descriptions-item :label="$t('m.fileLocation')+':'">{{returnDirname(bookDetail.filepath)}}</el-descriptions-item>
-                <el-descriptions-item :label="$t('m.category')+':'">
-                  <el-tag type="info" class="book-tag" @click="searchFromTag(bookDetail.category)">{{bookDetail.category}}</el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
-                  <el-popover
-                    effect="dark"
-                    trigger="hover"
-                    :content="resolvedTranslation[tag] ? resolvedTranslation[tag].intro : tag"
-                    :disabled="!resolvedTranslation[tag]?.intro"
-                    placement="top-start"
-                    :show-after="500"
-                    width="300px"
-                    v-for="tag in tagArr" :key="tag"
-                  >
-                    <template #reference>
-                      <el-tag
-                        type="info"
-                        class="book-tag"
-                        @click="searchFromTag(tag, key)"
-                      >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
-                    </template>
-                  </el-popover>
-                </el-descriptions-item>
-              </el-descriptions>
-            </div>
-          </el-scrollbar>
-        </el-col>
-        <el-col :span="8" v-if="setting.showComment">
-          <el-scrollbar class="book-comment-frame">
-            <div class="book-comment" v-for="comment in comments" :key="comment.id">
-              <div class="book-comment-postby">{{comment.author}}<span class="book-comment-score">{{comment.score}}</span></div>
-              <p class="book-comment-content" @contextmenu="onMangaCommentContextMenu($event, comment.content)">{{comment.content}}</p>
-            </div>
-          </el-scrollbar>
-        </el-col>
-      </el-row>
-    </el-dialog>
+    <BookDetailDialog
+      ref="BookDetailDialogRef"
+      @on-manga-title-context-menu="onMangaTitleContextMenu"
+      @open-content-view="openContentView"
+      @open-thumbnail-view="openThumbnailView"
+      @save-collection="saveCollection"
+      @chunk-book-list="handleCurrentPageChange"
+      @open-search-dialog="openSearchDialog"
+      @get-book-info="getBookInfo"
+      @reset-metadata="resetMetadata"
+      @copy-tag-clipboard="copyTagClipboard"
+      @paste-tag-clipboard="pasteTagClipboard"
+      @search-from-tag="searchFromTag"
+      @jump-mange-detail="jumpMangeDetail"
+    />
     <InternalViewer
       ref="InternalViewerRef"
       :key-map="keyMap"
-      :book-detail="bookDetail"
       @handle-stop-read-manga="handleStopReadManga"
       @to-next-manga="toNextManga"
       @to-next-manga-random="toNextMangaRandom"
       @use-new-cover="useNewCover"
       @select-book="selectBook"
-      @message="printMessage"
       @update-window-title="updateWindowTitle"
       @rescan-book="rescanBook"
-      @save-book="saveBook"
     ></InternalViewer>
     <el-drawer v-model="sideVisibleFolderTree"
       :title="$t('m.folderTree')"
@@ -580,25 +449,17 @@
     </el-drawer>
     <Graph
       ref="TagGraphRef"
-      :book-list="displayBookList"
-      :resolved-translation="resolvedTranslation"
       @search="handleSearchString"
     ></Graph>
     <SearchDialog
       ref="SearchDialogRef"
-      :cookie="cookie"
-      :search-type-list="searchTypeList"
-      @message="printMessage"
       @resolve-search-result="resolveSearchResult"
       @service-available="setServiceAvailable"
     ></SearchDialog>
     <Setting
       ref="SettingRef"
-      :search-type-list="searchTypeList"
       :tag-list-raw="tagListRaw"
-      :resolved-translation="resolvedTranslation"
       @handle-language-set="handleLanguageSet"
-      @message="printMessage"
       @force-gene-book-list="forceGeneBookList"
       @patch-local-metadata="patchLocalMetadata"
       @import-metadata-from-sqlite="importMetadataFromSqlite"
@@ -611,7 +472,7 @@
 import { defineComponent } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
-import { ArrowTrendingLines20Filled, Collections24Regular, Search32Filled, Save16Regular, CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
+import { ArrowTrendingLines20Filled, Collections24Regular, Search32Filled, Save16Regular } from '@vicons/fluent'
 import { MdShuffle, IosRemoveCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { BookmarkTwotone } from '@vicons/material'
 import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
@@ -630,18 +491,20 @@ import Setting from './components/Setting.vue'
 import Graph from './components/Graph.vue'
 import InternalViewer from './components/InternalViewer.vue'
 import SearchDialog from './components/SearchDialog.vue'
+import BookDetailDialog from './components/BookDetailDialog.vue'
 
-import { mapWritableState } from 'pinia'
+import { mapWritableState, mapActions } from 'pinia'
 import { useAppStore } from './pinia.js'
 
 export default defineComponent({
   components: {
-    BookmarkTwotone, IosRemoveCircleOutline, CaretRight20Regular, CaretLeft20Regular,
+    BookmarkTwotone, IosRemoveCircleOutline,
     draggable,
     Setting,
     Graph,
     InternalViewer,
-    SearchDialog
+    SearchDialog,
+    BookDetailDialog
   },
   setup () {
     return {
@@ -658,12 +521,7 @@ export default defineComponent({
       editCollectionView: false,
       editTagView: false,
       drawerVisibleCollection: false,
-      pathSep: '\\',
       // home
-      bookList: [],
-      displayBookList: [],
-      chunkDisplayBookList: [],
-      resolvedTranslation: {},
       locale: zhCn,
       searchString: '',
       sortValue: undefined,
@@ -679,9 +537,7 @@ export default defineComponent({
       // collection
       selectCollection: undefined,
       selectCollectionObject: {list:[]},
-      collectionList: [],
       openCollectionTitle: undefined,
-      openCollectionBookList: [],
       // group tag edit
       selectBookList: [],
       groupTagSelected: [],
@@ -691,12 +547,6 @@ export default defineComponent({
       startX: undefined,
       startY: undefined,
       isSelecting: false,
-      // detail
-      bookDetail: {},
-      comments: [],
-      tagGroup: {},
-      editingTag: false,
-      editTagOptions: [],
       // setting
       serviceAvailable: true,
       // dict
@@ -712,31 +562,6 @@ export default defineComponent({
         other: 'o',
         cosplayer: 'cos'
       },
-      statusOption: [
-        'non-tag',
-        'tagged',
-        'tag-failed'
-      ],
-      categoryOption: [
-        'Doujinshi',
-        'Manga',
-        'Artist CG',
-        'Game CG',
-        'Non-H',
-        'Image Set',
-        'Western',
-        'Cosplay',
-        'Asian Porn',
-        'Misc',
-      ],
-      searchTypeList: [
-        { label: "exhentai(sha1)", value: "exhentai" },
-        { label: "e-hentai(sha1)", value: "e-hentai" },
-        { label: "exhentai(keyword)", value: "exsearch" },
-        { label: "e-hentai(keyword)", value: "e-search" },
-        { label: "hentag(keyword)", value: "hentag" },
-        { label: "exhentai(.ehviewer file from EhViewer)", value: ".ehviewer" },
-      ],
       keyMap: {
         normal: {
           next: 'ArrowRight',
@@ -753,7 +578,17 @@ export default defineComponent({
   },
   computed: {
     ...mapWritableState(useAppStore, [
-      'setting'
+      'statusOption',
+      'categoryOption',
+      'setting',
+      'bookDetail',
+      'pathSep',
+      'resolvedTranslation',
+      'bookList',
+      'displayBookList',
+      'chunkDisplayBookList',
+      'collectionList',
+      'openCollectionBookList',
     ]),
     displayBookCount () {
       if (this.sortValue === 'hidden') {
@@ -853,9 +688,6 @@ export default defineComponent({
       return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
         .map(str => ({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
     },
-    cookie () {
-      return `igneous=${this.setting.igneous};ipb_pass_hash=${this.setting.ipb_pass_hash};ipb_member_id=${this.setting.ipb_member_id};star=${this.setting.star}`
-    },
     currentPage: {
       get () {
         return this.currentPage_
@@ -902,7 +734,6 @@ export default defineComponent({
         this.loadBookList()
       }
     })
-    this.pathSep = ipcRenderer.sendSync('get-path-sep')
     this.sortValue = localStorage.getItem('sortValue')
     this.sortValue = this.sortValue === 'null' ? undefined : this.sortValue === 'undefined' ? undefined : this.sortValue
     this.expandNodes = JSON.parse(localStorage.getItem('expandNodes')) || []
@@ -956,6 +787,13 @@ export default defineComponent({
     },
   },
   methods: {
+    ...mapActions(useAppStore, [
+      'printMessage',
+      'returnFileName',
+      'getDisplayTitle',
+      'saveBook',
+      'switchMark',
+    ]),
     // base function
     currentUI () {
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
@@ -1217,17 +1055,6 @@ export default defineComponent({
       })
       return result
     },
-    returnFileNameWithExt (filepath) {
-      return filepath.split(/[/\\]/).pop()
-    },
-    returnFileName (book) {
-      const fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
-      if (book.type === 'folder') return fileNameWithExtension
-      return fileNameWithExtension.split('.').slice(0, -1).join('.')
-    },
-    returnDirname (filepath) {
-      return filepath.split(/[/\\]/).slice(0, -1).join(this.pathSep)
-    },
     sortList(label) {
       return (a, b) => {
         if (_.get(a, label) && _.get(b, label)) {
@@ -1247,13 +1074,6 @@ export default defineComponent({
         }
       }
     },
-    printMessage(type, msg) {
-      ElMessage.closeAll()
-      ElMessage[type]({
-        message: msg,
-        offset: 50
-      })
-    },
     async loadBookList (scan) {
       try {
         this.buttonLoadBookListLoading = true
@@ -1269,30 +1089,18 @@ export default defineComponent({
       }
       if (scan) this.printMessage('success', this.$t('c.scanComplete'))
     },
-    saveBook (book) {
-      return ipcRenderer.invoke('save-book', _.cloneDeep(book))
-    },
     prepareBookList (bookList) {
       bookList.forEach(book => {
         if (Number.isInteger(book.filecount) && Number.isInteger(book.pageCount) && Math.abs(book.filecount - book.pageCount) > 5) book.pageDiff = true
       })
       return bookList
     },
-    getDisplayTitle (book) {
-      switch (this.setting.displayTitle) {
-        case 'englishTitle':
-          return book.title
-        case 'japaneseTitle':
-          return book.title_jpn || book.title
-        case 'filename':
-          return this.returnFileName(book)
-        default:
-          return book.title_jpn || book.title || this.returnFileName(book)
-      }
-    },
     updateWindowTitle (book) {
       const title = this.getDisplayTitle(book)
       ipcRenderer.invoke('update-window-title', title)
+    },
+    async rescanBook (book) {
+      await this.$refs.BookDetailDialogRef.rescanBook(book)
     },
     isBook (book) {
       // isCollection mean book is collection
@@ -1770,12 +1578,6 @@ export default defineComponent({
       this.randomTags = _.sampleSize(this.tagList, 24)
     },
     // home main
-    openBookDetail (book) {
-      this.bookDetail = book
-      this.dialogVisibleBookDetail = true
-      this.comments = []
-      if (this.setting.showComment) this.getComments(book.url)
-    },
     handleClickCover (book) {
       switch (this.setting.directEnter) {
         case 'internalViewer':
@@ -1785,13 +1587,9 @@ export default defineComponent({
           this.openLocalBook(book)
           break
         default:
-          this.openBookDetail(book)
+          this.$refs.BookDetailDialogRef.openBookDetail(book)
           break
       }
-    },
-    async switchMark (book) {
-      book.mark = !book.mark
-      await this.saveBook(book)
     },
     isChineseTranslatedManga (book) {
       return _.includes(book?.tags?.language, 'chinese') ? true : false
@@ -2263,66 +2061,7 @@ export default defineComponent({
       }
     },
 
-    // detail view function
-    openUrl (url) {
-      ipcRenderer.invoke('open-url', url)
-    },
-    async triggerHiddenBook (book) {
-      book.hiddenBook = !book.hiddenBook
-      await this.saveBook(book)
-    },
-    showFile(filepath) {
-      ipcRenderer.invoke('show-file', filepath)
-    },
-    openLocalBook (book) {
-      this.bookDetail = book
-      if (this.setting.imageExplorer) {
-        this.bookDetail.readCount += 1
-        this.saveBook(this.bookDetail)
-        ipcRenderer.invoke('open-local-book', this.bookDetail.filepath)
-      } else {
-        this.$refs.InternalViewerRef.viewManga(book)
-      }
-    },
-    async rescanBook (book) {
-      const bookInfo = await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
-      _.assign(book, bookInfo)
-      await this.saveBook(book)
-      this.printMessage('success', this.$t('c.rescanSuccess'))
-    },
-    async deleteBook (book) {
-      await ipcRenderer.invoke('delete-local-book', book.filepath)
-      .finally(() => {
-        this.dialogVisibleBookDetail = false
-        if (book.collectionHide) {
-          _.forEach(this.collectionList, (collection) => {
-            collection.list = _.filter(collection.list, hash_id => hash_id !== book.id && hash_id !== book.hash)
-          })
-          this.openCollectionBookList = _.filter(this.openCollectionBookList, bookOfCollection => {
-            return bookOfCollection.id !== book.id && bookOfCollection.id !== book.hash
-          })
-          this.saveCollection()
-        } else {
-          const findBookInBookList = _.findIndex(this.bookList, b => b.filepath === book.filepath)
-          this.bookList.splice(findBookInBookList, 1)
-          this.displayBookList = _.filter(this.displayBookList, b => b.filepath !== book.filepath)
-          this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
-        }
-      })
-    },
-    deleteLocalBook (book) {
-      if (this.setting.skipDeleteConfirm) {
-        this.deleteBook(book)
-      } else {
-        ElMessageBox.confirm(
-          this.$t('c.confirmDelete'),
-          '',
-          {}
-        )
-        .then(() => this.deleteBook(book))
-      }
-    },
-
+    // bookDetailView
     openContentView (book) {
       this.$refs.InternalViewerRef.showThumbnail = false
       this.$refs.InternalViewerRef.viewManga(book)
@@ -2331,92 +2070,8 @@ export default defineComponent({
       this.$refs.InternalViewerRef.showThumbnail = true
       this.$refs.InternalViewerRef.viewManga(book)
     },
-    triggerShowComment () {
-      if (this.setting.showComment) {
-        this.setting.showComment = false
-      } else {
-        this.comments = []
-        this.getComments(this.bookDetail.url)
-        this.setting.showComment = true
-      }
-    },
-    getComments (url) {
-      if (url) {
-        ipcRenderer.invoke('get-ex-webpage', {
-          url,
-          cookie: this.cookie
-        })
-        .then(res => {
-          this.comments = []
-          const commentElements = new DOMParser().parseFromString(res, 'text/html').querySelectorAll('#cdiv>.c1')
-          commentElements.forEach(e => {
-            const author = e.querySelector('.c2 .c3').textContent
-            const scoreTail = e.querySelectorAll('.c2 .nosel')
-            const score = scoreTail[scoreTail.length - 1].textContent
-            let content = e.querySelector('.c6').innerHTML
-            content = content.replace(/<br>/gi, '\n')
-            content = content.replace(/<.+?>/gi, '')
-            content = he.decode(content)
-            this.comments.push({
-              author, score, content, id: nanoid()
-            })
-          })
-        })
-        .catch(err => {
-          this.comments = []
-          console.log(err)
-        })
-      } else {
-        this.comments = []
-      }
-    },
-    editTags () {
-      this.editingTag = !this.editingTag
-      if (this.editingTag) {
-        if (!_.has(this.bookDetail, 'tags')) this.bookDetail.tags = {}
-        const tempTagGroup = {}
-        _.forEach(this.bookList.map(b => b.tags), (tagObject) => {
-          _.forIn(tagObject, (tagArray, tagCat) => {
-            if (_.isArray(tagArray)) {
-              if (_.has(tempTagGroup, tagCat)) {
-                tagArray.forEach(tag => tempTagGroup[tagCat].add(tag))
-              } else {
-                tempTagGroup[tagCat] = new Set(tagArray)
-              }
-            }
-          })
-        })
-        const showTranslation = this.setting.showTranslation
-        _.forIn(tempTagGroup, (tagSet, tagCat) => {
-          tempTagGroup[tagCat] = [...tagSet].sort().map(tag => ({
-            value: tag,
-            label: `${showTranslation ? (this.resolvedTranslation[tag]?.name || tag ) + ' || ' : ''}${tag}`
-          }))
-        })
-        this.tagGroup = tempTagGroup
-      } else {
-        this.saveBookTags(this.bookDetail)
-      }
-    },
-    saveBookTags (book) {
-      _.forIn(book.tags, (tagarr, tagCat) => {
-        if (_.isEmpty(tagarr)) {
-          delete book.tags[tagCat]
-        }
-      })
-      this.saveBook(book)
-    },
-    addTagCat () {
-      ElMessageBox.prompt(this.$t('c.inputCategoryName'), this.$t('m.addCategory'), {
-        inputPattern: /^[\w\d一-龟]+$/,
-        inputErrorMessage: this.$t('c.categoryNameError')
-      })
-      .then(({ value }) => {
-        this.tagGroup[value] = []
-      })
-      .catch(() => {
-        this.printMessage('info', this.$t('c.canceled'))
-      })
+    openSearchDialog (book) {
+      this.$refs.SearchDialogRef.openSearchDialog(book)
     },
 
     // copy and paste tag
@@ -2484,14 +2139,14 @@ export default defineComponent({
       const indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       const indexNext = indexNow + step
       if (indexNext >= 0 && indexNext < activeBookList.length) {
-        this.openBookDetail(activeBookList[indexNext])
+        this.$refs.BookDetailDialogRef.openBookDetail(activeBookList[indexNext])
       } else {
         this.printMessage('info', this.$t('c.outOfRange'))
       }
     },
     jumpMangeDetailRandom () {
       const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
-      this.openBookDetail(_.sample(activeBookList))
+      this.$refs.BookDetailDialogRef.openBookDetail(_.sample(activeBookList))
     },
 
 
@@ -2900,101 +2555,6 @@ body
     width: 100%
     margin-top: 10px
 
-.el-dialog.is-fullscreen.dialog-detail
-  .el-dialog__header
-    .el-dialog__headerbtn
-      margin: 8px 16px 0 0
-      .el-icon
-        width: 32px
-        svg
-          height: 32px
-          width: 32px
-
-
-.detail-book-title
-  height: 44px
-  overflow-y: hidden
-  margin: 0 24px
-.url-link
-  cursor: pointer
-.book-detail-card
-  .book-detail-function, .book-detail-rate
-    justify-content: center
-    margin-bottom: 10px
-  .book-detail-cover-frame
-    position: relative
-    width: 250px
-    margin: 0 auto
-    margin-bottom: 10px
-    .book-detail-cover
-      width: 250px
-      height: 354px
-      object-fit: cover
-      border-radius: 4px
-    .next-manga-pane, .prev-manga-pane
-      position: absolute
-      bottom: 80px
-      cursor: pointer
-      opacity: 0
-      transition-delay: 0.5s
-      background-color: rgba(0, 0, 0, 0.3)
-      .el-icon
-        font-size: 34px
-        margin: 80px 0
-        color: #FFFFFF
-    .next-manga-pane
-      right: 0
-      border-radius: 4px 0 0 4px
-    .prev-manga-pane
-      left: 0
-      border-radius: 0 4px 4px 0
-    .next-manga-pane:hover, .prev-manga-pane:hover
-      opacity: 1
-      transition-delay: 0s
-  .edit-line
-    margin: 4px 0
-    .el-select, .el-select-v2
-      width: 100%
-  .el-descriptions__label
-    display: inline-block
-    text-align: right
-    width: 80px
-.book-tag-edit-popover
-  .el-descriptions__cell
-    padding-bottom: 0 !important
-  .el-descriptions__label
-    display: inline-block
-    text-align: right
-    width: 65px
-.book-tag-frame
-  height: calc(100vh - 100px)
-  overflow-y: auto
-  padding-right: 10px
-  text-align: left
-.book-tag
-  margin: 4px 6px
-  cursor: pointer
-.tag-edit-buttons
-  margin-top: 4px
-.book-comment-frame
-  text-align: left
-  height: calc(100vh - 100px)
-  overflow-y: auto
-  padding-right: 10px
-  .book-comment
-    .book-comment-postby
-      font-size: 12px
-      background-color: var(--el-fill-color-dark)
-      padding-left: 4px
-      color: var(--el-text-color-regular)
-    .book-comment-score
-      float: right
-      margin-right: 4px
-    .book-comment-content
-      font-size: 14px
-      white-space: pre-wrap
-      padding-left: 4px
-      color: var(--el-text-color-regular)
 
 // search-input sort-select
 .el-autocomplete-suggestion__wrap, .el-select-dropdown__wrap

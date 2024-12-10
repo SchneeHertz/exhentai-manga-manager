@@ -19,27 +19,19 @@ const appStore = useAppStore()
 
 const { t } = useI18n()
 
-const props = defineProps({
-  bookList: {
-    type: Array,
-    default: () => []
-  },
-  resolvedTranslation: Object
-})
-
 const emit = defineEmits(['search'])
 
 const dialogVisibleGraph = ref(false)
 
 const resolveTags = (tags) => {
-  if (appStore.setting.showTranslation) return tags.map(tag => props.resolvedTranslation[tag]?.name || tag)
+  if (appStore.setting.showTranslation) return tags.map(tag => appStore.resolvedTranslation[tag]?.name || tag)
   return tags
 }
 
 const displayTagGraph = async () => {
   dialogVisibleGraph.value = true
   await nextTick()
-  const bookInfos = props.bookList.filter(book => !book.folderHide && !book.hiddenBook).map(book => ({
+  const bookInfos = appStore.displayBookList.filter(book => !book.folderHide && !book.hiddenBook).map(book => ({
     artists: book?.tags?.artist ? [...book.tags.artist] : [],
     male: book?.tags?.male ? [...book.tags.male] : [],
     female: book?.tags.female ? [...book.tags.female] : [],

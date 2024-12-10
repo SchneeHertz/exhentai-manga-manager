@@ -14,7 +14,7 @@
         >
           <template #append>
             <el-select class="search-type-select" v-model="searchTypeDialog">
-              <el-option v-for="searchType in searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+              <el-option v-for="searchType in appStore.searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
             </el-select>
           </template>
         </el-input>
@@ -54,9 +54,7 @@ import { Link } from '@element-plus/icons-vue'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
 
-const props = defineProps(['cookie', 'searchTypeList'])
-
-const emit = defineEmits(['message', 'resolveSearchResult', 'serviceAvailable'])
+const emit = defineEmits(['resolveSearchResult', 'serviceAvailable'])
 
 const dialogVisibleEhSearch = ref(false)
 const searchResultLoading = ref(false)
@@ -103,7 +101,7 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
   } else if (server === 'exhentai') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
       url: `https://exhentai.org/?f_shash=${bookHash}&fs_similar=on&fs_exp=on&f_cats=161`,
-      cookie: props.cookie
+      cookie: appStore.cookie
     })
     .then(res => {
       return resolveEhentaiResult(res)
@@ -117,7 +115,7 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
   } else if (server === 'exsearch') {
     resultList = await ipcRenderer.invoke('get-ex-webpage', {
       url: `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=161`,
-      cookie: props.cookie
+      cookie: appStore.cookie
     })
     .then(res => {
       return resolveEhentaiResult(res)
@@ -184,9 +182,9 @@ const resolveEhentaiResult = (htmlString) => {
     console.log(e)
     if (htmlString.includes('Your IP address has been')) {
       emit('serviceAvailable', false)
-      emit('message', 'error', t('c.ipBanned'))
+      appStore.printMessage('error', t('c.ipBanned'))
     } else {
-      emit('message', 'error', t('c.getMetadataFailed'))
+      appStore.printMessage('error', t('c.getMetadataFailed'))
     }
   }
 }

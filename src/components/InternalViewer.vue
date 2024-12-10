@@ -169,7 +169,7 @@ const appStore = useAppStore()
 
 const { t } = useI18n()
 
-const props = defineProps(['keyMap', 'bookDetail'])
+const props = defineProps(['keyMap'])
 
 const emit = defineEmits([
   'handleStopReadManga',
@@ -177,11 +177,9 @@ const emit = defineEmits([
   'toNextMangaRandom',
   'useNewCover',
   'selectBook',
-  'message',
   'updateOptions',
   'updateWindowTitle',
   'rescanBook',
-  'saveBook'
 ])
 
 const drawerVisibleViewer = ref(false)
@@ -267,7 +265,7 @@ const viewManga = (book, viewerHeight = '100%') => {
   .then(() => {
     drawerVisibleViewer.value = true
     book.readCount += 1
-    emit('saveBook', book)
+    appStore.saveBook(book)
     if (appStore.setting.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
   })
   .catch(err => {
@@ -467,16 +465,16 @@ const saveReadingProgress = () => {
   try {
     let currentImageId = getCurrentImageId()
     const currentImageIndex = viewerImageList.value.findIndex(image => image.id === currentImageId)
-    if (currentImageIndex > props.bookDetail.pageCount - 6) {
+    if (currentImageIndex > appStore.bookDetail.pageCount - 6) {
       currentImageId = viewerImageList.value[0].id
     }
-    viewerReadingProgress.value.unshift({bookId: props.bookDetail.id, pageId: currentImageId})
+    viewerReadingProgress.value.unshift({bookId: appStore.bookDetail.id, pageId: currentImageId})
     localStorage.setItem('viewerReadingProgress', JSON.stringify(viewerReadingProgress.value.slice(0, 1000)))
   } catch {}
 }
 
 const saveImageStyleType = () => {
-  if (imageStyleType.value === 'double') emit('message', 'info', t('c.insertEmptyPageInfo'))
+  if (imageStyleType.value === 'double') appStore.printMessage('info', t('c.insertEmptyPageInfo'))
   localStorage.setItem('imageStyleType', imageStyleType.value)
   setTimeout(() => {
     handleClickThumbnail(currentImageId.value)
@@ -553,7 +551,7 @@ const handleJumpToReadingProgress = async (book) => {
           break
         }
       }
-      if (viewerImageList.value.length > book.pageCount - 5 || props.bookDetail.id !== book.id) break
+      if (viewerImageList.value.length > book.pageCount - 5 || appStore.bookDetail.id !== book.id) break
       await timer(500)
     }
   }
@@ -580,13 +578,13 @@ const onMangaImageContextMenu = (e, image) => {
       {
         label: t('c.deleteImage'),
         onClick: async () => {
-          const deleteResult = await ipcRenderer.invoke('delete-image', image.filename, props.bookDetail.filepath, props.bookDetail.type)
+          const deleteResult = await ipcRenderer.invoke('delete-image', image.filename, appStore.bookDetail.filepath, appStore.bookDetail.type)
           if (deleteResult) {
             viewerImageList.value = viewerImageList.value.filter(item => item.id !== image.id)
             receiveThumbnailList.value = receiveThumbnailList.value.filter(item => item.id !== image.id)
-            emit('rescanBook', props.bookDetail)
+            emit('rescanBook', appStore.bookDetail)
           } else {
-            emit('message', 'error', t('c.deleteImageError'))
+            appStore.printMessage('error', t('c.deleteImageError'))
           }
         }
       }

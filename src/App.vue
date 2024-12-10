@@ -460,7 +460,6 @@ import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
 import he from 'he'
 import { nanoid } from 'nanoid'
 import draggable from 'vuedraggable'
-import * as linkify from 'linkifyjs'
 
 import { getWidth } from './utils.js'
 
@@ -2222,23 +2221,6 @@ export default defineComponent({
           },
         ]
       })
-    },
-    onMangaCommentContextMenu (e, comment) {
-      e.preventDefault()
-      const foundLink = linkify.find(comment, 'url')
-      if (!_.isEmpty(foundLink)) {
-        const items = foundLink.map(l => ({
-          label: `${this.$t('c.redirect')} ${l.href}`,
-          onClick: () => {
-            ipcRenderer.invoke('open-url', l.href)
-          }
-        }))
-        this.$contextmenu({
-          x: e.x,
-          y: e.y,
-          items
-        })
-      }
     },
   }
 })

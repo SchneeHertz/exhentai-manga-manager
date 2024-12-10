@@ -151,6 +151,9 @@ import { ElMessageBox } from 'element-plus'
 import { CaretRight20Regular, CaretLeft20Regular } from '@vicons/fluent'
 import { BookmarkTwotone } from '@vicons/material'
 import { nanoid } from 'nanoid'
+import he from 'he'
+import * as linkify from 'linkifyjs'
+import ContextMenu from '@imengyu/vue3-context-menu'
 
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
@@ -339,6 +342,25 @@ const addTagCat = () => {
   .catch(() => {
     appStore.printMessage('info', t('c.canceled'))
   })
+}
+
+
+const onMangaCommentContextMenu = (e, comment) => {
+  e.preventDefault()
+  const foundLink = linkify.find(comment, 'url')
+  if (!_.isEmpty(foundLink)) {
+    const items = foundLink.map(l => ({
+      label: `${t('c.redirect')} ${l.href}`,
+      onClick: () => {
+        ipcRenderer.invoke('open-url', l.href)
+      }
+    }))
+    ContextMenu.showContextMenu({
+      x: e.x,
+      y: e.y,
+      items
+    })
+  }
 }
 
 defineExpose({

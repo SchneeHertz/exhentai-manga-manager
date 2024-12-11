@@ -4,7 +4,7 @@
     :size="drawerHeight"
     :with-header="false"
     destroy-on-close
-    @close="$emit('handleStopReadManga')"
+    @close="handleStopReadManga"
     class="viewer-drawer"
     modal-class="viewer-drawer-modal"
   >
@@ -173,11 +173,8 @@ const { printMessage, saveBook } = appStore
 const { t } = useI18n()
 
 const emit = defineEmits([
-  'handleStopReadManga',
   'toNextManga',
   'toNextMangaRandom',
-  'useNewCover',
-  'selectBook',
   'updateOptions',
   'updateWindowTitle',
   'rescanBook',
@@ -255,7 +252,7 @@ const viewManga = (book, viewerHeight = '100%') => {
   currentImageIndex.value = 0
   insertEmptyPage.value = setting.value.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
-  emit('selectBook', book)
+  selectBook(book)
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',
@@ -558,6 +555,21 @@ const handleJumpToReadingProgress = async (book) => {
   }
 }
 
+
+const useNewCover = async (filepath) => {
+  const coverPath = await ipcRenderer.invoke('use-new-cover', filepath)
+  bookDetail.value.coverPath = coverPath
+  await saveBook(bookDetail.value)
+}
+const selectBook = (book) => {
+  bookDetail.value = book
+}
+const handleStopReadManga = () => {
+  if (setting.value.keepReadingProgress) saveReadingProgress()
+  ipcRenderer.invoke('release-sendimagelock')
+  ipcRenderer.invoke('update-window-title')
+}
+
 const onMangaImageContextMenu = (e, image) => {
   e.preventDefault()
   ContextMenu.showContextMenu({
@@ -573,7 +585,7 @@ const onMangaImageContextMenu = (e, image) => {
       {
         label: t('c.designateAsCover'),
         onClick: () => {
-          emit('useNewCover', image.filepath)
+          useNewCover(image.filepath)
         }
       },
       {
@@ -604,6 +616,7 @@ defineExpose({
   insertEmptyPageIndex,
   saveReadingProgress,
   viewManga,
+  handleStopReadManga,
 })
 </script>
 

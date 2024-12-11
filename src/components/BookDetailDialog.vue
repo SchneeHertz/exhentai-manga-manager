@@ -402,6 +402,7 @@ const onMangaCommentContextMenu = (e, comment) => {
 
 defineExpose({
   dialogVisibleBookDetail,
+  editingTag,
   openBookDetail,
   openLocalBook,
   rescanBook,
@@ -423,6 +424,9 @@ defineExpose({
         svg
           height: 32px
           width: 32px
+
+.text-red
+  color: red !important
 
 .detail-book-title
   height: 44px

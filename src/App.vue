@@ -75,25 +75,25 @@
       <el-col :span="4">
         <el-row :gutter="20">
           <el-col :span="6"  v-if="!editTagView && !editCollectionView">
-            <el-button plain @click="enterEditCollectionView" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
+            <el-button plain @click="$refs.EditViewRef.enterEditCollectionView()" :icon="CicsSystemGroup" :title="$t('m.manageCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="addCollection" :icon="Collections24Regular" :title="$t('m.addCollection')"></el-button>
+            <el-button type="primary" plain @click="$refs.EditViewRef.addCollection()" :icon="Collections24Regular" :title="$t('m.addCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="editCollection" :icon="Edit" :title="$t('m.editCollection')"></el-button>
+            <el-button type="primary" plain @click="$refs.EditViewRef.editCollection()" :icon="Edit" :title="$t('m.editCollection')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="saveCollection" :icon="Save16Regular" :title="$t('m.save')"></el-button>
+            <el-button type="primary" plain @click="$refs.EditViewRef.saveCollection()" :icon="Save16Regular" :title="$t('m.save')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editCollectionView">
-            <el-button type="primary" plain @click="exitCollectionView" :icon="MdExit" :title="$t('m.exit')"></el-button>
+            <el-button type="primary" plain @click="$refs.EditViewRef.exitCollectionView()" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
           <el-col :span="6"  v-if="!editTagView && !editCollectionView">
-            <el-button plain @click="enterEditTagView" :icon="TagGroup" :title="$t('m.manageTag')"></el-button>
+            <el-button plain @click="$refs.EditViewRef.enterEditTagView()" :icon="TagGroup" :title="$t('m.manageTag')"></el-button>
           </el-col>
           <el-col :span="6" v-if="editTagView">
-            <el-button type="primary" plain @click="exitEditTagView" :icon="MdExit" :title="$t('m.exit')"></el-button>
+            <el-button type="primary" plain @click="$refs.EditViewRef.exitEditTagView()" :icon="MdExit" :title="$t('m.exit')"></el-button>
           </el-col>
         </el-row>
       </el-col>
@@ -137,135 +137,15 @@
           </transition>
         </div>
       </el-col>
-      <el-col :span="20" v-if="editCollectionView" class="book-collect-view"
-        @mousedown="handleMouseDownForSelection" @mouseup="handleMouseUpForSelection('collect')" @mousemove="handleMouseMoveForSelection"
-      >
-        <div
-          v-for="book in visibleChunkDisplayBookListForCollectView" :key="book.id"
-          v-lazy:[book.id]="loadBookCardContent"
-          class="book-collect-card-frame"
-        >
-          <transition name="pop">
-            <el-badge
-              v-if="visibilityMap[book.id]"
-              :value="book.collected ? '✓' : '+'"
-              :type="book.collected ? 'success' : 'warning'"
-              class="book-add-badge"
-            >
-              <div class="book-collect-card selectable-card" :id="book.id" @click="handleClickCollectBadge(book)">
-                <p class="book-collect-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
-                <img class="book-collect-cover" :src="book.coverPath"/>
-              </div>
-            </el-badge>
-          </transition>
-        </div>
-      </el-col>
-      <el-col :span="4" v-if="editCollectionView" class="book-collection">
-        <el-select v-model="selectCollection" class="book-collection-select" filterable @change="handleSelectCollectionChange">
-          <el-option v-for="collection in collectionList" :key="collection.id" :value="collection.id" :label="collection.title"></el-option>
-        </el-select>
-        <div>
-          <draggable
-            v-model="displaySelectCollectionList"
-            item-key="id"
-            animation="200"
-          >
-            <template #item="{element}">
-              <div class="book-collection-line">
-                <img class="book-collection-cover" :src="element.coverPath" />
-                <p
-                  class="book-collection-title"
-                  :title="getDisplayTitle(element)"
-                >{{getDisplayTitle(element)}}</p>
-                <el-icon :size="20" color="#FF0000" class="book-collection-remove" @click="handleClickCollectBadge(element)"><IosRemoveCircleOutline /></el-icon>
-              </div>
-            </template>
-          </draggable>
-        </div>
-      </el-col>
-      <el-col :span="20" v-if="editTagView" class="book-tag-edit-view"
-        @mousedown="handleMouseDownForSelection" @mouseup="handleMouseUpForSelection('tag')" @mousemove="handleMouseMoveForSelection"
-      >
-        <div
-          v-for="book in visibleChunkDisplayBookListForEditTagView" :key="book.id"
-          v-lazy:[book.id]="loadBookCardContent"
-          class="book-tag-edit-card-frame"
-        >
-          <transition name="pop">
-            <el-badge
-              v-if="visibilityMap[book.id]"
-              :value="book.selected ? '✓' : '+'"
-              :type="book.selected ? 'success' : 'warning'"
-              class="book-add-badge"
-            >
-              <div class="book-tag-edit-card selectable-card" @contextmenu="previewManga(book)" :id="book.id" @click="handleSelectBookBadge(book)">
-                <p class="book-tag-edit-title" :title="getDisplayTitle(book)">{{getDisplayTitle(book)}}</p>
-                <el-popover placement="left" :width="300" trigger="hover" :show-after="1000" :hide-after="100">
-                  <template #reference>
-                    <img class="book-tag-edit-cover" :src="book.coverPath"/>
-                  </template>
-                  <el-descriptions :column="1" size="small" class="book-tag-edit-popover">
-                    <el-descriptions-item :label="$t('m.pageCount')+':'">
-                      <el-tag class="book-tag" :type="book.pageDiff ? 'danger' : 'info'">{{book.pageCount}} | {{book.filecount}}</el-tag>
-                    </el-descriptions-item>
-                    <el-descriptions-item :label="$t('m.metadataStatus')+':'">
-                      <el-tag class="book-tag" :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
-                      @click="searchFromTag(book.status)">{{book.status}}</el-tag>
-                    </el-descriptions-item>
-                    <el-descriptions-item :label="$t('m.category')+':'">
-                      <el-tag type="info" class="book-tag" @click="searchFromTag(book.category)">{{book.category}}</el-tag>
-                    </el-descriptions-item>
-                    <el-descriptions-item v-for="(tagArr, key) in book.tags" :label="key + ':'" :key="key">
-                      <el-tag type="info" class="book-tag" v-for="tag in tagArr" :key="tag" @click="searchFromTag(tag, key)"
-                      >{{resolvedTranslation[tag] ? resolvedTranslation[tag].name : tag }}</el-tag>
-                    </el-descriptions-item>
-                  </el-descriptions>
-                </el-popover>
-              </div>
-            </el-badge>
-          </transition>
-        </div>
-      </el-col>
-      <el-col :span="4" v-if="editTagView" class="book-tag-edit-operation" v-loading="updateTagsLoading">
-        <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="selectAllForGroupTag">{{$t('m.selectAll')}}</el-button>
-          <el-button type="primary" plain @click="unselectAllForGroupTag">{{$t('m.unselectAll')}}</el-button>
-        </el-space>
-        <el-divider content-position="left">{{$t('m.tag')}}</el-divider>
-        <el-select-v2
-          v-model="groupTagSelected"
-          filterable clearable multiple :reserve-keyword="false" :height="340"
-          :options="tagListForSelect"
-        ></el-select-v2>
-        <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="addTagToGroup">{{$t('m.addGroupTag')}}</el-button>
-          <el-button type="primary" @click="removeTagToGroup" plain>{{$t('m.removeGroupTag')}}</el-button>
-        </el-space>
-        <el-divider content-position="left">{{$t('m.category')}}</el-divider>
-        <el-select v-model="categorySelected" :placeholder="$t('m.category')" clearable>
-          <el-option v-for="cat in categoryOption" :value="cat" :key="cat" :label="cat" />
-        </el-select>
-        <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="applyCategory">{{$t('m.apply')}}</el-button>
-        </el-space>
-        <el-divider content-position="left">{{$t('m.metadataStatus')}}</el-divider>
-        <el-select v-model="statusSelected" :placeholder="$t('m.metadataStatus')">
-          <el-option v-for="status in statusOption" :value="status" :key="status" :label="status" />
-        </el-select>
-        <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="applyStatus">{{$t('m.apply')}}</el-button>
-        </el-space>
-        <el-divider content-position="left">{{$t('m.other')}}</el-divider>
-        <el-space wrap class="book-tag-edit-buttons">
-          <el-button type="primary" plain @click="groupGetMetadata">{{$t('m.batchGetMetadata')}}</el-button>
-          <el-button type="danger" plain @click="groupDeleteLocalBook">{{$t('m.deleteFile')}}</el-button>
-          <el-button type="primary" plain @click="groupRescanBook">{{$t('m.rescan')}}</el-button>
-          <el-button type="primary" plain @click="groupTriggerHiddenBook(false)">{{$t('m.showManga')}}</el-button>
-          <el-button type="primary" plain @click="groupTriggerHiddenBook(true)">{{$t('m.hideManga')}}</el-button>
-        </el-space>
-      </el-col>
+      <EditView
+        ref="EditViewRef"
+        @preview-manga="previewManga"
+        @search-from-tag="searchFromTag"
+        @load-book-list="loadBookList"
+        @get-books-metadata="getBooksMetadata"
+        @handle-remove-book-display="handleRemoveBookDisplay"
+      ></EditView>
     </el-row>
-    <div id="selection-box" ref="selectionBox"></div>
     <el-row class="pagination-bar">
       <el-pagination
         v-model:currentPage="currentPage"
@@ -315,7 +195,7 @@
       ref="BookDetailDialogRef"
       @open-content-view="openContentView"
       @open-thumbnail-view="openThumbnailView"
-      @save-collection="saveCollection"
+      @save-collection="$refs.EditViewRef.saveCollection()"
       @handle-remove-book-display="handleRemoveBookDisplay"
       @open-search-dialog="openSearchDialog"
       @get-book-info="getBookInfo"
@@ -324,13 +204,10 @@
     />
     <InternalViewer
       ref="InternalViewerRef"
-      @handle-stop-read-manga="handleStopReadManga"
       @to-next-manga="toNextManga"
       @to-next-manga-random="toNextMangaRandom"
-      @use-new-cover="useNewCover"
-      @select-book="selectBook"
       @update-window-title="updateWindowTitle"
-      @rescan-book="rescanBook"
+      @rescan-book="(book) => $refs.BookDetailDialogRef.rescanBook(book)"
     ></InternalViewer>
     <FolderTree
       ref="FolderTreeRef"
@@ -346,7 +223,6 @@
     ></SearchDialog>
     <Setting
       ref="SettingRef"
-      :tag-list-raw="tagListRaw"
       @handle-language-set="handleLanguageSet"
       @force-gene-book-list="forceGeneBookList"
       @patch-local-metadata="patchLocalMetadata"
@@ -357,15 +233,13 @@
 
 <script>
 import { defineComponent } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
 import { ArrowTrendingLines20Filled, Collections24Regular, Search32Filled, Save16Regular } from '@vicons/fluent'
-import { MdShuffle, IosRemoveCircleOutline, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
+import { MdShuffle, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 
 import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
 import he from 'he'
-import { nanoid } from 'nanoid'
-import draggable from 'vuedraggable'
 
 import { getWidth } from './utils.js'
 
@@ -381,14 +255,13 @@ import BookDetailDialog from './components/BookDetailDialog.vue'
 import FolderTree from './components/FolderTree.vue'
 import BookCard from './components/BookCard.vue'
 import BookCardCollection from './components/BookCardCollection.vue'
+import EditView from './components/EditView.vue'
 
 import { mapWritableState, mapActions } from 'pinia'
 import { useAppStore } from './pinia.js'
 
 export default defineComponent({
   components: {
-    IosRemoveCircleOutline,
-    draggable,
     Setting,
     Graph,
     InternalViewer,
@@ -397,6 +270,7 @@ export default defineComponent({
     FolderTree,
     BookCard,
     BookCardCollection,
+    EditView,
   },
   setup () {
     return {
@@ -408,13 +282,10 @@ export default defineComponent({
   },
   data () {
     return {
-      editCollectionView: false,
-      editTagView: false,
       drawerVisibleCollection: false,
       // home
       locale: zhCn,
       searchString: '',
-      sortValue: undefined,
       currentPage_: 1,
       progress: 0,
       randomTags: [],
@@ -422,135 +293,31 @@ export default defineComponent({
       buttonLoadBookListLoading: false,
       buttonGetMetadatasLoading: false,
       // collection
-      selectCollection: undefined,
-      selectCollectionObject: {list:[]},
       openCollectionTitle: undefined,
-      // group tag edit
-      selectBookList: [],
-      groupTagSelected: [],
-      updateTagsLoading: false,
-      categorySelected: undefined,
-      statusSelected: 'tagged',
-      startX: undefined,
-      startY: undefined,
-      isSelecting: false,
     }
   },
   computed: {
     ...mapWritableState(useAppStore, [
       'cat2letter',
       'keyMap',
-      'statusOption',
       'categoryOption',
       'setting',
       'bookDetail',
-      'pathSep',
-      'resolvedTranslation',
       'bookList',
       'displayBookList',
       'chunkDisplayBookList',
       'collectionList',
       'openCollectionBookList',
       'serviceAvailable',
+      'sortValue',
+      'editCollectionView',
+      'editTagView',
+      'displayBookCount',
+      'tagList',
+      'tag2cat',
+      'customOptions',
+      'visibleChunkDisplayBookList',
     ]),
-    displayBookCount () {
-      if (this.sortValue === 'hidden') {
-        return _.sumBy(this.displayBookList, book => book.hiddenBook ? 1 : 0)
-      }
-      return _.sumBy(this.displayBookList, book => this.isVisibleBook(book) ? 1 : 0)
-    },
-    displaySelectCollectionList: {
-      get () {
-        const list = this.selectCollectionObject.list.map(hash_id => _.filter(this.bookList, book => book.hash === hash_id || book.id === hash_id))
-        return _.compact(_.flatten(list))
-      },
-      set (val) {
-        const list = [...new Set(val.map(b => b.hash))]
-        this.selectCollectionObject.list = list
-      }
-    },
-    tagList () {
-      const tagArray = _(this.bookList.filter(b => {
-        return !b.hiddenBook && !b.folderHide
-      }).map(b => {
-        return _.map(b.tags, (tags, cat) => {
-          return _.map(tags, tag => `${cat}##${tag}`)
-        })
-      }))
-      .flattenDeep().value()
-      const uniqedTagArray = [...new Set(tagArray)].sort()
-      return uniqedTagArray.map(combinedTag => {
-        const tagArray = _.split(combinedTag, '##')
-        const letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
-        let labelHeader = tagArray[0]
-        let labelTail = tagArray[1]
-        if (this.setting.showTranslation) {
-          labelHeader = tagArray[0] === 'group' ? '团队' : this.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
-          labelTail = this.resolvedTranslation[tagArray[1]]?.name || tagArray[1]
-        }
-        return {
-          label: `${labelHeader}:${labelTail}`,
-          value: `${letter}:"${tagArray[1]}"$`
-        }
-      })
-    },
-    tagListRaw () {
-      const tagArray = _(this.bookList.map(b => {
-        return _.map(b.tags, (tags, cat) => {
-          return _.map(tags, tag => `${cat}##${tag}`)
-        })
-      }))
-      .flattenDeep().value()
-      const uniqedTagArray = [...new Set(tagArray)].sort()
-      return uniqedTagArray.map(combinedTag => {
-        const tagArray = _.split(combinedTag, '##')
-        const letter = this.cat2letter[tagArray[0]] ? this.cat2letter[tagArray[0]] : tagArray[0]
-        return {
-          id: `${tagArray[0]}:${tagArray[1]}`,
-          letter,
-          cat: tagArray[0],
-          tag: tagArray[1],
-        }
-      })
-    },
-    tagListForSelect () {
-      if (this.setting.showTranslation) {
-        return this.tagListRaw.map(({letter, cat, tag}) => {
-          const labelHeader = cat === 'group' ? '团队' : this.resolvedTranslation[cat]?.name || cat
-          const labelTail = this.resolvedTranslation[tag]?.name || tag
-          return {
-            label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
-            value: `${letter}:"${tag}"$`
-          }
-        })
-      } else {
-        return this.tagListRaw.map(({letter, cat, tag}) => {
-          return {
-            label: `${cat}:${tag} || ${letter}:"${tag}"$`,
-            value: `${letter}:"${tag}"$`
-          }
-        })
-      }
-    },
-    tag2cat () {
-      const temp = {}
-      const tagArray = _(this.bookList.map(b => {
-        return _.map(b.tags, (tags, cat) => {
-          return _.map(tags, tag => `${cat}##${tag}`)
-        })
-      }))
-      .flattenDeep().value()
-      const uniqedTagArray = [...new Set(tagArray)]
-      uniqedTagArray.forEach(combinedTag => {
-        const tagArray = _.split(combinedTag, '##')
-        temp[tagArray[1]] = tagArray[0]
-      })
-      return temp
-    },
-    customOptions () {
-      return _.compact(_.get(this.setting, 'customOptions', '').split('\n'))
-        .map(str => ({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
-    },
     currentPage: {
       get () {
         return this.currentPage_
@@ -567,15 +334,6 @@ export default defineComponent({
           }
         }
       }
-    },
-    visibleChunkDisplayBookList () {
-      return this.chunkDisplayBookList.filter(book => !book.collectionHide && (this.sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide)
-    },
-    visibleChunkDisplayBookListForCollectView () {
-      return this.chunkDisplayBookList.filter(book => !book.isCollection && !book.folderHide && !book.hiddenBook)
-    },
-    visibleChunkDisplayBookListForEditTagView () {
-      return this.chunkDisplayBookList.filter(book => !book.isCollection && !book.folderHide)
     },
   },
   mounted () {
@@ -647,12 +405,12 @@ export default defineComponent({
   },
   methods: {
     ...mapActions(useAppStore, [
+      'isBook',
+      'isVisibleBook',
       'printMessage',
-      'returnFileName',
       'getDisplayTitle',
       'resetMetadata',
       'saveBook',
-      'switchMark',
       'copyTagClipboard',
       'pasteTagClipboard',
     ]),
@@ -678,7 +436,7 @@ export default defineComponent({
         }
       }
       if (this.$refs.BookDetailDialogRef.dialogVisibleBookDetail) {
-        if (this.editingTag) {
+        if (this.$refs.BookDetailDialogRef.editingTag) {
           return 'edit-tag'
         } else {
           return 'bookdetail'
@@ -690,10 +448,10 @@ export default defineComponent({
       if (this.$refs.FolderTreeRef.sideVisibleFolderTree) {
         return 'folder-tree'
       }
-      if (this.editCollectionView) {
+      if (this.$refs.EditViewRef.editCollectionView) {
         return 'edit-collection'
       }
-      if (this.editTagView) {
+      if (this.$refs.EditViewRef.editTagView) {
         return 'edit-group-tag'
       }
       if (this.drawerVisibleCollection) {
@@ -943,7 +701,7 @@ export default defineComponent({
         this.bookList = this.prepareBookList(res)
         this.loadCollectionList()
         this.$refs.FolderTreeRef.geneFolderTree()
-        this.selectBookList = []
+        this.$refs.EditViewRef.selectBookList = []
         this.buttonLoadBookListLoading = false
       } catch (error) {
         this.buttonLoadBookListLoading = false
@@ -960,19 +718,6 @@ export default defineComponent({
     updateWindowTitle (book) {
       const title = this.getDisplayTitle(book)
       ipcRenderer.invoke('update-window-title', title)
-    },
-    async rescanBook (book) {
-      await this.$refs.BookDetailDialogRef.rescanBook(book)
-    },
-    isBook (book) {
-      // isCollection mean book is collection
-      return !book.isCollection
-    },
-    isVisibleBook (book) {
-      // folderHide mean book hide by not selecting at folder tree
-      // collectionHide mean book hide because book in collection
-      // hiddenBook mean book hide by user operation
-      return !book.folderHide && !book.collectionHide && !book.hiddenBook
     },
 
     // metadata
@@ -1088,7 +833,7 @@ export default defineComponent({
         this.getBookInfoFromEh(book)
       }
     },
-    async getBooksMetadata (bookList, gap) {
+    async getBooksMetadata (bookList, gap, callback) {
       const server = this.setting.defaultScraper || 'exhentai'
       this.serviceAvailable = true
       const timer = ms => new Promise(res => setTimeout(res, ms))
@@ -1128,6 +873,7 @@ export default defineComponent({
       messageInstance.close()
       ipcRenderer.invoke('set-progress-bar', -1)
       this.printMessage('success', this.$t('c.getMetadataComplete'))
+      callback()
     },
     async getBookListMetadata () {
       try {
@@ -1399,7 +1145,7 @@ export default defineComponent({
       if (!this.sortValue || ['mark', 'hidden', 'collection'].includes(this.sortValue)) this.sortValue = 'addDescend'
       this.handleSortChange(this.sortValue, this.displayBookList)
       if (this.currentUI() === 'edit-group-tag') {
-        this.selectBookList = []
+        this.$refs.EditViewRef.selectBookList = []
         this.displayBookList.forEach(book => book.selected = false)
       }
     },
@@ -1505,358 +1251,23 @@ export default defineComponent({
       })
       this.handleSortChange(this.sortValue, this.bookList)
     },
-    enterEditCollectionView () {
-      this.visibilityMap = {}
-      this.editCollectionView = true
-      if (this.selectCollection) this.handleSelectCollectionChange(this.selectCollection)
-    },
-    exitCollectionView () {
-      this.visibilityMap = {}
-      this.editCollectionView = false
-    },
-    addCollection () {
-      ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.addCollection'), {})
-      .then(({ value }) => {
-        const id = nanoid()
-        this.collectionList.push({
-          id,
-          title: value,
-          list: []
-        })
-        this.selectCollection = id
-        this.handleSelectCollectionChange(this.selectCollection)
-      })
-      .catch(() => {
-        this.printMessage('info', this.$t('c.canceled'))
-      })
-    },
-    editCollection () {
-      if (_.has(this.selectCollectionObject, 'title')) {
-        ElMessageBox.prompt(this.$t('c.inputCollectionName'), this.$t('m.editCollection'), {
-          inputValue: this.selectCollectionObject.title,
-          cancelButtonText: this.$t('c.deleteCollection'),
-          distinguishCancelAndClose: true
-        })
-        .then(({ value }) => {
-          this.selectCollectionObject.title = value
-        })
-        .catch((action) => {
-          if (action === 'cancel') {
-            this.deleteCollection()
-          } else {
-            this.printMessage('info', this.$t('c.canceled'))
-          }
-        })
-      }
-    },
-    deleteCollection () {
-      this.collectionList = _.filter(this.collectionList, c => c.id !== this.selectCollection)
-      this.selectCollection = undefined
-      this.selectCollectionObject = { list: [] }
-      _.forEach(this.displayBookList, book => {
-        book.collected = false
-      })
-    },
-    async saveCollection () {
-      this.collectionList = _.filter(this.collectionList, c => !_.isEmpty(_.compact(c.list)))
-      await ipcRenderer.invoke('save-collection-list', _.cloneDeep(this.collectionList))
-      this.loadBookList(false)
-      this.selectCollection = undefined,
-      this.selectCollectionObject = { list: [] }
-      this.editCollectionView = false
-    },
-    handleSelectCollectionChange (val) {
-      this.selectCollectionObject = _.find(this.collectionList, {id: val})
-      _.forEach(this.displayBookList, book => {
-        if (!book.isCollection) {
-          if (this.selectCollectionObject.list.includes(book.id) || this.selectCollectionObject.list.includes(book.hash)) {
-            book.collected = true
-          } else {
-            book.collected = false
-          }
-        }
-      })
-    },
-    handleClickCollectBadge (book) {
-      const findBooks = _.filter(this.displayBookList, b => b.id === book.hash || b.hash === book.hash)
-      if (book.collected) {
-        findBooks.forEach(book => book.collected = false)
-        this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, hash => hash !== book.id && hash !== book.hash)
-      } else {
-        findBooks.forEach(book => book.collected = true)
-        this.selectCollectionObject.list.push(book.hash)
-      }
-    },
     openCollection (collection) {
       this.drawerVisibleCollection = true
       this.openCollectionBookList = _.compact(_.flatten(collection.list.map(hash_id => {
         return _.filter(this.bookList, book => book.id === hash_id || book.hash === hash_id)
       })))
       this.openCollectionTitle = collection.title
-      this.selectCollection = collection.id
+      this.$refs.EditViewRef.selectCollection = collection.id
     },
     editCurrentCollection () {
       this.drawerVisibleCollection = false
-      this.editCollectionView = true
-      this.handleSelectCollectionChange(this.selectCollection)
+      this.$refs.EditViewRef.editCollectionView = true
+      this.handleSelectCollectionChange(this.$refs.EditViewRef.selectCollection)
     },
 
-    // group edit tags viewer
-    enterEditTagView () {
-      this.visibilityMap = {}
-      this.editTagView = true
-      this.selectBookList = []
-      this.displayBookList.forEach(book => book.selected = false)
-    },
-    exitEditTagView () {
-      this.visibilityMap = {}
-      this.editTagView = false
-    },
-    handleSelectBookBadge (book) {
-      if (book.selected) {
-        book.selected = false
-        this.selectBookList = _.filter(this.selectBookList, b => b.id !== book.id)
-      } else {
-        book.selected = true
-        this.selectBookList.push(book.id)
-      }
-    },
-    handleMouseDownForSelection (e) {
-      this.isSelecting = true;
-      this.startX = e.pageX
-      this.startY = e.pageY
-      this.$refs.selectionBox.style.left = `${this.startX}px`
-      this.$refs.selectionBox.style.top = `${this.startY}px`
-      this.$refs.selectionBox.style.width = `0px`
-      this.$refs.selectionBox.style.height = `0px`
-      this.$refs.selectionBox.style.display = 'block'
-      e.preventDefault()
-    },
-    handleMouseMoveForSelection (e) {
-      if (this.isSelecting) {
-        const endX = e.pageX
-        const endY = e.pageY
-        const left = Math.min(endX, this.startX)
-        const top = Math.min(endY, this.startY)
-        const width = Math.abs(endX - this.startX)
-        const height = Math.abs(endY - this.startY)
-        this.$refs.selectionBox.style.left = `${left}px`
-        this.$refs.selectionBox.style.top = `${top}px`
-        this.$refs.selectionBox.style.width = `${width}px`
-        this.$refs.selectionBox.style.height = `${height}px`
-      }
-    },
-    handleMouseUpForSelection (view) {
-      const rect = this.$refs.selectionBox.getBoundingClientRect()
-      if (rect.width > 10 || rect.height > 10) {
-        document.querySelectorAll('.selectable-card').forEach(item => {
-          const itemRect = item.getBoundingClientRect()
-          if (
-            itemRect.left < rect.right &&
-            itemRect.right > rect.left &&
-            itemRect.top < rect.bottom &&
-            itemRect.bottom > rect.top
-          ) {
-            const book = this.chunkDisplayBookList.find(book => book.id === item.id)
-            if (view === 'tag') {
-              if (book.selected) {
-                book.selected = false
-                this.selectBookList = _.filter(this.selectBookList, id => id !== item.id)
-              } else {
-                book.selected = true
-                this.selectBookList.push(item.id)
-              }
-            } else if (view === 'collect') {
-              const findBooks = _.filter(this.displayBookList, b => b.id === book.hash || b.hash === book.hash)
-              if (book.collected) {
-                findBooks.forEach(book => book.collected = false)
-                this.selectCollectionObject.list = _.filter(this.selectCollectionObject.list, hash => hash !== book.id && hash !== book.hash)
-              } else {
-                findBooks.forEach(book => book.collected = true)
-                this.selectCollectionObject.list.push(book.hash)
-              }
-            }
-          }
-        })
-      }
-      this.isSelecting = false
-      this.$refs.selectionBox.style.display = 'none'
-    },
-    selectAllForGroupTag () {
-      this.displayBookList.forEach(book => {
-        if (!book.isCollection && !book.folderHide) {
-          book.selected = true
-          this.selectBookList.push(book.id)
-        }
-      })
-    },
-    unselectAllForGroupTag () {
-      this.displayBookList.forEach(book => {
-        book.selected = false
-      })
-      this.selectBookList = []
-    },
     previewManga (book) {
       this.$refs.InternalViewerRef.showThumbnail = true
       this.$refs.InternalViewerRef.viewManga(book, '83%')
-    },
-    resolveGroupTagSelected () {
-      const letter2cat = _.invert(this.cat2letter)
-      let tags = this.groupTagSelected.map(tag => {
-        const match = /([\w\d一-龟]+):"([- ._\(\)\w\d一-龟]+)"\$/.exec(tag)
-        if (match[1] && match[2]) {
-          return {
-            category: letter2cat[match[1]] ? letter2cat[match[1]] : match[1],
-            tag: match[2]
-          }
-        } else {
-          return null
-        }
-      })
-      tags = _.compact(tags)
-      return tags
-    },
-    async addTagToGroup () {
-      try {
-        this.updateTagsLoading = true
-        const tags = this.resolveGroupTagSelected()
-        for (const id of this.selectBookList) {
-          const book = _.find(this.displayBookList, {id})
-          if (!_.has(book, 'tags')) book.tags = {}
-          for (const { category, tag } of tags) {
-            if (_.has(book.tags, category)) {
-              if (!book.tags[category].includes(tag)) {
-                book.tags[category].push(tag)
-              }
-            } else {
-              book.tags[category] = [tag]
-            }
-          }
-          await this.saveBook(book)
-        }
-        this.printMessage('success', this.$t('c.addGroupTagSuccess'))
-        this.updateTagsLoading = false
-      } catch (e) {
-        console.error(e)
-        this.printMessage('error', this.$t('c.groupTagError'))
-        this.updateTagsLoading = false
-      }
-    },
-    async removeTagToGroup () {
-      try {
-        this.updateTagsLoading = true
-        const tags = this.resolveGroupTagSelected()
-        for (const id of this.selectBookList) {
-          const book = _.find(this.displayBookList, {id})
-          for (const { category, tag } of tags) {
-            if (_.has(book.tags, category)) {
-              book.tags[category] = _.filter(book.tags[category], t => t !== tag)
-            }
-          }
-          await this.saveBook(book)
-        }
-        this.printMessage('success', this.$t('c.removeGroupTagSuccess'))
-        this.updateTagsLoading = false
-      } catch (e) {
-        console.error(e)
-        this.printMessage('error', this.$t('c.groupTagError'))
-        this.updateTagsLoading = false
-      }
-    },
-    async applyCategory () {
-      try {
-        this.updateTagsLoading = true
-        for (const id of this.selectBookList) {
-          const book = _.find(this.displayBookList, {id})
-          book.category = this.categorySelected
-          await this.saveBook(book)
-        }
-        this.printMessage('success', this.$t('c.applied'))
-        this.updateTagsLoading = false
-      } catch (e) {
-        console.error(e)
-        this.printMessage('error', this.$t('c.applyError'))
-        this.updateTagsLoading = false
-      }
-    },
-    async applyStatus () {
-      try {
-        this.updateTagsLoading = true
-        for (const id of this.selectBookList) {
-          const book = _.find(this.displayBookList, {id})
-          book.status = this.statusSelected
-          await this.saveBook(book)
-        }
-        this.printMessage('success', this.$t('c.applied'))
-        this.updateTagsLoading = false
-      } catch (e) {
-        console.error(e)
-        this.printMessage('error', this.$t('c.applyError'))
-        this.updateTagsLoading = false
-      }
-    },
-    async groupGetMetadata () {
-      try {
-        this.updateTagsLoading = true
-        const bookList = _.compact(this.selectBookList.map(id => _.find(this.displayBookList, {id})))
-        await this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
-        this.updateTagsLoading = false
-      } catch (error) {
-        console.error(error)
-        this.updateTagsLoading = false
-      }
-    },
-    groupDeleteLocalBook () {
-      ElMessageBox.confirm(
-        this.$t('c.confirmDelete'),
-        '',
-        {}
-      )
-      .then(async () => {
-        this.updateTagsLoading = true
-        for (const id of this.selectBookList) {
-          const book = _.find(this.displayBookList, {id})
-          if (book) await this.deleteBook(book)
-        }
-      })
-      .finally(() => {
-        this.unselectAllForGroupTag()
-        this.updateTagsLoading = false
-      })
-    },
-    async groupRescanBook () {
-      try {
-        this.updateTagsLoading = true
-        for (const id of this.selectBookList) {
-          const book = _.find(this.displayBookList, {id})
-          if (book) {
-            const bookInfo = await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))
-            _.assign(book, bookInfo)
-            await this.saveBook(book)
-          }
-        }
-        this.printMessage('success', this.$t('c.rescanSuccess'))
-        this.updateTagsLoading = false
-      } catch (error) {
-        console.error(error)
-        this.updateTagsLoading = false
-      }
-    },
-    async groupTriggerHiddenBook (val) {
-      try {
-        this.updateTagsLoading = true
-        for (const id of this.selectBookList) {
-          const book = _.find(this.displayBookList, {id})
-          if (book) {
-            book.hiddenBook = val
-            await this.saveBook(book)
-          }
-        }
-        this.updateTagsLoading = false
-      } catch (error) {
-        console.error(error)
-        this.updateTagsLoading = false
-      }
     },
 
     // bookDetailView
@@ -1886,21 +1297,8 @@ export default defineComponent({
     },
 
     // internal viewer
-    async useNewCover (filepath) {
-      const coverPath = await ipcRenderer.invoke('use-new-cover', filepath)
-      this.bookDetail.coverPath = coverPath
-      await this.saveBook(this.bookDetail)
-    },
-    selectBook (book) {
-      this.bookDetail = book
-    },
-    handleStopReadManga () {
-      if (this.setting.keepReadingProgress) this.$refs.InternalViewerRef.saveReadingProgress()
-      ipcRenderer.invoke('release-sendimagelock')
-      ipcRenderer.invoke('update-window-title')
-    },
     toNextManga (step) {
-      this.handleStopReadManga()
+      this.$refs.InternalViewerRef.handleStopReadManga()
       const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
       const indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
       const indexNext = indexNow + step
@@ -1917,7 +1315,7 @@ export default defineComponent({
       }
     },
     toNextMangaRandom () {
-      this.handleStopReadManga()
+      this.$refs.InternalViewerRef.handleStopReadManga()
       const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
       const selectBook = _.sample(activeBookList)
       setTimeout(() => {
@@ -2066,9 +1464,6 @@ body
 .pop-enter-from, .pop-leave-to
   opacity: 0
 
-.text-red
-  color: red !important
-
 #progressbar
   position: fixed
   top: 0
@@ -2105,6 +1500,9 @@ body
   margin-left: 2em
   float: right
 
+// search-input sort-select
+.el-autocomplete-suggestion__wrap, .el-select-dropdown__wrap
+  max-height: 490px!important
 
 .pagination-bar
   margin: 4px 0
@@ -2125,10 +1523,6 @@ body
   overflow-x: auto
   justify-content: center
   margin-top: 8px
-  .book-collect-view, .book-collection, .book-tag-edit-view, .book-tag-edit-operation
-    height: calc(100vh - 96px)
-    overflow-x: auto
-    padding-top: 4px
   .book-card-list
     height: calc(100vh - 96px)
     display: flex
@@ -2136,96 +1530,22 @@ body
     justify-content: center
     align-content: flex-start
 
+.book-card-frame
+  min-width: 234px
+  min-height: 383px
+  display: inline-block
+
 .collection-book-card-list
   display: flex
   flex-wrap: wrap
   justify-content: center
   align-content: flex-start
 
-.book-card-frame
-  min-width: 234px
-  min-height: 383px
-  display: inline-block
-
 .open-collection-title
   margin: 0 4px
 .collection-edit-button
   margin-bottom: 2px
 
-.book-collect-card-frame, .book-tag-edit-card-frame
-  display: inline-block
-  min-width: 138px
-  min-height: 229px
-.book-collect-card, .book-tag-edit-card
-  width: 138px
-  height: 229px
-  border: solid 1px var(--el-border-color)
-  border-radius: 4px
-  margin: 6px 6px
-  position: relative
-.book-add-badge
-  .el-badge__content.is-fixed
-    top: 6px
-    right: 17px
-    cursor: pointer
-.book-collect-title, .book-tag-edit-title
-  height: 38px
-  overflow-y: hidden
-  margin: 4px 2px
-  font-size: 10px
-.book-collect-cover, .book-tag-edit-cover
-  border-radius: 4px
-  width: 125px
-  height: 177px
-  object-fit: cover
-.book-collection
-  .book-collection-select
-    width: 100%
-  .book-collection-line
-    text-align:left
-    width: 100%
-    height: 79px
-    border: solid 1px var(--el-border-color)
-    border-radius: 4px
-    margin: 2px 0
-    position: relative
-    .book-collection-cover
-      border-radius: 2px
-      width: 50px
-      height: 71px
-      position: absolute
-      top: 4px
-      left: 2px
-      object-fit: cover
-    .book-collection-title
-      height: 72px
-      overflow-y: hidden
-      margin: 4px 4px 4px 54px
-      font-size: 12px
-    .book-collection-remove
-      position: absolute
-      bottom: 2px
-      right: 2px
-      cursor: pointer
-
-#selection-box
-  position: absolute
-  border: 2px dashed #00f
-  display: none
-  pointer-events: none
-  user-select: none
-
-.book-tag-edit-operation
-  .el-select-v2
-    width: 100%
-  .book-tag-edit-buttons
-    width: 100%
-    margin-top: 10px
-
-
-// search-input sort-select
-.el-autocomplete-suggestion__wrap, .el-select-dropdown__wrap
-  max-height: 490px!important
 
 .mx-menu-ghost-host
   z-index: 4000!important

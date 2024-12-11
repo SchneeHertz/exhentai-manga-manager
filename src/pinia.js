@@ -61,6 +61,9 @@ export const useAppStore = defineStore('appStore', {
     collectionList: [],
     openCollectionBookList: [],
     serviceAvailable: true,
+    sortValue: undefined,
+    editCollectionView: false,
+    editTagView: false,
   }),
   getters: {
     cookie: (state) => {
@@ -69,8 +72,115 @@ export const useAppStore = defineStore('appStore', {
     pathSep: () => {
       return ipcRenderer.sendSync('get-path-sep')
     },
+    displayBookCount (state) {
+      if (state.sortValue === 'hidden') {
+        return _.sumBy(state.displayBookList, book => book.hiddenBook ? 1 : 0)
+      }
+      return _.sumBy(state.displayBookList, book => this.isVisibleBook(book) ? 1 : 0)
+    },
+    tagList (state) {
+      const tagArray = _(state.bookList.filter(b => {
+        return !b.hiddenBook && !b.folderHide
+      }).map(b => {
+        return _.map(b.tags, (tags, cat) => {
+          return _.map(tags, tag => `${cat}##${tag}`)
+        })
+      }))
+      .flattenDeep().value()
+      const uniqedTagArray = [...new Set(tagArray)].sort()
+      return uniqedTagArray.map(combinedTag => {
+        const tagArray = _.split(combinedTag, '##')
+        const letter = state.cat2letter[tagArray[0]] ? state.cat2letter[tagArray[0]] : tagArray[0]
+        let labelHeader = tagArray[0]
+        let labelTail = tagArray[1]
+        if (state.setting.showTranslation) {
+          labelHeader = tagArray[0] === 'group' ? '团队' : state.resolvedTranslation[tagArray[0]]?.name || tagArray[0]
+          labelTail = state.resolvedTranslation[tagArray[1]]?.name || tagArray[1]
+        }
+        return {
+          label: `${labelHeader}:${labelTail}`,
+          value: `${letter}:"${tagArray[1]}"$`
+        }
+      })
+    },
+    tagListRaw (state) {
+      const tagArray = _(state.bookList.map(b => {
+        return _.map(b.tags, (tags, cat) => {
+          return _.map(tags, tag => `${cat}##${tag}`)
+        })
+      }))
+      .flattenDeep().value()
+      const uniqedTagArray = [...new Set(tagArray)].sort()
+      return uniqedTagArray.map(combinedTag => {
+        const tagArray = _.split(combinedTag, '##')
+        const letter = state.cat2letter[tagArray[0]] ? state.cat2letter[tagArray[0]] : tagArray[0]
+        return {
+          id: `${tagArray[0]}:${tagArray[1]}`,
+          letter,
+          cat: tagArray[0],
+          tag: tagArray[1],
+        }
+      })
+    },
+    tagListForSelect (state) {
+      if (state.setting.showTranslation) {
+        return state.tagListRaw.map(({letter, cat, tag}) => {
+          const labelHeader = cat === 'group' ? '团队' : state.resolvedTranslation[cat]?.name || cat
+          const labelTail = state.resolvedTranslation[tag]?.name || tag
+          return {
+            label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
+            value: `${letter}:"${tag}"$`
+          }
+        })
+      } else {
+        return state.tagListRaw.map(({letter, cat, tag}) => {
+          return {
+            label: `${cat}:${tag} || ${letter}:"${tag}"$`,
+            value: `${letter}:"${tag}"$`
+          }
+        })
+      }
+    },
+    tag2cat (state) {
+      const temp = {}
+      const tagArray = _(state.bookList.map(b => {
+        return _.map(b.tags, (tags, cat) => {
+          return _.map(tags, tag => `${cat}##${tag}`)
+        })
+      }))
+      .flattenDeep().value()
+      const uniqedTagArray = [...new Set(tagArray)]
+      uniqedTagArray.forEach(combinedTag => {
+        const tagArray = _.split(combinedTag, '##')
+        temp[tagArray[1]] = tagArray[0]
+      })
+      return temp
+    },
+    customOptions () {
+      return _.compact(_.get(state.setting, 'customOptions', '').split('\n'))
+        .map(str => ({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
+    },
+    visibleChunkDisplayBookList (state) {
+      return state.chunkDisplayBookList.filter(book => !book.collectionHide && (state.sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide)
+    },
+    visibleChunkDisplayBookListForCollectView (state) {
+      return state.chunkDisplayBookList.filter(book => !book.isCollection && !book.folderHide && !book.hiddenBook)
+    },
+    visibleChunkDisplayBookListForEditTagView (state) {
+      return state.chunkDisplayBookList.filter(book => !book.isCollection && !book.folderHide)
+    },
   },
   actions: {
+    isBook (book) {
+      // isCollection mean book is collection
+      return !book.isCollection
+    },
+    isVisibleBook (book) {
+      // folderHide mean book hide by not selecting at folder tree
+      // collectionHide mean book hide because book in collection
+      // hiddenBook mean book hide by user operation
+      return !book.folderHide && !book.collectionHide && !book.hiddenBook
+    },
     printMessage(type, msg) {
       ElMessage.closeAll()
       ElMessage[type]({

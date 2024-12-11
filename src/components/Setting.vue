@@ -461,12 +461,10 @@ import NameFormItem from './NameFormItem.vue'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
-const { searchTypeList, setting, resolvedTranslation } = storeToRefs(appStore)
+const { searchTypeList, setting, resolvedTranslation, tagListRaw } = storeToRefs(appStore)
 const { printMessage } = appStore
 
 const { t } = useI18n()
-
-const props = defineProps(['tagListRaw'])
 
 const emit = defineEmits([
   'handleLanguageSet',
@@ -660,7 +658,7 @@ const formTagAdd = ref({
 
 const tagListForCollect = computed(() => {
   if (setting.value.showTranslation) {
-    return props.tagListRaw.map(({letter, cat, tag, id}) => {
+    return tagListRaw.value.map(({letter, cat, tag, id}) => {
       const labelHeader = cat === 'group' ? '团队' : resolvedTranslation.value[cat]?.name || cat
       const labelTail = resolvedTranslation.value[tag]?.name || tag
       return {
@@ -669,7 +667,7 @@ const tagListForCollect = computed(() => {
       }
     })
   } else {
-    return props.tagListRaw.map(({letter, cat, tag, id}) => {
+    return tagListRaw.value.map(({letter, cat, tag, id}) => {
       return {
         label: `${cat}:${tag} || ${letter}:"${tag}"$`,
         value: id
@@ -692,7 +690,7 @@ const moderateSoftColors = [
 ]
 
 const addTagToCollect = () => {
-  const tag = props.tagListRaw.find(tag => tag.id === formTagAdd.value.tag)
+  const tag = tagListRaw.value.find(tag => tag.id === formTagAdd.value.tag)
   if (!setting.value.collectTag) setting.value.collectTag = []
   setting.value.collectTag.push({
     id: tag.id,

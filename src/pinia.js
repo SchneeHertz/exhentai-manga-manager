@@ -156,7 +156,7 @@ export const useAppStore = defineStore('appStore', {
       })
       return temp
     },
-    customOptions () {
+    customOptions (state) {
       return _.compact(_.get(state.setting, 'customOptions', '').split('\n'))
         .map(str => ({label: str.trim(), value: str.trim().replace(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g, '|||')}))
     },

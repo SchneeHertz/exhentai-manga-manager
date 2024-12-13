@@ -252,7 +252,10 @@
             <NameFormItem class="setting-line" prependWidth="110px">
               <template #prepend>{{$t('m.customOptions')}}</template>
               <template #default>
-                <el-input v-model="setting.customOptions" :placeholder="$t('m.customOptionsPlaceholder')" @change="saveSetting" :rows="2" type="textarea"></el-input>
+                <el-input
+                  v-model="setting.customOptions" :placeholder="$t('m.customOptionsPlaceholder')" @change="saveSetting"
+                  type="textarea" :autosize="{ minRows: 2, maxRows: 4 }"
+                ></el-input>
               </template>
             </NameFormItem>
           </el-col>
@@ -281,7 +284,10 @@
             <NameFormItem class="setting-line" prependWidth="110px" appendWidth="0">
               <template #prepend>{{$t('m.customCss')}}</template>
               <template #default>
-                <el-input v-model="setting.customCss" :placeholder="$t('m.customCssPlaceholder')" @change="saveSetting" :rows="2" type="textarea" ></el-input>
+                <el-input
+                  v-model="setting.customCss" :placeholder="$t('m.customCssPlaceholder')" @change="saveSetting"
+                  type="textarea" :autosize="{ minRows: 2, maxRows: 4 }"
+                ></el-input>
               </template>
               <template #append>
                 <el-button text :icon="MdRefresh" @click="reloadWindow"></el-button>
@@ -293,7 +299,7 @@
               <el-popconfirm
                 placement="top-start"
                 :title="$t('m.rebuildWarning')"
-                @confirm="$emit('forceGeneBookList')"
+                @confirm="forceGeneBookList"
               >
                 <template #reference>
                   <el-button class="function-button" plain>{{$t('m.rebuildLibrary')}}</el-button>
@@ -306,7 +312,7 @@
               <el-popconfirm
                 placement="top-start"
                 :title="$t('m.patchWarning')"
-                @confirm="$emit('patchLocalMetadata')"
+                @confirm="patchLocalMetadata"
               >
                 <template #reference>
                   <el-button class="function-button" type="primary" plain>{{$t('m.patchLocalMetadata')}}</el-button>
@@ -326,7 +332,7 @@
           </el-col>
           <el-col :span="5">
             <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('importMetadataFromSqlite')">{{$t('m.importMetadataFromSqlite')}}</el-button>
+              <el-button class="function-button" type="primary" plain @click="importMetadataFromSqlite">{{$t('m.importMetadataFromSqlite')}}</el-button>
             </div>
           </el-col>
         </el-row>
@@ -453,6 +459,10 @@ import { ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
 import { MdRefresh } from '@vicons/ionicons4'
 
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import zhTw  from 'element-plus/dist/locale/zh-tw.mjs'
+import en from 'element-plus/dist/locale/en.mjs'
+
 import { version } from '../../package.json'
 import { gh_token } from '../../secret_key.json'
 import { acceleratorInfo } from '../utils.js'
@@ -461,16 +471,14 @@ import NameFormItem from './NameFormItem.vue'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
-const { searchTypeList, setting, resolvedTranslation, tagListRaw } = storeToRefs(appStore)
+const { searchTypeList, setting, bookList, resolvedTranslation, localeFile, tagListRaw } = storeToRefs(appStore)
 const { printMessage } = appStore
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const emit = defineEmits([
-  'handleLanguageSet',
-  'forceGeneBookList',
-  'patchLocalMetadata',
-  'importMetadataFromSqlite',
+  'loadBookList',
+  'loadCollectionList',
 ])
 
 onMounted(() => {
@@ -624,7 +632,7 @@ const handleLanguageChange = (val) => {
     } else {
       languageCode = val
     }
-    emit('handleLanguageSet', languageCode)
+    handleLanguageSet(languageCode)
     saveSetting()
   })
 }
@@ -635,6 +643,35 @@ const saveSetting = () => {
 
 const openLink = (link) => {
   ipcRenderer.invoke('open-url', link)
+}
+
+const forceGeneBookList = async () => {
+  dialogVisibleSetting.value = false
+  localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
+  bookList.value = await ipcRenderer.invoke('force-gene-book-list')
+  emit('loadCollectionList')
+  printMessage('success', t('c.rebuildMessage'))
+}
+const patchLocalMetadata = async () => {
+  await ipcRenderer.invoke('patch-local-metadata')
+  emit('loadBookList')
+}
+const handleLanguageSet = (languageCode) => {
+  switch (languageCode) {
+    case 'zh-CN':
+      localeFile.value = zhCn
+      locale.value = 'zh-CN'
+      break
+    case 'zh-TW':
+      localeFile.value = zhTw
+      locale.value = 'zh-TW'
+      break
+    case 'en-US':
+    default:
+      localeFile.value = en
+      locale.value = 'en-US'
+      break
+  }
 }
 
 
@@ -649,6 +686,16 @@ const importDatabase = async () => {
   const metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'), [{name: 'SQLite', extensions: ['sqlite']}])
   await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
   printMessage('success', t('c.importMessage'))
+}
+
+const importMetadataFromSqlite = async () => {
+  const {success, bList} = await ipcRenderer.invoke('import-sqlite', _.cloneDeep(bookList.value))
+  if (success) {
+    bookList.value = bList
+    printMessage('success', t('c.importMessage'))
+  } else {
+    printMessage('info', t('c.canceled'))
+  }
 }
 
 const formTagAdd = ref({

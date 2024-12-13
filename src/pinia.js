@@ -64,6 +64,7 @@ export const useAppStore = defineStore('appStore', {
     sortValue: undefined,
     editCollectionView: false,
     editTagView: false,
+    localeFile: null,
   }),
   getters: {
     cookie: (state) => {
@@ -195,6 +196,21 @@ export const useAppStore = defineStore('appStore', {
       const fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
       if (book.type === 'folder') return fileNameWithExtension
       return fileNameWithExtension.split('.').slice(0, -1).join('.')
+    },
+    returnTrimFileName (book) {
+      const fileNameWithExtension = this.returnFileNameWithExt(book.filepath)
+      let fileNameWithoutExtension = fileNameWithExtension
+      try {
+        if (book.type !== 'folder') {
+          fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.')
+        }
+        if (this.setting.trimTitleRegExp) {
+          return fileNameWithoutExtension.replace(new RegExp(this.setting.trimTitleRegExp, 'g'), '')
+        }
+      } catch (e) {
+        console.log(e)
+      }
+      return fileNameWithoutExtension
     },
     getDisplayTitle (book) {
       switch (this.setting.displayTitle) {

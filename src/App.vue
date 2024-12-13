@@ -1,5 +1,5 @@
 <template>
-  <el-config-provider :locale="locale">
+  <el-config-provider :locale="localeFile">
     <div id="progressbar" :style="{ width: progress + '%' }"></div>
     <el-button class="fullscreen-button" circle :icon="FullScreen" size="large" @click="switchFullscreen"></el-button>
     <el-row :gutter="20" class="book-search-bar">
@@ -142,7 +142,7 @@
         @preview-manga="previewManga"
         @search-from-tag="searchFromTag"
         @load-book-list="loadBookList"
-        @get-books-metadata="getBooksMetadata"
+        @get-books-metadata="(bookList, gap, callback) => $refs.SearchDialogRef.getBooksMetadata(bookList, gap, callback)"
         @handle-remove-book-display="handleRemoveBookDisplay"
       ></EditView>
     </el-row>
@@ -197,8 +197,8 @@
       @open-thumbnail-view="openThumbnailView"
       @save-collection="$refs.EditViewRef.saveCollection()"
       @handle-remove-book-display="handleRemoveBookDisplay"
-      @open-search-dialog="openSearchDialog"
-      @get-book-info="getBookInfo"
+      @open-search-dialog="$refs.SearchDialogRef.openSearchDialog(bookDetail)"
+      @get-book-info="$refs.SearchDialogRef.getBookInfo(bookDetail)"
       @search-from-tag="searchFromTag"
       @jump-mange-detail="jumpMangeDetail"
     />
@@ -219,33 +219,23 @@
     ></Graph>
     <SearchDialog
       ref="SearchDialogRef"
-      @resolve-search-result="resolveSearchResult"
     ></SearchDialog>
     <Setting
       ref="SettingRef"
-      @handle-language-set="handleLanguageSet"
-      @force-gene-book-list="forceGeneBookList"
-      @patch-local-metadata="patchLocalMetadata"
-      @import-metadata-from-sqlite="importMetadataFromSqlite"
+      @load-book-list="loadBookList"
+      @load-collection-list="loadCollectionList"
     ></Setting>
   </el-config-provider>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
-import { ElMessage } from 'element-plus'
 import { Setting as SettingIcon, FullScreen, Edit } from '@element-plus/icons-vue'
 import { ArrowTrendingLines20Filled, Collections24Regular, Search32Filled, Save16Regular } from '@vicons/fluent'
 import { MdShuffle, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
-
 import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
-import he from 'he'
 
 import { getWidth } from './utils.js'
-
-import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
-import zhTw  from 'element-plus/dist/locale/zh-tw.mjs'
-import en from 'element-plus/dist/locale/en.mjs'
 
 import Setting from './components/Setting.vue'
 import Graph from './components/Graph.vue'
@@ -284,7 +274,6 @@ export default defineComponent({
     return {
       drawerVisibleCollection: false,
       // home
-      locale: zhCn,
       searchString: '',
       currentPage_: 1,
       progress: 0,
@@ -312,6 +301,7 @@ export default defineComponent({
       'sortValue',
       'editCollectionView',
       'editTagView',
+      'localeFile',
       'displayBookCount',
       'tagList',
       'tag2cat',
@@ -349,6 +339,7 @@ export default defineComponent({
     .then(async (res) => {
       this.setting = res
       if (this.setting.loadOnStart) {
+        // display exist books first then load new books
         await this.loadBookList()
         this.loadBookList(true)
       } else {
@@ -414,6 +405,7 @@ export default defineComponent({
       'copyTagClipboard',
       'pasteTagClipboard',
     ]),
+
     // base function
     currentUI () {
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
@@ -458,21 +450,6 @@ export default defineComponent({
         return 'collection'
       }
       return 'home'
-    },
-    jumpBookByTabindex (step, container) {
-      try {
-        const activeElement = document.activeElement
-        if (!document.querySelector(container).contains(activeElement)) {
-          throw new Error('active element not in container')
-        }
-        const tabIndexNow = activeElement.getAttribute('tabindex')
-        const tabIndexNext = parseInt(tabIndexNow, 10) + step
-        if (!(tabIndexNext >= 1)) throw new Error('detect illegal tabindex')
-        document.querySelector(`${container} div[tabindex="${tabIndexNext}"]`).focus()
-      } catch (error) {
-        console.log(error)
-        document.querySelector(`${container} div[tabindex="1"]`).focus()
-      }
     },
     resolveKey (event) {
       let next, prev
@@ -720,161 +697,7 @@ export default defineComponent({
       ipcRenderer.invoke('update-window-title', title)
     },
 
-    // metadata
-    resolveSearchResult (bookId, url, type) {
-      const book = _.find(this.bookList, {id: bookId})
-      if (type === 'hentag') {
-        book.url = url
-        this.getBookInfoFromHentag(book)
-      } else if (type === 'e-hentai') {
-        book.url = url
-        this.getBookInfoFromEh(book)
-      }
-      this.$refs.SearchDialogRef.dialogVisibleEhSearch = false
-    },
-    async getBookInfoFromHentag (book) {
-      const data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`).then(res => res.json())
-      const tags = {}
-      data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
-      data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody => parody.name) : ''
-      data.characters.length > 0 ? tags['character'] = data.characters.map(character => character.name) : ''
-      data.circles.length > 0 ? tags['group'] = data.circles.map(circle => circle.name) : ''
-      data.artists.length > 0 ? tags['artist'] = data.artists.map(artist => artist.name) : ''
-      data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag => maleTag.name) : ''
-      data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag => femaleTag.name) : ''
-      if (data.otherTags.length > 0) {
-        data.otherTags.forEach(({ name }) => {
-          const cat = this.tag2cat[name]
-          if (cat) {
-            if (tags[cat]) {
-              tags[cat].push(name)
-            } else {
-              tags[cat] = [name]
-            }
-          } else {
-            if (tags['misc']) {
-              tags['misc'].push(name)
-            } else {
-              tags['misc'] = [name]
-            }
-          }
-        })
-      }
-      _.assign(book, {
-        title: data.title,
-        posted: Math.floor(data.createdAt / 1000),
-        category: this.categoryOption[data.category],
-        tags
-      })
-      book.status = 'tagged'
-      await this.saveBook(book)
-    },
-    async getBookInfoFromEh (book) {
-      const match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
-      const res = await ipcRenderer.invoke('post-data-ex', {
-        url: 'https://api.e-hentai.org/api.php',
-        data: {
-          'method': 'gdata',
-          'gidlist': [
-              [+match[1], match[2]]
-          ],
-          'namespace': 1
-        }
-      })
-      try {
-        _.assign(
-          book,
-          _.pick(JSON.parse(res).gmetadata[0], ['tags', 'title', 'title_jpn', 'filecount', 'rating', 'posted', 'filesize', 'category']),
-        )
-        book.posted = +book.posted
-        book.filecount = +book.filecount
-        book.rating = +book.rating
-        book.title = he.decode(book.title)
-        book.title_jpn = he.decode(book.title_jpn)
-        const tagObject = _.groupBy(book.tags, tag => {
-          const result = /(.+):/.exec(tag)
-          if (result) {
-            return /(.+):/.exec(tag)[1]
-          } else {
-            return 'misc'
-          }
-        })
-        _.forIn(tagObject, (arr, key) => {
-          tagObject[key] = arr.map(tag => {
-            const result = /:(.+)$/.exec(tag)
-            if (result) {
-              return /:(.+)$/.exec(tag)[1]
-            } else {
-              return tag
-            }
-          })
-        })
-        book.tags = tagObject
-        book.status = 'tagged'
-        await this.saveBook(book)
-      } catch (e) {
-        console.log(e)
-        if (_.includes(res, 'Your IP address has been')) {
-          book.status = 'non-tag'
-          this.printMessage('error', this.$t('c.ipBanned'))
-          await this.saveBook(book)
-          this.serviceAvailable = false
-        } else {
-          book.status = 'tag-failed'
-          this.printMessage('error', this.$t('c.getMetadataFailed'))
-          await this.saveBook(book)
-        }
-      }
-    },
-    getBookInfo (book) {
-      if (book.url.startsWith('https://hentag.com')) {
-        this.getBookInfoFromHentag(book)
-      } else if (book.url.includes('exhentai') || book.url.includes('e-hentai')) {
-        this.getBookInfoFromEh(book)
-      }
-    },
-    async getBooksMetadata (bookList, gap, callback) {
-      const server = this.setting.defaultScraper || 'exhentai'
-      this.serviceAvailable = true
-      const timer = ms => new Promise(res => setTimeout(res, ms))
-      const messageInstance = ElMessage({
-        message: this.$t('c.gettingMetadata'),
-        type: 'success',
-        duration: 0,
-        showClose: true,
-        onClose: () => {
-          this.serviceAvailable = false
-        }
-      })
-      for (let i = 0; i < bookList.length; i++) {
-        ipcRenderer.invoke('set-progress-bar', (i + 1) / bookList.length)
-        const book = bookList[i]
-        try {
-          if (this.serviceAvailable) {
-            if (!book.url) {
-              const resultList = await this.$refs.SearchDialogRef.getBookListFromWeb(
-                book.hash.toUpperCase(),
-                this.$refs.SearchDialogRef.returnTrimFileName(book),
-                server,
-                book.filepath
-              )
-              this.resolveSearchResult(book.id, resultList[0].url, resultList[0].type)
-            } else {
-              this.getBookInfo(book)
-            }
-            await timer(gap)
-          }
-        } catch (error) {
-          book.status = 'tag-failed'
-          await this.saveBook(book)
-          console.error(error)
-        }
-      }
-      messageInstance.close()
-      ipcRenderer.invoke('set-progress-bar', -1)
-      this.printMessage('success', this.$t('c.getMetadataComplete'))
-      callback()
-    },
+    // home header
     async getBookListMetadata () {
       try {
         this.buttonGetMetadatasLoading = true
@@ -887,15 +710,13 @@ export default defineComponent({
         if (this.setting.onlyGetMetadataOfSelectedFolder) {
           bookList = bookList.filter(book => !book.folderHide)
         }
-        await this.getBooksMetadata(bookList, this.setting.requireGap || 10000)
+        await this.$refs.SearchDialogRef.getBooksMetadata(bookList, this.setting.requireGap || 10000)
         this.buttonGetMetadatasLoading = false
       } catch (error) {
         this.buttonGetMetadatasLoading = false
         console.error(error)
       }
     },
-
-    // home header
     shuffleBook () {
       this.sortValue = 'shuffle'
       this.displayBookList = _.shuffle(this.displayBookList)
@@ -991,7 +812,6 @@ export default defineComponent({
       }
       localStorage.setItem('sortValue', val)
     },
-    // home search
     querySearch (queryString, callback) {
       let result = []
       const options = this.customOptions.concat(this.tagList)
@@ -1169,6 +989,7 @@ export default defineComponent({
     reloadRandomTags () {
       this.randomTags = _.sampleSize(this.tagList, 24)
     },
+
     // home main
     handleClickCover (book) {
       switch (this.setting.directEnter) {
@@ -1183,10 +1004,24 @@ export default defineComponent({
           break
       }
     },
+    jumpBookByTabindex (step, container) {
+      try {
+        const activeElement = document.activeElement
+        if (!document.querySelector(container).contains(activeElement)) {
+          throw new Error('active element not in container')
+        }
+        const tabIndexNow = activeElement.getAttribute('tabindex')
+        const tabIndexNext = parseInt(tabIndexNow, 10) + step
+        if (!(tabIndexNext >= 1)) throw new Error('detect illegal tabindex')
+        document.querySelector(`${container} div[tabindex="${tabIndexNext}"]`).focus()
+      } catch (error) {
+        console.log(error)
+        document.querySelector(`${container} div[tabindex="1"]`).focus()
+      }
+    },
     loadBookCardContent (id) {
       this.visibilityMap[id] = true
     },
-    // home page
     chunkList () {
       this.currentPage = 1
       this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, 0)
@@ -1206,6 +1041,71 @@ export default defineComponent({
       document.getElementsByClassName('book-card-area')[0].scrollTop = 0
     },
 
+    async getMetadataFromClipboardLink (book) {
+      const text = await ipcRenderer.invoke('read-text-from-clipboard')
+      const url = text.trim()
+      if (url) {
+        book.url = url
+        this.$refs.SearchDialogRef.getBookInfo(book)
+      }
+    },
+    onBookContextMenu (e, book) {
+      e.preventDefault()
+      this.$contextmenu({
+        x: e.x,
+        y: e.y,
+        items: [
+          {
+            label: this.$t('m.getMetadata'),
+            onClick: () => {
+              this.$refs.SearchDialogRef.openSearchDialog(book)
+            }
+          },
+          {
+            label: this.$t('m.resetMetadata'),
+            onClick: () => {
+              this.resetMetadata(book)
+            }
+          },
+          {
+            label: this.$t('m.openMangaFileLocation'),
+            onClick: () => {
+              this.$refs.BookDetailDialogRef.showFile(book.filepath)
+            }
+          },
+          {
+            label: this.$t('m.deleteFile'),
+            onClick: () => {
+              this.$refs.BookDetailDialogRef.deleteLocalBook(book)
+            }
+          },
+          {
+            label: this.$t('m.hideManga') + "/" + this.$t('m.showManga'),
+            onClick: () => {
+              this.$refs.BookDetailDialogRef.triggerHiddenBook(book)
+            }
+          },
+          {
+            label: this.$t('m.copyTagClipboard'),
+            onClick: () => {
+              this.copyTagClipboard(book)
+            }
+          },
+          {
+            label: this.$t('m.pasteTagClipboard'),
+            onClick: () => {
+              this.pasteTagClipboard(book)
+            }
+          },
+          {
+            label: this.$t('m.getMetadataFromClipboardLink'),
+            onClick: () => {
+              this.getMetadataFromClipboardLink(book)
+            }
+          },
+        ]
+      })
+    },
 
     // collection view function
     async loadCollectionList () {
@@ -1264,13 +1164,26 @@ export default defineComponent({
       this.$refs.EditViewRef.editCollectionView = true
       this.handleSelectCollectionChange(this.$refs.EditViewRef.selectCollection)
     },
-
     previewManga (book) {
       this.$refs.InternalViewerRef.showThumbnail = true
       this.$refs.InternalViewerRef.viewManga(book, '83%')
     },
 
     // bookDetailView
+    jumpMangeDetail (step) {
+      const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
+      const indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
+      const indexNext = indexNow + step
+      if (indexNext >= 0 && indexNext < activeBookList.length) {
+        this.$refs.BookDetailDialogRef.openBookDetail(activeBookList[indexNext])
+      } else {
+        this.printMessage('info', this.$t('c.outOfRange'))
+      }
+    },
+    jumpMangeDetailRandom () {
+      const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
+      this.$refs.BookDetailDialogRef.openBookDetail(_.sample(activeBookList))
+    },
     openContentView (book) {
       this.$refs.InternalViewerRef.showThumbnail = false
       this.$refs.InternalViewerRef.viewManga(book)
@@ -1279,21 +1192,8 @@ export default defineComponent({
       this.$refs.InternalViewerRef.showThumbnail = true
       this.$refs.InternalViewerRef.viewManga(book)
     },
-    openSearchDialog (book) {
-      this.$refs.SearchDialogRef.openSearchDialog(book)
-    },
     handleRemoveBookDisplay () {
       this.chunkDisplayBookList = this.customChunk(this.displayBookList, this.setting.pageSize, this.currentPage - 1)
-    },
-
-    // copy and paste tag
-    async getMetadataFromClipboardLink (book) {
-      const text = await ipcRenderer.invoke('read-text-from-clipboard')
-      const url = text.trim()
-      if (url) {
-        book.url = url
-        this.getBookInfo(book)
-      }
     },
 
     // internal viewer
@@ -1324,121 +1224,6 @@ export default defineComponent({
         this.comments = []
         if (this.setting.showComment) this.getComments(selectBook.url)
       }, 500)
-    },
-    jumpMangeDetail (step) {
-      const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
-      const indexNow = _.findIndex(activeBookList, {id: this.bookDetail.id})
-      const indexNext = indexNow + step
-      if (indexNext >= 0 && indexNext < activeBookList.length) {
-        this.$refs.BookDetailDialogRef.openBookDetail(activeBookList[indexNext])
-      } else {
-        this.printMessage('info', this.$t('c.outOfRange'))
-      }
-    },
-    jumpMangeDetailRandom () {
-      const activeBookList = this.drawerVisibleCollection ? this.openCollectionBookList : _.filter(this.displayBookList, book => this.isBook(book) && this.isVisibleBook(book))
-      this.$refs.BookDetailDialogRef.openBookDetail(_.sample(activeBookList))
-    },
-
-
-    // setting
-    async forceGeneBookList () {
-      this.$refs.SettingRef.dialogVisibleSetting = false
-      localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
-      this.bookList = await ipcRenderer.invoke('force-gene-book-list')
-      this.loadCollectionList()
-      this.printMessage('success', this.$t('c.rebuildMessage'))
-    },
-    async patchLocalMetadata () {
-      await ipcRenderer.invoke('patch-local-metadata')
-      this.loadBookList()
-    },
-    handleLanguageSet (languageCode) {
-      switch (languageCode) {
-        case 'zh-CN':
-          this.locale = zhCn
-          this.$i18n.locale = 'zh-CN'
-          break
-        case 'zh-TW':
-          this.locale = zhTw
-          this.$i18n.locale = 'zh-TW'
-          break
-        case 'en-US':
-        default:
-          this.locale = en
-          this.$i18n.locale = 'en-US'
-          break
-      }
-    },
-
-    // import/export
-    async importMetadataFromSqlite () {
-      const {success, bookList} = await ipcRenderer.invoke('import-sqlite', _.cloneDeep(this.bookList))
-      if (success) {
-        this.bookList = bookList
-        this.printMessage('success', this.$t('c.importMessage'))
-      } else {
-        this.printMessage('info', this.$t('c.canceled'))
-      }
-    },
-
-    // contextmenu
-    onBookContextMenu (e, book) {
-      e.preventDefault()
-      this.$contextmenu({
-        x: e.x,
-        y: e.y,
-        items: [
-          {
-            label: this.$t('m.getMetadata'),
-            onClick: () => {
-              this.$refs.SearchDialogRef.openSearchDialog(book)
-            }
-          },
-          {
-            label: this.$t('m.resetMetadata'),
-            onClick: () => {
-              this.resetMetadata(book)
-            }
-          },
-          {
-            label: this.$t('m.openMangaFileLocation'),
-            onClick: () => {
-              this.$refs.BookDetailDialogRef.showFile(book.filepath)
-            }
-          },
-          {
-            label: this.$t('m.deleteFile'),
-            onClick: () => {
-              this.$refs.BookDetailDialogRef.deleteLocalBook(book)
-            }
-          },
-          {
-            label: this.$t('m.hideManga') + "/" + this.$t('m.showManga'),
-            onClick: () => {
-              this.$refs.BookDetailDialogRef.triggerHiddenBook(book)
-            }
-          },
-          {
-            label: this.$t('m.copyTagClipboard'),
-            onClick: () => {
-              this.copyTagClipboard(book)
-            }
-          },
-          {
-            label: this.$t('m.pasteTagClipboard'),
-            onClick: () => {
-              this.pasteTagClipboard(book)
-            }
-          },
-          {
-            label: this.$t('m.getMetadataFromClipboardLink'),
-            onClick: () => {
-              this.getMetadataFromClipboardLink(book)
-            }
-          },
-        ]
-      })
     },
   }
 })

@@ -51,7 +51,7 @@
         </el-row>
         <el-row class="book-detail-function">
           <el-button type="primary" plain
-            @click="$emit('openSearchDialog', bookDetail)"
+            @click="$emit('openSearchDialog')"
           >{{$t('m.getMetadata')}}</el-button>
           <el-button type="primary" plain @click="triggerHiddenBook(bookDetail)">{{bookDetail.hiddenBook ? $t('m.showManga') : $t('m.hideManga')}}</el-button>
         </el-row>
@@ -93,7 +93,7 @@
             </div>
             <el-space wrap class="tag-edit-buttons">
               <el-button @click="addTagCat">{{$t('m.addCategory')}}</el-button>
-              <el-button @click="$emit('getBookInfo', bookDetail)">{{$t('m.getTagbyUrl')}}</el-button>
+              <el-button @click="$emit('getBookInfo')">{{$t('m.getTagbyUrl')}}</el-button>
               <el-button @click="resetMetadata(bookDetail)">{{$t('m.resetMetadata')}}</el-button>
               <el-button @click="copyTagClipboard(bookDetail)">{{$t('m.copyTagClipboard')}}</el-button>
               <el-button @click="pasteTagClipboard(bookDetail)">{{$t('m.pasteTagClipboard')}}</el-button>

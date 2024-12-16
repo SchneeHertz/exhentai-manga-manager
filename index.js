@@ -620,7 +620,6 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
               break
           }
         }
-        const filename = path.basename(list[index - 1].absolutePath)
         mainWindow.webContents.send('manga-image', {
           id: `${bookId}_${index}`,
           index,

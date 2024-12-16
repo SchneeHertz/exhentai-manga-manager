@@ -591,7 +591,7 @@ const onMangaImageContextMenu = (e, image) => {
       {
         label: t('c.deleteImage'),
         onClick: async () => {
-          const deleteResult = await ipcRenderer.invoke('delete-image', image.filename, bookDetail.value.filepath, bookDetail.value.type)
+          const deleteResult = await ipcRenderer.invoke('delete-image', image.relativePath, bookDetail.value.filepath, bookDetail.value.type)
           if (deleteResult) {
             viewerImageList.value = viewerImageList.value.filter(item => item.id !== image.id)
             receiveThumbnailList.value = receiveThumbnailList.value.filter(item => item.id !== image.id)

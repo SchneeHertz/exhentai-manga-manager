@@ -3,6 +3,7 @@ const { globIterate, globSync } = require('glob')
 const { nanoid } = require('nanoid')
 const { readdir, stat } = require('fs/promises')
 const { shell } = require('electron')
+const fs = require('fs')
 
 const dirSize = async dir => {
   const files = await readdir(dir, { withFileTypes: true })
@@ -57,14 +58,26 @@ const getImageListFromFolder = async (folderpath, VIEWER_PATH) => {
     cwd: folderpath,
     nocase: true
   })
-  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f => path.join(folderpath, f))
-  return list
+  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  return list.map(f => ({
+    relativePath: f,
+    absolutePath: path.join(folderpath, f)
+  }))
 }
 
 const deleteImageFromFolder = async (filename, folderpath) => {
   const filepath = path.join(folderpath, filename)
-  await shell.trashItem(filepath)
-  return true
+  try {
+    try {
+      await shell.trashItem(filepath)
+    } catch {
+      await fs.promises.rm(filepath, { recursive: true, force: true })
+    }
+    return true
+  } catch (e) {
+    console.error(e)
+    return false
+  }
 }
 
 module.exports = {

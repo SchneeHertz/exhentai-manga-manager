@@ -68,8 +68,11 @@ const getImageListFromArchive = async (filepath, VIEWER_PATH) => {
     nocase: true
   })
   list = _.filter(list, s => !_.includes(s, '__MACOSX'))
-  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f => path.join(tempFolder, f))
-  return list
+  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  return list.map(f => ({
+    relativePath: f,
+    absolutePath: path.join(tempFolder, f)
+  }))
 }
 
 const deleteImageFromArchive = async (filename, filepath) => {

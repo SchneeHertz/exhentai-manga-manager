@@ -571,7 +571,15 @@ ipcMain.handle('open-local-book', async (event, filepath) => {
 ipcMain.handle('delete-local-book', async (event, filepath) => {
   if (filepath.startsWith(setting.library)) {
     await Manga.destroy({ where: { filepath: filepath } })
-    return shell.trashItem(filepath)
+    try {
+      try {
+        await shell.trashItem(filepath)
+      } catch {
+        await fs.promises.rm(filepath, { recursive: true, force: true })
+      }
+    } catch (e) {
+      sendMessageToWebContents(`Delete ${filepath} failed because ${e}`)
+    }
   }
 })
 
@@ -589,7 +597,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
     const widthLimit = _.isNumber(setting.widthLimit) ? Math.ceil(setting.widthLimit) : screenWidth
     for (let index = 1; index <= list.length; index++) {
       if (sendImageLock) {
-        let imageFilepath = list[index - 1]
+        let imageFilepath = list[index - 1].absolutePath
         const extname = path.extname(imageFilepath)
         if (imageFilepath.search(/[%#]/) >= 0 || type === 'folder') {
           const newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(8)}${extname}`)
@@ -612,11 +620,11 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
               break
           }
         }
-        const filename = path.basename(list[index - 1])
+        const filename = path.basename(list[index - 1].absolutePath)
         mainWindow.webContents.send('manga-image', {
           id: `${bookId}_${index}`,
           index,
-          filename,
+          relativePath: list[index - 1].relativePath,
           filepath: imageFilepath,
           width, height
         })
@@ -635,7 +643,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           mainWindow.webContents.send('manga-thumbnail-image', {
             id: `${bookId}_${index}`,
             index,
-            filename,
+            relativePath: list[index - 1].relativePath,
             filepath: imageFilepath,
             thumbnailPath,
           })
@@ -1010,7 +1018,7 @@ LANBrowsing.get('/api/archives/:hash/files', async (req, res) => {
 
     existBook = {
       hash: manga.hash,
-      imageList: imageList
+      imageList: imageList.map(p => p.absolutePath)
     }
     // 构造响应数据
     const responseFiles = {
@@ -1047,9 +1055,9 @@ LANBrowsing.get('/api/archives/:hash/page', async (req, res) => {
       await clearFolder(staticFilePath)
       imageList = await getImageListByBook(manga.filepath, manga.type)
       existBook.hash = manga.hash
-      existBook.imageList = imageList
+      existBook.imageList = imageList.map(p => p.absolutePath)
     }
-    const imageFilePath = imageList[page - 1]
+    const imageFilePath = imageList[page - 1]?.absolutePath
     if (!imageFilePath) {
       return res.status(404).send('Image not found')
     }

@@ -252,7 +252,7 @@ const viewManga = (book, viewerHeight = '100%') => {
   currentImageIndex.value = 0
   insertEmptyPage.value = setting.value.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
-  selectBook(book)
+  bookDetail.value = book
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',
@@ -561,9 +561,7 @@ const useNewCover = async (filepath) => {
   bookDetail.value.coverPath = coverPath
   await saveBook(bookDetail.value)
 }
-const selectBook = (book) => {
-  bookDetail.value = book
-}
+
 const handleStopReadManga = () => {
   if (setting.value.keepReadingProgress) saveReadingProgress()
   ipcRenderer.invoke('release-sendimagelock')

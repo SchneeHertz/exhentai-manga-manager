@@ -144,7 +144,7 @@
         @load-book-list="loadBookList"
         @get-books-metadata="(bookList, gap, callback) => $refs.SearchDialogRef.getBooksMetadata(bookList, gap, callback)"
         @handle-remove-book-display="handleRemoveBookDisplay"
-      ></EditView>
+      />
     </el-row>
     <el-row class="pagination-bar">
       <el-pagination
@@ -208,23 +208,11 @@
       @to-next-manga-random="toNextMangaRandom"
       @update-window-title="updateWindowTitle"
       @rescan-book="(book) => $refs.BookDetailDialogRef.rescanBook(book)"
-    ></InternalViewer>
-    <FolderTree
-      ref="FolderTreeRef"
-      @chunk-list="chunkList"
     />
-    <Graph
-      ref="TagGraphRef"
-      @search="handleSearchString"
-    ></Graph>
-    <SearchDialog
-      ref="SearchDialogRef"
-    ></SearchDialog>
-    <Setting
-      ref="SettingRef"
-      @load-book-list="loadBookList"
-      @load-collection-list="loadCollectionList"
-    ></Setting>
+    <FolderTree ref="FolderTreeRef" @chunk-list="chunkList"/>
+    <Graph ref="TagGraphRef" @search="handleSearchString"/>
+    <SearchDialog ref="SearchDialogRef"/>
+    <Setting ref="SettingRef" @load-book-list="loadBookList" @load-collection-list="loadCollectionList"/>
   </el-config-provider>
 </template>
 
@@ -272,7 +260,6 @@ export default defineComponent({
   },
   data () {
     return {
-      drawerVisibleCollection: false,
       // home
       searchString: '',
       currentPage_: 1,
@@ -282,6 +269,7 @@ export default defineComponent({
       buttonLoadBookListLoading: false,
       buttonGetMetadatasLoading: false,
       // collection
+      drawerVisibleCollection: false,
       openCollectionTitle: undefined,
     }
   },

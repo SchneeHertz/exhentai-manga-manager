@@ -333,11 +333,20 @@ const editTags = () => {
   }
 }
 const saveBookTags = (book) => {
+  const compactTags = {}
   _.forIn(book.tags, (tagarr, tagCat) => {
-    if (_.isEmpty(tagarr)) {
-      delete book.tags[tagCat]
+    if (!_.isEmpty(tagarr)) {
+      compactTags[tagCat] = tagarr
     }
   })
+  const tagSortKey = ['language', 'parody', 'character', 'group', 'artist', 'male', 'female', 'mixed', 'other', 'cosplayer']
+  const sortedTags = {}
+  tagSortKey.forEach(tagCat => {
+    if (compactTags[tagCat]) {
+      sortedTags[tagCat] = compactTags[tagCat]
+    }
+  })
+  book.tags = Object.assign(sortedTags, compactTags)
   saveBook(book)
 }
 const addTagCat = () => {

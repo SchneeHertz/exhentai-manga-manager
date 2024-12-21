@@ -1053,10 +1053,11 @@ LANBrowsing.get('/api/archives/:hash/page', async (req, res) => {
       await clearFolder(VIEWER_PATH)
       await clearFolder(staticFilePath)
       imageList = await getImageListByBook(manga.filepath, manga.type)
+      imageList = imageList.map(p => p.absolutePath)
       existBook.hash = manga.hash
-      existBook.imageList = imageList.map(p => p.absolutePath)
+      existBook.imageList = imageList
     }
-    const imageFilePath = imageList[page - 1]?.absolutePath
+    const imageFilePath = imageList[page - 1]
     if (!imageFilePath) {
       return res.status(404).send('Image not found')
     }

@@ -252,7 +252,10 @@
             <NameFormItem class="setting-line" prependWidth="110px">
               <template #prepend>{{$t('m.customOptions')}}</template>
               <template #default>
-                <el-input v-model="setting.customOptions" :placeholder="$t('m.customOptionsPlaceholder')" @change="saveSetting" :rows="2" type="textarea"></el-input>
+                <el-input
+                  v-model="setting.customOptions" :placeholder="$t('m.customOptionsPlaceholder')" @change="saveSetting"
+                  type="textarea" :autosize="{ minRows: 2, maxRows: 4 }"
+                ></el-input>
               </template>
             </NameFormItem>
           </el-col>
@@ -281,7 +284,10 @@
             <NameFormItem class="setting-line" prependWidth="110px" appendWidth="0">
               <template #prepend>{{$t('m.customCss')}}</template>
               <template #default>
-                <el-input v-model="setting.customCss" :placeholder="$t('m.customCssPlaceholder')" @change="saveSetting" :rows="2" type="textarea" ></el-input>
+                <el-input
+                  v-model="setting.customCss" :placeholder="$t('m.customCssPlaceholder')" @change="saveSetting"
+                  type="textarea" :autosize="{ minRows: 2, maxRows: 4 }"
+                ></el-input>
               </template>
               <template #append>
                 <el-button text :icon="MdRefresh" @click="reloadWindow"></el-button>
@@ -293,7 +299,7 @@
               <el-popconfirm
                 placement="top-start"
                 :title="$t('m.rebuildWarning')"
-                @confirm="$emit('forceGeneBookList')"
+                @confirm="forceGeneBookList"
               >
                 <template #reference>
                   <el-button class="function-button" plain>{{$t('m.rebuildLibrary')}}</el-button>
@@ -306,7 +312,7 @@
               <el-popconfirm
                 placement="top-start"
                 :title="$t('m.patchWarning')"
-                @confirm="$emit('patchLocalMetadata')"
+                @confirm="patchLocalMetadata"
               >
                 <template #reference>
                   <el-button class="function-button" type="primary" plain>{{$t('m.patchLocalMetadata')}}</el-button>
@@ -326,7 +332,7 @@
           </el-col>
           <el-col :span="5">
             <div class="setting-line">
-              <el-button class="function-button" type="primary" plain @click="$emit('importMetadataFromSqlite')">{{$t('m.importMetadataFromSqlite')}}</el-button>
+              <el-button class="function-button" type="primary" plain @click="importMetadataFromSqlite">{{$t('m.importMetadataFromSqlite')}}</el-button>
             </div>
           </el-col>
         </el-row>
@@ -453,26 +459,28 @@ import { ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
 import { MdRefresh } from '@vicons/ionicons4'
 
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import zhTw  from 'element-plus/dist/locale/zh-tw.mjs'
+import en from 'element-plus/dist/locale/en.mjs'
+
 import { version } from '../../package.json'
 import { gh_token } from '../../secret_key.json'
 import { acceleratorInfo } from '../utils.js'
 import NameFormItem from './NameFormItem.vue'
 
-const { t } = useI18n()
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '../pinia.js'
+const appStore = useAppStore()
+const { searchTypeList, setting, bookList, resolvedTranslation, localeFile, tagListRaw } = storeToRefs(appStore)
+const { printMessage } = appStore
 
-const props = defineProps(['searchTypeList', 'tagListRaw', 'resolvedTranslation'])
+const { t, locale } = useI18n()
 
 const emit = defineEmits([
-  'updateSetting',
-  'handleLanguageSet',
-  'message',
-  'forceGeneBookList',
-  'patchLocalMetadata',
-  'importMetadataFromSqlite',
-  'handleResolveTranslationUpdate'
+  'loadBookList',
+  'loadCollectionList',
 ])
 
-const setting = ref({})
 onMounted(() => {
   ipcRenderer.invoke('load-setting')
     .then(async (res) => {
@@ -525,7 +533,7 @@ const selectImageExplorerPath = () => {
 
 const loadTranslationFromEhTagTranslation = async () => {
   const resultObject = {}
-  emit('handleResolveTranslationUpdate', JSON.parse(localStorage.getItem('translationCache') || "{}"))
+  resolvedTranslation.value = JSON.parse(localStorage.getItem('translationCache') || "{}")
   await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
   .then(res => res.json())
   .then(res => {
@@ -535,12 +543,12 @@ const loadTranslationFromEhTagTranslation = async () => {
         resultObject[key] = _.pick(value, ['name', 'intro'])
       })
     })
-    emit('handleResolveTranslationUpdate', resultObject)
+    resolvedTranslation.value = resultObject
     localStorage.setItem('translationCache', JSON.stringify(resultObject))
   })
   .catch((error) => {
     console.log(error)
-    emit('message', 'warning', t('c.useTranslationCache'))
+    printMessage('warning', t('c.useTranslationCache'))
   })
 }
 
@@ -548,7 +556,7 @@ const handleTranslationSettingChange = (val) => {
   if (val) {
     loadTranslationFromEhTagTranslation()
   } else {
-    emit('handleResolveTranslationUpdate', {})
+    resolvedTranslation.value =  {}
   }
   saveSetting()
 }
@@ -557,13 +565,13 @@ const testProxy = async () => {
   await fetch('https://e-hentai.org')
   .then((res) => {
     if (res.status === 200) {
-      emit('message', 'success', t('c.proxyWorking'))
+      printMessage('success', t('c.proxyWorking'))
     } else {
-      emit('message', 'error', `Error ${res.status}: ` + t('c.proxyNotWorking'))
+      printMessage('error', `Error ${res.status}: ` + t('c.proxyNotWorking'))
     }
   })
   .catch((error) => {
-    emit('message', 'error', t('c.proxyNotWorking'))
+    printMessage('error', t('c.proxyNotWorking'))
   })
 }
 
@@ -624,13 +632,12 @@ const handleLanguageChange = (val) => {
     } else {
       languageCode = val
     }
-    emit('handleLanguageSet', languageCode)
+    handleLanguageSet(languageCode)
     saveSetting()
   })
 }
 
 const saveSetting = () => {
-  emit('updateSetting', setting.value)
   ipcRenderer.invoke('save-setting', _.cloneDeep(setting.value))
 }
 
@@ -638,18 +645,57 @@ const openLink = (link) => {
   ipcRenderer.invoke('open-url', link)
 }
 
+const forceGeneBookList = async () => {
+  dialogVisibleSetting.value = false
+  localStorage.setItem('viewerReadingProgress', JSON.stringify([]))
+  bookList.value = await ipcRenderer.invoke('force-gene-book-list')
+  emit('loadCollectionList')
+  printMessage('success', t('c.rebuildMessage'))
+}
+const patchLocalMetadata = async () => {
+  await ipcRenderer.invoke('patch-local-metadata')
+  emit('loadBookList')
+}
+const handleLanguageSet = (languageCode) => {
+  switch (languageCode) {
+    case 'zh-CN':
+      localeFile.value = zhCn
+      locale.value = 'zh-CN'
+      break
+    case 'zh-TW':
+      localeFile.value = zhTw
+      locale.value = 'zh-TW'
+      break
+    case 'en-US':
+    default:
+      localeFile.value = en
+      locale.value = 'en-US'
+      break
+  }
+}
+
 
 const exportDatabase = async () => {
   const folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
   await ipcRenderer.invoke('export-database', folder)
-  emit('message', 'success', t('c.exportMessage'))
+  printMessage('success', t('c.exportMessage'))
 }
 
 const importDatabase = async () => {
   const collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'), [{name: 'JSON', extensions: ['json']}])
   const metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'), [{name: 'SQLite', extensions: ['sqlite']}])
   await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
-  emit('message', 'success', t('c.importMessage'))
+  printMessage('success', t('c.importMessage'))
+}
+
+const importMetadataFromSqlite = async () => {
+  const {success, bList} = await ipcRenderer.invoke('import-sqlite', _.cloneDeep(bookList.value))
+  if (success) {
+    bookList.value = bList
+    printMessage('success', t('c.importMessage'))
+  } else {
+    printMessage('info', t('c.canceled'))
+  }
 }
 
 const formTagAdd = ref({
@@ -659,16 +705,16 @@ const formTagAdd = ref({
 
 const tagListForCollect = computed(() => {
   if (setting.value.showTranslation) {
-    return props.tagListRaw.map(({letter, cat, tag, id}) => {
-      const labelHeader = cat === 'group' ? '团队' : props.resolvedTranslation[cat]?.name || cat
-      const labelTail = props.resolvedTranslation[tag]?.name || tag
+    return tagListRaw.value.map(({letter, cat, tag, id}) => {
+      const labelHeader = cat === 'group' ? '团队' : resolvedTranslation.value[cat]?.name || cat
+      const labelTail = resolvedTranslation.value[tag]?.name || tag
       return {
         label: `${labelHeader}:${labelTail} || ${letter}:"${tag}"$`,
         value: id
       }
     })
   } else {
-    return props.tagListRaw.map(({letter, cat, tag, id}) => {
+    return tagListRaw.value.map(({letter, cat, tag, id}) => {
       return {
         label: `${cat}:${tag} || ${letter}:"${tag}"$`,
         value: id
@@ -691,7 +737,7 @@ const moderateSoftColors = [
 ]
 
 const addTagToCollect = () => {
-  const tag = props.tagListRaw.find(tag => tag.id === formTagAdd.value.tag)
+  const tag = tagListRaw.value.find(tag => tag.id === formTagAdd.value.tag)
   if (!setting.value.collectTag) setting.value.collectTag = []
   setting.value.collectTag.push({
     id: tag.id,
@@ -719,7 +765,8 @@ const activeSettingPanel = ref('general')
 
 defineExpose({
   dialogVisibleSetting,
-  activeSettingPanel
+  activeSettingPanel,
+  saveSetting
 })
 
 </script>

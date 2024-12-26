@@ -43,7 +43,7 @@
         :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
         @click="$emit('searchFromTag', book.status)"
       >{{book.status}}</el-tag>
-      <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
+      <el-rate v-model="bookRating" size="small" allow-half @change="saveBook(Object.assign({}, book, {rating: bookRating}))"/>
     </div>
   </div>
 </template>
@@ -73,10 +73,10 @@ const emit = defineEmits([
 ])
 
 const props = defineProps({
-  initBook: Object
+  book: Object
 })
 
-const book = ref(props.initBook)
+const bookRating = ref(props.book.rating)
 
 const filterCollectTag = (tagObject) => {
   if (setting.value.showCollectTag) {

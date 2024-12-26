@@ -118,7 +118,7 @@
               and book isn't hidden by user except sorting by onlyHiddenBook
               and book isn't hidden by folder select -->
             <BookCard
-              :initBook="book"
+              :book="book"
               v-if="!book.isCollection && !book.collectionHide && (sortValue === 'hidden' || !book.hiddenBook) && !book.folderHide && visibilityMap[book.id]"
               @open-book-detail="$refs.BookDetailDialogRef.openBookDetail(book)"
               @handle-click-cover="handleClickCover(book)"
@@ -129,9 +129,8 @@
               @view-manga="$refs.InternalViewerRef.viewManga(book)"
             />
             <BookCardCollection
-              :initBook="book"
+              :book="book"
               v-else-if="book.isCollection && !book.folderHide && visibilityMap[book.id]"
-              @handle-search-string="handleSearchString"
               @open-collection="openCollection(book)"
             />
           </transition>
@@ -178,7 +177,7 @@
           class="book-card-frame"
         >
           <BookCard
-            :initBook="book"
+            :book="book"
             :tabindex="index + 1"
             @open-book-detail="$refs.BookDetailDialogRef.openBookDetail(book)"
             @handle-click-cover="handleClickCover(book)"

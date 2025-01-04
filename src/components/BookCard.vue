@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { BookmarkTwotone } from '@vicons/material'
 import ContextMenu from '@imengyu/vue3-context-menu'
@@ -77,6 +77,10 @@ const props = defineProps({
 })
 
 const bookRating = ref(props.book.rating)
+
+watchEffect(() => {
+  bookRating.value = props.book.rating
+})
 
 const filterCollectTag = (tagObject) => {
   if (setting.value.showCollectTag) {

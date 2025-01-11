@@ -923,7 +923,12 @@ LANBrowsing.get('/api/search', async (req, res) => {
     const start = parseInt(req.query.start, 10) || 0
     const length = parseInt(req.query.length, 10) || 100
     // 默认使用阅读次数排序, 来匹配 mihon 热门不带 sortby
-    const sortkey = req.query.sortby || 'read_count'
+    let sortKey = req.query.sortby || 'read_count'
+    let showAll = false
+    if (sortKey.includes("_all")) {
+      sortKey = sortKey.replace("_all", "")
+      showAll = true
+    }
 
     // 读取并搜索数据库
     mangas = await loadBookListFromDatabase()
@@ -932,9 +937,10 @@ LANBrowsing.get('/api/search', async (req, res) => {
       filterMangas = mangas.filter(manga => {
         return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url'])).toLowerCase().includes(filter.toLowerCase())
         || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
-      }).toSorted((a, b) => compareItems(a, b, sortkey)).slice(start, start + length)
+      }).toSorted((a, b) => compareItems(a, b, sortKey)).slice(start, start + length)
     } else {
-      filterMangas = mangas.toSorted((a, b) => compareItems(a, b, sortkey))
+      filterMangas = mangas.toSorted((a, b) => compareItems(a, b, sortKey))
+      if (!showAll) filterMangas = filterMangas.slice(start, start + length)
     }
 
     // 格式化响应数据

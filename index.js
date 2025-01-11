@@ -50,10 +50,16 @@ const getColumns = async (sequelize, tableName) => {
 
 const logFile = fs.createWriteStream(path.join(STORE_PATH, 'log.txt'), { flags: 'w' })
 const logStdout = process.stdout
+const logStderr = process.stderr
 
 console.log = (...message) => {
   logFile.write(format(...message) + '\n')
   logStdout.write(format(...message) + '\n')
+}
+
+console.error = (...message) => {
+  logFile.write(format(...message) + '\n')
+  logStderr.write(format(...message) + '\n')
 }
 
 process
@@ -435,59 +441,57 @@ ipcMain.handle('get-ex-webpage', async (event, { url, cookie }) => {
       },
       agent: new HttpsProxyAgent(setting.proxy)
     })
-      .then(res => {
-        return res.text()
-      })
-      .catch(e => {
-        sendMessageToWebContents(`Get ex page failed because ${e}`)
-      })
+    .then(async res => {
+      const result = await res.text()
+      if (!result) throw new Error('Empty response, maybe the cookie is expired')
+      return result
+    })
+    .catch(e => {
+      sendMessageToWebContents(`Get ex page failed because ${e}`)
+    })
   } else {
     return await fetch(url, {
       headers: {
         Cookie: cookie
       }
     })
-      .then(res => {
-        return res.text()
-      })
-      .catch(e => {
-        sendMessageToWebContents(`Get ex page failed because ${e}`)
-      })
+    .then(async res => {
+      const result = await res.text()
+      if (!result) throw new Error('Empty response, maybe the cookie is expired')
+      return result
+    })
+    .catch(e => {
+      sendMessageToWebContents(`Get ex page failed because ${e}`)
+    })
   }
 })
 
-ipcMain.handle('post-data-ex', async (event, { url, data, cookie }) => {
+ipcMain.handle('post-data-ex', async (event, { url, data }) => {
   if (setting.proxy) {
     return await fetch(url, {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
-        Cookie: cookie,
         'Content-Type': 'application/json'
       },
       agent: new HttpsProxyAgent(setting.proxy)
     })
-      .then(res => {
-        return res.text()
-      })
-      .catch(e => {
-        sendMessageToWebContents(`Get ex data failed because ${e}`)
-      })
+    .then(res => res.text())
+    .catch(e => {
+      sendMessageToWebContents(`Get ex data failed because ${e}`)
+    })
   } else {
     return await fetch(url, {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
-        Cookie: cookie,
         'Content-Type': 'application/json'
       }
     })
-      .then(res => {
-        return res.text()
-      })
-      .catch(e => {
-        sendMessageToWebContents(`Get ex data failed because ${e}`)
-      })
+    .then(res => res.text())
+    .catch(e => {
+      sendMessageToWebContents(`Get ex data failed because ${e}`)
+    })
   }
 })
 
@@ -567,7 +571,15 @@ ipcMain.handle('open-local-book', async (event, filepath) => {
 ipcMain.handle('delete-local-book', async (event, filepath) => {
   if (filepath.startsWith(setting.library)) {
     await Manga.destroy({ where: { filepath: filepath } })
-    return shell.trashItem(filepath)
+    try {
+      try {
+        await shell.trashItem(filepath)
+      } catch {
+        await fs.promises.rm(filepath, { recursive: true, force: true })
+      }
+    } catch (e) {
+      sendMessageToWebContents(`Delete ${filepath} failed because ${e}`)
+    }
   }
 })
 
@@ -585,7 +597,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
     const widthLimit = _.isNumber(setting.widthLimit) ? Math.ceil(setting.widthLimit) : screenWidth
     for (let index = 1; index <= list.length; index++) {
       if (sendImageLock) {
-        let imageFilepath = list[index - 1]
+        let imageFilepath = list[index - 1].absolutePath
         const extname = path.extname(imageFilepath)
         if (imageFilepath.search(/[%#]/) >= 0 || type === 'folder') {
           const newFilepath = path.join(VIEWER_PATH, `rename_${nanoid(8)}${extname}`)
@@ -608,11 +620,10 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
               break
           }
         }
-        const filename = path.basename(list[index - 1])
         mainWindow.webContents.send('manga-image', {
           id: `${bookId}_${index}`,
           index,
-          filename,
+          relativePath: list[index - 1].relativePath,
           filepath: imageFilepath,
           width, height
         })
@@ -631,7 +642,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           mainWindow.webContents.send('manga-thumbnail-image', {
             id: `${bookId}_${index}`,
             index,
-            filename,
+            relativePath: list[index - 1].relativePath,
             filepath: imageFilepath,
             thumbnailPath,
           })
@@ -1072,7 +1083,7 @@ LANBrowsing.get('/api/archives/:hash/files', async (req, res) => {
 
     existBook = {
       hash: manga.hash,
-      imageList: imageList
+      imageList: imageList.map(p => p.absolutePath)
     }
     // 构造响应数据
     const responseFiles = {
@@ -1108,6 +1119,7 @@ LANBrowsing.get('/api/archives/:hash/page', async (req, res) => {
       await clearFolder(VIEWER_PATH)
       await clearFolder(staticFilePath)
       imageList = await getImageListByBook(manga.filepath, manga.type)
+      imageList = imageList.map(p => p.absolutePath)
       existBook.hash = manga.hash
       existBook.imageList = imageList
     }

@@ -533,7 +533,8 @@ const selectImageExplorerPath = () => {
 
 const loadTranslationFromEhTagTranslation = async () => {
   const resultObject = {}
-  resolvedTranslation.value = JSON.parse(localStorage.getItem('translationCache') || "{}")
+  const translationCache = JSON.parse(localStorage.getItem('translationCache') || "{}")
+  resolvedTranslation.value = translationCache
   ipcRenderer.invoke('update-tag-translation', translationCache)
   await fetch('https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json')
   .then(res => res.json())

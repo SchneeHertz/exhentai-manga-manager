@@ -13,6 +13,7 @@ const getArchivelist = async (libraryPath) => {
   const list = globSync('**/*.@(rar|7z|cb7|cbr)', {
     cwd: libraryPath,
     nocase: true,
+    nodir: true,
     follow: true,
     absolute: true
   })
@@ -61,14 +62,17 @@ const solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH) => {
 
 const getImageListFromArchive = async (filepath, VIEWER_PATH) => {
   const tempFolder = path.join(VIEWER_PATH, nanoid(8))
-  await spawnPromise(_7z, ['x', filepath, '-o' + tempFolder, '-p123456'])
+  await spawnPromise(_7z, ['x', filepath, '-o' + tempFolder, '-p123456'], 2 * 60 * 1000)
   let list = globSync('**/*.@(jpg|jpeg|png|webp|avif|gif)', {
     cwd: tempFolder,
     nocase: true
   })
   list = _.filter(list, s => !_.includes(s, '__MACOSX'))
-  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'})).map(f => path.join(tempFolder, f))
-  return list
+  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  return list.map(f => ({
+    relativePath: f,
+    absolutePath: path.join(tempFolder, f)
+  }))
 }
 
 const deleteImageFromArchive = async (filename, filepath) => {
@@ -76,14 +80,21 @@ const deleteImageFromArchive = async (filename, filepath) => {
   return true
 }
 
-const spawnPromise = (commmand, argument) => {
+const spawnPromise = (commmand, argument, timeoutMs = 30 * 1000) => {
   return new Promise((resolve, reject) => {
     const spawned = spawn(commmand, argument)
     const output = []
+    const timeout = setTimeout(() => {
+      spawned.kill()
+      reject('7z return timeout')
+    }, timeoutMs) // 默认30s超时
+
     spawned.on('error', data => {
+      clearTimeout(timeout)
       reject(data)
     })
     spawned.on('exit', code => {
+      clearTimeout(timeout)
       if (code === 0) {
         setTimeout(() => resolve(output.join('\r\n')), 50)
       } else {

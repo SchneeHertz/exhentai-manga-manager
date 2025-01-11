@@ -4,7 +4,7 @@
     :size="drawerHeight"
     :with-header="false"
     destroy-on-close
-    @close="$emit('handleStopReadManga')"
+    @close="handleStopReadManga"
     class="viewer-drawer"
     modal-class="viewer-drawer-modal"
   >
@@ -164,21 +164,20 @@ import { Close } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
 import ContextMenu from '@imengyu/vue3-context-menu'
 
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '../pinia.js'
+const appStore = useAppStore()
+const { keyMap, setting, bookDetail } = storeToRefs(appStore)
+const { printMessage, saveBook } = appStore
+
 const { t } = useI18n()
 
-const props = defineProps(['setting', 'keyMap', 'bookDetail'])
-
 const emit = defineEmits([
-  'handleStopReadManga',
   'toNextManga',
   'toNextMangaRandom',
-  'useNewCover',
-  'selectBook',
-  'message',
   'updateOptions',
   'updateWindowTitle',
   'rescanBook',
-  'saveBook'
 ])
 
 const drawerVisibleViewer = ref(false)
@@ -251,21 +250,21 @@ const viewManga = (book, viewerHeight = '100%') => {
   viewerImageList.value = []
   receiveThumbnailList.value = []
   currentImageIndex.value = 0
-  insertEmptyPage.value = props.setting.defaultInsertEmptyPage
+  insertEmptyPage.value = setting.value.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
-  emit('selectBook', book)
+  bookDetail.value = book
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',
-    background: _.includes(props.setting.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+    background: _.includes(setting.value.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
   })
   emit('updateWindowTitle', book)
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
   .then(() => {
     drawerVisibleViewer.value = true
     book.readCount += 1
-    emit('saveBook', book)
-    if (props.setting.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
+    saveBook(book)
+    if (setting.value.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
   })
   .catch(err => {
     console.log(err)
@@ -292,7 +291,7 @@ const currentImageIndex = computed({
         _currentImageIndex.value = 0
       } else if (val > listLength - 1 && listLength >= 1) {
         _currentImageIndex.value = listLength - 1
-        if (props.setting.autoNextManga) emit('toNextManga', 1)
+        if (setting.value.autoNextManga) emit('toNextManga', 1)
       } else {
         _currentImageIndex.value = val
       }
@@ -321,7 +320,7 @@ const drawerViewerBody = ref(null)
 
 const thumbnailWidth = computed(() => {
   const innerWidth = drawerViewerBody.value ? drawerViewerBody.value.clientWidth : window.innerWidth
-  return `${(innerWidth - 32) / (props.setting.thumbnailColumn || 10) - 10}px`
+  return `${(innerWidth - 32) / (setting.value.thumbnailColumn || 10) - 10}px`
 })
 
 const returnImageStyle = (image) => {
@@ -349,7 +348,7 @@ const returnImageStyle = (image) => {
       case 'double': {
         switch (imageStyleFit.value) {
           case 'height': {
-            if (props.setting.hidePageNumber) {
+            if (setting.value.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight - 1})
             } else {
               // minus 36 for the height of .viewer-image-page
@@ -369,7 +368,7 @@ const returnImageStyle = (image) => {
               if (image.width / image.height > windowRatio) {
                 return returnImageStyleObject({width: innerWidth - 32})
               } else {
-                if (props.setting.hidePageNumber) {
+                if (setting.value.hidePageNumber) {
                   return returnImageStyleObject({height: innerHeight})
                 } else {
                   return returnImageStyleObject({height: innerHeight - 36})
@@ -378,7 +377,7 @@ const returnImageStyle = (image) => {
             } else if (image.width * 2 / image.height > windowRatio) {
               return returnImageStyleObject({width: (innerWidth - 32) / 2 })
             } else {
-              if (props.setting.hidePageNumber) {
+              if (setting.value.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight - 1})
               } else {
                 return returnImageStyleObject({height: innerHeight - 36})
@@ -390,7 +389,7 @@ const returnImageStyle = (image) => {
       case 'single': {
         switch (imageStyleFit.value) {
           case 'height': {
-            if (props.setting.hidePageNumber) {
+            if (setting.value.hidePageNumber) {
               return returnImageStyleObject({height: innerHeight})
             } else {
               return returnImageStyleObject({height: innerHeight - 36})
@@ -403,7 +402,7 @@ const returnImageStyle = (image) => {
             if (image.width / image.height > windowRatio) {
               return returnImageStyleObject({width: innerWidth - 32})
             } else {
-              if (props.setting.hidePageNumber) {
+              if (setting.value.hidePageNumber) {
                 return returnImageStyleObject({height: innerHeight})
               } else {
                 return returnImageStyleObject({height: innerHeight - 36})
@@ -444,7 +443,7 @@ const getCurrentImageId = () => {
         return false
       }
       // 28 is the height of .viewer-image-page
-      if (props.setting.hidePageNumber) {
+      if (setting.value.hidePageNumber) {
         scrollTopValue -= parseFloat(returnImageStyle(image).height)
       } else {
         scrollTopValue -= parseFloat(returnImageStyle(image).height) + 28
@@ -464,16 +463,16 @@ const saveReadingProgress = () => {
   try {
     let currentImageId = getCurrentImageId()
     const currentImageIndex = viewerImageList.value.findIndex(image => image.id === currentImageId)
-    if (currentImageIndex > props.bookDetail.pageCount - 6) {
+    if (currentImageIndex > bookDetail.value.pageCount - 6) {
       currentImageId = viewerImageList.value[0].id
     }
-    viewerReadingProgress.value.unshift({bookId: props.bookDetail.id, pageId: currentImageId})
+    viewerReadingProgress.value.unshift({bookId: bookDetail.value.id, pageId: currentImageId})
     localStorage.setItem('viewerReadingProgress', JSON.stringify(viewerReadingProgress.value.slice(0, 1000)))
   } catch {}
 }
 
 const saveImageStyleType = () => {
-  if (imageStyleType.value === 'double') emit('message', 'info', t('c.insertEmptyPageInfo'))
+  if (imageStyleType.value === 'double') printMessage('info', t('c.insertEmptyPageInfo'))
   localStorage.setItem('imageStyleType', imageStyleType.value)
   setTimeout(() => {
     handleClickThumbnail(currentImageId.value)
@@ -495,7 +494,7 @@ const handleClickThumbnail = (id) => {
         return false
       }
       // 28 is the height of .viewer-image-page
-      if (props.setting.hidePageNumber) {
+      if (setting.value.hidePageNumber) {
         scrollTopValue += parseFloat(returnImageStyle(image).height)
       } else {
         scrollTopValue += parseFloat(returnImageStyle(image).height) + 28
@@ -518,10 +517,10 @@ const handleViewerAreaClick = (event) => {
   if (showThumbnail.value === false) {
     if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
       let click
-      if (props.setting.reverseLeftRight) {
-        ;({ click } = props.keyMap.reverse)
+      if (setting.value.reverseLeftRight) {
+        ;({ click } = keyMap.value.reverse)
       } else {
-        ;({ click } = props.keyMap.normal)
+        ;({ click } = keyMap.value.normal)
       }
       if(event.clientX > innerWidth / 2) {
         currentImageIndex.value += click
@@ -550,10 +549,23 @@ const handleJumpToReadingProgress = async (book) => {
           break
         }
       }
-      if (viewerImageList.value.length > book.pageCount - 5 || props.bookDetail.id !== book.id) break
+      if (viewerImageList.value.length > book.pageCount - 5 || bookDetail.value.id !== book.id) break
       await timer(500)
     }
   }
+}
+
+
+const useNewCover = async (filepath) => {
+  const coverPath = await ipcRenderer.invoke('use-new-cover', filepath)
+  bookDetail.value.coverPath = coverPath
+  await saveBook(bookDetail.value)
+}
+
+const handleStopReadManga = () => {
+  if (setting.value.keepReadingProgress) saveReadingProgress()
+  ipcRenderer.invoke('release-sendimagelock')
+  ipcRenderer.invoke('update-window-title')
 }
 
 const onMangaImageContextMenu = (e, image) => {
@@ -571,19 +583,19 @@ const onMangaImageContextMenu = (e, image) => {
       {
         label: t('c.designateAsCover'),
         onClick: () => {
-          emit('useNewCover', image.filepath)
+          useNewCover(image.filepath)
         }
       },
       {
         label: t('c.deleteImage'),
         onClick: async () => {
-          const deleteResult = await ipcRenderer.invoke('delete-image', image.filename, props.bookDetail.filepath, props.bookDetail.type)
+          const deleteResult = await ipcRenderer.invoke('delete-image', image.relativePath, bookDetail.value.filepath, bookDetail.value.type)
           if (deleteResult) {
             viewerImageList.value = viewerImageList.value.filter(item => item.id !== image.id)
             receiveThumbnailList.value = receiveThumbnailList.value.filter(item => item.id !== image.id)
-            emit('rescanBook', props.bookDetail)
+            emit('rescanBook', bookDetail.value)
           } else {
-            emit('message', 'error', t('c.deleteImageError'))
+            printMessage('error', t('c.deleteImageError'))
           }
         }
       }
@@ -602,6 +614,7 @@ defineExpose({
   insertEmptyPageIndex,
   saveReadingProgress,
   viewManga,
+  handleStopReadManga,
 })
 </script>
 

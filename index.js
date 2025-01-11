@@ -878,7 +878,8 @@ const sortkey_map = {
   "read_count": {
     key: "readCount",
     type: "number"
-  }
+  },
+  "random": {}
 }
 
 // 设置静态文件夹
@@ -932,7 +933,7 @@ LANBrowsing.get('/api/search', async (req, res) => {
   try {
     const filter = req.query.filter || ''
     const start = parseInt(req.query.start, 10) || 0
-    const length = parseInt(req.query.length, 10) || 100
+    const length = parseInt(req.query.length, 10) || 200
     // 默认使用阅读次数排序, 来匹配 mihon 热门不带 sortby
     let sortKey = req.query.sortby || 'read_count'
     let showAll = false
@@ -948,11 +949,17 @@ LANBrowsing.get('/api/search', async (req, res) => {
       filterMangas = mangas.filter(manga => {
         return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url'])).toLowerCase().includes(filter.toLowerCase())
         || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
-      }).toSorted((a, b) => compareItems(a, b, sortKey)).slice(start, start + length)
+      })
     } else {
-      filterMangas = mangas.toSorted((a, b) => compareItems(a, b, sortKey))
-      if (!showAll) filterMangas = filterMangas.slice(start, start + length)
+      filterMangas = mangas
     }
+
+    if (sortKey !== 'random') {
+      filterMangas = filterMangas.sort((a, b) => compareItems(a, b, sortKey))
+    } else {
+      filterMangas = _.shuffle(filterMangas)
+    }
+    filterMangas = showAll ? filterMangas : filterMangas.slice(start, start + length)
 
     // 格式化响应数据
     const responseData = filterMangas.map(manga => ({

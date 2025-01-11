@@ -854,6 +854,32 @@ ipcMain.on('get-path-sep', async (event, arg) => {
 // 初始化Express
 const LANBrowsing = express()
 const port = 23786
+const sortkey_map = {
+  "date_added": {
+    key: "date",
+    type: "number"
+  },
+  "date_modified": {
+    key: "mtime",
+    type: "date"
+  },
+  "date_posted": {
+    key: "posted",
+    type: "number"
+  },
+  "size": {
+    key: "bundleSize",
+    type: "number"
+  },
+  "rating": {
+    key: "rating",
+    type: "number"
+  },
+  "read_count": {
+    key: "readCount",
+    type: "number"
+  }
+}
 
 // 设置静态文件夹
 const staticFilePath = path.resolve(STORE_PATH, 'public')
@@ -861,19 +887,59 @@ fs.mkdirSync(staticFilePath, { recursive: true })
 LANBrowsing.use('/static', express.static(staticFilePath))
 
 let mangas = []
+let tagTranslation = undefined
+
+// sort
+function compareItems(a, b, sortKey, ascending = false) {
+  const sortConfig = sortkey_map[sortKey]
+  if (!sortConfig) {
+    throw new Error(`Invalid sort key: ${sortKey}`)
+  }
+
+  const { key, type } = sortConfig
+
+  let valA = a[key]
+  let valB = b[key]
+
+  if (type === "number") {
+    valA = Number(valA) || 0
+    valB = Number(valB) || 0
+  } else if (type === "date") {
+    valA = new Date(valA).getTime() || 0
+    valB = new Date(valB).getTime() || 0
+  } else {
+    valA = String(valA || "")
+    valB = String(valB || "")
+  }
+
+  if (valA < valB) return ascending ? -1 : 1
+  if (valA > valB) return ascending ? 1 : -1
+  return 0
+}
 
 // 格式化标签
 const formatTags = (tags) => {
   return Object.entries(tags)
-    .map(([key, values]) => values.map(value => `${key}:${value}`).join(', '))
+    .map(([key, values]) => values.map(value => setting.showTranslation ? `${key}:${tagTranslation?.[value]?.name ?? value}` : `${key}:${value}`).join(', '))
     .join(', ')
 }
+
+ipcMain.handle('update-tag-translation', async (event, _tagTranslation) => {
+  tagTranslation = _tagTranslation
+})
 
 LANBrowsing.get('/api/search', async (req, res) => {
   try {
     const filter = req.query.filter || ''
     const start = parseInt(req.query.start, 10) || 0
     const length = parseInt(req.query.length, 10) || 100
+    // 默认使用阅读次数排序, 来匹配 mihon 热门不带 sortby
+    let sortKey = req.query.sortby || 'read_count'
+    let showAll = false
+    if (sortKey.includes("_all")) {
+      sortKey = sortKey.replace("_all", "")
+      showAll = true
+    }
 
     // 读取并搜索数据库
     mangas = await loadBookListFromDatabase()
@@ -882,14 +948,14 @@ LANBrowsing.get('/api/search', async (req, res) => {
       filterMangas = mangas.filter(manga => {
         return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url'])).toLowerCase().includes(filter.toLowerCase())
         || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
-      })
+      }).toSorted((a, b) => compareItems(a, b, sortKey)).slice(start, start + length)
     } else {
-      filterMangas = mangas
+      filterMangas = mangas.toSorted((a, b) => compareItems(a, b, sortKey))
+      if (!showAll) filterMangas = filterMangas.slice(start, start + length)
     }
-    filterMangas = filterMangas.toSorted((a, b) => new Date(b.mtime) - new Date(a.mtime))
 
     // 格式化响应数据
-    const responseData = filterMangas.slice(start, start + length).map(manga => ({
+    const responseData = filterMangas.map(manga => ({
       arcid: manga.hash,
       extension: path.extname(manga.filepath),
       filename: path.basename(manga.filepath),

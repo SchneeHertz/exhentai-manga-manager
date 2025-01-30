@@ -27,4 +27,5 @@ secret_key.json
 *.sw?
 
 .vscode
+.history
 devtools

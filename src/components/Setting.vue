@@ -335,6 +335,14 @@
               <el-button class="function-button" type="primary" plain @click="importMetadataFromSqlite">{{$t('m.importMetadataFromSqlite')}}</el-button>
             </div>
           </el-col>
+          <!-- new button for matching by filename-->
+          <el-col :span="5">
+            <div class="setting-line">
+              <el-button class="function-button" type="primary" plain @click="matchMetadataFileName">
+                {{ $t('m.matchMetadataFileName') }}
+              </el-button>
+            </div>
+          </el-col>
         </el-row>
         <el-row :gutter="8">
           <el-col :span="6" class="setting-switch">
@@ -693,6 +701,17 @@ const importDatabase = async () => {
 
 const importMetadataFromSqlite = async () => {
   const {success, bList} = await ipcRenderer.invoke('import-sqlite', _.cloneDeep(bookList.value))
+  if (success) {
+    bookList.value = bList
+    printMessage('success', t('c.importMessage'))
+  } else {
+    printMessage('info', t('c.canceled'))
+  }
+}
+// new button for matching by filename
+const matchMetadataFileName = async () => {
+  // match metadata by filename
+  const {success, bList} = await ipcRenderer.invoke('import-sqlite-filename', _.cloneDeep(bookList.value))
   if (success) {
     bookList.value = bList
     printMessage('success', t('c.importMessage'))

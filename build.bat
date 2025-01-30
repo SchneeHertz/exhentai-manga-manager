@@ -12,6 +12,7 @@ cd /d "%~dp0"
 
 :: Run the npm command
 echo Running "npm run dist" with administrator privileges...
+npm install
 npm run dist
 
 pause

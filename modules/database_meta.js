@@ -1,7 +1,7 @@
 const path = require('path');
 const JSON5 = require('json5');
 
-async function createAndPopulateHashTable(db) {
+async function createAndPopulateHashTable(db, mainWindow) {
     /*
      *  assume db is connected to "api_dump.sqlite".
      *  Check whether a hash table exists; if not, create one and extract hash from thumb column in gallery table.
@@ -35,13 +35,16 @@ async function createAndPopulateHashTable(db) {
         await db.run(`
             CREATE TABLE IF NOT EXISTS coverhash
             (
-                gid PRIMARY KEY,
-                hash TEXT
+                gid  INTEGER NOT NULL,
+                hash TEXT    NOT NULL
             );
         `)
         // extract hash from thumb
-        const rows = await db.all('SELECT gid, thumb FROM gallery WHERE thumb IS NOT NULL');
-        const processedHash = rows.map(row => {
+        const rows = await db.all('SELECT gid, thumb FROM gallery WHERE thumb IS NOT NULL AND gid IS NOT NULL');
+        const totalRows = rows.length;
+
+        const processedHash = rows.map((row, index) => {
+            setDbProgressBar(index / totalRows, mainWindow);
             const thumbParts = row.thumb.split('/');
             const lastPart = thumbParts[thumbParts.length - 1];
             const result = lastPart.split('-')[0];
@@ -66,8 +69,11 @@ async function createAndPopulateHashTable(db) {
                 await insertStmt.run(item.gid, item.hash);
             }
             await insertStmt.finalize();
+            await db.exec('CREATE INDEX IF NOT EXISTS idx_coverhash_hash ON coverhash (hash)');
             await db.exec('COMMIT');
+            setDbProgressBar(-1, mainWindow);
             console.log('Done creating coverhash table');
+
         } catch (err) {
             console.log(err);
             await db.exec('ROLLBACK');
@@ -88,6 +94,7 @@ const sanitizeTitle = (title) => {
     // Remove spaces and file extension
     title = title.replace(/\s+/g, '')
     return path.parse(title).name;
+    // return title;
 }
 
 async function createAndPopulateTitleTable(db, mainWindow) {

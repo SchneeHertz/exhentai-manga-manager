@@ -768,7 +768,7 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
             const bookListLength = bookList.length
 
             // create a hash table if not exists and populate it
-            await createAndPopulateHashTable(db)
+            await createAndPopulateHashTable(db, mainWindow)
 
             for (let i = 0; i < bookListLength; i++) {
                 const book = bookList[i]

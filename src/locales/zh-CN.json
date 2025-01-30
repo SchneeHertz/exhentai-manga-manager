@@ -1,5 +1,5 @@
 {
-  "m":{
+  "m": {
     "folderTree": "文件夹树",
     "search": "搜索",
     "shuffle": "随机排序",
@@ -87,6 +87,7 @@
     "exportMetadata": "备份元数据",
     "importMetadata": "还原元数据",
     "importMetadataFromSqlite": "导入api_dump.sqlite",
+    "matchMetadataFileName": "Match by Filename",
     "manualScan": "手动扫描",
     "onStartScan": "启动时扫描",
     "startOnLogin": "开机启动",

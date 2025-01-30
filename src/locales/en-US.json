@@ -87,6 +87,7 @@
     "exportMetadata": "Backup Metadata",
     "importMetadata": "Restore Metadata",
     "importMetadataFromSqlite": "Import api_dump.sqlite",
+    "matchMetadataFileName": "Match by Filename",
     "manualScan": "Manual Scan",
     "onStartScan": "Scan on Start",
     "startOnLogin": "Start on Login",

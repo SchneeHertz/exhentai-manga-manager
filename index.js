@@ -764,8 +764,18 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
             }
           }
           if (metadata === undefined) {
-            metadata = await db.get('SELECT * FROM gallery WHERE thumb LIKE ?', `%${book.coverHash}%`)
-          }
+            // remove file extension
+            const filename = path.parse(book.title).name
+            metadata = await db.get(`SELECT * FROM gallery WHERE torrents LIKE ? 
+                                                            OR title LIKE ? 
+                                                            OR title_jpn LIKE ? 
+                                                            OR thumb LIKE ?`,
+                                                        `%${filename}%`,
+                                                        `%${filename}%`,
+                                                        `%${filename}%`,
+                                                        `%${book.coverHash}%`
+                                                    );
+            }
 
           if (metadata) {
             metadata.tags = {

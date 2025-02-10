@@ -4,6 +4,7 @@ const { nanoid } = require('nanoid')
 const { readdir, stat } = require('fs/promises')
 const { shell } = require('electron')
 const fs = require('fs')
+const {Op} = require("sequelize");
 
 const dirSize = async dir => {
   const files = await readdir(dir, { withFileTypes: true })
@@ -80,9 +81,38 @@ const deleteImageFromFolder = async (filename, folderpath) => {
   }
 }
 
+
+const isTheSameFile = async (filepath, type, Manga) => {
+  let fileStat, bundleSize, mtime
+  if(type === 'folder') {
+    fileStat = await stat(filepath)
+    bundleSize = await dirSize(filepath)
+    mtime=  fileStat.mtime
+  }else{
+    fileStat = await fs.promises.stat(filepath)
+    bundleSize = fileStat.size
+    mtime=  fileStat.mtime
+  }
+  const filename = path.basename(filepath)
+  const { count, rows } = await Manga.findAndCountAll({
+    where: {
+      filepath: { [Op.like]: `%${filename}` },
+      bundleSize: bundleSize,
+      mtime: mtime.toISOString() // mtime is text type in the database
+    },
+    raw: true
+  });
+  if (count === 1) {
+    return rows[0];
+  } else {
+    return null;
+  }
+};
+
 module.exports = {
   getFolderlist,
   solveBookTypeFolder,
   getImageListFromFolder,
-  deleteImageFromFolder
+  deleteImageFromFolder,
+  isTheSameFile
 }

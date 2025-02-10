@@ -19,8 +19,7 @@ const { prepareMangaModel, prepareMetadataModel } = require('./modules/database'
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
 const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
-const { Op } = require('sequelize');
-
+const { isTheSameFile } = require('./fileLoader/folder.js');
 
 preparePath()
 let setting = prepareSetting()
@@ -257,15 +256,12 @@ ipcMain.handle('load-book-list', async (event, scan) => {
         const { filepath, type } = list[i]
         const foundData = bookList.find(b => b.filepath === filepath)
         if (foundData === undefined) {
-          // check whether the data is in the database
-          const filename = path.basename(filepath)
-          const existingManga = await Manga.findOne(
-              { where:
-                { filepath: {[Op.like]: `%${filename}`}},
-                raw: true
-          })
-
-          if (existingManga && existingManga.id) {
+          /*
+          * check whether the file is the relocated only
+          * return the existing data if and only if there is one match
+          * */
+          const existingManga = await isTheSameFile(filepath,type, Manga)
+          if (existingManga) {
             // the file is relocated only, so no need to regenerate the cover
             foundPrevBook = bookList.find(b => b.id === existingManga.id)
             // this is necessary otherwise it will be deleted in the next step

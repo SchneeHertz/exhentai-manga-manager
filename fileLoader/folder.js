@@ -82,7 +82,7 @@ const deleteImageFromFolder = async (filename, folderpath) => {
 }
 
 
-const isTheSameFile = async (filepath, type, Manga) => {
+const findSameFile = async (filepath, type, Manga) => {
   let fileStat, bundleSize, mtime
   if(type === 'folder') {
     fileStat = await stat(filepath)
@@ -98,7 +98,7 @@ const isTheSameFile = async (filepath, type, Manga) => {
     where: {
       filepath: { [Op.like]: `%${filename}` },
       bundleSize: bundleSize,
-      mtime: mtime.toISOString() // mtime is text type in the database
+      mtime: mtime.toJSON() // mtime is text type in the database
     },
     raw: true
   });
@@ -114,5 +114,5 @@ module.exports = {
   solveBookTypeFolder,
   getImageListFromFolder,
   deleteImageFromFolder,
-  isTheSameFile
+  findSameFile
 }

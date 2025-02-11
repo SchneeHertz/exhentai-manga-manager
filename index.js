@@ -19,7 +19,7 @@ const { prepareMangaModel, prepareMetadataModel } = require('./modules/database'
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
 const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
-
+const { findSameFile } = require('./fileLoader/folder.js');
 
 preparePath()
 let setting = prepareSetting()
@@ -256,27 +256,46 @@ ipcMain.handle('load-book-list', async (event, scan) => {
         const { filepath, type } = list[i]
         const foundData = bookList.find(b => b.filepath === filepath)
         if (foundData === undefined) {
-          const id = nanoid()
-          const { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
-          if (targetFilePath && coverPath) {
-            const hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
-            const newBook = {
-              title: path.basename(filepath),
-              coverPath,
-              hash,
-              filepath,
-              type,
-              id,
-              pageCount,
-              bundleSize,
-              mtime: mtime.toJSON(),
-              coverHash,
-              status: 'non-tag',
-              exist: true,
-              date: Date.now()
+          /*
+          * check whether the file is the relocated only
+          * return the existing data if and only if there is one match
+          * */
+          const existingManga = await findSameFile(filepath,type, Manga)
+          if (existingManga) {
+            // the file is relocated only, so no need to regenerate the cover
+            foundPrevBook = bookList.find(b => b.id === existingManga.id)
+            // this is necessary otherwise it will be deleted in the next step
+            foundPrevBook.exist = true
+            foundPrevBook.coverPath = path.join(COVER_PATH, path.basename(existingManga.coverPath))
+            // update the Mangas table in database.sqlite
+            await Manga.update(
+                {filepath: filepath, exist: true},
+                { where: { id: existingManga.id } })
+          }
+          else{
+            // this is the new file, so generate the cover
+            const id = nanoid()
+            const { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
+            if (targetFilePath && coverPath) {
+              const hash = createHash('sha1').update(fs.readFileSync(targetFilePath)).digest('hex')
+              const newBook = {
+                title: path.basename(filepath),
+                coverPath,
+                hash,
+                filepath,
+                type,
+                id,
+                pageCount,
+                bundleSize,
+                mtime: mtime.toJSON(),
+                coverHash,
+                status: 'non-tag',
+                exist: true,
+                date: Date.now()
+              }
+              await Manga.create(newBook)
+              bookList.push(newBook)
             }
-            await Manga.create(newBook)
-            bookList.push(newBook)
           }
         } else {
           foundData.exist = true

@@ -18,7 +18,7 @@ const express = require('express')
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
-const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
+const { STORE_PATH, isPortable, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
 const { findSameFile } = require('./fileLoader/folder.js');
 
 preparePath()
@@ -266,13 +266,12 @@ ipcMain.handle('load-book-list', async (event, scan) => {
             foundPrevBook = bookList.find(b => b.id === existingManga.id)
             // this is necessary otherwise it will be deleted in the next step
             foundPrevBook.exist = true
-            foundPrevBook.coverPath = path.join(COVER_PATH, path.basename(existingManga.coverPath))
             // update the Mangas table in database.sqlite
             await Manga.update(
-                {filepath: filepath, exist: true},
-                { where: { id: existingManga.id } })
-          }
-          else{
+              { filepath: filepath, coverPath: path.join(COVER_PATH, path.basename(existingManga.coverPath)) },
+              { where: { id: existingManga.id } }
+            )
+          } else {
             // this is the new file, so generate the cover
             const id = nanoid()
             const { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
@@ -299,7 +298,7 @@ ipcMain.handle('load-book-list', async (event, scan) => {
           }
         } else {
           foundData.exist = true
-          foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
+          if (isPortable) await Manga.update({ coverPath: path.join(COVER_PATH, path.basename(foundData.coverPath)) }, { where: { id: foundData.id } })
         }
         if ((i + 1) % 50 === 0) {
           setProgressBar(i / listLength)
@@ -785,16 +784,16 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
           if (metadata === undefined) {
             // remove file extension
             const filename = path.parse(book.title).name
-            metadata = await db.get(`SELECT * FROM gallery WHERE torrents LIKE ? 
-                                                            OR title LIKE ? 
-                                                            OR title_jpn LIKE ? 
+            metadata = await db.get(`SELECT * FROM gallery WHERE torrents LIKE ?
+                                                            OR title LIKE ?
+                                                            OR title_jpn LIKE ?
                                                             OR thumb LIKE ?`,
-                                                        `%${filename}%`,
-                                                        `%${filename}%`,
-                                                        `%${filename}%`,
-                                                        `%${book.coverHash}%`
-                                                    );
-            }
+              `%${filename}%`,
+              `%${filename}%`,
+              `%${filename}%`,
+              `%${book.coverHash}%`
+            )
+          }
 
           if (metadata) {
             metadata.tags = {

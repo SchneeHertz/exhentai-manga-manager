@@ -137,9 +137,9 @@ import { IosRemoveCircleOutline } from '@vicons/ionicons4'
 import draggable from 'vuedraggable'
 import { nanoid } from 'nanoid'
 
-
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
+import XRegExp from 'xregexp'
 const appStore = useAppStore()
 const {
   cat2letter,
@@ -389,7 +389,8 @@ const unselectAllForGroupTag = () => {
 const resolveGroupTagSelected = () => {
   const letter2cat = _.invert(cat2letter.value)
   let tags = groupTagSelected.value.map(tag => {
-    const match = /([\w\d一-龟]+):"([- ._\(\)\w\d一-龟]+)"\$/.exec(tag)
+    const match = XRegExp.exec(tag, XRegExp('([\\p{L}\\p{N}]+):"([- ._\\(\\)\\p{L}\\p{N}]+)"\\$', 'u'));
+
     if (match[1] && match[2]) {
       return {
         category: letter2cat[match[1]] ? letter2cat[match[1]] : match[1],

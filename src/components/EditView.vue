@@ -389,7 +389,12 @@ const unselectAllForGroupTag = () => {
 const resolveGroupTagSelected = () => {
   const letter2cat = _.invert(cat2letter.value)
   let tags = groupTagSelected.value.map(tag => {
-    const match = /([\w\d一-龟]+):"([- ._\(\)\w\d一-龟]+)"\$/.exec(tag)
+     /* from Copilot suggestion
+    ぁ-ん: Hiragana; ァ-ヶ: Katakana;
+    一-龟: Kanji; 々: Kanji iteration mark;
+    〆: Katakana iteration mark; 〤: Katakana voiced iteration mark
+    */
+    const match = /([\w\d一-龟ぁ-んァ-ヶー々〆〤ａ-ｚＡ-Ｚ０-９]+):"([- ._\(\)\w\d一-龟ぁ-んァ-ヶー々〆〤ａ-ｚＡ-Ｚ０-９]+)"\$/.exec(tag)
     if (match[1] && match[2]) {
       return {
         category: letter2cat[match[1]] ? letter2cat[match[1]] : match[1],

@@ -10,6 +10,8 @@
     "bookmarkOnly": "仅收藏",
     "collectionOnly": "仅合集",
     "hiddenOnly": "仅隐藏",
+    "nonTagOnly": "仅无标签",
+    "tagFailedOnly": "仅标签失败",
     "addTimeAscend": "添加时间正序",
     "addTimeDescend": "添加时间倒序",
     "postTimeAscend": "上传时间正序",

@@ -50,6 +50,8 @@
             <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
             <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
             <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
+            <el-option :label="$t('m.nonTagOnly')" value="nontag"></el-option>
+            <el-option :label="$t('m.tagFailedOnly')" value="tagfail"></el-option>
           </el-option-group>
           <el-option-group :label="$t('m.sort')">
             <el-option :label="$t('m.shuffle')" value="shuffle"></el-option>
@@ -725,6 +727,14 @@ export default defineComponent({
           this.displayBookList = _.filter(this.bookList, 'hiddenBook')
           this.chunkList()
           break
+        case 'nontag':
+          this.displayBookList = _.filter(this.bookList, this.isNonTag)
+          this.chunkList()
+          break
+        case 'tagfail':
+          this.displayBookList = _.filter(this.bookList, this.isTagFailed)
+          this.chunkList()
+          break
         case 'shuffle':
           this.displayBookList = _.shuffle(bookList)
           this.chunkList()
@@ -1212,6 +1222,12 @@ export default defineComponent({
         this.comments = []
         if (this.setting.showComment) this.getComments(selectBook.url)
       }, 500)
+    },
+    isNonTag(book){
+      return book.status === 'non-tag'
+    },
+    isTagFailed(book){
+      return book.status === 'tag-failed'
     },
   }
 })

@@ -10,6 +10,8 @@
     "bookmarkOnly": "Bookmark Only",
     "collectionOnly": "Collection Only",
     "hiddenOnly": "Hidden Only",
+    "nonTagOnly": "Non-Tag Only",
+    "tagFailedOnly": "Tag-Failed Only",
     "addTimeAscend": "AddTime Ascend",
     "addTimeDescend": "AddTime Descend",
     "postTimeAscend": "PostTime Ascend",

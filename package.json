@@ -64,7 +64,8 @@
     "sequelize": "^6.32.1",
     "sharp": "^0.32.6",
     "sqlite": "^4.1.2",
-    "sqlite3": "^5.1.6"
+    "sqlite3": "^5.1.6",
+    "xregexp": "^5.1.1"
   },
   "devDependencies": {
     "@imengyu/vue3-context-menu": "^1.3.3",

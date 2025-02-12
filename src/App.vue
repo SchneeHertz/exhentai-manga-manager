@@ -806,7 +806,8 @@ export default defineComponent({
       if (queryString) {
         const keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
         if (!_.isEmpty(keywords)) {
-          const nextKeyword = queryString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\(\)\w\d一-龟]+"\$/g, '').trim()
+          const nextKeyword = XRegExp.replace(queryString, XRegExp('(~|-)?[\\p{L}\\p{N}]+:"[- ._\\(\\)\\p{L}\\p{N}]+"\\$', 'g'), '').trim();
+
           if (nextKeyword[0] === '-' || nextKeyword[0] === '~') {
             result = _.filter(options, (str) => {
               return _.includes(str.value.toLowerCase(), nextKeyword.slice(1).toLowerCase())
@@ -844,11 +845,11 @@ export default defineComponent({
     },
     handleInput (val) {
       try {
-        if (/^[\w\d一-龟]+:"[- ._\(\)\w\d一-龟]+"\$$/.test(val) && this.searchString.trim() !== val.trim()) {
+        if (/^[\\p{L}\\p{N}]+:"[- ._\(\)\\p{L}\\p{N}]+"\$$/.test(val) && this.searchString.trim() !== val.trim()) {
           const keywords = [...this.searchString.trim().matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
           if (!_.isEmpty(keywords)) {
-            const keyword = this.searchString.replace(/(~|-)?[\w\d一-龟]+:"[- ._\(\)\w\d一-龟]+"\$/g, '').trim()
-            const matches = this.searchString.match(/(~|-)?[\w\d一-龟]+:"[- ._\(\)\w\d一-龟]+"\$/g)
+            const keyword = this.searchString.replace(/(~|-)?[\\p{L}\\p{N}]+:"[- ._\(\)\\p{L}\\p{N}]+"\$/g, '').trim()
+            const matches = this.searchString.match(/(~|-)?[\\p{L}\\p{N}]+:"[- ._\(\)\\p{L}\\p{N}]+"\$/g)
             if (keyword[0] === '-') {
               this.searchString = matches.concat([`-${val}`]).join(' ')
             } else if (keyword[0] === '~') {

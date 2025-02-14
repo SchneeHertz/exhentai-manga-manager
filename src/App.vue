@@ -519,7 +519,7 @@ export default defineComponent({
           this.$refs.InternalViewerRef.viewManga(this.bookDetail)
         }
         if (event.key === 'Delete') {
-          this.$refs.InternalViewerRef.deleteLocalBook(this.bookDetail)
+          this.$refs.BookDetailDialogRef.deleteLocalBook(this.bookDetail)
         }
         if (event.key === 'PageDown') {
           if (event.shiftKey) {

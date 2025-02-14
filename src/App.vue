@@ -1321,7 +1321,7 @@ body
 
 
 .mx-menu-ghost-host
-  z-index: 4000!important
+  z-index: 5000!important
 .mx-context-menu
   background-color: var(--el-fill-color-extra-light)!important
   .mx-context-menu-item:hover

@@ -23,8 +23,8 @@ or console log of devtool
 
 **Screenshots**
 **截图**
-If applicable, add screenshots to help explain your problem.
-如果适用的话，请添加截图以帮助解释您的问题。
+If applicable, add screenshots to help explain your problem, Please be careful not to include any content in the screenshots that may cause controversy or violate the law.
+如果适用的话，请添加截图以帮助解释您的问题，请注意不要在截图中出现可能引起争议或违法的内容。
 
 **Additional context**
 **附加信息**

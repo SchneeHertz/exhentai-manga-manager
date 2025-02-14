@@ -9,14 +9,17 @@ if (!fs.existsSync(STORE_PATH)) {
   fs.mkdirSync(STORE_PATH)
 }
 const rootPath = getRootPath()
+const isPortable = false
 try {
   const dataPath = path.join(rootPath, 'data')
   fs.accessSync(dataPath)
   STORE_PATH = dataPath
+  isPortable = true
 } catch {
   try {
     fs.accessSync(path.join(rootPath, 'portable'))
     STORE_PATH = rootPath
+    isPortable = true
   } catch {
     STORE_PATH = app.getPath('userData')
   }
@@ -42,7 +45,7 @@ const prepareSetting = () => {
       library: app.getPath('downloads'),
       metadataPath: undefined,
       imageExplorer: '\"C:\\Windows\\explorer.exe\"',
-      pageSize: 10,
+      pageSize: 42,
       loadOnStart: false,
       igneous: '',
       ipb_pass_hash: '',
@@ -84,6 +87,7 @@ const prepareCollectionList = () => {
 
 module.exports = {
   STORE_PATH,
+  isPortable,
   TEMP_PATH,
   COVER_PATH,
   VIEWER_PATH,

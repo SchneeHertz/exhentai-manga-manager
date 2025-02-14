@@ -18,7 +18,7 @@ const express = require('express')
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
-const { STORE_PATH, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
+const { STORE_PATH, isPortable, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
 const { findSameFile } = require('./fileLoader/folder.js');
 
 preparePath()
@@ -266,13 +266,12 @@ ipcMain.handle('load-book-list', async (event, scan) => {
             foundPrevBook = bookList.find(b => b.id === existingManga.id)
             // this is necessary otherwise it will be deleted in the next step
             foundPrevBook.exist = true
-            foundPrevBook.coverPath = path.join(COVER_PATH, path.basename(existingManga.coverPath))
             // update the Mangas table in database.sqlite
             await Manga.update(
-                {filepath: filepath, exist: true},
-                { where: { id: existingManga.id } })
-          }
-          else{
+              { filepath: filepath, coverPath: path.join(COVER_PATH, path.basename(existingManga.coverPath)) },
+              { where: { id: existingManga.id } }
+            )
+          } else {
             // this is the new file, so generate the cover
             const id = nanoid()
             const { targetFilePath, coverPath, pageCount, bundleSize, mtime, coverHash } = await geneCover(filepath, type)
@@ -299,7 +298,7 @@ ipcMain.handle('load-book-list', async (event, scan) => {
           }
         } else {
           foundData.exist = true
-          foundData.coverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
+          if (isPortable) await Manga.update({ coverPath: path.join(COVER_PATH, path.basename(foundData.coverPath)) }, { where: { id: foundData.id } })
         }
         if ((i + 1) % 50 === 0) {
           setProgressBar(i / listLength)
@@ -785,16 +784,16 @@ ipcMain.handle('import-sqlite', async (event, bookList) => {
           if (metadata === undefined) {
             // remove file extension
             const filename = path.parse(book.title).name
-            metadata = await db.get(`SELECT * FROM gallery WHERE torrents LIKE ? 
-                                                            OR title LIKE ? 
-                                                            OR title_jpn LIKE ? 
+            metadata = await db.get(`SELECT * FROM gallery WHERE torrents LIKE ?
+                                                            OR title LIKE ?
+                                                            OR title_jpn LIKE ?
                                                             OR thumb LIKE ?`,
-                                                        `%${filename}%`,
-                                                        `%${filename}%`,
-                                                        `%${filename}%`,
-                                                        `%${book.coverHash}%`
-                                                    );
-            }
+              `%${filename}%`,
+              `%${filename}%`,
+              `%${filename}%`,
+              `%${book.coverHash}%`
+            )
+          }
 
           if (metadata) {
             metadata.tags = {
@@ -907,7 +906,8 @@ const sortkey_map = {
   "read_count": {
     key: "readCount",
     type: "number"
-  }
+  },
+  "random": {}
 }
 
 // 设置静态文件夹
@@ -961,7 +961,7 @@ LANBrowsing.get('/api/search', async (req, res) => {
   try {
     const filter = req.query.filter || ''
     const start = parseInt(req.query.start, 10) || 0
-    const length = parseInt(req.query.length, 10) || 100
+    const length = parseInt(req.query.length, 10) || 200
     // 默认使用阅读次数排序, 来匹配 mihon 热门不带 sortby
     let sortKey = req.query.sortby || 'read_count'
     let showAll = false
@@ -977,11 +977,17 @@ LANBrowsing.get('/api/search', async (req, res) => {
       filterMangas = mangas.filter(manga => {
         return JSON.stringify(_.pick(manga, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url'])).toLowerCase().includes(filter.toLowerCase())
         || formatTags(manga.tags).toLowerCase().includes(filter.toLowerCase())
-      }).toSorted((a, b) => compareItems(a, b, sortKey)).slice(start, start + length)
+      })
     } else {
-      filterMangas = mangas.toSorted((a, b) => compareItems(a, b, sortKey))
-      if (!showAll) filterMangas = filterMangas.slice(start, start + length)
+      filterMangas = mangas
     }
+
+    if (sortKey !== 'random') {
+      filterMangas = filterMangas.sort((a, b) => compareItems(a, b, sortKey))
+    } else {
+      filterMangas = _.shuffle(filterMangas)
+    }
+    filterMangas = showAll ? filterMangas : filterMangas.slice(start, start + length)
 
     // 格式化响应数据
     const responseData = filterMangas.map(manga => ({

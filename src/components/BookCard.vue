@@ -43,13 +43,13 @@
         :type="book.status === 'non-tag' ? 'info' : book.status === 'tagged' ? 'success' : 'warning'"
         @click="$emit('searchFromTag', book.status)"
       >{{book.status}}</el-tag>
-      <el-rate v-model="book.rating" size="small" allow-half @change="saveBook(book)"/>
+      <el-rate v-model="bookRating" size="small" allow-half @change="saveBook(Object.assign({}, book, {rating: bookRating}))"/>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { BookmarkTwotone } from '@vicons/material'
 import ContextMenu from '@imengyu/vue3-context-menu'
@@ -73,10 +73,14 @@ const emit = defineEmits([
 ])
 
 const props = defineProps({
-  initBook: Object
+  book: Object
 })
 
-const book = ref(props.initBook)
+const bookRating = ref(props.book.rating)
+
+watchEffect(() => {
+  bookRating.value = props.book.rating
+})
 
 const filterCollectTag = (tagObject) => {
   if (setting.value.showCollectTag) {

@@ -156,6 +156,8 @@ import * as linkify from 'linkifyjs'
 import ContextMenu from '@imengyu/vue3-context-menu'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
+import  { insertLocalReadRecord } from '../utils.js'
+
 const appStore = useAppStore()
 const {
   setting, bookDetail, resolvedTranslation,
@@ -220,7 +222,7 @@ const openLocalBook = (book) => {
   } else {
     emit('openContentView', book)
   }
-  ipcRenderer.invoke('insert-recent-read-record', book.id)
+  insertLocalReadRecord(book.id)
 }
 const rescanBook = async (book) => {
   const bookInfo = await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))

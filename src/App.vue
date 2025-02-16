@@ -237,7 +237,7 @@ import EditView from './components/EditView.vue'
 
 import { mapWritableState, mapActions } from 'pinia'
 import { useAppStore } from './pinia.js'
-
+import { fetchRecentReads } from './utils.js'
 export default defineComponent({
   components: {
     Setting,
@@ -710,7 +710,7 @@ export default defineComponent({
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
-    async handleSortChange (val, bookList) {
+    handleSortChange (val, bookList) {
       if (!bookList) bookList = this.displayBookList
       switch(val){
         case 'mark':
@@ -726,7 +726,7 @@ export default defineComponent({
           this.chunkList()
           break
         case 'recentRead':
-          const recentReads = await this.fetchRecentReads();
+          const recentReads =  fetchRecentReads();
           this.displayBookList = recentReads
               .map(id => bookList.find(book => book.id === id))
               .filter(book => book !== undefined);
@@ -984,14 +984,6 @@ export default defineComponent({
     },
     reloadRandomTags () {
       this.randomTags = _.sampleSize(this.tagList, 24)
-    },
-   async fetchRecentReads() {
-    try {
-      return await ipcRenderer.invoke('fetch-recent-reads')
-    } catch (error) {
-      console.error(error)
-      return []
-    }
     },
     // home main
     handleClickCover (book) {

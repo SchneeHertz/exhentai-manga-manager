@@ -15,18 +15,18 @@ const { HttpsProxyAgent } = require('https-proxy-agent')
 const windowStateKeeper = require('electron-window-state')
 const express = require('express')
 
-const { prepareMangaModel, prepareMetadataModel, prepareRecentReadModel } = require('./modules/database')
+const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
 const { STORE_PATH, isPortable, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
 const { findSameFile } = require('./fileLoader/folder.js');
+
 
 preparePath()
 let setting = prepareSetting()
 let collectionList = prepareCollectionList()
 
 const Manga = prepareMangaModel(path.join(STORE_PATH, './database.sqlite'))
-const recentRead = prepareRecentReadModel(path.join(STORE_PATH, './recentRead.sqlite'))
 
 let metadataSqliteFile
 if (setting.metadataPath) {
@@ -47,7 +47,6 @@ const getColumns = async (sequelize, tableName) => {
   } else {
     await Manga.sync()
   }
-  await recentRead.sync()
   await Metadata.sync()
 })()
 
@@ -880,25 +879,7 @@ ipcMain.handle('switch-fullscreen', async (event, arg) => {
 ipcMain.on('get-path-sep', async (event, arg) => {
   event.returnValue = path.sep
 })
-// record the recent read books
-ipcMain.handle('insert-recent-read-record', async (event, bookId) => {
-  await recentRead.upsert({ id: bookId, read_time: Math.floor(Date.now() / 1000) })
-})
-// used in the filter of the recent reads
-ipcMain.handle('fetch-recent-reads', async () => {
-  try {
-    const recentReads = await recentRead.findAll({
-      attributes: ['id'],
-      order: [['read_time', 'DESC']],
-      limit: 100,
-      raw:true,
-    });
-    return recentReads.map(({ id }) => id)
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-});
+
 // 初始化Express
 const LANBrowsing = express()
 const port = 23786

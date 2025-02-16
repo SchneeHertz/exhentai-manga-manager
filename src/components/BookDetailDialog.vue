@@ -220,6 +220,7 @@ const openLocalBook = (book) => {
   } else {
     emit('openContentView', book)
   }
+  ipcRenderer.invoke('insert-recent-read-record', book.id)
 }
 const rescanBook = async (book) => {
   const bookInfo = await ipcRenderer.invoke('patch-local-metadata-by-book', _.cloneDeep(book))

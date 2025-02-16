@@ -54,6 +54,26 @@ const prepareMangaModel = (databasePath) => {
   return Manga
 }
 
+const prepareRecentReadModel = (databasePath) => {
+  const sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: databasePath,
+    logging: false
+  })
+  const recentRead = sequelize.define('RecentRead', {
+    id: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      primaryKey: true
+    },
+    read_time: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    }
+  })
+  return recentRead
+}
+
 const prepareMetadataModel = (databasePath) => {
   const sequelize = new Sequelize({
     dialect: 'sqlite',
@@ -89,5 +109,6 @@ const prepareMetadataModel = (databasePath) => {
 
 module.exports = {
   prepareMangaModel,
-  prepareMetadataModel
+  prepareMetadataModel,
+  prepareRecentReadModel
 }

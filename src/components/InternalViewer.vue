@@ -259,6 +259,8 @@ const viewManga = (book, viewerHeight = '100%') => {
     background: _.includes(setting.value.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
   })
   emit('updateWindowTitle', book)
+
+  ipcRenderer.invoke('insert-recent-read-record', book.id)
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
   .then(() => {
     drawerVisibleViewer.value = true

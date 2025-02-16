@@ -50,6 +50,7 @@
             <el-option :label="$t('m.bookmarkOnly')" value="mark"></el-option>
             <el-option :label="$t('m.collectionOnly')" value="collection"></el-option>
             <el-option :label="$t('m.hiddenOnly')" value="hidden"></el-option>
+            <el-option :label="$t('m.recentReadOnly')" value="recentRead"></el-option>
           </el-option-group>
           <el-option-group :label="$t('m.sort')">
             <el-option :label="$t('m.shuffle')" value="shuffle"></el-option>
@@ -709,7 +710,7 @@ export default defineComponent({
       this.displayBookList = _.shuffle(this.displayBookList)
       this.chunkList()
     },
-    handleSortChange (val, bookList) {
+    async handleSortChange (val, bookList) {
       if (!bookList) bookList = this.displayBookList
       switch(val){
         case 'mark':
@@ -722,6 +723,13 @@ export default defineComponent({
           break
         case 'hidden':
           this.displayBookList = _.filter(this.bookList, 'hiddenBook')
+          this.chunkList()
+          break
+        case 'recentRead':
+          const recentReads = await this.fetchRecentReads();
+          this.displayBookList = recentReads
+              .map(id => bookList.find(book => book.id === id))
+              .filter(book => book !== undefined);
           this.chunkList()
           break
         case 'shuffle':
@@ -977,7 +985,14 @@ export default defineComponent({
     reloadRandomTags () {
       this.randomTags = _.sampleSize(this.tagList, 24)
     },
-
+   async fetchRecentReads() {
+    try {
+      return await ipcRenderer.invoke('fetch-recent-reads')
+    } catch (error) {
+      console.error(error)
+      return []
+    }
+    },
     // home main
     handleClickCover (book) {
       switch (this.setting.directEnter) {

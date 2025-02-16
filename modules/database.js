@@ -70,7 +70,13 @@ const prepareRecentReadModel = (databasePath) => {
       type: DataTypes.INTEGER,
       allowNull: false
     }
-  })
+    },
+      {
+        indexes: [{
+          fields: ['read_time']
+        }]
+      }
+      )
   return recentRead
 }
 

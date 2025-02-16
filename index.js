@@ -882,8 +882,7 @@ ipcMain.on('get-path-sep', async (event, arg) => {
 })
 // record the recent read books
 ipcMain.handle('insert-recent-read-record', async (event, bookId) => {
-  await recentRead.destroy({  where: { id: bookId } })
-  await recentRead.create({ id: bookId , read_time: Math.floor(Date.now() / 1000) })
+  await recentRead.upsert({ id: bookId, read_time: Math.floor(Date.now() / 1000) })
 })
 // used in the filter of the recent reads
 ipcMain.handle('fetch-recent-reads', async () => {

@@ -21,13 +21,11 @@ const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = 
 const { STORE_PATH, isPortable, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
 const { findSameFile } = require('./fileLoader/folder.js');
 
-
 preparePath()
 let setting = prepareSetting()
 let collectionList = prepareCollectionList()
 
 const Manga = prepareMangaModel(path.join(STORE_PATH, './database.sqlite'))
-
 let metadataSqliteFile
 if (setting.metadataPath) {
   metadataSqliteFile = path.join(setting.metadataPath, './metadata.sqlite')
@@ -879,6 +877,7 @@ ipcMain.handle('switch-fullscreen', async (event, arg) => {
 ipcMain.on('get-path-sep', async (event, arg) => {
   event.returnValue = path.sep
 })
+
 
 // 初始化Express
 const LANBrowsing = express()

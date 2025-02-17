@@ -223,7 +223,7 @@ import { ArrowTrendingLines20Filled, Collections24Regular, Search32Filled, Save1
 import { MdShuffle, MdRefresh, MdCodeDownload, MdExit } from '@vicons/ionicons4'
 import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
 
-import { getWidth } from './utils.js'
+import { getWidth, fetchRecentReads } from './utils.js'
 
 import Setting from './components/Setting.vue'
 import Graph from './components/Graph.vue'
@@ -237,7 +237,7 @@ import EditView from './components/EditView.vue'
 
 import { mapWritableState, mapActions } from 'pinia'
 import { useAppStore } from './pinia.js'
-import { fetchRecentReads } from './utils.js'
+
 export default defineComponent({
   components: {
     Setting,
@@ -726,10 +726,14 @@ export default defineComponent({
           this.chunkList()
           break
         case 'recentRead':
-          const recentReads =  fetchRecentReads();
+          const recentReads =  fetchRecentReads()
           this.displayBookList = recentReads
-              .map(id => bookList.find(book => book.id === id))
-              .filter(book => book !== undefined);
+              .map(id => this.bookList.find(book => {
+                if (book.collectionHide) return false
+                if (book.isCollection) return book.ids.includes(id)
+                return book.id === id
+              }))
+              .filter(book => book !== undefined)
           this.chunkList()
           break
         case 'shuffle':
@@ -1127,6 +1131,7 @@ export default defineComponent({
             return src
           }
         })
+        const ids = collectBook.map(book => book.id)
         const title_jpn = collectBook.map(book => book.title+book.title_jpn).join(',')
         const filepath = collectBook.map(book => book.filepath).join(',')
         const category = [...new Set(collectBook.map(book => book.category))].join(',')
@@ -1140,7 +1145,8 @@ export default defineComponent({
             list: collection.list,
             filepath,
             isCollection: true,
-            chapterCount: collection?.list?.length
+            chapterCount: collection?.list?.length,
+            ids,
           })
         }
       })

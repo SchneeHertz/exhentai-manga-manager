@@ -10,6 +10,7 @@
     "bookmarkOnly": "仅收藏",
     "collectionOnly": "仅合集",
     "hiddenOnly": "仅隐藏",
+    "recentReadOnly": "最近阅读",
     "addTimeAscend": "添加时间正序",
     "addTimeDescend": "添加时间倒序",
     "postTimeAscend": "上传时间正序",

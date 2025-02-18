@@ -388,7 +388,7 @@ const unselectAllForGroupTag = () => {
 const resolveGroupTagSelected = () => {
   const letter2cat = _.invert(cat2letter.value)
   let tags = groupTagSelected.value.map(tag => {
-    const match = tag.match(/^([\p{L}\d]+):"([- ._()\p{L}\d]+)"\$$/u);
+    const match = tag.match(/^([\p{L}\d]+):"([- ._()\p{L}\d]+)"\$$/u)
     if (match[1] && match[2]) {
       return {
         category: letter2cat[match[1]] ? letter2cat[match[1]] : match[1],

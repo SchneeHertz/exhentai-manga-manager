@@ -19,7 +19,7 @@ const { prepareMangaModel, prepareMetadataModel } = require('./modules/database'
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
 const { STORE_PATH, isPortable, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
-const { findSameFile } = require('./fileLoader/folder.js');
+const { findSameFile } = require('./fileLoader/folder.js')
 
 preparePath()
 let setting = prepareSetting()

@@ -9,7 +9,7 @@ if (!fs.existsSync(STORE_PATH)) {
   fs.mkdirSync(STORE_PATH)
 }
 const rootPath = getRootPath()
-const isPortable = false
+let isPortable = false
 try {
   const dataPath = path.join(rootPath, 'data')
   fs.accessSync(dataPath)

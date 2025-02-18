@@ -10,6 +10,7 @@
     "bookmarkOnly": "僅收藏",
     "collectionOnly": "僅合集",
     "hiddenOnly": "僅隱藏",
+    "recentReadOnly": "最近閱讀",
     "addTimeAscend": "新增時間升序",
     "addTimeDescend": "新增時間降序",
     "postTimeAscend": "上傳時間升序",

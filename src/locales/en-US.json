@@ -10,6 +10,7 @@
     "bookmarkOnly": "Bookmark Only",
     "collectionOnly": "Collection Only",
     "hiddenOnly": "Hidden Only",
+    "recentReadOnly": "Recent Read Only",
     "addTimeAscend": "AddTime Ascend",
     "addTimeDescend": "AddTime Descend",
     "postTimeAscend": "PostTime Ascend",

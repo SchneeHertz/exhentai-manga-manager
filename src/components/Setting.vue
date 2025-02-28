@@ -680,8 +680,8 @@ const handleLanguageSet = (languageCode) => {
 
 const exportDatabase = async () => {
   const folder = await ipcRenderer.invoke('select-folder', t('c.exportFolder'))
-  await ipcRenderer.invoke('export-database', folder)
-  printMessage('success', t('c.exportMessage'))
+  const result = await ipcRenderer.invoke('export-database', folder)
+  if (result) printMessage('success', t('c.exportMessage'))
 }
 
 const importDatabase = async () => {

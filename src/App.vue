@@ -520,7 +520,7 @@ export default defineComponent({
           this.$refs.InternalViewerRef.viewManga(this.bookDetail)
         }
         if (event.key === 'Delete') {
-          this.$refs.InternalViewerRef.deleteLocalBook(this.bookDetail)
+          this.$refs.BookDetailDialogRef.deleteLocalBook(this.bookDetail)
         }
         if (event.key === 'PageDown') {
           if (event.shiftKey) {
@@ -817,7 +817,7 @@ export default defineComponent({
       if (queryString) {
         const keywords = [...queryString.matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
         if (!_.isEmpty(keywords)) {
-          const nextKeyword = queryString.replace(/(~|-)?[\p{L}\d]+:"[- ._()\p{L}\d]+"\$/gu, '').trim();
+          const nextKeyword = queryString.replace(/(~|-)?[\p{L}\d]+:"[- ._()\p{L}\d]+"\$/gu, '').trim()
           if (nextKeyword[0] === '-' || nextKeyword[0] === '~') {
             result = _.filter(options, (str) => {
               return _.includes(str.value.toLowerCase(), nextKeyword.slice(1).toLowerCase())
@@ -859,8 +859,8 @@ export default defineComponent({
             && this.searchString.trim() !== val.trim()) {
           const keywords = [...this.searchString.trim().matchAll(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/g)]
           if (!_.isEmpty(keywords)) {
-            const keyword = this.searchString.replace(/(~|-)?[\p{L}\d]+:"[- ._()\p{L}\d]+"\$/gu, '').trim();
-            const matches = this.searchString.match(/(~|-)?[\p{L}\d]+:"[- ._()\p{L}\d]+"\$/gu);
+            const keyword = this.searchString.replace(/(~|-)?[\p{L}\d]+:"[- ._()\p{L}\d]+"\$/gu, '').trim()
+            const matches = this.searchString.match(/(~|-)?[\p{L}\d]+:"[- ._()\p{L}\d]+"\$/gu)
             if (keyword[0] === '-') {
               this.searchString = matches.concat([`-${val}`]).join(' ')
             } else if (keyword[0] === '~') {
@@ -1334,7 +1334,7 @@ body
 
 
 .mx-menu-ghost-host
-  z-index: 4000!important
+  z-index: 5000!important
 .mx-context-menu
   background-color: var(--el-fill-color-extra-light)!important
   .mx-context-menu-item:hover

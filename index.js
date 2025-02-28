@@ -19,7 +19,7 @@ const { prepareMangaModel, prepareMetadataModel } = require('./modules/database'
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
 const { STORE_PATH, isPortable, TEMP_PATH, COVER_PATH, VIEWER_PATH, prepareSetting, prepareCollectionList, preparePath } = require('./modules/init_folder_setting.js')
-const { findSameFile } = require('./fileLoader/folder.js');
+const { findSameFile } = require('./fileLoader/folder.js')
 
 preparePath()
 let setting = prepareSetting()
@@ -742,8 +742,14 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
 })
 
 ipcMain.handle('export-database', async (event, folder) => {
-  await fs.promises.copyFile(path.join(STORE_PATH, 'collectionList.json'), path.join(folder, 'collectionList.json'))
-  await fs.promises.copyFile(metadataSqliteFile, path.join(folder, 'metadata.sqlite'))
+  if (folder !== STORE_PATH && folder !== setting.metadataPath) {
+    await fs.promises.copyFile(path.join(STORE_PATH, 'collectionList.json'), path.join(folder, 'collectionList.json'))
+    await fs.promises.copyFile(metadataSqliteFile, path.join(folder, 'metadata.sqlite'))
+    return true
+  } else {
+    sendMessageToWebContents('Export failed because the target folder is the same as the source folder')
+    return false
+  }
 })
 
 ipcMain.handle('import-database', async (event, arg) => {

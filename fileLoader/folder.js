@@ -4,7 +4,7 @@ const { nanoid } = require('nanoid')
 const { readdir, stat } = require('fs/promises')
 const { shell } = require('electron')
 const fs = require('fs')
-const { Op } = require("sequelize");
+const { Op } = require("sequelize")
 
 const dirSize = async dir => {
   const files = await readdir(dir, { withFileTypes: true })

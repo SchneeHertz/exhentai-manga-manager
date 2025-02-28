@@ -74,21 +74,22 @@ const acceleratorInfo = [
 
 const insertLocalReadRecord = (bookId) => {
   const maxRecentRead = 100
-  let recentRead =JSON.parse(localStorage.getItem('recentRead') || '[]')
-  const recordMap = new Map(recentRead.map(record => [record.id, record]));
-  recordMap.delete(bookId);
-  recordMap.set(bookId, { id: bookId, read_time: Math.floor(Date.now() / 1000) });
-  recentRead = Array.from(recordMap.values());
+  let recentRead = JSON.parse(localStorage.getItem('recentRead') || '[]')
+  const recordMap = new Map(recentRead.map(record => [record.id, record]))
+  recordMap.delete(bookId)
+  recordMap.set(bookId, { id: bookId, read_time: Math.floor(Date.now() / 1000) })
+  recentRead = Array.from(recordMap.values())
   if (recentRead.length > maxRecentRead) {
-        recentRead = recentRead.slice(-maxRecentRead); // Keep last 100
-    }
+    recentRead = recentRead.slice(-maxRecentRead) // Keep last 100
+  }
   localStorage.setItem('recentRead', JSON.stringify(recentRead))
 }
 
 const fetchRecentReads = () => {
   const readHist = JSON.parse(localStorage.getItem('recentRead') || '[]')
-  return  readHist.map(record => record.id).reverse()
+  return readHist.map(record => record.id).reverse()
 }
+
 export {
   getWidth,
   acceleratorInfo,

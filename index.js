@@ -267,8 +267,10 @@ ipcMain.handle('load-book-list', async (event, scan) => {
             // this is necessary otherwise it will be deleted in the next step
             foundPrevBook.exist = true
             // update the Mangas table in database.sqlite
+            const newCoverPath = path.join(COVER_PATH, path.basename(foundPrevBook.coverPath))
+            foundPrevBook.coverPath = newCoverPath
             await Manga.update(
-              { filepath: filepath, coverPath: path.join(COVER_PATH, path.basename(existingManga.coverPath)) },
+              { filepath: filepath, coverPath: newCoverPath },
               { where: { id: existingManga.id } }
             )
           } else {
@@ -298,8 +300,15 @@ ipcMain.handle('load-book-list', async (event, scan) => {
           }
         } else {
           foundData.exist = true
-          if (isPortable) await Manga.update({ coverPath: path.join(COVER_PATH, path.basename(foundData.coverPath)) }, { where: { id: foundData.id } })
+          if (isPortable) {
+            const newCoverPath = path.join(COVER_PATH, path.basename(foundData.coverPath))
+            if (foundData.coverPath !== newCoverPath) {
+              foundData.coverPath = newCoverPath
+              await Manga.update({ coverPath: newCoverPath }, { where: { id: foundData.id } })
+            }
+          }
         }
+        if (i === 0) setProgressBar(0.05)
         if ((i + 1) % 50 === 0) {
           setProgressBar(i / listLength)
           await clearFolder(TEMP_PATH)

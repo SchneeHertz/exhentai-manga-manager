@@ -576,6 +576,8 @@ const groupTriggerHiddenBook = async (val) => {
 defineExpose({
   selectCollection,
   selectBookList,
+  editCollectionView,
+  handleSelectCollectionChange,
   enterEditCollectionView,
   addCollection,
   editCollection,

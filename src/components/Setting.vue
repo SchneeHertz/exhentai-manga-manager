@@ -688,7 +688,6 @@ const importDatabase = async () => {
   const collectionListPath = await ipcRenderer.invoke('select-file', t('c.selectCollectionList'), [{name: 'JSON', extensions: ['json']}])
   const metadataSqlitePath = await ipcRenderer.invoke('select-file', t('c.selectMetadataSqlite'), [{name: 'SQLite', extensions: ['sqlite']}])
   await ipcRenderer.invoke('import-database', {collectionListPath, metadataSqlitePath})
-  printMessage('success', t('c.importMessage'))
 }
 
 const importMetadataFromSqlite = async () => {

@@ -1163,7 +1163,7 @@ export default defineComponent({
     editCurrentCollection () {
       this.drawerVisibleCollection = false
       this.$refs.EditViewRef.editCollectionView = true
-      this.handleSelectCollectionChange(this.$refs.EditViewRef.selectCollection)
+      this.$refs.EditViewRef.handleSelectCollectionChange(this.$refs.EditViewRef.selectCollection)
     },
     previewManga (book) {
       this.$refs.InternalViewerRef.showThumbnail = true

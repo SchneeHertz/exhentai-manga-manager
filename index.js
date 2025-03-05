@@ -763,11 +763,15 @@ ipcMain.handle('export-database', async (event, folder) => {
 
 ipcMain.handle('import-database', async (event, arg) => {
   const { collectionListPath, metadataSqlitePath } = arg
-  await Metadata.sequelize.close()
-  await fs.promises.copyFile(collectionListPath, path.join(STORE_PATH, 'collectionList.json'))
-  await fs.promises.copyFile(metadataSqlitePath, metadataSqliteFile)
-  app.relaunch()
-  app.exit(0)
+  if (collectionListPath && metadataSqlitePath) {
+    await Metadata.sequelize.close()
+    await fs.promises.copyFile(collectionListPath, path.join(STORE_PATH, 'collectionList.json'))
+    await fs.promises.copyFile(metadataSqlitePath, metadataSqliteFile)
+    app.relaunch()
+    app.exit(0)
+  } else {
+    sendMessageToWebContents('Import failed because the source folder is empty')
+  }
 })
 
 ipcMain.handle('import-sqlite', async (event, bookList) => {

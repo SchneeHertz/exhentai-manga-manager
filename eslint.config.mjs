@@ -11,7 +11,7 @@ export default [
     rules: {
       'no-const-assign': 'error',
       'vue/multi-word-component-names': ['error', {
-        'ignores': ['Setting', 'Graph']
+        'ignores': ['Setting']
       }]
     }
   },

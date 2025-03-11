@@ -6,6 +6,11 @@
       <el-col :span="12" class="graph-frame"><canvas id="graph-mtime"></canvas></el-col>
       <el-col :span="24" class="graph-frame"><canvas id="graph-tag-count"></canvas></el-col>
     </el-row>
+    <TagList
+      ref="tagListRef"
+      :title="tagListTitle"
+      @search="handleSearch"
+    />
   </el-dialog>
 </template>
 
@@ -13,17 +18,26 @@
 import { ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Chart from 'chart.js/auto'
+import TagList from './TagList.vue'
 
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
-const { setting, resolvedTranslation, displayBookList } = storeToRefs(appStore)
+const { setting, resolvedTranslation } = storeToRefs(appStore)
 
 const { t } = useI18n()
 
 const emit = defineEmits(['search'])
 
 const dialogVisibleGraph = ref(false)
+const tagListRef = ref(null)
+const tagListTitle = ref('')
+
+// 处理搜索事件
+const handleSearch = (query) => {
+  emit('search', query)
+  dialogVisibleGraph.value = false
+}
 
 const resolveTags = (tags) => {
   if (setting.value.showTranslation) return tags.map(tag => resolvedTranslation.value[tag]?.name || tag)
@@ -33,12 +47,9 @@ const resolveTags = (tags) => {
 const displayTagGraph = async () => {
   dialogVisibleGraph.value = true
   await nextTick()
-  const bookInfos = displayBookList.value.filter(book => !book.folderHide && !book.hiddenBook).map(book => ({
-    artists: book?.tags?.artist ? [...book.tags.artist] : [],
-    male: book?.tags?.male ? [...book.tags.male] : [],
-    female: book?.tags.female ? [...book.tags.female] : [],
-    mtime: `${new Date(book.mtime).getFullYear()}-${(new Date(book.mtime).getMonth() + 1).toString().padStart(2, 0)}`,
-  }))
+
+  // 使用TagList组件获取处理后的书籍信息
+  const bookInfos = tagListRef.value.getBookInfos()
 
   const artists = _(bookInfos.map(book => book.artists)).flatten().countBy().toPairs().sortBy(p => -p[1]).slice(0, 20).value()
   const chartArtist = new Chart(
@@ -60,6 +71,14 @@ const displayTagGraph = async () => {
           emit('search', `a:"${artist}"$`)
           dialogVisibleGraph.value = false
         },
+        plugins: {
+          legend: {
+            onClick: () => {
+              tagListTitle.value = t('c.artist')
+              tagListRef.value.showArtistTags()
+            }
+          }
+        }
       },
       data: {
         labels: resolveTags(artists.map(p => p[0])),
@@ -141,6 +160,14 @@ const displayTagGraph = async () => {
           }
           dialogVisibleGraph.value = false
         },
+        plugins: {
+          legend: {
+            onClick: () => {
+              tagListTitle.value = t('m.tag')
+              tagListRef.value.showMixedTags()
+            }
+          }
+        }
       },
       data: {
         labels: resolveTags(tagData.map(p => p[0])),

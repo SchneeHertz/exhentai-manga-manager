@@ -99,12 +99,11 @@
         </el-row>
       </el-col>
     </el-row>
-    <el-row :gutter="20" class="book-tag-area" v-if="!editTagView && !editCollectionView && !setting.disableRandomTag">
-      <el-space size="small" id="random-tags">
-        <el-button size="small" plain :icon="MdRefresh" @click="reloadRandomTags"></el-button>
-        <el-button v-for="tag in randomTags" :key="tag.value" size="small" plain @click="handleSearchString(tag.value)">{{ tag.label }}</el-button>
-      </el-space>
-    </el-row>
+    <RandomTags
+      ref="randomTagsRef"
+      v-if="!editTagView && !editCollectionView && !setting.disableRandomTag"
+      @search="handleSearchString"
+    />
     <el-row :gutter="20" class="book-card-area">
       <el-col :span="24" v-if="!editTagView && !editCollectionView" class="book-card-list" :style="{height: setting.disableRandomTag ? 'calc(100vh - 96px)' : 'calc(100vh - 134px)'}">
         <div
@@ -210,7 +209,7 @@
       @rescan-book="(book) => $refs.BookDetailDialogRef.rescanBook(book)"
     />
     <FolderTree ref="FolderTreeRef" @chunk-list="chunkList"/>
-    <Graph ref="TagGraphRef" @search="handleSearchString"/>
+    <TagGraph ref="TagGraphRef" @search="handleSearchString"/>
     <SearchDialog ref="SearchDialogRef"/>
     <Setting ref="SettingRef" @load-book-list="loadBookList" @load-collection-list="loadCollectionList"/>
   </el-config-provider>
@@ -226,7 +225,7 @@ import { TreeViewAlt, CicsSystemGroup, TagGroup } from '@vicons/carbon'
 import { getWidth, fetchRecentReads } from './utils.js'
 
 import Setting from './components/Setting.vue'
-import Graph from './components/Graph.vue'
+import TagGraph from './components/TagGraph.vue'
 import InternalViewer from './components/InternalViewer.vue'
 import SearchDialog from './components/SearchDialog.vue'
 import BookDetailDialog from './components/BookDetailDialog.vue'
@@ -234,6 +233,7 @@ import FolderTree from './components/FolderTree.vue'
 import BookCard from './components/BookCard.vue'
 import BookCardCollection from './components/BookCardCollection.vue'
 import EditView from './components/EditView.vue'
+import RandomTags from './components/RandomTags.vue'
 
 import { mapWritableState, mapActions } from 'pinia'
 import { useAppStore } from './pinia.js'
@@ -241,7 +241,7 @@ import { useAppStore } from './pinia.js'
 export default defineComponent({
   components: {
     Setting,
-    Graph,
+    TagGraph,
     InternalViewer,
     SearchDialog,
     BookDetailDialog,
@@ -249,6 +249,7 @@ export default defineComponent({
     BookCard,
     BookCardCollection,
     EditView,
+    RandomTags,
   },
   setup () {
     return {
@@ -377,9 +378,6 @@ export default defineComponent({
   watch: {
     bookList () {
       this.handleSortChange(this.sortValue, this.bookList)
-    },
-    tagList () {
-      this.reloadRandomTags()
     },
   },
   methods: {
@@ -986,9 +984,6 @@ export default defineComponent({
       }
       this.searchBook()
     },
-    reloadRandomTags () {
-      this.randomTags = _.sampleSize(this.tagList, 24)
-    },
     // home main
     handleClickCover (book) {
       switch (this.setting.directEnter) {
@@ -1297,13 +1292,6 @@ body
     width: 110px
     .el-select__wrapper
       text-align: center
-
-.book-tag-area
-  width: 100%
-  margin-top: 14px
-  #random-tags
-    margin: 0 16px
-    overflow-x: hidden
 
 .book-card-area
   overflow-x: auto

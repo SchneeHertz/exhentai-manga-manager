@@ -205,7 +205,10 @@ export const useAppStore = defineStore('appStore', {
           fileNameWithoutExtension = fileNameWithExtension.split('.').slice(0, -1).join('.')
         }
         if (this.setting.trimTitleRegExp) {
-          return fileNameWithoutExtension.replace(new RegExp(this.setting.trimTitleRegExp, 'g'), '')
+          fileNameWithoutExtension = fileNameWithoutExtension.replace(new RegExp(this.setting.trimTitleRegExp, 'g'), '')
+        }
+        if (this.setting.searchKeySuffix) {
+          fileNameWithoutExtension = fileNameWithoutExtension + ' ' + this.setting.searchKeySuffix
         }
       } catch (e) {
         console.log(e)

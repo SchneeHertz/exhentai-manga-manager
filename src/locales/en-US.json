@@ -123,6 +123,8 @@
     "excludeFileInfo": "Regular expression for excluding file paths, when matching part of the file path, exclude the file.",
     "trimTitleRegExp": "Trim Title RegExp",
     "trimTitleRegExpInfo": "Regular expression for trimming titles, matches the part that needs to be trimmed.",
+    "searchKeySuffix": "Search Keyword Suffix",
+    "searchKeySuffixInfo": "Content automatically added after keywords when searching metadata, e.g. language:\"english\"$",
     "folderTreeWidth": "Folder Tree Width",
     "folderTreeWidthInfo": "Default is 20%, accept valid css values, like 400px, 30%, 25vw etc.",
     "customCss": "Custom CSS",

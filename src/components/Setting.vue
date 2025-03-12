@@ -267,6 +267,13 @@
             </div>
           </el-col>
           <el-col :span="24">
+            <div class="setting-line">
+              <el-input v-model="setting.searchKeySuffix" :placeholder="$t('m.searchKeySuffixInfo')" @change="saveSetting">
+                <template #prepend><span class="setting-label">{{$t('m.searchKeySuffix')}}</span></template>
+              </el-input>
+            </div>
+          </el-col>
+          <el-col :span="24">
             <div class="setting-line regexp">
               <el-input v-model="setting.excludeFile" :placeholder="$t('m.excludeFileInfo')" @change="saveSetting">
                 <template #prepend><span class="setting-label">{{$t('m.excludeFile')}}</span></template>
@@ -809,4 +816,10 @@ defineExpose({
   position: absolute
   right: 40px
   top: 10px
+
+.setting-tabs
+  .el-tabs__content
+    max-height: 70vh
+    overflow-y: auto
+    padding-right: 10px
 </style>

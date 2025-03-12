@@ -6,15 +6,21 @@
     destroy-on-close
   >
     <div class="tag-list-container">
-      <el-tag
+      <div
         v-for="(item, index) in items"
         :key="index"
-        class="tag-item"
+        class="tag-card"
         @click="handleTagClick(item)"
       >
-        {{ formatTagText(item) }}
-        <span class="tag-count">({{ item.count }})</span>
-      </el-tag>
+        <div class="tag-image">
+          <img v-if="findCoverForTag(item)" :src="findCoverForTag(item)" alt="cover" />
+          <el-empty v-else description="无封面" :image-size="80" />
+        </div>
+        <div class="tag-info">
+          <div class="tag-name">{{ formatTagText(item) }}</div>
+          <div class="tag-count">({{ item.count }})</div>
+        </div>
+      </div>
     </div>
   </el-dialog>
 </template>
@@ -52,6 +58,23 @@ const formatTagText = (item) => {
   }
 
   return displayName
+}
+
+// 根据标签查找一本包含该标签的书籍封面
+const findCoverForTag = (item) => {
+  const books = displayBookList.value.filter(book => {
+    if (item.type === 'artist' && book.tags?.artist) {
+      return book.tags.artist.includes(item.name)
+    } else if (item.type === 'male' && book.tags?.male) {
+      return book.tags.male.includes(item.name)
+    } else if (item.type === 'female' && book.tags?.female) {
+      return book.tags.female.includes(item.name)
+    }
+    return false
+  })
+
+  // 返回找到的第一本书的封面，如果没有找到则返回null
+  return books.length > 0 && books[0].coverPath ? books[0].coverPath : null
 }
 
 // 收集所有标签数据
@@ -149,18 +172,49 @@ defineExpose({
 
 <style lang="stylus">
 .tag-list-container
-  max-height 60vh
-  overflow-y auto
-  display flex
-  flex-wrap wrap
-  gap 10px
+  max-height: 60vh
+  overflow-y: auto
+  display: flex
+  flex-wrap: wrap
+  gap: 10px
 
-.tag-item
-  margin 5px
-  cursor pointer
+.tag-card
+  width: 120px
+  margin: 10px
+  cursor: pointer
+  border-radius: 5px
+  overflow: hidden
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+  border: 1px solid var(--el-border-color)
 
-  .tag-count
-    margin-left 3px
-    font-size 0.9em
-    opacity 0.8
+  .tag-image
+    width: 100%
+    height: 160px
+    overflow: hidden
+    display: flex
+    align-items: center
+    justify-content: center
+
+    img
+      width: 100%
+      height: 100%
+      object-fit: cover
+      object-position: center
+
+    .el-empty
+      padding: 0
+
+  .tag-info
+    padding: 8px
+
+    .tag-name
+      font-size: 12px
+      white-space: nowrap
+      overflow: hidden
+      text-overflow: ellipsis
+
+    .tag-count
+      font-size: 11px
+      color: var(--el-text-color-regular)
+      margin-top: 3px
 </style>

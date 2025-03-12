@@ -163,7 +163,9 @@
     "collectTag": "标签收藏",
     "showCollectTag": "显示收藏标签",
     "tagColor": "标签颜色",
-    "readCount": "阅读次数"
+    "readCount": "阅读次数",
+    "showSidebar": "显示侧边栏",
+    "hideSidebar": "隐藏侧边栏"
   },
   "c": {
     "selectCollectionList": "选择collectionList.json",

@@ -510,6 +510,7 @@ export default defineComponent({
         }
         if (event.key === '=') {
           this.$refs.InternalViewerRef.showThumbnail = !this.$refs.InternalViewerRef.showThumbnail
+          this.$refs.InternalViewerRef.switchThumbnail(this.$refs.InternalViewerRef.showThumbnail)
         }
       }
       if (this.currentUI() === 'bookdetail') {
@@ -597,16 +598,6 @@ export default defineComponent({
           electronFunction['set-zoom-level'](level - 1)
         } else {
           electronFunction['set-zoom-level'](level + 1)
-        }
-      } else if (this.currentUI() === 'viewer-content') {
-        if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
-          const element = document.querySelector('.viewer-drawer .el-drawer__body')
-          if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
-            this.$refs.InternalViewerRef.currentImageIndex += 1
-            element.scrollTop = 0
-          } else if (event.deltaY < 0 && element.scrollTop <= 0) {
-            this.$refs.InternalViewerRef.currentImageIndex += -1
-          }
         }
       }
     },

@@ -163,7 +163,9 @@
     "collectTag": "Collect Tag",
     "showCollectTag": "Show Collect Tag",
     "tagColor": "Tag Color",
-    "readCount": "Reading Count"
+    "readCount": "Reading Count",
+    "showSidebar": "Show Sidebar",
+    "hideSidebar": "Hide Sidebar"
   },
   "c": {
     "selectCollectionList": "Select collectionList.json",

@@ -8,150 +8,190 @@
     class="viewer-drawer"
     modal-class="viewer-drawer-modal"
   >
-    <div class="drawer-viewer-body"
-      ref="drawerViewerBody"
-    >
-      <div class="drawer-image-content"
-        v-if="!showThumbnail"
-        v-loading="viewerImageList.length === 0"
-        element-loading-text="Loading"
-        element-loading-background="transparent"
-        @click="handleViewerAreaClick"
+    <div class="viewer-container">
+      <div class="drawer-viewer-side"
+        v-show="showViewerSide"
+        @wheel.stop
+        ref="sidebarRef"
       >
-        <div v-if="imageStyleType === 'scroll'">
+        <div
+          class="sidebar-thumbnail-content"
+          v-loading="viewerImageList.length === 0"
+          element-loading-text="Loading"
+          element-loading-background="transparent"
+        >
           <div
-            v-for="(image, index) in viewerImageList"
+            v-for="(image, index) in thumbnailList"
             :key="image.id"
-            class="image-frame"
+            class="sidebar-thumbnail-item"
+            :class="{'sidebar-thumbnail-active': isCurrentImage(image.id)}"
+            :ref="el => { if(isCurrentImage(image.id)) currentThumbnailRef = el }"
           >
-            <div class="viewer-image-frame viewer-image-frame-scroll" :id="image.id" :style="returnImageStyle(image)">
-              <img
-                :src="`${image.filepath}?id=${image.id}`"
-                class="viewer-image"
-                :style="{height: returnImageStyle(image).height}"
-                @contextmenu="onMangaImageContextMenu($event, image)"
-              />
-              <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
-            </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
-          </div>
-        </div>
-        <div v-else-if="imageStyleType === 'single'" class="image-frame-outside">
-          <div class="image-frame">
-            <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
-              <img
-                :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
-                class="viewer-image"
-                :style="{height: returnImageStyle(viewerImageList[currentImageIndex])?.height}"
-                @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex])"
-              />
-            </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
-            <img
-              :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
-              class="viewer-image-preload"
-            />
-            <img
-              :src="`${viewerImageList[currentImageIndex + 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
-              class="viewer-image-preload"
-            />
-          </div>
-        </div>
-        <div v-else-if="imageStyleType === 'double'" class="image-frame-outside">
-          <div class="image-frame">
-            <div class="viewer-image-frame viewer-image-frame-double">
-              <img
-                v-for="image in viewerImageListDouble[currentImageIndex]?.page"
-                :key="image.id"
-                :src="`${image.filepath}?id=${image.id}`"
-                class="viewer-image"
-                :style="{height: returnImageStyle(image).height}"
-                @contextmenu="onMangaImageContextMenu($event, image)"
-              />
-            </div>
-            <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page" :key="image.id">
-              <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
-            </div>
-            <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id">
-              <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
-            </div>
-            <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
-          </div>
-        </div>
-      </div>
-      <div class="drawer-thumbnail-content"
-        v-if="showThumbnail"
-        v-loading="viewerImageList.length === 0"
-        element-loading-text="Loading"
-        element-loading-background="transparent"
-      >
-        <!-- eslint-disable-next-line vue/valid-v-for -->
-        <el-space wrap>
-          <div v-for="(image, index) in thumbnailList" :key="image.id">
             <img
               :src="`${image.thumbnailPath}?id=${image.id}`"
-              class="viewer-thumbnail"
-              :style="{width: thumbnailWidth}"
+              class="sidebar-thumbnail"
               @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image)"
             />
-            <div class="viewer-thunmnail-page">{{index + 1}} of {{viewerImageList.length}}</div>
+            <div class="sidebar-thunmnail-page">{{index + 1}} / {{viewerImageList.length}}</div>
           </div>
-        </el-space>
+        </div>
       </div>
-      <el-button class="viewer-close-button" :link="true" text :icon="Close" size="large" @click="drawerVisibleViewer = false"></el-button>
-      <div class="viewer-mode-setting">
-        <el-select
-          v-model="showThumbnail"
-          size="small"
-          @change="switchThumbnail"
-          class="viewer-thumbnail-select"
+      <div class="drawer-viewer-body"
+        ref="drawerViewerBody"
+        @wheel.stop="handleBodyWheel"
+      >
+        <div class="drawer-image-content"
+          v-if="!showThumbnail"
+          v-loading="viewerImageList.length === 0"
+          element-loading-text="Loading"
+          element-loading-background="transparent"
+          @click="handleViewerAreaClick"
         >
-          <el-option :value="true" :label="$t('m.thumbnail')" />
-          <el-option :value="false" :label="$t('m.content')" />
-        </el-select>
-        <el-select
-          v-model="imageStyleType"
-          size="small"
-          @focus="getCurrentImageId"
-          @change="saveImageStyleType"
-          class="viewer-mode"
-          v-show="showThumbnail === false"
+          <div v-if="imageStyleType === 'scroll'">
+            <div
+              v-for="(image, index) in viewerImageList"
+              :key="image.id"
+              class="image-frame"
+            >
+              <div class="viewer-image-frame viewer-image-frame-scroll" :id="image.id" :style="returnImageStyle(image)">
+                <img
+                  :src="`${image.filepath}?id=${image.id}`"
+                  class="viewer-image"
+                  :style="{height: returnImageStyle(image).height}"
+                  @contextmenu="onMangaImageContextMenu($event, image)"
+                />
+                <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
+              </div>
+              <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
+            </div>
+          </div>
+          <div v-else-if="imageStyleType === 'single'" class="image-frame-outside">
+            <div class="image-frame">
+              <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
+                <img
+                  :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
+                  class="viewer-image"
+                  :style="{height: returnImageStyle(viewerImageList[currentImageIndex])?.height}"
+                  @contextmenu="onMangaImageContextMenu($event, viewerImageList[currentImageIndex])"
+                />
+              </div>
+              <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
+              <img
+                :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
+                class="viewer-image-preload"
+              />
+              <img
+                :src="`${viewerImageList[currentImageIndex + 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
+                class="viewer-image-preload"
+              />
+            </div>
+          </div>
+          <div v-else-if="imageStyleType === 'double'" class="image-frame-outside">
+            <div class="image-frame">
+              <div class="viewer-image-frame viewer-image-frame-double">
+                <img
+                  v-for="image in viewerImageListDouble[currentImageIndex]?.page"
+                  :key="image.id"
+                  :src="`${image.filepath}?id=${image.id}`"
+                  class="viewer-image"
+                  :style="{height: returnImageStyle(image).height}"
+                  @contextmenu="onMangaImageContextMenu($event, image)"
+                />
+              </div>
+              <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page" :key="image.id">
+                <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
+              </div>
+              <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id">
+                <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
+              </div>
+              <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
+            </div>
+          </div>
+        </div>
+        <div class="drawer-thumbnail-content"
+          v-if="showThumbnail"
+          v-loading="viewerImageList.length === 0"
+          element-loading-text="Loading"
+          element-loading-background="transparent"
         >
-          <el-option value="scroll" :label="$t('m.scrolling')" />
-          <el-option value="single" :label="$t('m.singlePage')" />
-          <el-option value="double" :label="$t('m.doublePage')" />
-        </el-select>
-        <el-select
-          v-model="imageStyleFit"
-          size="small"
-          @change="saveImageStyleFit"
-          class="viewer-image-fit"
-          v-show="imageStyleType !== 'scroll' && showThumbnail === false"
-        >
-          <el-option value="width" :label="$t('m.fitWidth')" />
-          <el-option value="height" :label="$t('m.fitHeight')" />
-          <el-option value="window" :label="$t('m.fitWindow')" />
-        </el-select>
-        <el-select
-          v-model="viewerImageWidth"
-          size="small"
-          class="viewer-image-width"
-          v-show="imageStyleType === 'scroll' && showThumbnail === false"
-        >
-          <el-option :value="0.5" label="50vw" />
-          <el-option :value="0.75" label="75vw" />
-          <el-option :value="0.9" label="90vw" />
-          <el-option :value="20" label="20%" />
-          <el-option :value="50" label="50%" />
-          <el-option :value="75" label="75%" />
-          <el-option :value="100" label="100%" />
-        </el-select>
-      </div>
-      <div class="next-manga-button">
-        <el-button size="large" type="success" plain @click="$emit('toNextManga', -1)">{{$t('m.previousManga')}}</el-button>
-        <el-button size="large" type="success" plain @click="$emit('toNextMangaRandom')">{{$t('m.nextMangaRandom')}}</el-button>
-        <el-button size="large" type="success" plain @click="$emit('toNextManga', 1)">{{$t('m.nextManga')}}</el-button>
+          <!-- eslint-disable-next-line vue/valid-v-for -->
+          <el-space wrap>
+            <div v-for="(image, index) in thumbnailList" :key="image.id">
+              <img
+                :src="`${image.thumbnailPath}?id=${image.id}`"
+                class="viewer-thumbnail"
+                :style="{width: thumbnailWidth}"
+                @click="handleClickThumbnail(image.id)"
+                @contextmenu="onMangaImageContextMenu($event, image)"
+              />
+              <div class="viewer-thunmnail-page">{{index + 1}} of {{viewerImageList.length}}</div>
+            </div>
+          </el-space>
+        </div>
+        <el-button class="viewer-close-button" :link="true" text :icon="Close" size="large" @click="drawerVisibleViewer = false"></el-button>
+        <div class="viewer-mode-setting">
+          <el-select
+            v-model="showViewerSide"
+            size="small"
+            @change="handleSidebarChange"
+            class="viewer-sidebar-select"
+          >
+            <el-option :value="true" :label="$t('m.showSidebar')" />
+            <el-option :value="false" :label="$t('m.hideSidebar')" />
+          </el-select>
+          <el-select
+            v-model="showThumbnail"
+            size="small"
+            @change="switchThumbnail"
+            class="viewer-thumbnail-select"
+          >
+            <el-option :value="true" :label="$t('m.thumbnail')" />
+            <el-option :value="false" :label="$t('m.content')" />
+          </el-select>
+          <el-select
+            v-model="imageStyleType"
+            size="small"
+            @focus="getCurrentImageId"
+            @change="saveImageStyleType"
+            class="viewer-mode"
+            v-show="showThumbnail === false"
+          >
+            <el-option value="scroll" :label="$t('m.scrolling')" />
+            <el-option value="single" :label="$t('m.singlePage')" />
+            <el-option value="double" :label="$t('m.doublePage')" />
+          </el-select>
+          <el-select
+            v-model="imageStyleFit"
+            size="small"
+            @change="saveImageStyleFit"
+            class="viewer-image-fit"
+            v-show="imageStyleType !== 'scroll' && showThumbnail === false"
+          >
+            <el-option value="width" :label="$t('m.fitWidth')" />
+            <el-option value="height" :label="$t('m.fitHeight')" />
+            <el-option value="window" :label="$t('m.fitWindow')" />
+          </el-select>
+          <el-select
+            v-model="viewerImageWidth"
+            size="small"
+            class="viewer-image-width"
+            v-show="imageStyleType === 'scroll' && showThumbnail === false"
+          >
+            <el-option :value="0.5" label="50vw" />
+            <el-option :value="0.75" label="75vw" />
+            <el-option :value="0.9" label="90vw" />
+            <el-option :value="20" label="20%" />
+            <el-option :value="50" label="50%" />
+            <el-option :value="75" label="75%" />
+            <el-option :value="100" label="100%" />
+          </el-select>
+        </div>
+        <div class="next-manga-button">
+          <el-button size="large" type="success" plain @click="$emit('toNextManga', -1)">{{$t('m.previousManga')}}</el-button>
+          <el-button size="large" type="success" plain @click="$emit('toNextMangaRandom')">{{$t('m.nextMangaRandom')}}</el-button>
+          <el-button size="large" type="success" plain @click="$emit('toNextManga', 1)">{{$t('m.nextManga')}}</el-button>
+        </div>
       </div>
     </div>
   </el-drawer>
@@ -182,6 +222,7 @@ const emit = defineEmits([
 ])
 
 const drawerVisibleViewer = ref(false)
+const showViewerSide = ref(true)
 const showThumbnail = ref(false)
 const viewerImageWidth = ref(0.9)
 watch(viewerImageWidth, () => localStorage.setItem('viewerImageWidth', viewerImageWidth.value))
@@ -240,6 +281,7 @@ onMounted(() => {
   ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
     receiveThumbnailList.value.push(arg)
   })
+  showViewerSide.value = localStorage.getItem('showViewerSide') === 'true'
 })
 
 const drawerHeight = ref('100%')
@@ -274,6 +316,10 @@ const viewManga = (book, viewerHeight = '100%') => {
   .finally(() => {
     loading.close()
   })
+
+  if (localStorage.getItem('showViewerSide') === 'true') {
+    showViewerSide.value = true
+  }
 }
 
 const _currentImageIndex = ref(0)
@@ -302,19 +348,29 @@ const currentImageIndex = computed({
 })
 
 let storeDrawerScrollTop
+let previousSidebarState = null
 const switchThumbnail = (val) => {
   setTimeout(() => document.querySelector('.viewer-close-button').focus(), 500)
   if (imageStyleType.value === 'scroll') {
     if (!val) {
       if (storeDrawerScrollTop) {
         nextTick(() => {
-          document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = storeDrawerScrollTop
+          document.querySelector('.drawer-viewer-body').scrollTop = storeDrawerScrollTop
           storeDrawerScrollTop = undefined
         })
       }
     } else {
-      storeDrawerScrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
+      storeDrawerScrollTop = document.querySelector('.drawer-viewer-body').scrollTop
     }
+  }
+  if (!val) {
+    if (previousSidebarState !== null) {
+      showViewerSide.value = previousSidebarState
+      previousSidebarState = null
+    }
+  } else {
+    previousSidebarState = showViewerSide.value
+    showViewerSide.value = false
   }
 }
 
@@ -492,7 +548,7 @@ const handleClickThumbnail = (id) => {
   if (imageStyleType.value === 'scroll') {
     _.forEach(viewerImageList.value, (image) => {
       if (image.id === id) {
-        nextTick(() => document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = scrollTopValue)
+        nextTick(() => document.querySelector('.drawer-viewer-body').scrollTop = scrollTopValue)
         return false
       }
       // 28 is the height of .viewer-image-page
@@ -526,10 +582,12 @@ const handleViewerAreaClick = (event) => {
       }
       if(event.clientX > innerWidth / 2) {
         currentImageIndex.value += click
-        document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
+        document.querySelector('.drawer-viewer-body').scrollTop = 0
+        scrollCurrentThumbnailIntoView()
       } else {
         currentImageIndex.value += -click
-        document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
+        document.querySelector('.drawer-viewer-body').scrollTop = 0
+        scrollCurrentThumbnailIntoView()
       }
     }
   }
@@ -605,6 +663,114 @@ const onMangaImageContextMenu = (e, image) => {
   })
 }
 
+const handleSidebarChange = (val) => {
+  showViewerSide.value = val
+  localStorage.setItem('showViewerSide', val)
+
+  // 等待DOM更新后重新计算图片尺寸
+  nextTick(() => {
+    if (imageStyleType.value === 'scroll') {
+      const imageFrames = document.querySelectorAll('.viewer-image-frame-scroll')
+      imageFrames.forEach((frame, index) => {
+        const image = viewerImageList.value[index]
+        if (image) {
+          const newStyle = returnImageStyle(image)
+          Object.keys(newStyle).forEach(key => {
+            frame.style[key] = newStyle[key]
+          })
+
+          const imgElement = frame.querySelector('.viewer-image')
+          if (imgElement && newStyle.height) {
+            imgElement.style.height = newStyle.height
+          }
+        }
+      })
+    } else if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
+      // 对于单页或双页模式，通过临时改变currentImageIndex触发重绘
+      _currentImageIndex.value +=1
+      nextTick(() => {
+        _currentImageIndex.value -= 1
+      })
+    }
+  })
+}
+
+// 监听侧边栏显示状态变化
+watch(showViewerSide, () => {
+  nextTick(() => {
+    if (imageStyleType.value === 'scroll') {
+      const imageFrames = document.querySelectorAll('.viewer-image-frame-scroll')
+      imageFrames.forEach((frame, index) => {
+        const image = viewerImageList.value[index]
+        if (image) {
+          const newStyle = returnImageStyle(image)
+          Object.keys(newStyle).forEach(key => {
+            frame.style[key] = newStyle[key]
+          })
+          const imgElement = frame.querySelector('.viewer-image')
+          if (imgElement && newStyle.height) {
+            imgElement.style.height = newStyle.height
+          }
+        }
+      })
+    } else if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
+      _currentImageIndex.value +=1
+      nextTick(() => {
+        _currentImageIndex.value -= 1
+      })
+    }
+  })
+})
+
+// 处理主内容区域的滚轮事件
+const handleBodyWheel = (event) => {
+  if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
+    const element = drawerViewerBody.value
+    if (!element) return
+
+    event.preventDefault()
+
+    if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
+      // 向下滚动到底部时，显示下一张图片
+      currentImageIndex.value += 1
+      element.scrollTop = 0
+      scrollCurrentThumbnailIntoView()
+    } else if (event.deltaY < 0 && element.scrollTop <= 0) {
+      // 向上滚动到顶部时，显示上一张图片
+      currentImageIndex.value -= 1
+      scrollCurrentThumbnailIntoView()
+    }
+  }
+}
+
+const sidebarRef = ref(null)
+const currentThumbnailRef = ref(null)
+
+const isCurrentImage = (id) => {
+  if (imageStyleType.value === 'scroll') {
+    return id === getCurrentImageId()
+  } else if (imageStyleType.value === 'single') {
+    return viewerImageList.value[currentImageIndex.value]?.id === id
+  } else if (imageStyleType.value === 'double') {
+    return viewerImageListDouble.value[currentImageIndex.value]?.page.some(page => page.id === id)
+  }
+  return false
+}
+
+// 监听当前图片索引变化，滚动缩略图到视图
+watch(currentImageIndex, () => {
+  scrollCurrentThumbnailIntoView()
+})
+
+// 滚动缩略图到可视区域
+const scrollCurrentThumbnailIntoView = () => {
+  nextTick(() => {
+    if (showViewerSide.value && currentThumbnailRef.value && sidebarRef.value) {
+      currentThumbnailRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  })
+}
+
 defineExpose({
   drawerVisibleViewer,
   showThumbnail,
@@ -614,6 +780,7 @@ defineExpose({
   imageStyleType,
   insertEmptyPage,
   insertEmptyPageIndex,
+  switchThumbnail,
   saveReadingProgress,
   viewManga,
   handleStopReadManga,
@@ -624,12 +791,72 @@ defineExpose({
 .viewer-drawer
   .el-drawer__body
     padding: 0
-    display: flex
-    justify-content: center
-    align-items: center
-    flex-wrap: wrap
+    overflow: hidden // 防止整个抽屉出现滚动条
+
 .viewer-drawer-modal
   background-color: var(--el-mask-color-extra-light)
+
+.viewer-container
+  display: flex
+  width: 100%
+  height: 100%
+
+.drawer-viewer-side
+  width: 220px
+  height: 100%
+  overflow-y: auto
+  border-right: 1px solid var(--el-border-color-lighter)
+  padding: 10px
+  box-sizing: border-box
+  background-color: var(--el-fill-color-light)
+  flex-shrink: 0 // 防止侧边栏被压缩
+  z-index: 10 // 确保侧边栏在上层，可以正确捕获事件
+
+  // 侧边栏缩略图样式
+  .sidebar-thumbnail-content
+    display: flex
+    flex-direction: column
+    align-items: center
+    gap: 10px
+
+  .sidebar-thumbnail-item
+    display: flex
+    flex-direction: column
+    align-items: center
+    cursor: pointer
+
+    &.sidebar-thumbnail-active
+      .sidebar-thumbnail
+        border: 2px solid var(--el-color-primary)
+        box-shadow: 0 0 5px var(--el-color-primary-light-5)
+
+  .sidebar-thumbnail
+    width: 100%
+    max-width: 200px
+    object-fit: contain
+    border-radius: 4px
+    border: 2px solid transparent
+    transition: all 0.2s
+
+    &:hover
+      border-color: var(--el-color-primary)
+
+  .sidebar-thunmnail-page
+    margin-top: 3px
+    font-size: 11px
+    color: var(--el-text-color-secondary)
+
+.drawer-viewer-body
+  flex: 1
+  height: 100%
+  overflow-y: auto // 添加独立滚动
+  transition: width 0.3s
+
+  .image-frame-outside
+    min-height: 100%
+    display: flex
+    justify-content: center
+
 .drawer-viewer-body
   width: 100%
   height: 100%
@@ -656,9 +883,10 @@ defineExpose({
   top: 8px
   left: 8px
   transition-delay: 0.2s
+  z-index: 11
 .viewer-mode-setting:hover
   opacity: 1
-.viewer-mode, .viewer-image-fit, .viewer-thumbnail-select, .viewer-image-width
+.viewer-mode, .viewer-image-fit, .viewer-thumbnail-select, .viewer-image-width, .viewer-sidebar-select
   width: 100px
   margin: 4px 8px
 

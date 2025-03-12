@@ -163,7 +163,9 @@
     "collectTag": "標籤收藏",
     "showCollectTag": "顯示收藏標籤",
     "tagColor": "標籤顏色",
-    "readCount": "閱讀次數"
+    "readCount": "閱讀次數",
+    "showSidebar": "顯示側邊欄",
+    "hideSidebar": "隱藏側邊欄"
   },
   "c": {
     "selectCollectionList": "選擇collectionList.json",

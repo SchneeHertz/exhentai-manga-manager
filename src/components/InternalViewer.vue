@@ -10,7 +10,7 @@
   >
     <div class="viewer-container">
       <div class="drawer-viewer-side"
-        v-show="showViewerSide"
+        v-show="showViewerSide && !showThumbnail"
         @wheel.stop
         ref="sidebarRef"
       >
@@ -348,7 +348,6 @@ const currentImageIndex = computed({
 })
 
 let storeDrawerScrollTop
-let previousSidebarState = null
 const switchThumbnail = (val) => {
   setTimeout(() => document.querySelector('.viewer-close-button').focus(), 500)
   if (imageStyleType.value === 'scroll') {
@@ -362,15 +361,6 @@ const switchThumbnail = (val) => {
     } else {
       storeDrawerScrollTop = document.querySelector('.drawer-viewer-body').scrollTop
     }
-  }
-  if (!val) {
-    if (previousSidebarState !== null) {
-      showViewerSide.value = previousSidebarState
-      previousSidebarState = null
-    }
-  } else {
-    previousSidebarState = showViewerSide.value
-    showViewerSide.value = false
   }
 }
 

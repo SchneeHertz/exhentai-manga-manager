@@ -510,7 +510,6 @@ export default defineComponent({
         }
         if (event.key === '=') {
           this.$refs.InternalViewerRef.showThumbnail = !this.$refs.InternalViewerRef.showThumbnail
-          this.$refs.InternalViewerRef.switchThumbnail(this.$refs.InternalViewerRef.showThumbnail)
         }
       }
       if (this.currentUI() === 'bookdetail') {

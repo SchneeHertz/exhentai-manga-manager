@@ -728,8 +728,6 @@ const handleBodyWheel = (event) => {
     const element = drawerViewerBody.value
     if (!element) return
 
-    event.preventDefault()
-
     if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
       // 向下滚动到底部时，显示下一张图片
       currentImageIndex.value += 1

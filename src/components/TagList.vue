@@ -6,27 +6,28 @@
     destroy-on-close
   >
     <div class="tag-list-container">
-      <div
-        v-for="(item, index) in items"
-        :key="index"
-        class="tag-card"
-        @click="handleTagClick(item)"
-      >
-        <div class="tag-image">
-          <img v-if="findCoverForTag(item)" :src="findCoverForTag(item)" alt="cover" />
-          <el-empty v-else description="无封面" :image-size="80" />
+      <el-skeleton v-if="loading" :rows="10" animated />
+      <template v-else>
+        <div v-for="(group, letter) in groupedItems" :key="letter" class="letter-group">
+          <div class="letter-header">{{ letter }}</div>
+          <div class="tag-cloud">
+            <el-tag
+              v-for="(item, index) in group"
+              :key="`tag-${letter}-${index}`"
+              class="tag-item"
+              @click="handleTagClick(item)"
+            >
+              {{ formatTagText(item) }} ({{ item.count }})
+            </el-tag>
+          </div>
         </div>
-        <div class="tag-info">
-          <div class="tag-name">{{ formatTagText(item) }}</div>
-          <div class="tag-count">({{ item.count }})</div>
-        </div>
-      </div>
+      </template>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
@@ -44,6 +45,9 @@ const emit = defineEmits(['search'])
 
 const dialogVisible = ref(false)
 const items = ref([])
+const loading = ref(false)
+const isArtistMode = ref(false)
+const groupedItems = ref({})
 
 // 根据标签类型添加前缀
 const formatTagText = (item) => {
@@ -60,40 +64,29 @@ const formatTagText = (item) => {
   return displayName
 }
 
-// 根据标签查找一本包含该标签的书籍封面
-const findCoverForTag = (item) => {
-  const books = displayBookList.value.filter(book => {
-    if (item.type === 'artist' && book.tags?.artist) {
-      return book.tags.artist.includes(item.name)
-    } else if (item.type === 'male' && book.tags?.male) {
-      return book.tags.male.includes(item.name)
-    } else if (item.type === 'female' && book.tags?.female) {
-      return book.tags.female.includes(item.name)
-    }
-    return false
-  })
 
-  // 返回找到的第一本书的封面，如果没有找到则返回null
-  return books.length > 0 && books[0].coverPath ? books[0].coverPath : null
-}
-
-// 收集所有标签数据
-const collectAllTags = (bookList) => {
-  const filteredBooks = bookList.filter(book => !book.folderHide && !book.hiddenBook)
+const getBookInfos = () => {
+  const filteredBooks = displayBookList.value.filter(book => !book.folderHide && !book.hiddenBook)
 
   const bookInfos = filteredBooks.map(book => ({
     artists: book?.tags?.artist ? [...book.tags.artist] : [],
     male: book?.tags?.male ? [...book.tags.male] : [],
     female: book?.tags?.female ? [...book.tags.female] : [],
-    mtime: `${new Date(book.mtime).getFullYear()}-${(new Date(book.mtime).getMonth() + 1).toString().padStart(2, 0)}`,
+    mtime: book.mtime ? `${new Date(book.mtime).getFullYear()}-${(new Date(book.mtime).getMonth() + 1).toString().padStart(2, 0)}` : '',
   }))
+
+  return bookInfos
+}
+
+const collectAllTags = (bookList) => {
+  const bookInfos = getBookInfos()
 
   const allArtists = _(bookInfos.map(book => book.artists))
     .flatten()
     .countBy()
     .toPairs()
     .map(p => ({ name: p[0], count: p[1], type: 'artist' }))
-    .sortBy(p => -p.count)
+    .sortBy(p => p.name)
     .value()
 
   const allMaleTags = _(bookInfos.map(book => book.male))
@@ -101,7 +94,7 @@ const collectAllTags = (bookList) => {
     .countBy()
     .toPairs()
     .map(p => ({ name: p[0], count: p[1], type: 'male' }))
-    .sortBy(p => -p.count)
+    .sortBy(p => p.name)
     .value()
 
   const allFemaleTags = _(bookInfos.map(book => book.female))
@@ -109,10 +102,10 @@ const collectAllTags = (bookList) => {
     .countBy()
     .toPairs()
     .map(p => ({ name: p[0], count: p[1], type: 'female' }))
-    .sortBy(p => -p.count)
+    .sortBy(p => p.name)
     .value()
 
-  const allTags = _.sortBy([...allMaleTags, ...allFemaleTags], p => -p.count)
+  const allTags = [...allMaleTags, ...allFemaleTags]
 
   return {
     allArtists,
@@ -123,21 +116,59 @@ const collectAllTags = (bookList) => {
   }
 }
 
-// 显示艺术家列表
+const groupItemsByFirstLetter = (items) => {
+  const grouped = {}
+
+  items.forEach(item => {
+    const firstLetter = item.name.charAt(0).toUpperCase()
+    // 如果是非字母字符，归类到 '#' 组
+    const group = /[A-Z]/i.test(firstLetter) ? firstLetter : '#'
+
+    if (!grouped[group]) {
+      grouped[group] = []
+    }
+    grouped[group].push(item)
+  })
+
+  return Object.keys(grouped).sort().reduce((acc, key) => {
+    acc[key] = grouped[key]
+    return acc
+  }, {})
+}
+
+// 异步处理标签数据
+const processTagsAsync = async (tagType) => {
+  loading.value = true
+  items.value = []
+  isArtistMode.value = tagType === 'artist'
+  groupedItems.value = {}
+
+  dialogVisible.value = true
+  await nextTick()
+
+  setTimeout(() => {
+    const { allArtists, allTags } = collectAllTags(displayBookList.value)
+
+    if (tagType === 'artist') {
+      items.value = allArtists
+      groupedItems.value = groupItemsByFirstLetter(allArtists)
+    } else {
+      items.value = allTags
+      groupedItems.value = groupItemsByFirstLetter(allTags)
+    }
+
+    loading.value = false
+  }, 100)
+}
+
 const showArtistTags = () => {
-  const { allArtists } = collectAllTags(displayBookList.value)
-  items.value = allArtists
-  dialogVisible.value = true
+  processTagsAsync('artist')
 }
 
-// 显示混合标签列表 (male 和 female)
 const showMixedTags = () => {
-  const { allTags } = collectAllTags(displayBookList.value)
-  items.value = allTags
-  dialogVisible.value = true
+  processTagsAsync('mixed')
 }
 
-// 点击标签执行搜索
 const handleTagClick = (item) => {
   let searchQuery = ''
 
@@ -157,10 +188,6 @@ const handleTagClick = (item) => {
   dialogVisible.value = false
 }
 
-// 获取处理后的书籍信息，供图表使用
-const getBookInfos = () => {
-  return collectAllTags(displayBookList.value).bookInfos
-}
 
 defineExpose({
   dialogVisible,
@@ -174,47 +201,26 @@ defineExpose({
 .tag-list-container
   max-height: 60vh
   overflow-y: auto
+  padding: 10px
+
+.tag-cloud
   display: flex
   flex-wrap: wrap
   gap: 10px
 
-.tag-card
-  width: 120px
-  margin: 10px
+.tag-item
+  margin: 5px
   cursor: pointer
-  border-radius: 5px
-  overflow: hidden
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
-  border: 1px solid var(--el-border-color)
+  font-size: 14px
 
-  .tag-image
-    width: 100%
-    height: 160px
-    overflow: hidden
-    display: flex
-    align-items: center
-    justify-content: center
+.letter-group
+  margin-bottom: 20px
 
-    img
-      width: 100%
-      height: 100%
-      object-fit: cover
-      object-position: center
-
-    .el-empty
-      padding: 0
-
-  .tag-info
-    padding: 8px
-
-    .tag-name
-      font-size: 12px
-      white-space: nowrap
-      overflow: hidden
-      text-overflow: ellipsis
-
-    .tag-count
-      font-size: 11px
-      color: var(--el-text-color-regular)
-      margin-top: 3px
+.letter-header
+  font-size: 18px
+  font-weight: bold
+  margin-bottom: 10px
+  padding-left: 5px
+  padding-bottom: 5px
+  text-align: left
 </style>

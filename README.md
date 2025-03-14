@@ -75,6 +75,9 @@
 ## TODO
 - 根据规则重命名和移动漫画文件
 
+## 贡献
+- 请参考[贡献指南](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/CONTRIBUTING.md)
+
 ## Thanks
 本项目受到了诸多开源项目的帮助
 

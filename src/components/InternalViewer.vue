@@ -25,7 +25,7 @@
             :key="image.id"
             class="sidebar-thumbnail-item"
             :class="{'sidebar-thumbnail-active': isCurrentImage(image.id)}"
-            :ref="el => { if(isCurrentImage(image.id)) currentThumbnailRef = el }"
+            :id="`thumbnail-${image.id}`"
           >
             <img
               :src="`${image.thumbnailPath}?id=${image.id}`"
@@ -40,6 +40,7 @@
       <div class="drawer-viewer-body"
         ref="drawerViewerBody"
         @wheel.stop="handleBodyWheel"
+        @scroll="handleBodyScroll"
       >
         <div class="drawer-image-content"
           v-if="!showThumbnail"
@@ -484,27 +485,34 @@ const initResize = (id, originWidth) => {
 
 const getCurrentImageId = () => {
   if (imageStyleType.value === 'scroll') {
-    let scrollTopValue = document.querySelector('.viewer-drawer .el-drawer__body').scrollTop
-    _.forEach(viewerImageList.value, (image) => {
-      if (scrollTopValue < 0) {
-        currentImageId.value = image.id
-        return false
+    let scrollTopValue = drawerViewerBody.value ? drawerViewerBody.value.scrollTop : 0
+    let currentId = null
+    let lastVisibleImage = null
+    let totalHeight = 0
+
+    for (const image of viewerImageList.value) {
+      const imageStyle = returnImageStyle(image)
+      const imageHeight = parseFloat(imageStyle.height)
+      const pageNumberHeight = setting.value.hidePageNumber ? 0 : 28
+      const elementHeight = imageHeight + pageNumberHeight
+
+      if (totalHeight <= scrollTopValue && scrollTopValue < totalHeight + elementHeight) {
+        currentId = image.id
+        break
       }
-      // 28 is the height of .viewer-image-page
-      if (setting.value.hidePageNumber) {
-        scrollTopValue -= parseFloat(returnImageStyle(image).height)
-      } else {
-        scrollTopValue -= parseFloat(returnImageStyle(image).height) + 28
-      }
-    })
+
+      lastVisibleImage = image
+      totalHeight += elementHeight
+    }
+
+    currentImageId.value = currentId || (lastVisibleImage ? lastVisibleImage.id : (viewerImageList.value[0]?.id || ''))
   } else if (imageStyleType.value === 'single') {
-    currentImageId.value = viewerImageList.value[currentImageIndex.value].id
+    currentImageId.value = viewerImageList.value[currentImageIndex.value]?.id
   } else if (imageStyleType.value === 'double') {
-    currentImageId.value = viewerImageListDouble.value[currentImageIndex.value].page[0].id
+    currentImageId.value = viewerImageListDouble.value[currentImageIndex.value]?.page[0]?.id
   }
   return currentImageId.value
 }
-
 
 const saveReadingProgress = () => {
   readyDestroyViewer.value = true
@@ -731,8 +739,16 @@ const handleBodyWheel = (event) => {
   }
 }
 
+const handleBodyScroll = _.debounce(() => {
+  if (imageStyleType.value === 'scroll' && showViewerSide.value && !showThumbnail.value) {
+    const currentId = getCurrentImageId()
+    if (currentId) {
+      scrollCurrentThumbnailIntoView(currentId)
+    }
+  }
+}, 100)
+
 const sidebarRef = ref(null)
-const currentThumbnailRef = ref(null)
 
 const isCurrentImage = (id) => {
   if (imageStyleType.value === 'scroll') {
@@ -751,10 +767,14 @@ watch(currentImageIndex, () => {
 })
 
 // 滚动缩略图到可视区域
-const scrollCurrentThumbnailIntoView = () => {
+const scrollCurrentThumbnailIntoView = (id = null) => {
   nextTick(() => {
-    if (showViewerSide.value && currentThumbnailRef.value && sidebarRef.value) {
-      currentThumbnailRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const currentId = id || getCurrentImageId()
+    if (showViewerSide.value && currentId && sidebarRef.value) {
+      const thumbnailElement = document.getElementById(`thumbnail-${currentId}`)
+      if (thumbnailElement) {
+        thumbnailElement.scrollIntoView({ block: 'start' })
+      }
     }
   })
 }

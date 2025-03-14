@@ -14,12 +14,7 @@
         @wheel.stop
         ref="sidebarRef"
       >
-        <div
-          class="sidebar-thumbnail-content"
-          v-loading="viewerImageList.length === 0"
-          element-loading-text="Loading"
-          element-loading-background="transparent"
-        >
+        <div class="sidebar-thumbnail-content">
           <div
             v-for="(image, index) in thumbnailList"
             :key="image.id"
@@ -33,7 +28,7 @@
               @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image)"
             />
-            <div class="sidebar-thunmnail-page">{{index + 1}} / {{viewerImageList.length}}</div>
+            <div class="sidebar-thunmnail-page">{{index + 1}} / {{thumbnailList.length}}</div>
           </div>
         </div>
       </div>
@@ -44,9 +39,6 @@
       >
         <div class="drawer-image-content"
           v-if="!showThumbnail"
-          v-loading="viewerImageList.length === 0"
-          element-loading-text="Loading"
-          element-loading-background="transparent"
           @click="handleViewerAreaClick"
         >
           <div v-if="imageStyleType === 'scroll'">
@@ -110,12 +102,7 @@
             </div>
           </div>
         </div>
-        <div class="drawer-thumbnail-content"
-          v-if="showThumbnail"
-          v-loading="viewerImageList.length === 0"
-          element-loading-text="Loading"
-          element-loading-background="transparent"
-        >
+        <div class="drawer-thumbnail-content" v-if="showThumbnail">
           <!-- eslint-disable-next-line vue/valid-v-for -->
           <el-space wrap>
             <div v-for="(image, index) in thumbnailList" :key="image.id">
@@ -126,11 +113,11 @@
                 @click="handleClickThumbnail(image.id)"
                 @contextmenu="onMangaImageContextMenu($event, image)"
               />
-              <div class="viewer-thunmnail-page">{{index + 1}} of {{viewerImageList.length}}</div>
+              <div class="viewer-thunmnail-page">{{index + 1}} of {{thumbnailList.length}}</div>
             </div>
           </el-space>
         </div>
-        <el-button class="viewer-close-button" :link="true" text :icon="Close" size="large" @click="drawerVisibleViewer = false"></el-button>
+        <el-button class="viewer-close-button" link text :icon="Close" size="large" @click="drawerVisibleViewer = false"></el-button>
         <div class="viewer-mode-setting">
           <el-select
             v-model="showViewerSide"

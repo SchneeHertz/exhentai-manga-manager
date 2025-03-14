@@ -123,6 +123,8 @@
     "excludeFileInfo": "用于排除的文件路径的正则表达式, 当匹配到文件路径的部分时排除该文件",
     "trimTitleRegExp": "修剪标题",
     "trimTitleRegExpInfo": "用于修剪标题的正则表达式, 匹配需要修剪掉的部分",
+    "searchKeySuffix": "搜索关键字后缀",
+    "searchKeySuffixInfo": "搜索元数据时自动添加到关键字后面的内容, 如 language:\"chinese\"$",
     "folderTreeWidth": "文件夹树宽度",
     "folderTreeWidthInfo": "默认为20%, 接受有效的css值, 如400px, 30%, 25vw",
     "customCss": "自定义CSS",
@@ -161,7 +163,9 @@
     "collectTag": "标签收藏",
     "showCollectTag": "显示收藏标签",
     "tagColor": "标签颜色",
-    "readCount": "阅读次数"
+    "readCount": "阅读次数",
+    "showSidebar": "显示侧边栏",
+    "hideSidebar": "隐藏侧边栏"
   },
   "c": {
     "selectCollectionList": "选择collectionList.json",

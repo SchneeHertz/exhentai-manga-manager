@@ -43,8 +43,7 @@
 
 ### 目录结构习惯
 - 前端 Vue 组件放在 `/src/components` 下
-- 全局状态管理使用 Pinia，存储在 `/src/stores`
-- 样式文件使用 Stylus，放在相应组件目录或 `/src/pinia.js`
+- 全局状态管理使用 Pinia，存储在 `/src/pinia.js`
 - 本地化文件放在 `/src/locales`
 
 ### 代码风格

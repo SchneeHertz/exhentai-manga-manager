@@ -120,15 +120,6 @@
         <el-button class="viewer-close-button" link text :icon="Close" size="large" @click="drawerVisibleViewer = false"></el-button>
         <div class="viewer-mode-setting">
           <el-select
-            v-model="showViewerSide"
-            size="small"
-            @change="handleSidebarChange"
-            class="viewer-sidebar-select"
-          >
-            <el-option :value="true" :label="$t('m.showSidebar')" />
-            <el-option :value="false" :label="$t('m.hideSidebar')" />
-          </el-select>
-          <el-select
             v-model="showThumbnail"
             size="small"
             @change="switchThumbnail"
@@ -136,6 +127,16 @@
           >
             <el-option :value="true" :label="$t('m.thumbnail')" />
             <el-option :value="false" :label="$t('m.content')" />
+          </el-select>
+          <el-select
+            v-model="showViewerSide"
+            size="small"
+            @change="handleSidebarChange"
+            class="viewer-sidebar-select"
+            v-show="showThumbnail === false"
+          >
+            <el-option :value="true" :label="$t('m.showSidebar')" />
+            <el-option :value="false" :label="$t('m.hideSidebar')" />
           </el-select>
           <el-select
             v-model="imageStyleType"

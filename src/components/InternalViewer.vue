@@ -104,7 +104,7 @@
         </div>
         <div class="drawer-thumbnail-content" v-if="showThumbnail">
           <!-- eslint-disable-next-line vue/valid-v-for -->
-          <el-space wrap>
+          <el-space wrap @wheel.stop>
             <div v-for="(image, index) in thumbnailList" :key="image.id">
               <img
                 :src="`${image.thumbnailPath}?id=${image.id}`"

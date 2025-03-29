@@ -104,7 +104,7 @@
         </div>
         <div class="drawer-thumbnail-content" v-if="showThumbnail">
           <!-- eslint-disable-next-line vue/valid-v-for -->
-          <el-space wrap>
+          <el-space wrap @wheel.stop>
             <div v-for="(image, index) in thumbnailList" :key="image.id">
               <img
                 :src="`${image.thumbnailPath}?id=${image.id}`"
@@ -120,15 +120,6 @@
         <el-button class="viewer-close-button" link text :icon="Close" size="large" @click="drawerVisibleViewer = false"></el-button>
         <div class="viewer-mode-setting">
           <el-select
-            v-model="showViewerSide"
-            size="small"
-            @change="handleSidebarChange"
-            class="viewer-sidebar-select"
-          >
-            <el-option :value="true" :label="$t('m.showSidebar')" />
-            <el-option :value="false" :label="$t('m.hideSidebar')" />
-          </el-select>
-          <el-select
             v-model="showThumbnail"
             size="small"
             @change="switchThumbnail"
@@ -136,6 +127,16 @@
           >
             <el-option :value="true" :label="$t('m.thumbnail')" />
             <el-option :value="false" :label="$t('m.content')" />
+          </el-select>
+          <el-select
+            v-model="showViewerSide"
+            size="small"
+            @change="handleSidebarChange"
+            class="viewer-sidebar-select"
+            v-show="showThumbnail === false"
+          >
+            <el-option :value="true" :label="$t('m.showSidebar')" />
+            <el-option :value="false" :label="$t('m.hideSidebar')" />
           </el-select>
           <el-select
             v-model="imageStyleType"
@@ -186,7 +187,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Close } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
@@ -270,7 +271,16 @@ onMounted(() => {
     receiveThumbnailList.value.push(arg)
   })
   showViewerSide.value = localStorage.getItem('showViewerSide') === 'true'
+
+  window.addEventListener('resize', handleWindowResize)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleWindowResize)
+})
+const handleWindowResize = _.debounce(() => {
+  updateImageSize()
+}, 200)
 
 const drawerHeight = ref('100%')
 const readyDestroyViewer = ref(false)
@@ -648,78 +658,58 @@ const onMangaImageContextMenu = (e, image) => {
   })
 }
 
+const updateImageSize = () => {
+  if (imageStyleType.value === 'scroll') {
+    const imageFrames = document.querySelectorAll('.viewer-image-frame-scroll')
+    imageFrames.forEach((frame, index) => {
+      const image = viewerImageList.value[index]
+      if (image) {
+        const newStyle = returnImageStyle(image)
+        Object.keys(newStyle).forEach(key => {
+          frame.style[key] = newStyle[key]
+        })
+
+        const imgElement = frame.querySelector('.viewer-image')
+        if (imgElement && newStyle.height) {
+          imgElement.style.height = newStyle.height
+        }
+      }
+    })
+  } else if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
+    if (currentImageIndex.value > 1) {
+      currentImageIndex.value -= 1
+      nextTick(() => {
+        currentImageIndex.value += 1
+      })
+    } else {
+      currentImageIndex.value +=1
+      nextTick(() => {
+        currentImageIndex.value -= 1
+      })
+    }
+  }
+}
+
 const handleSidebarChange = (val) => {
   showViewerSide.value = val
   localStorage.setItem('showViewerSide', val)
-
-  // 等待DOM更新后重新计算图片尺寸
-  nextTick(() => {
-    if (imageStyleType.value === 'scroll') {
-      const imageFrames = document.querySelectorAll('.viewer-image-frame-scroll')
-      imageFrames.forEach((frame, index) => {
-        const image = viewerImageList.value[index]
-        if (image) {
-          const newStyle = returnImageStyle(image)
-          Object.keys(newStyle).forEach(key => {
-            frame.style[key] = newStyle[key]
-          })
-
-          const imgElement = frame.querySelector('.viewer-image')
-          if (imgElement && newStyle.height) {
-            imgElement.style.height = newStyle.height
-          }
-        }
-      })
-    } else if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
-      // 对于单页或双页模式，通过临时改变currentImageIndex触发重绘
-      _currentImageIndex.value +=1
-      nextTick(() => {
-        _currentImageIndex.value -= 1
-      })
-    }
-  })
+  nextTick(updateImageSize)
 }
 
-// 监听侧边栏显示状态变化
 watch(showViewerSide, () => {
-  nextTick(() => {
-    if (imageStyleType.value === 'scroll') {
-      const imageFrames = document.querySelectorAll('.viewer-image-frame-scroll')
-      imageFrames.forEach((frame, index) => {
-        const image = viewerImageList.value[index]
-        if (image) {
-          const newStyle = returnImageStyle(image)
-          Object.keys(newStyle).forEach(key => {
-            frame.style[key] = newStyle[key]
-          })
-          const imgElement = frame.querySelector('.viewer-image')
-          if (imgElement && newStyle.height) {
-            imgElement.style.height = newStyle.height
-          }
-        }
-      })
-    } else if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
-      _currentImageIndex.value +=1
-      nextTick(() => {
-        _currentImageIndex.value -= 1
-      })
-    }
-  })
+  nextTick(updateImageSize)
 })
 
-// 处理主内容区域的滚轮事件
 const handleBodyWheel = (event) => {
   if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
     const element = drawerViewerBody.value
     if (!element) return
 
     if (event.deltaY > 0 && element.scrollTop + element.clientHeight >= element.scrollHeight - 2) {
-      // 向下滚动到底部时，显示下一张图片
       currentImageIndex.value += 1
       element.scrollTop = 0
       scrollCurrentThumbnailIntoView()
     } else if (event.deltaY < 0 && element.scrollTop <= 0) {
-      // 向上滚动到顶部时，显示上一张图片
       currentImageIndex.value -= 1
       scrollCurrentThumbnailIntoView()
     }
@@ -748,12 +738,10 @@ const isCurrentImage = (id) => {
   return false
 }
 
-// 监听当前图片索引变化，滚动缩略图到视图
 watch(currentImageIndex, () => {
   scrollCurrentThumbnailIntoView()
 })
 
-// 滚动缩略图到可视区域
 const scrollCurrentThumbnailIntoView = (id = null) => {
   nextTick(() => {
     const currentId = id || getCurrentImageId()
@@ -786,7 +774,7 @@ defineExpose({
 .viewer-drawer
   .el-drawer__body
     padding: 0
-    overflow: hidden // 防止整个抽屉出现滚动条
+    overflow: hidden
 
 .viewer-drawer-modal
   background-color: var(--el-mask-color-extra-light)
@@ -804,10 +792,9 @@ defineExpose({
   padding: 10px
   box-sizing: border-box
   background-color: var(--el-fill-color-light)
-  flex-shrink: 0 // 防止侧边栏被压缩
-  z-index: 10 // 确保侧边栏在上层，可以正确捕获事件
+  flex-shrink: 0
+  z-index: 10
 
-  // 侧边栏缩略图样式
   .sidebar-thumbnail-content
     display: flex
     flex-direction: column
@@ -844,7 +831,7 @@ defineExpose({
 .drawer-viewer-body
   flex: 1
   height: 100%
-  overflow-y: auto // 添加独立滚动
+  overflow-y: auto
   transition: width 0.3s
 
   .image-frame-outside

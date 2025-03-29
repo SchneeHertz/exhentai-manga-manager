@@ -2,7 +2,7 @@
   <el-dialog
     v-model="dialogVisible"
     :title="title"
-    width="80%"
+    width="72%"
     destroy-on-close
   >
     <div class="tag-list-container">

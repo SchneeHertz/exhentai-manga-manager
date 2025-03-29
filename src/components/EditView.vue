@@ -293,7 +293,7 @@ const exitEditTagView = () => {
 const handleSelectBookBadge = (book) => {
   if (book.selected) {
     book.selected = false
-    selectBookList.value = _.filter(selectBookList.value, b => b.id !== book.id)
+    selectBookList.value = _.filter(selectBookList.value, id => id !== book.id)
   } else {
     book.selected = true
     selectBookList.value.push(book.id)

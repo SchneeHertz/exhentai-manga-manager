@@ -52,7 +52,7 @@ const prepareSetting = () => {
       ipb_member_id: '',
       star: '',
       showComment: true,
-      requireGap: 10000,
+      requireGap: 3000,
       thumbnailColumn: 10,
       showTranslation: false,
       theme: 'dark',

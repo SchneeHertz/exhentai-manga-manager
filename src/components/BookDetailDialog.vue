@@ -136,7 +136,7 @@
         <el-scrollbar class="book-comment-frame">
           <div class="book-comment" v-for="comment in comments" :key="comment.id">
             <div class="book-comment-postby">{{comment.author}}<span class="book-comment-score">{{comment.score}}</span></div>
-            <p class="book-comment-content" @contextmenu="onMangaCommentContextMenu($event, comment.content)">{{comment.content}}</p>
+            <p class="book-comment-content" @contextmenu="onMangaCommentContextMenu($event, comment)">{{comment.content}}</p>
           </div>
         </el-scrollbar>
       </el-col>
@@ -287,11 +287,12 @@ const getComments = (url) => {
         const scoreTail = e.querySelectorAll('.c2 .nosel')
         const score = scoreTail[scoreTail.length - 1].textContent
         let content = e.querySelector('.c6').innerHTML
+        const foundLink = _.uniqBy(linkify.find(content.replace(/[<"]/gi, ' '), 'url'), 'href')
         content = content.replace(/<br>/gi, '\n')
         content = content.replace(/<.+?>/gi, '')
         content = he.decode(content)
         comments.value.push({
-          author, score, content, id: nanoid()
+          author, score, content, id: nanoid(), foundLink
         })
       })
     })
@@ -395,7 +396,7 @@ const onMangaTitleContextMenu = (e, book) => {
 
 const onMangaCommentContextMenu = (e, comment) => {
   e.preventDefault()
-  const foundLink = linkify.find(comment, 'url')
+  const foundLink = comment.foundLink
   if (!_.isEmpty(foundLink)) {
     const items = foundLink.map(l => ({
       label: `${t('c.redirect')} ${l.href}`,

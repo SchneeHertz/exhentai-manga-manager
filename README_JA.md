@@ -80,5 +80,5 @@
 
 
 ## 資金援助
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/schneehertz)
+[!["爱发电"](https://static.afdiancdn.com/static/img/logo/logo.png)](https://afdian.com/a/SeldonHorizon)
 このソフトが役に立ったら、私にコーヒーを一杯おごってください

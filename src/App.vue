@@ -715,13 +715,15 @@ export default defineComponent({
           break
         case 'recentRead':
           const recentReads =  fetchRecentReads()
-          this.displayBookList = recentReads
-              .map(id => this.bookList.find(book => {
-                if (book.collectionHide) return false
-                if (book.isCollection) return book.ids.includes(id)
-                return book.id === id
-              }))
-              .filter(book => book !== undefined)
+          this.displayBookList = _.uniqBy(
+            recentReads.map(id => this.bookList.find(book => {
+              if (book.collectionHide) return false
+              if (book.isCollection) return book.ids.includes(id)
+              return book.id === id
+            }))
+            .filter(book => book !== undefined),
+            'id'
+          )
           this.chunkList()
           break
         case 'shuffle':

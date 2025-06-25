@@ -155,6 +155,8 @@ const createWindow = () => {
     const name = require('./package.json').name
     const version = require('./package.json').version
     win.setTitle(name + ' ' + version)
+  })
+  win.once('ready-to-show', () => {
     if (setting.minimizeOnStart) {
       if (setting.minimizeToTray) {
         createTray()

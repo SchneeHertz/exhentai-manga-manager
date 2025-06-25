@@ -190,6 +190,20 @@
         </div>
       </div>
     </el-drawer>
+    <el-dialog v-model="moveFileDialogVisible" :title="$t('m.moveFile')" width="400px">
+      <el-cascader
+        v-model="moveFileTargetFolder"
+        :options="folderTreeData"
+        :props="{ checkStrictly: true }"
+        filterable
+        clearable
+        style="width: 100%"
+      />
+      <template #footer>
+        <el-button @click="moveFileDialogVisible = false">{{$t('c.cancel')}}</el-button>
+        <el-button type="primary" @click="confirmMoveFile">{{$t('m.move')}}</el-button>
+      </template>
+    </el-dialog>
     <BookDetailDialog
       ref="BookDetailDialogRef"
       @open-content-view="openContentView"
@@ -272,6 +286,10 @@ export default defineComponent({
       // collection
       drawerVisibleCollection: false,
       openCollectionTitle: undefined,
+      // move file
+      moveFileDialogVisible: false,
+      moveFileTargetBook: null,
+      moveFileTargetFolder: null,
     }
   },
   computed: {
@@ -290,6 +308,7 @@ export default defineComponent({
       'sortValue',
       'editCollectionView',
       'editTagView',
+      'folderTreeData',
       'localeFile',
       'displayBookCount',
       'tagList',
@@ -1060,6 +1079,12 @@ export default defineComponent({
             }
           },
           {
+            label: this.$t('m.moveFile'),
+            onClick: () => {
+              this.handleMoveFile(book)
+            }
+          },
+          {
             label: this.$t('m.deleteFile'),
             onClick: () => {
               this.$refs.BookDetailDialogRef.deleteLocalBook(book)
@@ -1091,6 +1116,30 @@ export default defineComponent({
           },
         ]
       })
+    },
+
+    handleMoveFile (book) {
+      this.moveFileTargetBook = book
+      this.moveFileTargetFolder = null
+      this.moveFileDialogVisible = true
+    },
+    async confirmMoveFile () {
+      if (!this.moveFileTargetBook || !this.moveFileTargetFolder) {
+        this.printMessage('error', this.$t('c.moveError'))
+        return
+      }
+      try {
+        const newFilePath = await ipcRenderer.invoke('move-local-book', this.moveFileTargetBook.filepath, _.cloneDeep(this.moveFileTargetFolder))
+        if (newFilePath) {
+          this.moveFileTargetBook.filepath = newFilePath
+          await this.saveBook(this.moveFileTargetBook)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+      this.moveFileDialogVisible = false
+      this.moveFileTargetBook = null
+      this.moveFileTargetFolder = null
     },
 
     // collection view function

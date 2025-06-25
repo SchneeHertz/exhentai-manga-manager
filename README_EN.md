@@ -71,9 +71,6 @@
   - [Copy Metadata from ExHentai Gallery Page](https://sleazyfork.org/zh-CN/scripts/472321)
   - [Highlight Gallery in Libary](https://greasyfork.org/zh-CN/scripts/510077)
 
-## TODO
-- Rename and move manga files according to rules
-
 ## Thanks
 This project has been helped by many open source projects
 

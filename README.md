@@ -72,9 +72,6 @@
   - [从ExHentai画廊页面复制元数据](https://sleazyfork.org/zh-CN/scripts/472321)
   - [EH高亮本地本子](https://greasyfork.org/zh-CN/scripts/510077)
 
-## TODO
-- 根据规则重命名和移动漫画文件
-
 ## 贡献
 - 请参考[贡献指南](https://github.com/SchneeHertz/exhentai-manga-manager/blob/master/CONTRIBUTING.md)
 

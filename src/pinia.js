@@ -259,5 +259,10 @@ export const useAppStore = defineStore('appStore', {
       _.assign(book, JSON.parse(text))
       await this.saveBook(book)
     },
+    filterFolderMethod (node, keyword) {
+      if (!keyword) return true
+      const label = node.text || node.label || ''
+      return label.toLowerCase().includes(keyword.toLowerCase())
+    },
   }
 })

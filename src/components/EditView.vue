@@ -126,6 +126,8 @@
       }"
       filterable
       clearable
+      :filter-method="filterFolderMethod"
+      popper-class="book-tag-edit-cascader-popper"
     />
     <el-space wrap class="book-tag-edit-buttons">
       <el-button type="primary" plain @click="applyMoveFile">{{$t('m.move')}}</el-button>
@@ -171,7 +173,7 @@ const {
   visibleChunkDisplayBookListForCollectView,
   visibleChunkDisplayBookListForEditTagView,
  } = storeToRefs(appStore)
-const { getDisplayTitle, saveBook, printMessage } = appStore
+const { getDisplayTitle, saveBook, printMessage, filterFolderMethod } = appStore
 
 const { t } = useI18n()
 
@@ -696,6 +698,8 @@ defineExpose({
 
 .book-tag-edit-operation
   .el-select-v2
+    width: 100%
+  .el-cascader
     width: 100%
   .book-tag-edit-buttons
     width: 100%

@@ -198,6 +198,8 @@
         filterable
         clearable
         style="width: 100%"
+        :filter-method="filterFolderMethod"
+        popper-class="book-tag-edit-cascader-popper"
       />
       <template #footer>
         <el-button @click="moveFileDialogVisible = false">{{$t('c.cancel')}}</el-button>
@@ -409,6 +411,7 @@ export default defineComponent({
       'saveBook',
       'copyTagClipboard',
       'pasteTagClipboard',
+      'filterFolderMethod',
     ]),
 
     // base function
@@ -1325,6 +1328,10 @@ body
 // search-input sort-select
 .el-autocomplete-suggestion__wrap, .el-select-dropdown__wrap
   max-height: 490px!important
+
+.book-tag-edit-cascader-popper
+  .el-cascader-menu__wrap.el-scrollbar__wrap
+    height: 340px
 
 .pagination-bar
   margin: 4px 0

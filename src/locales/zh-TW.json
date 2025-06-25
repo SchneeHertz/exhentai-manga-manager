@@ -165,7 +165,9 @@
     "tagColor": "標籤顏色",
     "readCount": "閱讀次數",
     "showSidebar": "顯示側邊欄",
-    "hideSidebar": "隱藏側邊欄"
+    "hideSidebar": "隱藏側邊欄",
+    "moveFile": "移動檔案",
+    "move": "移動"
   },
   "c": {
     "selectCollectionList": "選擇collectionList.json",
@@ -209,7 +211,9 @@
     "getMetadataFailed": "獲取元數據失敗",
     "getMetadataComplete": "獲取元數據完成",
     "outOfRange": "超出範圍",
-    "useTranslationCache": "使用翻譯快取"
+    "useTranslationCache": "使用翻譯快取",
+    "moveSuccess": "移動成功",
+    "moveError": "移動失敗"
   },
   "ac": {
     "Global": "全域",

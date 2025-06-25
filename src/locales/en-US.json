@@ -165,7 +165,9 @@
     "tagColor": "Tag Color",
     "readCount": "Reading Count",
     "showSidebar": "Show Sidebar",
-    "hideSidebar": "Hide Sidebar"
+    "hideSidebar": "Hide Sidebar",
+    "moveFile": "Move File",
+    "move": "Move"
   },
   "c": {
     "selectCollectionList": "Select collectionList.json",
@@ -209,7 +211,9 @@
     "getMetadataFailed": "Get metadata failed",
     "getMetadataComplete": "Get metadata complete",
     "outOfRange": "Out of range",
-    "useTranslationCache": "Use translation cache"
+    "useTranslationCache": "Use translation cache",
+    "moveSuccess": "Move successful",
+    "moveError": "Move failed"
   },
   "ac": {
     "Global": "Global",

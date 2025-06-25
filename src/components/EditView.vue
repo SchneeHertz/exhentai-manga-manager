@@ -117,6 +117,19 @@
     <el-space wrap class="book-tag-edit-buttons">
       <el-button type="primary" plain @click="applyStatus">{{$t('m.apply')}}</el-button>
     </el-space>
+    <el-divider content-position="left">{{$t('m.moveFile')}}</el-divider>
+    <el-cascader
+      v-model="selectFolderToMove"
+      :options="folderTreeData"
+      :props="{
+        checkStrictly: true,
+      }"
+      filterable
+      clearable
+    />
+    <el-space wrap class="book-tag-edit-buttons">
+      <el-button type="primary" plain @click="applyMoveFile">{{$t('m.move')}}</el-button>
+    </el-space>
     <el-divider content-position="left">{{$t('m.other')}}</el-divider>
     <el-space wrap class="book-tag-edit-buttons">
       <el-button type="primary" plain @click="groupGetMetadata">{{$t('m.batchGetMetadata')}}</el-button>
@@ -153,6 +166,7 @@ const {
   openCollectionBookList,
   editCollectionView,
   editTagView,
+  folderTreeData,
   tagListForSelect,
   visibleChunkDisplayBookListForCollectView,
   visibleChunkDisplayBookListForEditTagView,
@@ -569,6 +583,30 @@ const groupTriggerHiddenBook = async (val) => {
     updateTagsLoading.value = false
   } catch (error) {
     console.error(error)
+    updateTagsLoading.value = false
+  }
+}
+
+const selectFolderToMove = ref(null)
+
+const applyMoveFile = async () => {
+  try {
+    updateTagsLoading.value = true
+    for (const id of selectBookList.value) {
+      const book = _.find(displayBookList.value, { id })
+      if (book && book.filepath) {
+        const newFilePath = await ipcRenderer.invoke('move-local-book', book.filepath, _.cloneDeep(selectFolderToMove.value))
+        if (newFilePath) {
+          book.filepath = newFilePath
+          await saveBook(book)
+        }
+      }
+    }
+    printMessage('success', t('c.moveSuccess'))
+    updateTagsLoading.value = false
+  } catch (error) {
+    console.error(error)
+    printMessage('error', t('c.moveError'))
     updateTagsLoading.value = false
   }
 }

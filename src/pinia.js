@@ -65,6 +65,7 @@ export const useAppStore = defineStore('appStore', {
     editCollectionView: false,
     editTagView: false,
     localeFile: null,
+    folderTreeData: [],
   }),
   getters: {
     cookie: (state) => {

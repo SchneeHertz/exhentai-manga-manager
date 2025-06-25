@@ -541,11 +541,13 @@ ipcMain.handle('get-folder-tree', async (event, bookList) => {
       if (_.isEmpty(node)) {
         preRoot.push({
           label: trueLabel,
+          value: trueLabel,
           folderPath: [...initFolder, trueLabel].slice(1).join(path.sep),
         })
       } else {
         preRoot.push({
           label: trueLabel,
+          value: trueLabel,
           folderPath: [...initFolder, trueLabel].slice(1).join(path.sep),
           children: resolveTree([], node, [...initFolder, trueLabel]),
         })
@@ -607,6 +609,25 @@ ipcMain.handle('delete-local-book', async (event, filepath) => {
     } catch (e) {
       sendMessageToWebContents(`Delete ${filepath} failed because ${e}`)
     }
+  }
+})
+
+ipcMain.handle('move-local-book', async (event, oldPath, folderArr) => {
+  try {
+    const pathSep = require('path').sep
+    const folderPath = Array.isArray(folderArr) && folderArr.length > 0 ? folderArr.join(pathSep) : ''
+    const newFilePath = path.join(path.dirname(setting.library), folderPath, path.basename(oldPath))
+    if (oldPath !== newFilePath) {
+      await fs.promises.rename(oldPath, newFilePath)
+      sendMessageToWebContents(`Move ${oldPath} to ${newFilePath} successfully`)
+      return newFilePath
+    } else {
+      sendMessageToWebContents(`Move ${oldPath} failed because the new path is the same as the old path`)
+      return false
+    }
+  } catch (e) {
+    sendMessageToWebContents(`Move ${oldPath} failed because ${e}`)
+    return false
   }
 })
 

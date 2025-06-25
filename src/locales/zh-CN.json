@@ -165,7 +165,9 @@
     "tagColor": "标签颜色",
     "readCount": "阅读次数",
     "showSidebar": "显示侧边栏",
-    "hideSidebar": "隐藏侧边栏"
+    "hideSidebar": "隐藏侧边栏",
+    "moveFile": "移动文件",
+    "move": "移动"
   },
   "c": {
     "selectCollectionList": "选择collectionList.json",
@@ -209,7 +211,9 @@
     "getMetadataFailed": "获取元数据失败",
     "getMetadataComplete": "获取元数据完成",
     "outOfRange": "超出范围",
-    "useTranslationCache": "使用翻译缓存"
+    "useTranslationCache": "使用翻译缓存",
+    "moveSuccess": "移动成功",
+    "moveError": "移动失败"
   },
   "ac": {
     "Global": "全局",

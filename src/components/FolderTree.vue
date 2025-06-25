@@ -30,12 +30,11 @@ import { ref, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
-const { setting, bookList, pathSep } = storeToRefs(appStore)
+const { setting, bookList, pathSep, folderTreeData } = storeToRefs(appStore)
 
 const emit = defineEmits(['chunkList'])
 
 const sideVisibleFolderTree = ref(false)
-const folderTreeData = ref([])
 
 const openFolderTree = () => {
   sideVisibleFolderTree.value = !sideVisibleFolderTree.value

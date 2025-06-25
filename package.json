@@ -27,7 +27,6 @@
       "dist/icon.png",
       "fileLoader/*",
       "modules/*",
-      "public/*",
       "index.js",
       "preload.js"
     ],
@@ -78,7 +77,7 @@
     "chart.js": "^4.4.3",
     "electron": "^26.2.3",
     "electron-builder": "^24.6.4",
-    "element-plus": "^2.10.2",
+    "element-plus": "^2.8.1",
     "eslint": "^9.9.0",
     "eslint-plugin-vue": "^9.27.0",
     "globals": "^15.9.0",

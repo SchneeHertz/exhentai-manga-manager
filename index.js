@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, dialog, shell, screen, Menu, clipboard, nativeImage } = require('electron')
+const { app, BrowserWindow, ipcMain, session, dialog, shell, screen, Menu, clipboard, nativeImage, Tray } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { brotliDecompress } = require('zlib')
@@ -77,8 +77,55 @@ const sendMessageToWebContents = (message) => {
 }
 
 let mainWindow
+let tray
 let screenWidth
 let sendImageLock = false
+
+const createTray = () => {
+  if (tray) return
+  const iconPath = path.join(__dirname, 'public/icon.png')
+  tray = new Tray(iconPath)
+  tray.setToolTip('exhentai-manga-manager')
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible() && !mainWindow.isMinimized()) {
+        mainWindow.minimize()
+      } else if (mainWindow.isMinimized()) {
+        mainWindow.restore()
+        mainWindow.setSkipTaskbar(false)
+        mainWindow.focus()
+      } else {
+        mainWindow.show()
+        mainWindow.setSkipTaskbar(false)
+        mainWindow.focus()
+      }
+    }
+  })
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'show window',
+      click: () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) {
+            mainWindow.restore()
+          } else {
+            mainWindow.show()
+          }
+          mainWindow.setSkipTaskbar(false)
+          mainWindow.focus()
+        }
+      }
+    },
+    {
+      label: 'exit',
+      click: () => {
+        mainWindow.close()
+      }
+    }
+  ])
+  tray.setContextMenu(contextMenu)
+}
+
 const createWindow = () => {
   const mainWindowState = windowStateKeeper({
     defaultWidth: 1560,
@@ -95,7 +142,6 @@ const createWindow = () => {
     },
     show: false
   })
-  mainWindowState.manage(win)
   if (app.isPackaged) {
     win.loadFile('dist/index.html')
   } else {
@@ -111,7 +157,33 @@ const createWindow = () => {
     win.setTitle(name + ' ' + version)
   })
   win.once('ready-to-show', () => {
+    if (setting.minimizeOnStart) {
+      if (setting.minimizeToTray) {
+        createTray()
+        win.hide()
+        win.setSkipTaskbar(true)
+      } else {
+        win.minimize()
+      }
+    } else {
+      win.show()
+    }
+  })
+  win.on('minimize', (event) => {
+    if (setting.minimizeToTray) {
+      event.preventDefault()
+      createTray()
+      win.hide()
+      win.setSkipTaskbar(true)
+    }
+  })
+  win.on('restore', () => {
     win.show()
+    win.setSkipTaskbar(false)
+  })
+  win.on('show', () => {
+    win.setSkipTaskbar(false)
+    mainWindowState.manage(win)
   })
   return win
 }
@@ -768,6 +840,10 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
     })
   }
   setting = receiveSetting
+  if (tray && !setting.minimizeToTray) {
+    tray.destroy()
+    tray = null
+  }
   return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
 })
 

@@ -414,6 +414,20 @@
               @change="saveSetting"
             />
           </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.minimizeOnStart"
+              :active-text="$t('m.minimizeOnStart')"
+              @change="saveSetting"
+            />
+          </el-col>
+          <el-col :span="6" class="setting-switch">
+            <el-switch
+              v-model="setting.minimizeToTray"
+              :active-text="$t('m.minimizeToTray')"
+              @change="saveSetting"
+            />
+          </el-col>
         </el-row>
       </el-tab-pane>
       <el-tab-pane :label="$t('m.accelerator')" name="accelerator">

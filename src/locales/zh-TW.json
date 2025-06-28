@@ -167,7 +167,9 @@
     "showSidebar": "顯示側邊欄",
     "hideSidebar": "隱藏側邊欄",
     "moveFile": "移動檔案",
-    "move": "移動"
+    "move": "移動",
+    "minimizeOnStart": "啟動後最小化",
+    "minimizeToTray": "最小化到托盤"
   },
   "c": {
     "selectCollectionList": "選擇collectionList.json",

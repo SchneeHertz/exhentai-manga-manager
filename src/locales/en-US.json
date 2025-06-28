@@ -167,7 +167,9 @@
     "showSidebar": "Show Sidebar",
     "hideSidebar": "Hide Sidebar",
     "moveFile": "Move File",
-    "move": "Move"
+    "move": "Move",
+    "minimizeOnStart": "Minimize on Start",
+    "minimizeToTray": "Minimize to Tray"
   },
   "c": {
     "selectCollectionList": "Select collectionList.json",

@@ -167,7 +167,9 @@
     "showSidebar": "显示侧边栏",
     "hideSidebar": "隐藏侧边栏",
     "moveFile": "移动文件",
-    "move": "移动"
+    "move": "移动",
+    "minimizeOnStart": "启动后最小化",
+    "minimizeToTray": "最小化到托盘"
   },
   "c": {
     "selectCollectionList": "选择collectionList.json",

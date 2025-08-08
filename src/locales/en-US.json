@@ -258,6 +258,7 @@
     "InnerViewer_FirstPage": "First Page",
     "InnerViewer_LastPage": "Last Page",
     "InnerViewer_InsertEmptyPage": "Insert Empty Page",
-    "InnerViewer_SwitchThumbnail": "Switch Thumbnail"
+    "InnerViewer_SwitchThumbnail": "Switch Thumbnail",
+    "InnerViewer_Zoom": "Zoom (Scrolling Mode)"
   }
 }

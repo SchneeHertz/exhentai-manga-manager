@@ -259,6 +259,7 @@
     "InnerViewer_FirstPage": "第一页",
     "InnerViewer_LastPage": "最后一页",
     "InnerViewer_InsertEmptyPage": "插入空页",
-    "InnerViewer_SwitchThumbnail": "切换缩略图"
+    "InnerViewer_SwitchThumbnail": "切换缩略图",
+    "InnerViewer_Zoom": "缩放（卷轴模式下）"
   }
 }

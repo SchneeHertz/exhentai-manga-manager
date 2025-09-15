@@ -701,6 +701,54 @@ watch(showViewerSide, () => {
 })
 
 const handleBodyWheel = (event) => {
+  if (event.ctrlKey) {
+    event.preventDefault()
+    if (imageStyleType.value === 'scroll') {
+      const element = drawerViewerBody.value
+      if (!element) return
+
+      const rect = element.getBoundingClientRect()
+      const mouseX = event.clientX - rect.left
+      const mouseY = event.clientY - rect.top
+
+      const scrollLeftBefore = element.scrollLeft
+      const scrollTopBefore = element.scrollTop
+      const scrollWidthBefore = element.scrollWidth
+      const scrollHeightBefore = element.scrollHeight
+
+      const scrollLeftRatio = (scrollLeftBefore + mouseX) / scrollWidthBefore
+      const scrollTopRatio = (scrollTopBefore + mouseY) / scrollHeightBefore
+
+      const zoomIntensityVW = 0.05
+      const zoomIntensityPercent = 5
+      if (event.deltaY < 0) { // zoom in
+        if (viewerImageWidth.value <= 2) { // vw mode
+          viewerImageWidth.value = _.round(Math.min(2, viewerImageWidth.value + zoomIntensityVW), 2)
+        } else { // % mode
+          viewerImageWidth.value = Math.min(500, viewerImageWidth.value + zoomIntensityPercent)
+        }
+      } else { // zoom out
+        if (viewerImageWidth.value <= 2) { // vw mode
+          viewerImageWidth.value = _.round(Math.max(0.1, viewerImageWidth.value - zoomIntensityVW), 2)
+        } else { // % mode
+          viewerImageWidth.value = Math.max(10, viewerImageWidth.value - zoomIntensityPercent)
+        }
+      }
+
+      nextTick(() => {
+        const scrollWidthAfter = element.scrollWidth
+        const scrollHeightAfter = element.scrollHeight
+
+        const newScrollLeft = scrollLeftRatio * scrollWidthAfter - mouseX
+        const newScrollTop = scrollTopRatio * scrollHeightAfter - mouseY
+
+        element.scrollLeft = newScrollLeft
+        element.scrollTop = newScrollTop
+      })
+    }
+    return
+  }
+
   if (imageStyleType.value === 'single' || imageStyleType.value === 'double') {
     const element = drawerViewerBody.value
     if (!element) return
@@ -831,7 +879,7 @@ defineExpose({
 .drawer-viewer-body
   flex: 1
   height: 100%
-  overflow-y: auto
+  overflow: auto
   transition: width 0.3s
 
   .image-frame-outside

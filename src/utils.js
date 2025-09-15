@@ -68,6 +68,7 @@ const acceleratorInfo = [
       'SwitchThumbnail': '=',
       'PreviousPage': 'ArrowLeft / ArrowUp / WheelUp',
       'NextPage': 'ArrowRight / ArrowDown / WheelDown / Space',
+      'Zoom': 'Ctrl+WheelUp / Ctrl+WheelDown',
     }
   }
 ]

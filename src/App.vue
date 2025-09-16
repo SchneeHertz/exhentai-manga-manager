@@ -673,8 +673,9 @@ export default defineComponent({
       try {
         this.buttonLoadBookListLoading = true
         const res = await ipcRenderer.invoke('load-book-list', scan)
-        this.bookList = this.prepareBookList(res)
-        this.loadCollectionList()
+        const bookList = this.prepareBookList(res)
+        await this.loadCollectionList(bookList)
+        this.bookList = bookList
         this.$refs.FolderTreeRef.geneFolderTree()
         this.$refs.EditViewRef.selectBookList = []
         this.buttonLoadBookListLoading = false
@@ -1146,11 +1147,14 @@ export default defineComponent({
     },
 
     // collection view function
-    async loadCollectionList () {
+    async loadCollectionList (bookList = null) {
+      if (!bookList) {
+        bookList = this.bookList
+      }
       this.collectionList = await ipcRenderer.invoke('load-collection-list')
 
       // 创建查找映射表，避免重复遍历
-      const bookMap = new Map(this.bookList.flatMap(book => [[book.hash, book], [book.id, book]]))
+      const bookMap = new Map(bookList.flatMap(book => [[book.hash, book], [book.id, book]]))
 
       _.forEach(this.collectionList, collection => {
         let collectBook = _.compact(collection.list.map(hash_id => {
@@ -1180,7 +1184,7 @@ export default defineComponent({
         const category = [...new Set(collectBook.map(book => book.category))].join(',')
         const status = [...new Set(collectBook.map(book => book.status))].join(',')
         if (!_.isEmpty(collectBook)) {
-          this.bookList.push({
+          bookList.push({
             title: collection.title,
             id: collection.id,
             coverPath: collectBook?.[0]?.coverPath,
@@ -1193,7 +1197,6 @@ export default defineComponent({
           })
         }
       })
-      this.handleSortChange(this.sortValue, this.bookList)
     },
     openCollection (collection) {
       this.drawerVisibleCollection = true

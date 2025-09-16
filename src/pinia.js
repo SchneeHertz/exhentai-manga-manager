@@ -81,15 +81,16 @@ export const useAppStore = defineStore('appStore', {
       return _.sumBy(state.displayBookList, book => this.isVisibleBook(book) ? 1 : 0)
     },
     tagList (state) {
-      const tagArray = _(state.bookList.filter(b => {
+      const uniqedTagMap = new Map()
+      state.bookList.filter(b => {
         return !b.hiddenBook && !b.folderHide
-      }).map(b => {
-        return _.map(b.tags, (tags, cat) => {
-          return _.map(tags, tag => `${cat}##${tag}`)
-        })
+      }).forEach(b => _.forEach(b.tags, (tags, cat) => {
+        const tagSet = uniqedTagMap.get(cat) || uniqedTagMap.set(cat, new Set()).get(cat)
+        tags.forEach(tag => tagSet.add(tag))
       }))
-      .flattenDeep().value()
-      const uniqedTagArray = [...new Set(tagArray)].sort()
+      const uniqedTagArray = _.flatMap(_.entries(uniqedTagMap), ([cat, tagSet]) => {
+        return _.map([...tagSet], tag => `${cat}##${tag}`)
+      }).sort()
       return uniqedTagArray.map(combinedTag => {
         const tagArray = _.split(combinedTag, '##')
         const letter = state.cat2letter[tagArray[0]] ? state.cat2letter[tagArray[0]] : tagArray[0]

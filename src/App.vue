@@ -1148,13 +1148,17 @@ export default defineComponent({
     // collection view function
     async loadCollectionList () {
       this.collectionList = await ipcRenderer.invoke('load-collection-list')
+
+      // 创建查找映射表，避免重复遍历
+      const bookMap = new Map(this.bookList.flatMap(book => [[book.hash, book], [book.id, book]]))
+
       _.forEach(this.collectionList, collection => {
         let collectBook = _.compact(collection.list.map(hash_id => {
-          return _.filter(this.bookList, book => book.id === hash_id || book.hash === hash_id)
+          return bookMap.get(hash_id)
         }))
         collectBook = _.flatten(collectBook)
         collection.list = [...new Set(collectBook.map(book => book.hash))]
-        collectBook.map(book => book.collectionHide = true)
+        collectBook.forEach(book => book.collectionHide = true)
         const date = _.last(_.compact(_.sortBy(collectBook.map(book => book.date))))
         const posted = _.last(_.compact(_.sortBy(collectBook.map(book => book.posted))))
         const rating = _.last(_.compact(_.sortBy(collectBook.map(book => book.rating))))

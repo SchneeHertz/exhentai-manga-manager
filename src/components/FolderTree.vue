@@ -43,8 +43,9 @@ const openFolderTree = () => {
   }
 }
 const geneFolderTree = async () => {
-  const bList = _.filter(_.cloneDeep(bookList.value), book => !book.isCollection)
-  folderTreeData.value = await ipcRenderer.invoke('get-folder-tree', bList)
+  const bList = _.filter(bookList.value, book => !book.isCollection)
+  const filePathList = bList.map(book => book.filepath)
+  folderTreeData.value = await ipcRenderer.invoke('get-folder-tree', filePathList)
 }
 const selectFolderTreeNode = async (selectNode) => {
   if (selectNode.folderPath) {

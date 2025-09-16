@@ -599,9 +599,9 @@ ipcMain.handle('save-book', async (event, book) => {
 })
 
 // home
-ipcMain.handle('get-folder-tree', async (event, bookList) => {
-  const folderList = [...new Set(bookList.map(b => path.dirname(b.filepath)))]
+ipcMain.handle('get-folder-tree', async (event, filePathList) => {
   const librarySplitPathsLength = setting.library.split(path.sep).length - 1
+  const folderList = [...new Set(filePathList.map(filepath => path.dirname(filepath)))]
   const bookPathSplitList = folderList.sort().map(fp => fp.split(path.sep).slice(librarySplitPathsLength))
   const folderTreeObject = {}
   for (const folders of bookPathSplitList) {

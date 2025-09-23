@@ -7,5 +7,8 @@ export default defineConfig({
   base: './',
   server: {
     port: 5374
+  },
+  optimizeDeps: {
+    include: ["@hymbz/comic-read-script"]
   }
 })

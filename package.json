@@ -53,6 +53,7 @@
     }
   },
   "dependencies": {
+    "@hymbz/comic-read-script": "^12.3.3",
     "adm-zip": "^0.5.9",
     "electron-window-state": "^5.0.3",
     "express": "^4.19.2",

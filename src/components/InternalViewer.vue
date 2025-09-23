@@ -197,6 +197,10 @@ import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 import  { insertLocalReadRecord } from '../utils.js'
 
+
+import { initComicReader, defaultConfig } from '@hymbz/comic-read-script'
+const ComicReader = initComicReader(defaultConfig());
+
 const appStore = useAppStore()
 const { keyMap, setting, bookDetail } = storeToRefs(appStore)
 const { printMessage, saveBook } = appStore
@@ -266,6 +270,7 @@ onMounted(() => {
 
   ipcRenderer.on('manga-image', (event, arg) => {
     viewerImageList.value.push(arg)
+    ComicReader.open(viewerImageList.value.map(item=>item.filepath));
   })
   ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
     receiveThumbnailList.value.push(arg)

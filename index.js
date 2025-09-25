@@ -636,7 +636,10 @@ ipcMain.handle('load-collection-list', async (event, arg) => {
 
 ipcMain.handle('save-collection-list', async (event, list) => {
   collectionList = list
-  return await fs.promises.writeFile(path.join(STORE_PATH, 'collectionList.json'), JSON.stringify(list, null, '  '), { encoding: 'utf-8' })
+  const targetPath = path.join(STORE_PATH, 'collectionList.json')
+  const tempPath = path.join(STORE_PATH, 'collectionList.json.tmp')
+  await fs.promises.writeFile(tempPath, JSON.stringify(list, null, '  '), { encoding: 'utf-8' })
+  return await fs.promises.rename(tempPath, targetPath)
 })
 
 // detail
@@ -844,7 +847,10 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
     tray.destroy()
     tray = null
   }
-  return await fs.promises.writeFile(path.join(STORE_PATH, 'setting.json'), JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
+  const targetPath = path.join(STORE_PATH, 'setting.json')
+  const tempPath = path.join(STORE_PATH, 'setting.json.tmp')
+  await fs.promises.writeFile(tempPath, JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
+  return await fs.promises.rename(tempPath, targetPath)
 })
 
 ipcMain.handle('export-database', async (event, folder) => {

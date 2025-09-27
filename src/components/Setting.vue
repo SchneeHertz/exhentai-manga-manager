@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="dialogVisibleSetting"
-    width="54em"
+    width="55em"
     :modal="false"
     append-to-body
     top="60px"

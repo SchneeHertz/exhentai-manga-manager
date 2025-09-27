@@ -14,6 +14,7 @@ const fetch = require('node-fetch')
 const { HttpsProxyAgent } = require('https-proxy-agent')
 const windowStateKeeper = require('electron-window-state')
 const express = require('express')
+const { globSync } = require('glob')
 
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
@@ -674,16 +675,34 @@ ipcMain.handle('open-local-book', async (event, filepath) => {
 
 ipcMain.handle('delete-local-book', async (event, filepath) => {
   if (filepath.startsWith(setting.library)) {
-    await Manga.destroy({ where: { filepath: filepath } })
     try {
-      try {
+      const stats = await fs.promises.stat(filepath)
+      if (stats.isDirectory()) {
+        const imageFiles = globSync('*.@(jpg|jpeg|png|webp|avif|gif)', {
+          cwd: filepath,
+          nocase: true,
+          absolute: true
+        })
+
+        for (const imageFile of imageFiles) {
+          try {
+            await shell.trashItem(imageFile)
+          } catch {
+            await fs.promises.rm(imageFile, { force: true })
+          }
+        }
+
+        const remainingFiles = await fs.promises.readdir(filepath)
+        if (remainingFiles.length === 0) {
+          await shell.trashItem(filepath)
+        }
+      } else {
         await shell.trashItem(filepath)
-      } catch {
-        await fs.promises.rm(filepath, { recursive: true, force: true })
       }
     } catch (e) {
       sendMessageToWebContents(`Delete ${filepath} failed because ${e}`)
     }
+    await Manga.destroy({ where: { filepath: filepath } })
   }
 })
 

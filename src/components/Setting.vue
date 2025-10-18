@@ -191,7 +191,7 @@
               <el-input class="label-input">
                 <template #prepend><span class="setting-label">{{$t('m.language')}}</span></template>
                 <template #append>
-                  <el-select placeholder=" " v-model="setting.language" @change="handleLanguageChange">
+                  <el-select placeholder=" " v-model="setting.language" @change="handleLanguageChange(setting.language)">
                     <el-option :label="$t('m.systemDefault')" value="default"></el-option>
                     <el-option label="zh-CN" value="zh-CN"></el-option>
                     <el-option label="zh-TW" value="zh-TW"></el-option>
@@ -516,7 +516,7 @@ onMounted(() => {
 
       // default action
       if (res.theme) changeTheme(res.theme)
-      handleLanguageChange(res.language)
+      await handleLanguageInit(res.language)
       if (res.showTranslation) loadTranslationFromEhTagTranslation()
       if (res.autoCheckUpdates) autoCheckUpdates(false)
       if (res.enabledLANBrowsing) ipcRenderer.invoke('enable-LAN-browsing')
@@ -648,17 +648,38 @@ const handleThemeChange = (val) => {
 const changeTheme = (classValue) => {
   document.documentElement.setAttribute('class', classValue)
 }
-const handleLanguageChange = (val) => {
-  ipcRenderer.invoke('get-locale').then(localeString => {
-    let languageCode
-    if (!val || (val === 'default')) {
-      languageCode = localeString
-    } else {
-      languageCode = val
-    }
-    handleLanguageSet(languageCode)
-    saveSetting()
-  })
+const handleLanguageChange = async (languageCode) => {
+  await handleLanguageSet(languageCode)
+  saveSetting()
+}
+const handleLanguageInit = async (val) => {
+  let languageCode
+  if (!val || (val === 'default')) {
+    languageCode = await ipcRenderer.invoke('get-locale')
+  } else {
+    languageCode = val
+  }
+  await handleLanguageSet(languageCode)
+}
+const handleLanguageSet = async (languageCode) => {
+  if (!languageCode || (languageCode === 'default')) {
+    languageCode = await ipcRenderer.invoke('get-locale')
+  }
+  switch (languageCode) {
+    case 'zh-CN':
+      localeFile.value = zhCn
+      locale.value = 'zh-CN'
+      break
+    case 'zh-TW':
+      localeFile.value = zhTw
+      locale.value = 'zh-TW'
+      break
+    case 'en-US':
+    default:
+      localeFile.value = en
+      locale.value = 'en-US'
+      break
+  }
 }
 
 const saveSetting = () => {
@@ -679,23 +700,6 @@ const forceGeneBookList = async () => {
 const patchLocalMetadata = async () => {
   await ipcRenderer.invoke('patch-local-metadata')
   emit('loadBookList')
-}
-const handleLanguageSet = (languageCode) => {
-  switch (languageCode) {
-    case 'zh-CN':
-      localeFile.value = zhCn
-      locale.value = 'zh-CN'
-      break
-    case 'zh-TW':
-      localeFile.value = zhTw
-      locale.value = 'zh-TW'
-      break
-    case 'en-US':
-    default:
-      localeFile.value = en
-      locale.value = 'en-US'
-      break
-  }
 }
 
 

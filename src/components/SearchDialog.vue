@@ -127,7 +127,7 @@ const getBookInfoFromHentag = async (book) => {
   _.assign(book, {
     title: data.title,
     posted: Math.floor(data.createdAt / 1000),
-    category: categoryOption.value[data.category],
+    category: categoryOption.value[data.category - 1],
     tags
   })
   book.status = 'tagged'
@@ -237,7 +237,7 @@ const getBooksMetadata = async (bookList, gap, callback) => {
   messageInstance.close()
   ipcRenderer.invoke('set-progress-bar', -1)
   printMessage('success', t('c.getMetadataComplete'))
-  callback()
+  if (callback) callback()
 }
 
 const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath = '') => {

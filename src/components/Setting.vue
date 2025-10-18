@@ -516,7 +516,7 @@ onMounted(() => {
 
       // default action
       if (res.theme) changeTheme(res.theme)
-      await handleLanguageInit(res.language)
+      await handleLanguageSet(res.language)
       if (res.showTranslation) loadTranslationFromEhTagTranslation()
       if (res.autoCheckUpdates) autoCheckUpdates(false)
       if (res.enabledLANBrowsing) ipcRenderer.invoke('enable-LAN-browsing')
@@ -645,22 +645,16 @@ const handleThemeChange = (val) => {
   changeTheme(val)
   saveSetting()
 }
+
 const changeTheme = (classValue) => {
   document.documentElement.setAttribute('class', classValue)
 }
+
 const handleLanguageChange = async (languageCode) => {
   await handleLanguageSet(languageCode)
   saveSetting()
 }
-const handleLanguageInit = async (val) => {
-  let languageCode
-  if (!val || (val === 'default')) {
-    languageCode = await ipcRenderer.invoke('get-locale')
-  } else {
-    languageCode = val
-  }
-  await handleLanguageSet(languageCode)
-}
+
 const handleLanguageSet = async (languageCode) => {
   if (!languageCode || (languageCode === 'default')) {
     languageCode = await ipcRenderer.invoke('get-locale')

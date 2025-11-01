@@ -210,6 +210,25 @@ const emit = defineEmits([
   'rescanBook',
 ])
 
+let ComicReader = null
+
+const initComicRead = async () => {
+  if (!ComicReader && setting.value.viewerType === 'comicread') {
+    try {
+      const { initComicReader, defaultConfig } = await import('@hymbz/comic-read-script/ComicReader.umd.js')
+      ComicReader = initComicReader(defaultConfig())
+    } catch (error) {
+      console.error('Failed to load ComicRead:', error)
+    }
+  }
+}
+
+const showComicReader = (imageList) => {
+  if (ComicReader) {
+    ComicReader.open(imageList)
+  }
+}
+
 const drawerVisibleViewer = ref(false)
 const showViewerSide = ref(true)
 const showThumbnail = ref(false)
@@ -250,6 +269,9 @@ const viewerImageListDouble = computed(() => {
     return []
   }
 })
+const viewerImageFilepathList = computed(() => {
+  return viewerImageList.value.map(image => image.filepath)
+})
 
 const receiveThumbnailList = ref([])
 
@@ -264,8 +286,13 @@ onMounted(() => {
   imageStyleFit.value = localStorage.getItem('imageStyleFit') || 'window'
   viewerReadingProgress.value = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
 
-  ipcRenderer.on('manga-image', (event, arg) => {
+  ipcRenderer.on('manga-image', async (event, arg) => {
     viewerImageList.value.push(arg)
+    if (setting.value.viewerType === 'comicread' && arg.last) {
+      await initComicRead()
+      showComicReader(viewerImageFilepathList.value)
+      viewerLoading?.close()
+    }
   })
   ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
     receiveThumbnailList.value.push(arg)
@@ -285,6 +312,7 @@ const handleWindowResize = _.debounce(() => {
 const drawerHeight = ref('100%')
 const readyDestroyViewer = ref(false)
 
+let viewerLoading = null
 const viewManga = (book, viewerHeight = '100%') => {
   readyDestroyViewer.value = false
   drawerHeight.value = viewerHeight
@@ -294,7 +322,7 @@ const viewManga = (book, viewerHeight = '100%') => {
   insertEmptyPage.value = setting.value.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
   bookDetail.value = book
-  const loading = ElLoading.service({
+  viewerLoading = ElLoading.service({
     lock: true,
     text: 'Loading',
     background: _.includes(setting.value.theme, 'light') ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
@@ -303,16 +331,17 @@ const viewManga = (book, viewerHeight = '100%') => {
   insertLocalReadRecord(book.id)
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
   .then(() => {
-    drawerVisibleViewer.value = true
+    if (!setting.value.viewerType || setting.value.viewerType === 'original') {
+      drawerVisibleViewer.value = true
+      if (setting.value.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
+      viewerLoading.close()
+    }
     book.readCount += 1
     saveBook(book)
-    if (setting.value.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
   })
   .catch(err => {
     console.log(err)
-  })
-  .finally(() => {
-    loading.close()
+    viewerLoading.close()
   })
 
   if (localStorage.getItem('showViewerSide') === 'true') {

@@ -36,18 +36,16 @@
           </el-col>
           <el-col :span="24">
             <div class="setting-line">
-              <el-input class="label-input">
+              <NameFormItem class="label-input" prependWidth="110px">
                 <template #prepend><span class="setting-label">{{$t('m.theme')}}</span></template>
-                <template #append>
-                  <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
-                    <el-option label="Default Dark" value="dark"></el-option>
-                    <el-option label="Default Light" value="light"></el-option>
-                    <el-option label="ExHentai" value="dark exhentai"></el-option>
-                    <el-option label="E-Hentai" value="light e-hentai"></el-option>
-                    <el-option label="nHentai" value="dark nhentai"></el-option>
-                  </el-select>
-                </template>
-              </el-input>
+                <el-select placeholder=" " v-model="setting.theme" @change="handleThemeChange">
+                  <el-option label="Default Dark" value="dark"></el-option>
+                  <el-option label="Default Light" value="light"></el-option>
+                  <el-option label="ExHentai" value="dark exhentai"></el-option>
+                  <el-option label="E-Hentai" value="light e-hentai"></el-option>
+                  <el-option label="nHentai" value="dark nhentai"></el-option>
+                </el-select>
+              </NameFormItem>
             </div>
           </el-col>
           <el-col :span="24">
@@ -90,6 +88,19 @@
       </el-tab-pane>
       <el-tab-pane :label="$t('m.internalViewer')" name="internalViewer">
         <el-row :gutter="8">
+          <el-col :span="24">
+            <div class="setting-line">
+              <NameFormItem class="label-input" prependWidth="110px">
+                <template #prepend>
+                  <span class="setting-label">{{$t('m.viewerType')}}</span>
+                </template>
+                <el-select placeholder=" " v-model="setting.viewerType" @change="saveSetting" disabled>
+                  <el-option :label="$t('m.originalViewer')" value="original"></el-option>
+                  <el-option label="ComicRead" value="comicread"></el-option>
+                </el-select>
+              </NameFormItem>
+            </div>
+          </el-col>
           <el-col :span="24">
             <div class="setting-line">
               <el-input v-model.number="setting.thumbnailColumn" @change="saveSetting">
@@ -188,57 +199,49 @@
         <el-row :gutter="8">
           <el-col :span="24">
             <div class="setting-line">
-              <el-input class="label-input">
+              <NameFormItem class="label-input" prependWidth="110px">
                 <template #prepend><span class="setting-label">{{$t('m.language')}}</span></template>
-                <template #append>
-                  <el-select placeholder=" " v-model="setting.language" @change="handleLanguageChange(setting.language)">
-                    <el-option :label="$t('m.systemDefault')" value="default"></el-option>
-                    <el-option label="zh-CN" value="zh-CN"></el-option>
-                    <el-option label="zh-TW" value="zh-TW"></el-option>
-                    <el-option label="en-US" value="en-US"></el-option>
-                  </el-select>
-                </template>
-              </el-input>
+                <el-select placeholder=" " v-model="setting.language" @change="handleLanguageChange(setting.language)">
+                  <el-option :label="$t('m.systemDefault')" value="default"></el-option>
+                  <el-option label="zh-CN" value="zh-CN"></el-option>
+                  <el-option label="zh-TW" value="zh-TW"></el-option>
+                  <el-option label="en-US" value="en-US"></el-option>
+                </el-select>
+              </NameFormItem>
             </div>
           </el-col>
           <el-col :span="24">
             <div class="setting-line">
-              <el-input class="label-input">
+              <NameFormItem class="label-input" prependWidth="110px">
                 <template #prepend><span class="setting-label">{{$t('m.directEnter')}}</span></template>
-                <template #append>
-                  <el-select placeholder=" " v-model="setting.directEnter" @change="saveSetting">
-                    <el-option :label="$t('m.detailPage')" value="detail"></el-option>
-                    <el-option :label="$t('m.internalViewer')" value="internalViewer"></el-option>
-                    <el-option :label="$t('m.externalViewer')" value="externalViewer"></el-option>
-                  </el-select>
-                </template>
-              </el-input>
+                <el-select placeholder=" " v-model="setting.directEnter" @change="saveSetting">
+                  <el-option :label="$t('m.detailPage')" value="detail"></el-option>
+                  <el-option :label="$t('m.internalViewer')" value="internalViewer"></el-option>
+                  <el-option :label="$t('m.externalViewer')" value="externalViewer"></el-option>
+                </el-select>
+              </NameFormItem>
             </div>
           </el-col>
           <el-col :span="24">
             <div class="setting-line">
-              <el-input class="label-input">
+              <NameFormItem class="label-input" prependWidth="110px">
                 <template #prepend><span class="setting-label">{{$t('m.displayTitle')}}</span></template>
-                <template #append>
-                  <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
-                    <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
-                    <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
-                    <el-option :label="$t('m.filename')" value="filename"></el-option>
-                  </el-select>
-                </template>
-              </el-input>
+                <el-select :placeholder="$t('m.displayTitleInfo')" v-model="setting.displayTitle" @change="saveSetting">
+                  <el-option :label="$t('m.englishTitle')" value="englishTitle"></el-option>
+                  <el-option :label="$t('m.japaneseTitle')" value="japaneseTitle"></el-option>
+                  <el-option :label="$t('m.filename')" value="filename"></el-option>
+                </el-select>
+              </NameFormItem>
             </div>
           </el-col>
           <el-col :span="24">
             <div class="setting-line">
-              <el-input class="label-input">
+              <NameFormItem class="label-input" prependWidth="110px">
                 <template #prepend><span class="setting-label">{{$t('m.defaultScraper')}}</span></template>
-                <template #append>
-                  <el-select v-model="setting.defaultScraper" @change="saveSetting">
-                    <el-option v-for="searchType in searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
-                  </el-select>
-                </template>
-              </el-input>
+                <el-select v-model="setting.defaultScraper" @change="saveSetting">
+                  <el-option v-for="searchType in searchTypeList" :key="searchType.value" :label="searchType.label" :value="searchType.value" />
+                </el-select>
+              </NameFormItem>
             </div>
           </el-col>
           <el-col :span="24">
@@ -512,6 +515,7 @@ onMounted(() => {
       if (res.trimTitleRegExp === undefined) setting.value.trimTitleRegExp = '^\\d+[-]?\\s*|\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
       if (res.defaultScraper === undefined) setting.value.defaultScraper = 'exhentai'
       if (res.defaultInsertEmptyPage === undefined) setting.value.defaultInsertEmptyPage = true
+      if (res.viewerType === undefined) setting.value.viewerType = 'original'
       saveSetting()
 
       // default action

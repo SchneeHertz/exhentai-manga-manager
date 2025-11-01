@@ -169,7 +169,9 @@
     "moveFile": "移動檔案",
     "move": "移動",
     "minimizeOnStart": "啟動後最小化",
-    "minimizeToTray": "最小化到托盤"
+    "minimizeToTray": "最小化到托盤",
+    "viewerType": "閱讀器類型",
+    "originalViewer": "原版閱讀器"
   },
   "c": {
     "selectCollectionList": "選擇collectionList.json",

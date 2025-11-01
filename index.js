@@ -767,7 +767,8 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           index,
           relativePath: list[index - 1].relativePath,
           filepath: imageFilepath,
-          width, height
+          width, height,
+          last: index === list.length
         })
         ;(async () => {
           let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)

@@ -169,7 +169,9 @@
     "moveFile": "Move File",
     "move": "Move",
     "minimizeOnStart": "Minimize on Start",
-    "minimizeToTray": "Minimize to Tray"
+    "minimizeToTray": "Minimize to Tray",
+    "viewerType": "Viewer Type",
+    "originalViewer": "Original Viewer"
   },
   "c": {
     "selectCollectionList": "Select collectionList.json",

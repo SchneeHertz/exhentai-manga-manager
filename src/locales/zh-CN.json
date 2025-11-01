@@ -169,7 +169,9 @@
     "moveFile": "移动文件",
     "move": "移动",
     "minimizeOnStart": "启动后最小化",
-    "minimizeToTray": "最小化到托盘"
+    "minimizeToTray": "最小化到托盘",
+    "viewerType": "阅读器类型",
+    "originalViewer": "原版阅读器"
   },
   "c": {
     "selectCollectionList": "选择collectionList.json",

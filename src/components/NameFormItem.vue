@@ -45,7 +45,7 @@ const inputWrapperClass = computed(() => {
 })
 </script>
 
-<style lang="stylus" scoped>
+<style lang="stylus">
 .name-form-item
   font-size: 14px
 .name-select__prepend
@@ -56,7 +56,7 @@ const inputWrapperClass = computed(() => {
   display: table-cell
   position: relative
   border-width: 1px
-  border-style: solid
+  box-shadow: 1px 0 0 0 grey inset,0 1px 0 0 grey inset,0 -1px 0 0 grey inset
   border-color: var(--el-border-color)
   border-radius: 4px
   border-right: 0
@@ -67,6 +67,9 @@ const inputWrapperClass = computed(() => {
 .name-select__body
   display: table-cell
   width: 100%
+  .el-select__wrapper
+    border-top-left-radius: 0
+    border-bottom-left-radius: 0
 .name-select__append
   background-color: var(--el-fill-color-light)
   color: var(--el-color-info)

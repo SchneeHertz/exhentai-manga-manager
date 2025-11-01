@@ -106,7 +106,7 @@
               <el-descriptions-item :label="$t('m.filename')+':'">{{returnFileNameWithExt(bookDetail.filepath)}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.fileLocation')+':'">{{returnDirname(bookDetail.filepath)}}</el-descriptions-item>
               <el-descriptions-item :label="$t('m.category')+':'">
-                <el-tag type="info" class="book-tag" @click="$emit('searchFromTag', bookDetail.category)">{{bookDetail.category}}</el-tag>
+                <el-tag type="info" class="book-tag" @click="$emit('searchFromTag', `cat:${bookDetail.category}`)">{{bookDetail.category}}</el-tag>
               </el-descriptions-item>
               <el-descriptions-item v-for="(tagArr, key) in bookDetail.tags" :label="key + ':'" :key="key">
                 <el-popover

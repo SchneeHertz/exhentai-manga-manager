@@ -958,12 +958,13 @@ export default defineComponent({
         const bookString = JSON.stringify(
           _.assign(
             {},
-            _.pick(book, ['title', 'title_jpn', 'status', 'category', 'filepath', 'url', 'pageDiff']),
+            _.pick(book, ['title', 'title_jpn', 'status', 'filepath', 'url', 'pageDiff']),
             {
               tags: _.map(book.tags, (tags, cat) => {
                 const letter = this.cat2letter[cat] ? this.cat2letter[cat] : cat
                 return _.map(tags, (tag) => `${letter}:${tag}`).concat(_.map(tags, (tag) => `${cat}:${tag}`))
-              })
+              }),
+              category: `cat:${book.category}`,
             }
           )
         ).toLowerCase()

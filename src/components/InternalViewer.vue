@@ -227,6 +227,7 @@ const closeComicReader = () => {
     ComicReader = null
     const comicReadElement = document.getElementById('ComicRead')
     if (comicReadElement) comicReadElement.remove()
+    ipcRenderer.invoke('update-window-title')
   }
 }
 

@@ -736,6 +736,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
   ;(async () => {
     // 384 is the default 4K screen width divided by the default number of thumbnail columns
     const thumbnailWidth = _.isFinite(screenWidth / setting.thumbnailColumn) ? Math.floor(screenWidth / setting.thumbnailColumn) : 384
+    const widthLimit = _.isNumber(setting.widthLimit) ? Math.ceil(setting.widthLimit) : screenWidth
     for (let index = 1; index <= list.length; index++) {
       if (sendImageLock) {
         let imageFilepath = list[index - 1].absolutePath
@@ -746,6 +747,21 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           imageFilepath = newFilepath
         }
         let { width, height } = await sharp(imageFilepath, { failOnError: false }).metadata()
+        if (widthLimit !== 0 && width > widthLimit) {
+          height = Math.floor(height * (widthLimit / width))
+          width = widthLimit
+          const resizedFilepath = path.join(VIEWER_PATH, `resized_${nanoid(8)}.jpg`)
+          switch (extname) {
+            case '.gif':
+              break
+            default:
+              await sharp(imageFilepath, { failOnError: false })
+                .resize({ width })
+                .toFile(resizedFilepath)
+              imageFilepath = resizedFilepath
+              break
+          }
+        }
         mainWindow.webContents.send('manga-image', {
           id: `${bookId}_${index}`,
           index,

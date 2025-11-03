@@ -20,7 +20,7 @@
             :key="image.id"
             class="sidebar-thumbnail-item"
             :class="{'sidebar-thumbnail-active': isCurrentImage(image.id)}"
-            :id="`thumbnail-${image.id}`"
+            :id="image.thumbId"
           >
             <img
               :src="`${image.thumbnailPath}?id=${image.id}`"
@@ -28,7 +28,7 @@
               @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image)"
             />
-            <div class="sidebar-thunmnail-page">{{index + 1}} / {{thumbnailList.length}}</div>
+            <div class="sidebar-thumbnail-page">{{index + 1}} / {{thumbnailList.length}}</div>
           </div>
         </div>
       </div>
@@ -47,13 +47,22 @@
               :key="image.id"
               class="image-frame"
             >
-              <div class="viewer-image-frame viewer-image-frame-scroll" :id="image.id" :style="returnImageStyle(image)">
+              <div
+                class="viewer-image-frame viewer-image-frame-scroll"
+                :id="image.id"
+                :style="returnImageStyle(image)"
+                v-lazy:[image.id]="{enter: handleImageEnter, leave: handleImageLeave}"
+              >
                 <img
+                  v-if="loadedImages[image.id]"
                   :src="`${image.filepath}?id=${image.id}`"
                   class="viewer-image"
                   :style="{height: returnImageStyle(image).height}"
                   @contextmenu="onMangaImageContextMenu($event, image)"
                 />
+                <div v-else class="viewer-image-placeholder" :style="{height: returnImageStyle(image).height}">
+                  <el-icon class="is-loading"><Loading /></el-icon>
+                </div>
                 <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
               </div>
               <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
@@ -189,7 +198,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Close } from '@element-plus/icons-vue'
+import { Close, Loading } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
 import ContextMenu from '@imengyu/vue3-context-menu'
 
@@ -294,6 +303,34 @@ const thumbnailList = computed(() => {
   return _.sortBy(receiveThumbnailList.value, 'index')
 })
 
+const pendingImages = []
+const pendingThumbnails = []
+let firstImageLoaded = true
+let firstThumbnailLoaded = true
+
+const flushPendingImages = () => {
+  if (pendingImages.length > 0) {
+    viewerImageList.value.push(...pendingImages)
+    pendingImages.length = 0
+  }
+}
+
+const flushPendingThumbnails = () => {
+  if (pendingThumbnails.length > 0) {
+    receiveThumbnailList.value.push(...pendingThumbnails)
+    pendingThumbnails.length = 0
+  }
+}
+
+const debouncedFlushImages = _.debounce(flushPendingImages, 4000, {
+  leading: false,
+  trailing: true
+})
+
+const debouncedFlushThumbnails = _.debounce(flushPendingThumbnails, 4000, {
+  leading: false,
+  trailing: true
+})
 
 onMounted(() => {
   viewerImageWidth.value = +localStorage.getItem('viewerImageWidth') || 0.9
@@ -302,15 +339,32 @@ onMounted(() => {
   viewerReadingProgress.value = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
 
   ipcRenderer.on('manga-image', async (event, arg) => {
-    viewerImageList.value.push(arg)
-    if (setting.value.viewerType === 'comicread' && arg.last) {
-      await initComicRead()
-      showComicReader(viewerImageFilepathList.value)
+    pendingImages.push(arg)
+    debouncedFlushImages()
+    if (firstImageLoaded && pendingImages.length >= 32) {
+      firstImageLoaded = false
+      debouncedFlushImages.flush()
+    }
+    if (arg.last) {
+      debouncedFlushImages.flush()
+
+      if (setting.value.viewerType === 'comicread') {
+        await initComicRead()
+        showComicReader(viewerImageFilepathList.value)
+      }
       viewerLoading?.close()
     }
   })
   ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
-    receiveThumbnailList.value.push(arg)
+    pendingThumbnails.push(arg)
+    debouncedFlushThumbnails()
+    if (firstThumbnailLoaded && pendingThumbnails.length >= 32) {
+      firstThumbnailLoaded = false
+      debouncedFlushThumbnails.flush()
+    }
+    if (arg.last) {
+      debouncedFlushThumbnails.flush()
+    }
   })
   showViewerSide.value = localStorage.getItem('showViewerSide') === 'true'
 
@@ -319,6 +373,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleWindowResize)
+  debouncedFlushImages.cancel()
+  debouncedFlushThumbnails.cancel()
 })
 const handleWindowResize = _.debounce(() => {
   updateImageSize()
@@ -344,6 +400,8 @@ const viewManga = (book, viewerHeight = '100%') => {
   })
   emit('updateWindowTitle', book)
   insertLocalReadRecord(book.id)
+  firstImageLoaded = true
+  firstThumbnailLoaded = true
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
   .then(() => {
     if (!setting.value.viewerType || setting.value.viewerType === 'original') {
@@ -838,12 +896,22 @@ const scrollCurrentThumbnailIntoView = (id = null) => {
   nextTick(() => {
     const currentId = id || getCurrentImageId()
     if (showViewerSide.value && currentId && sidebarRef.value) {
-      const thumbnailElement = document.getElementById(`thumbnail-${currentId}`)
+      const thumbnailElement = document.getElementById(`thumb_${currentId}`)
       if (thumbnailElement) {
         thumbnailElement.scrollIntoView({ block: 'start' })
       }
     }
   })
+}
+
+const loadedImages = ref({})
+
+const handleImageEnter = (id) => {
+  loadedImages.value[id] = true
+}
+
+const handleImageLeave = (id) => {
+  loadedImages.value[id] = false
 }
 
 defineExpose({
@@ -917,7 +985,7 @@ defineExpose({
     &:hover
       border-color: var(--el-color-primary)
 
-  .sidebar-thunmnail-page
+  .sidebar-thumbnail-page
     margin-top: 3px
     font-size: 11px
     color: var(--el-text-color-secondary)
@@ -1012,4 +1080,13 @@ defineExpose({
 .viewer-thunmnail-page
   text-align: center
   font-size: 11px
+
+.viewer-image-placeholder
+  display: flex
+  align-items: center
+  justify-content: center
+  background-color: var(--el-fill-color-light)
+  .el-icon
+    font-size: 32px
+    color: var(--el-text-color-placeholder)
 </style>

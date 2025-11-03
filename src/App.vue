@@ -110,7 +110,7 @@
           v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
           class="book-card-frame"
-          v-lazy:[book.id]="loadBookCardContent"
+          v-lazy:[book.id]="{'enter': loadBookCardContent, 'leave': unloadBookCardContent}"
           :tabindex="index + 1"
         >
           <transition name="pop">
@@ -1013,6 +1013,9 @@ export default defineComponent({
     },
     loadBookCardContent (id) {
       this.visibilityMap[id] = true
+    },
+    unloadBookCardContent (id) {
+      this.visibilityMap[id] = false
     },
     chunkList () {
       this.currentPage = 1

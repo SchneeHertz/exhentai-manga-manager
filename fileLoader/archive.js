@@ -27,7 +27,7 @@ const solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH) => {
     const match = /(?<== ).*$/.exec(p)
     return match ? match[0] : ''
   })
-  let imageList = _.filter(pathlist, p => ['.jpg','.jpeg','.png','.webp','.avif', '.gif'].includes(path.extname(p).toLowerCase()))
+  let imageList = _.filter(pathlist, p => ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif'].includes(path.extname(p).toLowerCase()))
   imageList = imageList.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
 
   let targetFile
@@ -38,12 +38,12 @@ const solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH) => {
   if (imageList.length > 8) {
     targetFile = imageList[7]
     coverFile = imageList[0]
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile, '-p123456'])
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, coverFile, '-p123456'])
+    await spawnPromise(_7z, ['x', '-o'+tempFolder, '-p123456', '--', filepath, targetFile])
+    await spawnPromise(_7z, ['x', '-o'+tempFolder, '-p123456', '--', filepath, coverFile])
   } else if (imageList.length > 0) {
     targetFile = imageList[0]
     coverFile = imageList[0]
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile, '-p123456'])
+    await spawnPromise(_7z, ['x', '-o'+tempFolder, '-p123456', '--', filepath, targetFile])
   } else {
     throw new Error('compression package isnot include image')
   }
@@ -75,7 +75,7 @@ const getImageListFromArchive = async (filepath, VIEWER_PATH) => {
 }
 
 const deleteImageFromArchive = async (filename, filepath) => {
-  await spawnPromise(_7z, ['d', filepath, filename, '-p123456'])
+  await spawnPromise(_7z, ['d', '-p123456', '--', filepath, filename])
   return true
 }
 

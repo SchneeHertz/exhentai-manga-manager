@@ -108,13 +108,6 @@
               </el-input>
             </div>
           </el-col>
-          <el-col :span="24">
-            <div class="setting-line">
-              <el-input v-model.number="setting.widthLimit" :placeholder="$t('m.widthLimitInfo')" @change="saveSetting">
-                <template #prepend><span class="setting-label">{{$t('m.widthLimit')}}</span></template>
-              </el-input>
-            </div>
-          </el-col>
           <el-col :span="24" class="setting-switch">
             <el-switch
               v-model="setting.hidePageNumber"

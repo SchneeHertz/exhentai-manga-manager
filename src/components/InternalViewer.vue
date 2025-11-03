@@ -211,21 +211,35 @@ const emit = defineEmits([
 ])
 
 let ComicReader = null
+const isComicReadDisplay = ref(false)
+
+const showComicReader = (imageList) => {
+  if (ComicReader) {
+    isComicReadDisplay.value = true
+    ComicReader.open(imageList)
+  }
+}
+
+const closeComicReader = () => {
+  if (ComicReader) {
+    isComicReadDisplay.value = false
+    ComicReader.setProps('show', false)
+    ComicReader = null
+    const comicReadElement = document.getElementById('ComicRead')
+    if (comicReadElement) comicReadElement.remove()
+  }
+}
 
 const initComicRead = async () => {
   if (!ComicReader && setting.value.viewerType === 'comicread') {
     try {
       const { initComicReader, defaultConfig } = await import('@hymbz/comic-read-script/ComicReader.umd.js')
-      ComicReader = initComicReader(defaultConfig())
+      const configObject = defaultConfig()
+      configObject.props.onExit = closeComicReader
+      ComicReader = initComicReader(configObject)
     } catch (error) {
       console.error('Failed to load ComicRead:', error)
     }
-  }
-}
-
-const showComicReader = (imageList) => {
-  if (ComicReader) {
-    ComicReader.open(imageList)
   }
 }
 
@@ -844,6 +858,8 @@ defineExpose({
   saveReadingProgress,
   viewManga,
   handleStopReadManga,
+  isComicReadDisplay,
+  closeComicReader,
 })
 </script>
 

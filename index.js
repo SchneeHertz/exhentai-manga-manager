@@ -770,26 +770,28 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           width, height,
           last: index === list.length
         })
-        ;(async () => {
-          let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
-          switch (extname) {
-            case '.gif':
-              thumbnailPath = imageFilepath
-              break
-            default:
-              await sharp(imageFilepath, { failOnError: false })
-                .resize({ width: thumbnailWidth })
-                .toFile(thumbnailPath)
-              break
-          }
-          mainWindow.webContents.send('manga-thumbnail-image', {
-            id: `${bookId}_${index}`,
-            index,
-            relativePath: list[index - 1].relativePath,
-            filepath: imageFilepath,
-            thumbnailPath,
-          })
-        })()
+        if (setting.viewerType !== 'comicread') {
+          ;(async () => {
+            let thumbnailPath = path.join(VIEWER_PATH, `thumb_${nanoid(8)}.jpg`)
+            switch (extname) {
+              case '.gif':
+                thumbnailPath = imageFilepath
+                break
+              default:
+                await sharp(imageFilepath, { failOnError: false })
+                  .resize({ width: thumbnailWidth })
+                  .toFile(thumbnailPath)
+                break
+            }
+            mainWindow.webContents.send('manga-thumbnail-image', {
+              id: `${bookId}_${index}`,
+              index,
+              relativePath: list[index - 1].relativePath,
+              filepath: imageFilepath,
+              thumbnailPath,
+            })
+          })()
+        }
       }
     }
   })()

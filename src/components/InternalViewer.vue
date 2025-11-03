@@ -363,8 +363,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleWindowResize)
-  debouncedFlushImages.cancel()
-  debouncedFlushThumbnails.cancel()
 })
 const handleWindowResize = _.debounce(() => {
   updateImageSize()

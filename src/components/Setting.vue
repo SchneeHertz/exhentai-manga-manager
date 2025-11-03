@@ -94,7 +94,7 @@
                 <template #prepend>
                   <span class="setting-label">{{$t('m.viewerType')}}</span>
                 </template>
-                <el-select placeholder=" " v-model="setting.viewerType" @change="saveSetting" disabled>
+                <el-select placeholder=" " v-model="setting.viewerType" @change="saveSetting">
                   <el-option :label="$t('m.originalViewer')" value="original"></el-option>
                   <el-option label="ComicRead" value="comicread"></el-option>
                 </el-select>

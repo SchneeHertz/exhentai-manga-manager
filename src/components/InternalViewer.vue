@@ -305,8 +305,6 @@ const thumbnailList = computed(() => {
 
 const pendingImages = []
 const pendingThumbnails = []
-let firstImageLoaded = true
-let firstThumbnailLoaded = true
 
 const flushPendingImages = () => {
   if (pendingImages.length > 0) {
@@ -322,16 +320,6 @@ const flushPendingThumbnails = () => {
   }
 }
 
-const debouncedFlushImages = _.debounce(flushPendingImages, 4000, {
-  leading: false,
-  trailing: true
-})
-
-const debouncedFlushThumbnails = _.debounce(flushPendingThumbnails, 4000, {
-  leading: false,
-  trailing: true
-})
-
 onMounted(() => {
   viewerImageWidth.value = +localStorage.getItem('viewerImageWidth') || 0.9
   imageStyleType.value = localStorage.getItem('imageStyleType') || 'scroll'
@@ -340,13 +328,13 @@ onMounted(() => {
 
   ipcRenderer.on('manga-image', async (event, arg) => {
     pendingImages.push(arg)
-    debouncedFlushImages()
-    if (firstImageLoaded && pendingImages.length >= 32) {
-      firstImageLoaded = false
-      debouncedFlushImages.flush()
+
+    if (pendingImages.length >= 10) {
+      flushPendingImages()
     }
+
     if (arg.last) {
-      debouncedFlushImages.flush()
+      flushPendingImages()
 
       if (setting.value.viewerType === 'comicread') {
         await initComicRead()
@@ -355,17 +343,19 @@ onMounted(() => {
       viewerLoading?.close()
     }
   })
+
   ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
     pendingThumbnails.push(arg)
-    debouncedFlushThumbnails()
-    if (firstThumbnailLoaded && pendingThumbnails.length >= 32) {
-      firstThumbnailLoaded = false
-      debouncedFlushThumbnails.flush()
+
+    if (pendingThumbnails.length >= 10) {
+      flushPendingThumbnails()
     }
+
     if (arg.last) {
-      debouncedFlushThumbnails.flush()
+      flushPendingThumbnails()
     }
   })
+
   showViewerSide.value = localStorage.getItem('showViewerSide') === 'true'
 
   window.addEventListener('resize', handleWindowResize)
@@ -400,8 +390,6 @@ const viewManga = (book, viewerHeight = '100%') => {
   })
   emit('updateWindowTitle', book)
   insertLocalReadRecord(book.id)
-  firstImageLoaded = true
-  firstThumbnailLoaded = true
   ipcRenderer.invoke('load-manga-image-list', _.cloneDeep(book))
   .then(() => {
     if (!setting.value.viewerType || setting.value.viewerType === 'original') {

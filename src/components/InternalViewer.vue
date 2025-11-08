@@ -70,7 +70,7 @@
           </div>
           <div v-else-if="imageStyleType === 'single'" class="image-frame-outside">
             <div class="image-frame">
-              <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
+              <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])" v-if="viewerImageList.length > 0">
                 <img
                   :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
                   class="viewer-image"
@@ -93,7 +93,7 @@
           </div>
           <div v-else-if="imageStyleType === 'double'" class="image-frame-outside">
             <div class="image-frame">
-              <div class="viewer-image-frame viewer-image-frame-double">
+              <div class="viewer-image-frame viewer-image-frame-double" v-if="viewerImageListDouble.length > 0">
                 <img
                   v-for="image in viewerImageListDouble[currentImageIndex]?.page"
                   :key="image.id"

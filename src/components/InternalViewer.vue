@@ -80,12 +80,14 @@
               </div>
               <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
               <img
-                :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
+                :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex - 1]?.id}`"
                 class="viewer-image-preload"
+                v-if="currentImageIndex > 1"
               />
               <img
                 :src="`${viewerImageList[currentImageIndex + 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
                 class="viewer-image-preload"
+                v-if="currentImageIndex < viewerImageList.length - 1"
               />
             </div>
           </div>
@@ -101,11 +103,19 @@
                   @contextmenu="onMangaImageContextMenu($event, image)"
                 />
               </div>
-              <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page" :key="image.id">
-                <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
+              <div v-if="currentImageIndex > 1">
+                <img
+                  v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page" :key="image.id"
+                  :src="`${image.filepath}?id=${image.id}`"
+                  class="viewer-image-preload"
+                />
               </div>
-              <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id">
-                <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
+              <div v-if="currentImageIndex < viewerImageListDouble.length - 1">
+                <img
+                  v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id"
+                  :src="`${image.filepath}?id=${image.id}`"
+                  class="viewer-image-preload"
+                />
               </div>
               <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
             </div>
@@ -333,7 +343,7 @@ onMounted(() => {
       flushPendingImages()
     }
 
-    if (arg.last) {
+    if ((viewerImageList.value.length + pendingImages.length) === arg.total) {
       flushPendingImages()
 
       if (setting.value.viewerType === 'comicread') {
@@ -351,7 +361,7 @@ onMounted(() => {
       flushPendingThumbnails()
     }
 
-    if (arg.last) {
+    if ((receiveThumbnailList.value.length + pendingThumbnails.length) === arg.total) {
       flushPendingThumbnails()
     }
   })

@@ -768,7 +768,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
           relativePath: list[index - 1].relativePath,
           filepath: imageFilepath,
           width, height,
-          last: index === list.length
+          total: list.length
         })
         if (setting.viewerType !== 'comicread') {
           ;(async () => {
@@ -790,7 +790,7 @@ ipcMain.handle('load-manga-image-list', async (event, book) => {
               relativePath: list[index - 1].relativePath,
               filepath: imageFilepath,
               thumbnailPath,
-              last: index === list.length
+              total: list.length
             })
           })()
         }

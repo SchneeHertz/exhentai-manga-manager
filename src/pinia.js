@@ -218,6 +218,7 @@ export const useAppStore = defineStore('appStore', {
       return fileNameWithoutExtension
     },
     getDisplayTitle (book) {
+      if (book.isCollection) return book.title
       switch (this.setting.displayTitle) {
         case 'englishTitle':
           return book.title

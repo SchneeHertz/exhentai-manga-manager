@@ -617,7 +617,7 @@ const autoCheckUpdates = async (forceShowDialog) => {
     const skipVersion = localStorage.getItem('skipVersion')
     if (tag_name && tag_name !== 'v' + version && tag_name !== skipVersion) {
       ElMessageBox.confirm(
-        h('pre', { innerHTML: body, style: 'font-family: Avenir, Helvetica, Arial, sans-serif'}),
+        h('pre', { innerHTML: body, style: 'font-family: Avenir, Helvetica, Arial, sans-serif; text-wrap: balance;' }),
         t('c.newVersion') + tag_name,
         {
           distinguishCancelAndClose: true,

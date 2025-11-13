@@ -217,7 +217,8 @@
     "outOfRange": "Out of range",
     "useTranslationCache": "Use translation cache",
     "moveSuccess": "Move successful",
-    "moveError": "Move failed"
+    "moveError": "Move failed",
+    "noMoreSearchHistory": "No more search history"
   },
   "ac": {
     "Global": "Global",
@@ -232,6 +233,7 @@
     "Global_ShowAbout": "Show About",
     "Global_ShowAccelerator": "Show Accelerator",
     "Global_Escape": "Escape",
+    "Global_RevertSearch": "Revert Search",
     "Home": "Home",
     "Home_PreviousPage": "Previous Page",
     "Home_NextPage": "Next Page",

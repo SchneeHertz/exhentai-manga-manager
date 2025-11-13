@@ -285,6 +285,7 @@ export default defineComponent({
       visibilityMap: {},
       buttonLoadBookListLoading: false,
       buttonGetMetadatasLoading: false,
+      searchHistory: [],
       // collection
       drawerVisibleCollection: false,
       openCollectionTitle: undefined,
@@ -601,16 +602,21 @@ export default defineComponent({
       }
     },
     resolveMouseDown (event) {
+      const currentUIValue = this.currentUI()
       if (event.button === 3) {
-        if (this.currentUI() === 'viewer-comicread') {
+        if (currentUIValue === 'viewer-comicread') {
           this.$refs.InternalViewerRef.closeComicReader()
           return
         }
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
         // clear search result when at home page
-        if (this.currentUI() === 'home') {
+        if (currentUIValue === 'home') {
           this.handleSearchStringChange()
           this.$refs.FolderTreeRef.resetSelect()
+        }
+      } else if (event.button === 4) {
+        if (currentUIValue !== 'viewer-content' && currentUIValue !== 'viewer-thumbnail' && currentUIValue !== 'viewer-comicread') {
+          this.revertSearch()
         }
       }
     },
@@ -881,7 +887,7 @@ export default defineComponent({
         this.searchString = val
       }
     },
-    searchBook () {
+    searchBook (addToHistory = true) {
       const checkCondition = (bookString, bookInfo) => {
         const searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
         const orCondition = _.filter(searchStringArray, (str) => str.startsWith('~'))
@@ -963,6 +969,8 @@ export default defineComponent({
       if (this.currentUI() === 'edit-group-tag') {
         this.$refs.EditViewRef.selectBookList = []
         this.displayBookList.forEach(book => book.selected = false)
+      } else if (addToHistory) {
+        this.searchHistory.push(this.searchString)
       }
     },
     handleSearchString (string) {
@@ -970,6 +978,18 @@ export default defineComponent({
       this.drawerVisibleCollection = false
       this.searchString = string
       this.searchBook()
+    },
+    revertSearch () {
+      let searchString = this.searchHistory.pop()
+      if (searchString === this.searchString && this.currentUI() === 'home') searchString = this.searchHistory.pop()
+      if (searchString !== undefined) {
+        this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
+        this.drawerVisibleCollection = false
+        this.searchString = searchString
+        this.searchBook(false)
+      } else {
+        this.printMessage('info', this.$t('c.noMoreSearchHistory'))
+      }
     },
     searchFromTag (tag, cat) {
       this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false

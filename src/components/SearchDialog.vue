@@ -341,7 +341,7 @@ const resolveEhentaiResult = (htmlString) => {
 }
 
 const resolveHentagResult = (data) => {
-  const resultList = data.works.slice(0, 10)
+  const resultList = data.works.slice(0, 30)
   ehSearchResultList.value = []
   resultList.forEach((result) => {
     const findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))

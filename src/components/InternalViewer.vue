@@ -387,6 +387,8 @@ const viewManga = (book, viewerHeight = '100%') => {
   drawerHeight.value = viewerHeight
   viewerImageList.value = []
   receiveThumbnailList.value = []
+  pendingImages.length = 0
+  pendingThumbnails.length = 0
   currentImageIndex.value = 0
   insertEmptyPage.value = setting.value.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0

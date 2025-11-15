@@ -187,15 +187,17 @@ const emit = defineEmits([
   'getBookInfo',
   'searchFromTag',
   'jumpMangeDetail',
+  'addToHistory',
 ])
 
 const dialogVisibleBookDetail = ref(false)
 
-const openBookDetail = (book) => {
+const openBookDetail = (book, addToHistory = true) => {
   bookDetail.value = book
   dialogVisibleBookDetail.value = true
   comments.value = []
   if (setting.value.showComment) getComments(book.url)
+  if (addToHistory) emit('addToHistory', book.id)
 }
 const openUrl = (url) => {
   ipcRenderer.invoke('open-url', url)

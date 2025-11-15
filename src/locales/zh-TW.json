@@ -218,7 +218,7 @@
     "useTranslationCache": "使用翻譯快取",
     "moveSuccess": "移動成功",
     "moveError": "移動失敗",
-    "noMoreSearchHistory": "沒有更多搜尋歷史"
+    "noMoreActionHistory": "沒有更多操作歷史"
   },
   "ac": {
     "Global": "全域",
@@ -233,7 +233,7 @@
     "Global_ShowAbout": "顯示關於",
     "Global_ShowAccelerator": "顯示快捷鍵",
     "Global_Escape": "退出到上一個介面",
-    "Global_RevertSearch": "回退搜尋",
+    "Global_RevertAction": "回退操作",
     "Home": "首頁",
     "Home_PreviousPage": "上一頁",
     "Home_NextPage": "下一頁",

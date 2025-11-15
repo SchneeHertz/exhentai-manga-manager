@@ -218,7 +218,7 @@
     "useTranslationCache": "Use translation cache",
     "moveSuccess": "Move successful",
     "moveError": "Move failed",
-    "noMoreSearchHistory": "No more search history"
+    "noMoreActionHistory": "No more action history"
   },
   "ac": {
     "Global": "Global",
@@ -233,7 +233,7 @@
     "Global_ShowAbout": "Show About",
     "Global_ShowAccelerator": "Show Accelerator",
     "Global_Escape": "Escape",
-    "Global_RevertSearch": "Revert Search",
+    "Global_RevertAction": "Revert Action",
     "Home": "Home",
     "Home_PreviousPage": "Previous Page",
     "Home_NextPage": "Next Page",

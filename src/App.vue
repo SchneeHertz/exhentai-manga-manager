@@ -216,6 +216,7 @@
       @get-book-info="$refs.SearchDialogRef.getBookInfo(bookDetail)"
       @search-from-tag="searchFromTag"
       @jump-mange-detail="jumpMangeDetail"
+      @add-to-history="addBookToHistory"
     />
     <InternalViewer
       ref="InternalViewerRef"
@@ -285,7 +286,7 @@ export default defineComponent({
       visibilityMap: {},
       buttonLoadBookListLoading: false,
       buttonGetMetadatasLoading: false,
-      searchHistory: [],
+      actionHistory: [],
       // collection
       drawerVisibleCollection: false,
       openCollectionTitle: undefined,
@@ -478,46 +479,7 @@ export default defineComponent({
           return
         }
       }
-      if (currentUIValue === 'viewer-content') {
-        if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
-          if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
-            this.$refs.InternalViewerRef.currentImageIndex += 1
-          } else if (event.key === prev || event.key === 'ArrowUp') {
-            this.$refs.InternalViewerRef.currentImageIndex -= 1
-          } else if (event.key === 'Home') {
-            this.$refs.InternalViewerRef.currentImageIndex = 0
-          } else if (event.key === 'End') {
-            if (this.$refs.InternalViewerRef.imageStyleType === 'single') {
-              this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageList.length - 1
-            } else if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
-              this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageListDouble.length - 1
-            }
-          }
-        } else if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
-          if (event.key === "/") {
-            this.$refs.InternalViewerRef.insertEmptyPageIndex = this.$refs.InternalViewerRef.currentImageIndex
-            this.$refs.InternalViewerRef.insertEmptyPage = !this.$refs.InternalViewerRef.insertEmptyPage
-          }
-        } else if (this.$refs.InternalViewerRef.imageStyleType === 'scroll') {
-          if (event.key === prev || event.key === 'ArrowUp') {
-            if (event.ctrlKey) {
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 10)
-            } else {
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 1.2)
-            }
-          } else if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
-            if (event.ctrlKey) {
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 10)
-            } else {
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 1.2)
-            }
-          } else if (event.key === 'Home') {
-            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
-          } else if (event.key === 'End') {
-            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollHeight
-          }
-        }
-      } else if (currentUIValue === 'viewer-content' || currentUIValue === 'viewer-thumbnail') {
+      if (currentUIValue === 'viewer-content' || currentUIValue === 'viewer-thumbnail') {
         if (event.key === 'PageDown') {
           if (event.shiftKey) {
             this.toNextMangaRandom()
@@ -528,6 +490,47 @@ export default defineComponent({
           this.toNextManga(-1)
         } else if (event.key === '=') {
           this.$refs.InternalViewerRef.showThumbnail = !this.$refs.InternalViewerRef.showThumbnail
+        }
+        if (currentUIValue === 'viewer-content') {
+          if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
+            if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
+              this.$refs.InternalViewerRef.currentImageIndex += 1
+            } else if (event.key === prev || event.key === 'ArrowUp') {
+              this.$refs.InternalViewerRef.currentImageIndex -= 1
+            } else if (event.key === 'Home') {
+              this.$refs.InternalViewerRef.currentImageIndex = 0
+            } else if (event.key === 'End') {
+              if (this.$refs.InternalViewerRef.imageStyleType === 'single') {
+                this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageList.length - 1
+              } else if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
+                this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageListDouble.length - 1
+              }
+            }
+            if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
+              if (event.key === "/") {
+                this.$refs.InternalViewerRef.insertEmptyPageIndex = this.$refs.InternalViewerRef.currentImageIndex
+                this.$refs.InternalViewerRef.insertEmptyPage = !this.$refs.InternalViewerRef.insertEmptyPage
+              }
+            }
+          } else if (this.$refs.InternalViewerRef.imageStyleType === 'scroll') {
+            if (event.key === prev || event.key === 'ArrowUp') {
+              if (event.ctrlKey) {
+                document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 10)
+              } else {
+                document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 1.2)
+              }
+            } else if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
+              if (event.ctrlKey) {
+                document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 10)
+              } else {
+                document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 1.2)
+              }
+            } else if (event.key === 'Home') {
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
+            } else if (event.key === 'End') {
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollHeight
+            }
+          }
         }
       } else if (currentUIValue === 'viewer-comicread') {
         // do nothing for now
@@ -616,7 +619,7 @@ export default defineComponent({
         }
       } else if (event.button === 4) {
         if (currentUIValue !== 'viewer-content' && currentUIValue !== 'viewer-thumbnail' && currentUIValue !== 'viewer-comicread') {
-          this.revertSearch()
+          this.revertAction()
         }
       }
     },
@@ -970,7 +973,7 @@ export default defineComponent({
         this.$refs.EditViewRef.selectBookList = []
         this.displayBookList.forEach(book => book.selected = false)
       } else if (addToHistory) {
-        this.searchHistory.push(this.searchString)
+        this.actionHistory.push({type: 'search', value: this.searchString})
       }
     },
     handleSearchString (string) {
@@ -979,16 +982,36 @@ export default defineComponent({
       this.searchString = string
       this.searchBook()
     },
-    revertSearch () {
-      let searchString = this.searchHistory.pop()
-      if (searchString === this.searchString && this.currentUI() === 'home') searchString = this.searchHistory.pop()
-      if (searchString !== undefined) {
-        this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
-        this.drawerVisibleCollection = false
-        this.searchString = searchString
-        this.searchBook(false)
-      } else {
-        this.printMessage('info', this.$t('c.noMoreSearchHistory'))
+    revertAction () {
+      let action = this.actionHistory.pop()
+      switch (action?.type) {
+        case 'search':
+          if (action?.value === this.searchString && this.currentUI() === 'home') {
+            this.revertAction()
+            return
+          }
+          if (action?.value !== undefined) {
+            this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
+            this.drawerVisibleCollection = false
+            this.searchString = action.value
+            this.searchBook(false)
+          }
+          break
+        case 'openBook':
+          if (action?.value === this.bookDetail?.id && this.currentUI() === 'bookdetail') {
+            this.revertAction()
+            return
+          }
+          if (action?.value !== undefined) {
+            const book = this.bookList.find(b => b.id === action.value)
+            if (book) this.$refs.BookDetailDialogRef.openBookDetail(book, false)
+          }
+          break
+        default:
+          this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
+          this.handleSearchStringChange()
+          this.printMessage('info', this.$t('c.noMoreActionHistory'))
+          break
       }
     },
     searchFromTag (tag, cat) {
@@ -1015,6 +1038,9 @@ export default defineComponent({
           this.$refs.BookDetailDialogRef.openBookDetail(book)
           break
       }
+    },
+    addBookToHistory (id) {
+      if (id) this.actionHistory.push({type: 'openBook', value: id})
     },
     jumpBookByTabindex (step, container) {
       try {

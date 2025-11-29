@@ -20,7 +20,7 @@
             :key="image.id"
             class="sidebar-thumbnail-item"
             :class="{'sidebar-thumbnail-active': isCurrentImage(image.id)}"
-            :id="`thumbnail-${image.id}`"
+            :id="image.thumbId"
           >
             <img
               :src="`${image.thumbnailPath}?id=${image.id}`"
@@ -28,7 +28,7 @@
               @click="handleClickThumbnail(image.id)"
               @contextmenu="onMangaImageContextMenu($event, image)"
             />
-            <div class="sidebar-thunmnail-page">{{index + 1}} / {{thumbnailList.length}}</div>
+            <div class="sidebar-thumbnail-page">{{index + 1}} / {{thumbnailList.length}}</div>
           </div>
         </div>
       </div>
@@ -47,13 +47,22 @@
               :key="image.id"
               class="image-frame"
             >
-              <div class="viewer-image-frame viewer-image-frame-scroll" :id="image.id" :style="returnImageStyle(image)">
+              <div
+                class="viewer-image-frame viewer-image-frame-scroll"
+                :id="image.id"
+                :style="returnImageStyle(image)"
+                v-lazy:[image.id]="{enter: handleImageEnter, leave: handleImageLeave}"
+              >
                 <img
+                  v-if="loadedImages[image.id]"
                   :src="`${image.filepath}?id=${image.id}`"
                   class="viewer-image"
                   :style="{height: returnImageStyle(image).height}"
                   @contextmenu="onMangaImageContextMenu($event, image)"
                 />
+                <div v-else class="viewer-image-placeholder" :style="{height: returnImageStyle(image).height}">
+                  <el-icon class="is-loading"><Loading /></el-icon>
+                </div>
                 <div class="viewer-image-bar" @mousedown="initResize(image.id, image.width)"></div>
               </div>
               <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{index + 1}} of {{viewerImageList.length}}</div>
@@ -61,7 +70,7 @@
           </div>
           <div v-else-if="imageStyleType === 'single'" class="image-frame-outside">
             <div class="image-frame">
-              <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])">
+              <div class="viewer-image-frame"  :style="returnImageStyle(viewerImageList[currentImageIndex])" v-if="viewerImageList.length > 0">
                 <img
                   :src="`${viewerImageList[currentImageIndex]?.filepath}?id=${viewerImageList[currentImageIndex]?.id}`"
                   class="viewer-image"
@@ -71,18 +80,20 @@
               </div>
               <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{currentImageIndex + 1}} of {{viewerImageList.length}}</div>
               <img
-                :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
+                :src="`${viewerImageList[currentImageIndex - 1]?.filepath}?id=${viewerImageList[currentImageIndex - 1]?.id}`"
                 class="viewer-image-preload"
+                v-if="currentImageIndex > 1"
               />
               <img
                 :src="`${viewerImageList[currentImageIndex + 1]?.filepath}?id=${viewerImageList[currentImageIndex + 1]?.id}`"
                 class="viewer-image-preload"
+                v-if="currentImageIndex < viewerImageList.length - 1"
               />
             </div>
           </div>
           <div v-else-if="imageStyleType === 'double'" class="image-frame-outside">
             <div class="image-frame">
-              <div class="viewer-image-frame viewer-image-frame-double">
+              <div class="viewer-image-frame viewer-image-frame-double" v-if="viewerImageListDouble.length > 0">
                 <img
                   v-for="image in viewerImageListDouble[currentImageIndex]?.page"
                   :key="image.id"
@@ -92,11 +103,19 @@
                   @contextmenu="onMangaImageContextMenu($event, image)"
                 />
               </div>
-              <div v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page" :key="image.id">
-                <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
+              <div v-if="currentImageIndex > 1">
+                <img
+                  v-for="image in viewerImageListDouble[currentImageIndex - 1]?.page" :key="image.id"
+                  :src="`${image.filepath}?id=${image.id}`"
+                  class="viewer-image-preload"
+                />
               </div>
-              <div v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id">
-                <img :src="`${image.filepath}?id=${image.id}`" class="viewer-image-preload" />
+              <div v-if="currentImageIndex < viewerImageListDouble.length - 1">
+                <img
+                  v-for="image in viewerImageListDouble[currentImageIndex + 1]?.page" :key="image.id"
+                  :src="`${image.filepath}?id=${image.id}`"
+                  class="viewer-image-preload"
+                />
               </div>
               <div class="viewer-image-page" v-if="!setting.hidePageNumber">{{viewerImageListDouble[currentImageIndex]?.pageNumber?.join(', ')}} of {{viewerImageList.length}}</div>
             </div>
@@ -189,7 +208,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Close } from '@element-plus/icons-vue'
+import { Close, Loading } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
 import ContextMenu from '@imengyu/vue3-context-menu'
 
@@ -211,21 +230,36 @@ const emit = defineEmits([
 ])
 
 let ComicReader = null
+const isComicReadDisplay = ref(false)
+
+const showComicReader = (imageList) => {
+  if (ComicReader) {
+    isComicReadDisplay.value = true
+    ComicReader.open(imageList)
+  }
+}
+
+const closeComicReader = () => {
+  if (ComicReader) {
+    isComicReadDisplay.value = false
+    ComicReader.setProps('show', false)
+    ComicReader = null
+    const comicReadElement = document.getElementById('ComicRead')
+    if (comicReadElement) comicReadElement.remove()
+    ipcRenderer.invoke('update-window-title')
+  }
+}
 
 const initComicRead = async () => {
   if (!ComicReader && setting.value.viewerType === 'comicread') {
     try {
       const { initComicReader, defaultConfig } = await import('@hymbz/comic-read-script/ComicReader.umd.js')
-      ComicReader = initComicReader(defaultConfig())
+      const configObject = defaultConfig()
+      configObject.props.onExit = closeComicReader
+      ComicReader = initComicReader(configObject)
     } catch (error) {
       console.error('Failed to load ComicRead:', error)
     }
-  }
-}
-
-const showComicReader = (imageList) => {
-  if (ComicReader) {
-    ComicReader.open(imageList)
   }
 }
 
@@ -279,6 +313,22 @@ const thumbnailList = computed(() => {
   return _.sortBy(receiveThumbnailList.value, 'index')
 })
 
+const pendingImages = []
+const pendingThumbnails = []
+
+const flushPendingImages = () => {
+  if (pendingImages.length > 0) {
+    viewerImageList.value.push(...pendingImages)
+    pendingImages.length = 0
+  }
+}
+
+const flushPendingThumbnails = () => {
+  if (pendingThumbnails.length > 0) {
+    receiveThumbnailList.value.push(...pendingThumbnails)
+    pendingThumbnails.length = 0
+  }
+}
 
 onMounted(() => {
   viewerImageWidth.value = +localStorage.getItem('viewerImageWidth') || 0.9
@@ -287,16 +337,35 @@ onMounted(() => {
   viewerReadingProgress.value = JSON.parse(localStorage.getItem('viewerReadingProgress')) || []
 
   ipcRenderer.on('manga-image', async (event, arg) => {
-    viewerImageList.value.push(arg)
-    if (setting.value.viewerType === 'comicread' && arg.last) {
-      await initComicRead()
-      showComicReader(viewerImageFilepathList.value)
+    pendingImages.push(arg)
+
+    if (pendingImages.length >= 10) {
+      flushPendingImages()
+    }
+
+    if ((viewerImageList.value.length + pendingImages.length) === arg.total) {
+      flushPendingImages()
+
+      if (setting.value.viewerType === 'comicread') {
+        await initComicRead()
+        showComicReader(viewerImageFilepathList.value)
+      }
       viewerLoading?.close()
     }
   })
+
   ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
-    receiveThumbnailList.value.push(arg)
+    pendingThumbnails.push(arg)
+
+    if (pendingThumbnails.length >= 10) {
+      flushPendingThumbnails()
+    }
+
+    if ((receiveThumbnailList.value.length + pendingThumbnails.length) === arg.total) {
+      flushPendingThumbnails()
+    }
   })
+
   showViewerSide.value = localStorage.getItem('showViewerSide') === 'true'
 
   window.addEventListener('resize', handleWindowResize)
@@ -318,6 +387,8 @@ const viewManga = (book, viewerHeight = '100%') => {
   drawerHeight.value = viewerHeight
   viewerImageList.value = []
   receiveThumbnailList.value = []
+  pendingImages.length = 0
+  pendingThumbnails.length = 0
   currentImageIndex.value = 0
   insertEmptyPage.value = setting.value.defaultInsertEmptyPage
   insertEmptyPageIndex.value = 0
@@ -823,12 +894,22 @@ const scrollCurrentThumbnailIntoView = (id = null) => {
   nextTick(() => {
     const currentId = id || getCurrentImageId()
     if (showViewerSide.value && currentId && sidebarRef.value) {
-      const thumbnailElement = document.getElementById(`thumbnail-${currentId}`)
+      const thumbnailElement = document.getElementById(`thumb_${currentId}`)
       if (thumbnailElement) {
         thumbnailElement.scrollIntoView({ block: 'start' })
       }
     }
   })
+}
+
+const loadedImages = ref({})
+
+const handleImageEnter = (id) => {
+  loadedImages.value[id] = true
+}
+
+const handleImageLeave = (id) => {
+  loadedImages.value[id] = false
 }
 
 defineExpose({
@@ -844,6 +925,8 @@ defineExpose({
   saveReadingProgress,
   viewManga,
   handleStopReadManga,
+  isComicReadDisplay,
+  closeComicReader,
 })
 </script>
 
@@ -900,7 +983,7 @@ defineExpose({
     &:hover
       border-color: var(--el-color-primary)
 
-  .sidebar-thunmnail-page
+  .sidebar-thumbnail-page
     margin-top: 3px
     font-size: 11px
     color: var(--el-text-color-secondary)
@@ -995,4 +1078,13 @@ defineExpose({
 .viewer-thunmnail-page
   text-align: center
   font-size: 11px
+
+.viewer-image-placeholder
+  display: flex
+  align-items: center
+  justify-content: center
+  background-color: var(--el-fill-color-light)
+  .el-icon
+    font-size: 32px
+    color: var(--el-text-color-placeholder)
 </style>

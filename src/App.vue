@@ -110,7 +110,7 @@
           v-for="(book, index) in visibleChunkDisplayBookList"
           :key="book.id"
           class="book-card-frame"
-          v-lazy:[book.id]="loadBookCardContent"
+          v-lazy:[book.id]="{'enter': loadBookCardContent, 'leave': unloadBookCardContent}"
           :tabindex="index + 1"
         >
           <transition name="pop">
@@ -216,6 +216,7 @@
       @get-book-info="$refs.SearchDialogRef.getBookInfo(bookDetail)"
       @search-from-tag="searchFromTag"
       @jump-mange-detail="jumpMangeDetail"
+      @add-to-history="addBookToHistory"
     />
     <InternalViewer
       ref="InternalViewerRef"
@@ -285,6 +286,7 @@ export default defineComponent({
       visibilityMap: {},
       buttonLoadBookListLoading: false,
       buttonGetMetadatasLoading: false,
+      actionHistory: [],
       // collection
       drawerVisibleCollection: false,
       openCollectionTitle: undefined,
@@ -435,6 +437,9 @@ export default defineComponent({
           return 'viewer-content'
         }
       }
+      if (this.$refs.InternalViewerRef.isComicReadDisplay) {
+        return 'viewer-comicread'
+      }
       if (this.$refs.BookDetailDialogRef.dialogVisibleBookDetail) {
         if (this.$refs.BookDetailDialogRef.editingTag) {
           return 'edit-tag'
@@ -466,148 +471,125 @@ export default defineComponent({
       } else {
         ;({ next, prev } = this.keyMap.normal)
       }
-      if (this.currentUI() !== 'inputing') {
+      const currentUIValue = this.currentUI()
+      const bookEachLine = Math.floor(getWidth(document.querySelector('.book-card-area div:first-child'), 'width') / getWidth(document.querySelector('.book-card'), 'full'))
+      if (currentUIValue !== 'inputing') {
         if (event.key === 'Backspace') {
           document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
+          return
         }
       }
-      if (this.currentUI() === 'viewer-content') {
-        if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
-          if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
-            this.$refs.InternalViewerRef.currentImageIndex += 1
-          }
-          if (event.key === prev || event.key === 'ArrowUp') {
-            this.$refs.InternalViewerRef.currentImageIndex -= 1
-          }
-          if (event.key === 'Home') {
-            this.$refs.InternalViewerRef.currentImageIndex = 0
-          }
-          if (event.key === 'End') {
-            if (this.$refs.InternalViewerRef.imageStyleType === 'single') {
-              this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageList.length - 1
-            } else if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
-              this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageListDouble.length - 1
-            }
-          }
-        }
-        if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
-          if (event.key === "/") {
-            this.$refs.InternalViewerRef.insertEmptyPageIndex = this.$refs.InternalViewerRef.currentImageIndex
-            this.$refs.InternalViewerRef.insertEmptyPage = !this.$refs.InternalViewerRef.insertEmptyPage
-          }
-        }
-        if (this.$refs.InternalViewerRef.imageStyleType === 'scroll') {
-          if (event.key === prev || event.key === 'ArrowUp') {
-            if (event.ctrlKey) {
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 10)
-            } else {
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 1.2)
-            }
-          }
-          if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
-            if (event.ctrlKey) {
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 10)
-            } else {
-              document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 1.2)
-            }
-          }
-          if (event.key === 'Home') {
-            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
-          }
-          if (event.key === 'End') {
-            document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollHeight
-          }
-        }
-      }
-      if (this.currentUI() === 'viewer-content' || this.currentUI() === 'viewer-thumbnail') {
+      if (currentUIValue === 'viewer-content' || currentUIValue === 'viewer-thumbnail') {
         if (event.key === 'PageDown') {
           if (event.shiftKey) {
             this.toNextMangaRandom()
           } else {
             this.toNextManga(1)
           }
-        }
-        if (event.key === 'PageUp') {
+        } else if (event.key === 'PageUp') {
           this.toNextManga(-1)
-        }
-        if (event.key === '=') {
+        } else if (event.key === '=') {
           this.$refs.InternalViewerRef.showThumbnail = !this.$refs.InternalViewerRef.showThumbnail
         }
-      }
-      if (this.currentUI() === 'bookdetail') {
+        if (currentUIValue === 'viewer-content') {
+          if (this.$refs.InternalViewerRef.imageStyleType === 'single' || this.$refs.InternalViewerRef.imageStyleType === 'double') {
+            if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
+              this.$refs.InternalViewerRef.currentImageIndex += 1
+            } else if (event.key === prev || event.key === 'ArrowUp') {
+              this.$refs.InternalViewerRef.currentImageIndex -= 1
+            } else if (event.key === 'Home') {
+              this.$refs.InternalViewerRef.currentImageIndex = 0
+            } else if (event.key === 'End') {
+              if (this.$refs.InternalViewerRef.imageStyleType === 'single') {
+                this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageList.length - 1
+              } else if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
+                this.$refs.InternalViewerRef.currentImageIndex = this.$refs.InternalViewerRef.viewerImageListDouble.length - 1
+              }
+            }
+            if (this.$refs.InternalViewerRef.imageStyleType === 'double') {
+              if (event.key === "/") {
+                this.$refs.InternalViewerRef.insertEmptyPageIndex = this.$refs.InternalViewerRef.currentImageIndex
+                this.$refs.InternalViewerRef.insertEmptyPage = !this.$refs.InternalViewerRef.insertEmptyPage
+              }
+            }
+          } else if (this.$refs.InternalViewerRef.imageStyleType === 'scroll') {
+            if (event.key === prev || event.key === 'ArrowUp') {
+              if (event.ctrlKey) {
+                document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 10)
+              } else {
+                document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, - window.innerHeight / 1.2)
+              }
+            } else if (event.key === next || event.key === 'ArrowDown' || event.key === ' ') {
+              if (event.ctrlKey) {
+                document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 10)
+              } else {
+                document.querySelector('.viewer-drawer .el-drawer__body').scrollBy(0, window.innerHeight / 1.2)
+              }
+            } else if (event.key === 'Home') {
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = 0
+            } else if (event.key === 'End') {
+              document.querySelector('.viewer-drawer .el-drawer__body').scrollTop = document.querySelector('.viewer-drawer .el-drawer__body').scrollHeight
+            }
+          }
+        }
+      } else if (currentUIValue === 'viewer-comicread') {
+        // do nothing for now
+      } else if (currentUIValue === 'bookdetail') {
         if (event.key === 'Enter') {
           event.preventDefault()
           this.$refs.InternalViewerRef.viewManga(this.bookDetail)
-        }
-        if (event.key === 'Delete') {
+        } else if (event.key === 'Delete') {
           this.$refs.BookDetailDialogRef.deleteLocalBook(this.bookDetail)
-        }
-        if (event.key === 'PageDown') {
+        } else if (event.key === 'PageDown') {
           if (event.shiftKey) {
             this.jumpMangeDetailRandom()
           } else {
             this.jumpMangeDetail(1)
           }
-        }
-        if (event.key === 'PageUp') {
+        } else if (event.key === 'PageUp') {
           this.jumpMangeDetail(-1)
         }
-      }
-      const bookEachLine = Math.floor(getWidth(document.querySelector('.book-card-area div:first-child'), 'width') / getWidth(document.querySelector('.book-card'), 'full'))
-      if (this.currentUI() === 'home') {
+      } else if (currentUIValue === 'home') {
         if (event.key === 'Enter') {
           event.preventDefault()
           document.activeElement.querySelector('.book-cover').click()
-        }
-        if (event.key === 'F5') {
+        } else if (event.key === 'F5') {
           this.loadBookList(true)
-        }
-        if (event.key === 'F6' || (event.ctrlKey && event.key === 'l')) {
+        } else if (event.key === 'F6' || (event.ctrlKey && event.key === 'l')) {
           document.querySelector('.search-input .el-input__inner').select()
-        }
-        if (event.ctrlKey && event.key === 's') {
+        } else if (event.ctrlKey && event.key === 's') {
           this.shuffleBook()
-        }
-        if (event.key === 'PageUp') {
+        } else if (event.key === 'PageUp') {
           event.preventDefault()
           this.currentPage -= 1
           this.handleCurrentPageChange(this.currentPage)
-        }
-        if (event.key === 'PageDown') {
+        } else if (event.key === 'PageDown') {
           event.preventDefault()
           this.currentPage += 1
           this.handleCurrentPageChange(this.currentPage)
-        }
-        if (event.key === 'ArrowDown') {
+        } else if (event.key === 'ArrowDown') {
           event.preventDefault()
           this.jumpBookByTabindex(bookEachLine, '.book-card-area')
-        }
-        if (event.key === 'ArrowUp') {
+        } else if (event.key === 'ArrowUp') {
           event.preventDefault()
           this.jumpBookByTabindex(-bookEachLine, '.book-card-area')
-        }
-        if (event.key === 'ArrowLeft') {
+        } else if (event.key === 'ArrowLeft') {
           event.preventDefault()
           this.jumpBookByTabindex(-1, '.book-card-area')
-        }
-        if (event.key === 'ArrowRight') {
+        } else if (event.key === 'ArrowRight') {
           event.preventDefault()
           this.jumpBookByTabindex(1, '.book-card-area')
         }
-      } else if (this.currentUI() === 'collection') {
+      } else if (currentUIValue === 'collection') {
         if (event.key === 'Enter') {
           document.activeElement.querySelector('.book-cover').click()
-        }
-        if (event.key === 'ArrowDown') {
+        } else if (event.key === 'ArrowDown') {
           this.jumpBookByTabindex(bookEachLine, '.collection-drawer')
-        }
-        if (event.key === 'ArrowUp') {
+        } else if (event.key === 'ArrowUp') {
           this.jumpBookByTabindex(-bookEachLine, '.collection-drawer')
-        }
-        if (event.key === 'ArrowLeft') {
+        } else if (event.key === 'ArrowLeft') {
           this.jumpBookByTabindex(-1, '.collection-drawer')
-        }
-        if (event.key === 'ArrowRight') {
+        } else if (event.key === 'ArrowRight') {
           this.jumpBookByTabindex(1, '.collection-drawer')
         }
       }
@@ -623,12 +605,21 @@ export default defineComponent({
       }
     },
     resolveMouseDown (event) {
+      const currentUIValue = this.currentUI()
       if (event.button === 3) {
+        if (currentUIValue === 'viewer-comicread') {
+          this.$refs.InternalViewerRef.closeComicReader()
+          return
+        }
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
         // clear search result when at home page
-        if (this.currentUI() === 'home') {
+        if (currentUIValue === 'home') {
           this.handleSearchStringChange()
           this.$refs.FolderTreeRef.resetSelect()
+        }
+      } else if (event.button === 4) {
+        if (currentUIValue !== 'viewer-content' && currentUIValue !== 'viewer-thumbnail' && currentUIValue !== 'viewer-comicread') {
+          this.revertAction()
         }
       }
     },
@@ -899,7 +890,7 @@ export default defineComponent({
         this.searchString = val
       }
     },
-    searchBook () {
+    searchBook (addToHistory = true) {
       const checkCondition = (bookString, bookInfo) => {
         const searchStringArray = this.searchString ? this.searchString.split(/\s+(?=(?:[^\'"]*[\'"][^\'"]*[\'"])*[^\'"]*$)/) : []
         const orCondition = _.filter(searchStringArray, (str) => str.startsWith('~'))
@@ -981,6 +972,8 @@ export default defineComponent({
       if (this.currentUI() === 'edit-group-tag') {
         this.$refs.EditViewRef.selectBookList = []
         this.displayBookList.forEach(book => book.selected = false)
+      } else if (addToHistory) {
+        this.actionHistory.push({type: 'search', value: this.searchString})
       }
     },
     handleSearchString (string) {
@@ -988,6 +981,38 @@ export default defineComponent({
       this.drawerVisibleCollection = false
       this.searchString = string
       this.searchBook()
+    },
+    revertAction () {
+      let action = this.actionHistory.pop()
+      switch (action?.type) {
+        case 'search':
+          if (action?.value === this.searchString && this.currentUI() === 'home') {
+            this.revertAction()
+            return
+          }
+          if (action?.value !== undefined) {
+            this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
+            this.drawerVisibleCollection = false
+            this.searchString = action.value
+            this.searchBook(false)
+          }
+          break
+        case 'openBook':
+          if (action?.value === this.bookDetail?.id && this.currentUI() === 'bookdetail') {
+            this.revertAction()
+            return
+          }
+          if (action?.value !== undefined) {
+            const book = this.bookList.find(b => b.id === action.value)
+            if (book) this.$refs.BookDetailDialogRef.openBookDetail(book, false)
+          }
+          break
+        default:
+          this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
+          this.handleSearchStringChange()
+          this.printMessage('info', this.$t('c.noMoreActionHistory'))
+          break
+      }
     },
     searchFromTag (tag, cat) {
       this.$refs.BookDetailDialogRef.dialogVisibleBookDetail = false
@@ -1014,6 +1039,9 @@ export default defineComponent({
           break
       }
     },
+    addBookToHistory (id) {
+      if (id) this.actionHistory.push({type: 'openBook', value: id})
+    },
     jumpBookByTabindex (step, container) {
       try {
         const activeElement = document.activeElement
@@ -1031,6 +1059,9 @@ export default defineComponent({
     },
     loadBookCardContent (id) {
       this.visibilityMap[id] = true
+    },
+    unloadBookCardContent (id) {
+      this.visibilityMap[id] = false
     },
     chunkList () {
       this.currentPage = 1

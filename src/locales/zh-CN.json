@@ -217,7 +217,8 @@
     "outOfRange": "超出范围",
     "useTranslationCache": "使用翻译缓存",
     "moveSuccess": "移动成功",
-    "moveError": "移动失败"
+    "moveError": "移动失败",
+    "noMoreActionHistory": "没有更多操作历史"
   },
   "ac": {
     "Global": "全局",
@@ -232,6 +233,7 @@
     "Global_ShowAbout": "显示关于",
     "Global_ShowAccelerator": "显示快捷键",
     "Global_Escape": "退出到上一个界面",
+    "Global_RevertAction": "回退操作",
     "Home": "首页",
     "Home_PreviousPage": "上一页",
     "Home_NextPage": "下一页",

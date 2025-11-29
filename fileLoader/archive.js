@@ -4,7 +4,6 @@ const { globSync } = require('glob')
 const { nanoid } = require('nanoid')
 const { spawn } = require('child_process')
 const _ = require('lodash')
-const iconv = require('iconv-lite')
 const { getRootPath } = require('../modules/utils.js')
 
 const _7z = path.join(getRootPath(), 'resources/extraResources/7z.exe')
@@ -22,13 +21,13 @@ const getArchivelist = async (libraryPath) => {
 
 const solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH) => {
   const tempFolder = path.join(TEMP_PATH, nanoid(8))
-  const output = await spawnPromise(_7z, ['l', filepath, '-slt', '-p123456'])
+  const output = await spawnPromise(_7z, ['l', filepath, '-slt', '-sccUTF-8', '-p123456'])
   let pathlist = _.filter(output.split(/\r\n/), s => _.startsWith(s, 'Path') && !_.includes(s, '__MACOSX'))
   pathlist = pathlist.map(p => {
     const match = /(?<== ).*$/.exec(p)
     return match ? match[0] : ''
   })
-  let imageList = _.filter(pathlist, p => ['.jpg','.jpeg','.png','.webp','.avif', '.gif'].includes(path.extname(p).toLowerCase()))
+  let imageList = _.filter(pathlist, p => ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif'].includes(path.extname(p).toLowerCase()))
   imageList = imageList.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
 
   let targetFile
@@ -39,12 +38,12 @@ const solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH) => {
   if (imageList.length > 8) {
     targetFile = imageList[7]
     coverFile = imageList[0]
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile, '-p123456'])
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, coverFile, '-p123456'])
+    await spawnPromise(_7z, ['x', '-o'+tempFolder, '-p123456', '--', filepath, targetFile])
+    await spawnPromise(_7z, ['x', '-o'+tempFolder, '-p123456', '--', filepath, coverFile])
   } else if (imageList.length > 0) {
     targetFile = imageList[0]
     coverFile = imageList[0]
-    await spawnPromise(_7z, ['x', filepath, '-o'+tempFolder, targetFile, '-p123456'])
+    await spawnPromise(_7z, ['x', '-o'+tempFolder, '-p123456', '--', filepath, targetFile])
   } else {
     throw new Error('compression package isnot include image')
   }
@@ -76,7 +75,7 @@ const getImageListFromArchive = async (filepath, VIEWER_PATH) => {
 }
 
 const deleteImageFromArchive = async (filename, filepath) => {
-  await spawnPromise(_7z, ['d', filepath, filename, '-p123456'])
+  await spawnPromise(_7z, ['d', '-p123456', '--', filepath, filename])
   return true
 }
 
@@ -96,13 +95,13 @@ const spawnPromise = (commmand, argument, timeoutMs = 30 * 1000) => {
     spawned.on('exit', code => {
       clearTimeout(timeout)
       if (code === 0) {
-        setTimeout(() => resolve(output.join('\r\n')), 50)
+        setTimeout(() => resolve(String(output)), 50)
       } else {
         reject('close code is ' + code)
       }
     })
     spawned.stdout.on('data', data => {
-      output.push(iconv.decode(data, 'gbk'))
+      output.push(data)
     })
   })
 }

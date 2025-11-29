@@ -38,32 +38,37 @@ app.use(createI18n({
 // 创建一个共享的 IntersectionObserver 实例
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const el = entry.target
-      const callback = el._lazyCallback
-      const arg = el._lazyArg
+    const el = entry.target
+    const enterCallback = el._lazyEnterCallback
+    const leaveCallback = el._lazyLeaveCallback
+    const arg = el._lazyArg
 
-      if (callback && typeof callback === 'function') {
-        callback(arg)
+    if (entry.isIntersecting) {
+      if (enterCallback && typeof enterCallback === 'function') {
+        enterCallback(arg)
       }
-      observer.unobserve(el)
+    } else {
+      if (leaveCallback && typeof leaveCallback === 'function') {
+        leaveCallback(arg)
+      }
     }
   })
+}, {
+  rootMargin: '2560px'
 })
 
 app.directive('lazy', {
   mounted(el, binding) {
-    // 将回调和参数存储在元素上，以便在观察者中访问
-    el._lazyCallback = binding.value
+    el._lazyEnterCallback = binding.value.enter
+    el._lazyLeaveCallback = binding.value.leave
     el._lazyArg = binding.arg
 
-    // 添加元素到 IntersectionObserver 中
     observer.observe(el)
   },
   unmounted(el) {
-    // 取消观察元素并清理
     observer.unobserve(el)
-    delete el._lazyCallback
+    delete el._lazyEnterCallback
+    delete el._lazyLeaveCallback
     delete el._lazyArg
   }
 })

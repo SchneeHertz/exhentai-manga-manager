@@ -4,7 +4,7 @@
   >
     <div
       v-for="book in visibleChunkDisplayBookListForCollectView" :key="book.id"
-      v-lazy:[book.id]="loadBookCardContent"
+      v-lazy:[book.id]="{'enter': loadBookCardContent, 'leave': unloadBookCardContent}"
       class="book-collect-card-frame"
     >
       <transition name="pop">
@@ -50,7 +50,7 @@
   >
     <div
       v-for="book in visibleChunkDisplayBookListForEditTagView" :key="book.id"
-      v-lazy:[book.id]="loadBookCardContent"
+      v-lazy:[book.id]="{'enter': loadBookCardContent, 'leave': unloadBookCardContent}"
       class="book-tag-edit-card-frame"
     >
       <transition name="pop">
@@ -182,6 +182,9 @@ const emit = defineEmits(['previewManga', 'searchFromTag', 'loadBookList', 'getB
 const visibilityMap = ref({})
 const loadBookCardContent = (id) => {
   visibilityMap.value[id] = true
+}
+const unloadBookCardContent = (id) => {
+  // visibilityMap.value[id] = false
 }
 const selectBookList = ref([])
 
@@ -636,9 +639,9 @@ defineExpose({
   opacity: 0
 
 .book-collect-view, .book-collection, .book-tag-edit-view, .book-tag-edit-operation
-    height: calc(100vh - 96px)
-    overflow-x: auto
-    padding-top: 4px
+  height: calc(100vh - 96px)
+  overflow-x: auto
+  padding-top: 4px
 
 .book-collect-card-frame, .book-tag-edit-card-frame
   display: inline-block

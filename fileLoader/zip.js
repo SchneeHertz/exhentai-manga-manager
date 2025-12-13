@@ -4,6 +4,7 @@ const { globSync } = require('glob')
 const AdmZip = require('adm-zip')
 const { nanoid } = require('nanoid')
 const _ = require('lodash')
+const { naturalSort } = require('../modules/utils.js')
 
 const getZipFilelist = async (libraryPath) => {
   const list = globSync('**/*.@(zip|cbz)', {
@@ -25,7 +26,7 @@ const solveBookTypeZip = async (filepath, TEMP_PATH, COVER_PATH) => {
   }
   const fileList = zipFileList.map(zFile => zFile.entryName)
   let imageList = _.filter(fileList, filepath => _.includes(['.jpg', ',jpeg', '.png', '.webp', '.avif', '.gif'], path.extname(filepath).toLowerCase()))
-  imageList = imageList.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  imageList = await naturalSort(imageList)
 
   let targetFile
   let targetFilePath
@@ -66,7 +67,7 @@ const getImageListFromZip = async (filepath, VIEWER_PATH) => {
     nocase: true
   })
   list = _.filter(list, s => !_.includes(s, '__MACOSX'))
-  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  list = await naturalSort(list)
   return list.map(f => ({
     relativePath: f,
     absolutePath: path.join(tempFolder, f)

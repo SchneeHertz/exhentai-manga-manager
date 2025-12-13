@@ -16,6 +16,25 @@ const windowStateKeeper = require('electron-window-state')
 const express = require('express')
 const { globSync } = require('glob')
 
+// 初始化 koffi
+const koffi = require('koffi')
+let shlwapi = null
+let StrCmpLogicalW = null
+
+const initKoffi = () => {
+  try {
+    // 加载 DLL
+    shlwapi = koffi.load('shlwapi.dll')
+
+    // 定义函数
+    // int StrCmpLogicalW(LPCWSTR psz1, LPCWSTR psz2);
+    // 在 koffi 中，'str16' 对应 Windows 的 LPCWSTR (UTF-16 null-terminated string)
+    StrCmpLogicalW = shlwapi.func('int StrCmpLogicalW(str16, str16)')
+  } catch (error) {
+    console.error('koffi 初始化失败:', error)
+  }
+}
+
 const { prepareMangaModel, prepareMetadataModel } = require('./modules/database')
 const { prepareTemplate } = require('./modules/prepare_menu.js')
 const { getBookFilelist, geneCover, getImageListByBook, deleteImageFromBook } = require('./fileLoader/index.js')
@@ -192,6 +211,9 @@ const createWindow = () => {
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=65536')
 // app.disableHardwareAcceleration()
 app.whenReady().then(async () => {
+  // 初始化 koffi
+  initKoffi()
+
   const primaryDisplay = screen.getPrimaryDisplay()
   screenWidth = Math.floor(primaryDisplay.workAreaSize.width * primaryDisplay.scaleFactor)
   mainWindow = createWindow()
@@ -301,6 +323,17 @@ const clearFolder = async (Folder) => {
     console.log(err)
   }
 }
+
+// 自然排序 IPC 处理程序
+ipcMain.handle('natural-sort', async (_event, files) => {
+  try {
+    return files.sort((a, b) => {
+      return StrCmpLogicalW(a, b)
+    })
+  } catch (error) {
+    return files.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+  }
+})
 
 
 // library and metadata

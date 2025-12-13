@@ -5,6 +5,7 @@ const { readdir, stat } = require('fs/promises')
 const { shell } = require('electron')
 const fs = require('fs')
 const { Op } = require("sequelize")
+const { naturalSort } = require('../modules/utils.js')
 
 const dirSize = async dir => {
   const files = await readdir(dir, { withFileTypes: true })
@@ -40,7 +41,7 @@ const solveBookTypeFolder = async (folderpath, TEMP_PATH, COVER_PATH) => {
     cwd: folderpath,
     nocase: true
   })
-  list = list.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).map(f => path.join(folderpath, f))
+  list = (await naturalSort(list)).map(f => path.join(folderpath, f))
   let targetFilePath
   if (list.length > 8) {
     targetFilePath = list[7]
@@ -59,7 +60,7 @@ const getImageListFromFolder = async (folderpath, VIEWER_PATH) => {
     cwd: folderpath,
     nocase: true
   })
-  list = list.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+  list = await naturalSort(list)
   return list.map(f => ({
     relativePath: f,
     absolutePath: path.join(folderpath, f)

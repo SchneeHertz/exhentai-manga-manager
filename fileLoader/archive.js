@@ -4,7 +4,7 @@ const { globSync } = require('glob')
 const { nanoid } = require('nanoid')
 const { spawn } = require('child_process')
 const _ = require('lodash')
-const { getRootPath } = require('../modules/utils.js')
+const { getRootPath, naturalSort } = require('../modules/utils.js')
 
 const _7z = path.join(getRootPath(), 'resources/extraResources/7z.exe')
 
@@ -28,7 +28,7 @@ const solveBookTypeArchive = async (filepath, TEMP_PATH, COVER_PATH) => {
     return match ? match[0] : ''
   })
   let imageList = _.filter(pathlist, p => ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif'].includes(path.extname(p).toLowerCase()))
-  imageList = imageList.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  imageList = await naturalSort(imageList)
 
   let targetFile
   let targetFilePath
@@ -67,7 +67,7 @@ const getImageListFromArchive = async (filepath, VIEWER_PATH) => {
     nocase: true
   })
   list = _.filter(list, s => !_.includes(s, '__MACOSX'))
-  list = list.sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+  list = await naturalSort(list)
   return list.map(f => ({
     relativePath: f,
     absolutePath: path.join(tempFolder, f)

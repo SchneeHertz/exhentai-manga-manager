@@ -339,7 +339,7 @@ onMounted(() => {
   ipcRenderer.on('manga-image', async (event, arg) => {
     pendingImages.push(arg)
 
-    if (pendingImages.length >= 10) {
+    if (pendingImages.length >= 10 || viewerImageList.value.length < 10) {
       flushPendingImages()
     }
 
@@ -357,7 +357,7 @@ onMounted(() => {
   ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
     pendingThumbnails.push(arg)
 
-    if (pendingThumbnails.length >= 10) {
+    if (pendingThumbnails.length >= 10 || viewerImageList.value.length < 10) {
       flushPendingThumbnails()
     }
 

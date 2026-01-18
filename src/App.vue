@@ -667,7 +667,8 @@ export default defineComponent({
         const bookList = this.prepareBookList(res)
         await this.loadCollectionList(bookList)
         this.bookList = bookList
-        this.$refs.FolderTreeRef.geneFolderTree()
+        await this.$refs.FolderTreeRef.geneFolderTree()
+        this.$refs.FolderTreeRef.resetSelect()
         this.$refs.EditViewRef.selectBookList = []
         this.buttonLoadBookListLoading = false
       } catch (error) {

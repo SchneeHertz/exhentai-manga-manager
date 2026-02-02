@@ -303,7 +303,13 @@ const viewerImageListDouble = computed(() => {
     return []
   }
 })
+
+const totalPage = ref(0)
 const viewerImageFilepathList = computed(() => {
+  const appendixLength = totalPage.value - viewerImageList.value.length
+  if (appendixLength > 0 && insertEmptyPage.value) {
+    return [...viewerImageList.value.map(image => image.filepath), ...Array(appendixLength).fill('') ]
+  }
   return viewerImageList.value.map(image => image.filepath)
 })
 
@@ -341,6 +347,14 @@ onMounted(() => {
 
     if (pendingImages.length >= 10 || viewerImageList.value.length < 10) {
       flushPendingImages()
+
+      if (setting.value.viewerType === 'comicread') {
+        await initComicRead()
+        totalPage.value = arg.total
+        nextTick(() => {
+          showComicReader(viewerImageFilepathList.value)
+        })
+      }
     }
 
     if ((viewerImageList.value.length + pendingImages.length) === arg.total) {
@@ -348,7 +362,10 @@ onMounted(() => {
 
       if (setting.value.viewerType === 'comicread') {
         await initComicRead()
-        showComicReader(viewerImageFilepathList.value)
+        totalPage.value = arg.total
+        nextTick(() => {
+          showComicReader(viewerImageFilepathList.value)
+        })
       }
       viewerLoading?.close()
     }

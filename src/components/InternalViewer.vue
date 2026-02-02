@@ -349,7 +349,6 @@ onMounted(() => {
       flushPendingImages()
 
       if (setting.value.viewerType === 'comicread') {
-        await initComicRead()
         totalPage.value = arg.total
         nextTick(() => {
           showComicReader(viewerImageFilepathList.value)
@@ -361,7 +360,6 @@ onMounted(() => {
       flushPendingImages()
 
       if (setting.value.viewerType === 'comicread') {
-        await initComicRead()
         totalPage.value = arg.total
         nextTick(() => {
           showComicReader(viewerImageFilepathList.value)
@@ -423,6 +421,8 @@ const viewManga = (book, viewerHeight = '100%') => {
       drawerVisibleViewer.value = true
       if (setting.value.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
       viewerLoading.close()
+    } else if (setting.value.viewerType === 'comicread') {
+      initComicRead()
     }
     book.readCount += 1
     saveBook(book)

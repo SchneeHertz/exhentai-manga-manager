@@ -232,12 +232,12 @@ const emit = defineEmits([
 let ComicReader = null
 const isComicReadDisplay = ref(false)
 
-const showComicReader = (imageList) => {
+const showComicReader = _.throttle((imageList) => {
   if (ComicReader) {
     isComicReadDisplay.value = true
     ComicReader.open(imageList)
   }
-}
+}, 1000)
 
 const closeComicReader = () => {
   if (ComicReader) {

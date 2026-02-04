@@ -1148,6 +1148,7 @@ LANBrowsing.get('/api/search', async (req, res) => {
       summary: null,
       tags: manga.tags ? formatTags(manga.tags) : '',
       title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`,
+      category: manga.category,
       url: manga.url
     }))
     const hash = createHash('md5').update(JSON.stringify(responseData)).digest('hex')
@@ -1180,7 +1181,8 @@ LANBrowsing.get('/api/search/random', async (req, res) => {
       size: manga.filesize,
       summary: null,
       tags: manga.tags ? formatTags(manga.tags) : '',
-      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`,
+      category: manga.category,
     }))
 
     res.json({
@@ -1216,7 +1218,8 @@ LANBrowsing.get('/api/archives/:hash/metadata', async (req, res) => {
       size: manga.filesize,
       summary: null,
       tags: manga.tags ? formatTags(manga.tags) : '',
-      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`
+      title: `${manga.title_jpn && manga.title ? `${manga.title_jpn} || ${manga.title}` : manga.title}`,
+      category: manga.category,
     }
 
     res.json(responseMetadata)

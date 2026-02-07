@@ -232,12 +232,12 @@ const emit = defineEmits([
 let ComicReader = null
 const isComicReadDisplay = ref(false)
 
-const showComicReader = (imageList) => {
+const showComicReader = _.throttle((imageList) => {
   if (ComicReader) {
     isComicReadDisplay.value = true
     ComicReader.open(imageList)
   }
-}
+}, 1000)
 
 const closeComicReader = () => {
   if (ComicReader) {
@@ -303,7 +303,13 @@ const viewerImageListDouble = computed(() => {
     return []
   }
 })
+
+const totalPage = ref(0)
 const viewerImageFilepathList = computed(() => {
+  const appendixLength = totalPage.value - viewerImageList.value.length
+  if (appendixLength > 0 && insertEmptyPage.value) {
+    return [...viewerImageList.value.map(image => image.filepath), ...Array(appendixLength).fill('') ]
+  }
   return viewerImageList.value.map(image => image.filepath)
 })
 
@@ -339,16 +345,25 @@ onMounted(() => {
   ipcRenderer.on('manga-image', async (event, arg) => {
     pendingImages.push(arg)
 
-    if (pendingImages.length >= 10) {
+    if (pendingImages.length >= 10 || viewerImageList.value.length < 10) {
       flushPendingImages()
+
+      if (setting.value.viewerType === 'comicread') {
+        totalPage.value = arg.total
+        nextTick(() => {
+          showComicReader(viewerImageFilepathList.value)
+        })
+      }
     }
 
     if ((viewerImageList.value.length + pendingImages.length) === arg.total) {
       flushPendingImages()
 
       if (setting.value.viewerType === 'comicread') {
-        await initComicRead()
-        showComicReader(viewerImageFilepathList.value)
+        totalPage.value = arg.total
+        nextTick(() => {
+          showComicReader(viewerImageFilepathList.value)
+        })
       }
       viewerLoading?.close()
     }
@@ -357,7 +372,7 @@ onMounted(() => {
   ipcRenderer.on('manga-thumbnail-image', (event, arg) => {
     pendingThumbnails.push(arg)
 
-    if (pendingThumbnails.length >= 10) {
+    if (pendingThumbnails.length >= 10 || viewerImageList.value.length < 10) {
       flushPendingThumbnails()
     }
 
@@ -406,6 +421,8 @@ const viewManga = (book, viewerHeight = '100%') => {
       drawerVisibleViewer.value = true
       if (setting.value.keepReadingProgress && showThumbnail.value === false) handleJumpToReadingProgress(book)
       viewerLoading.close()
+    } else if (setting.value.viewerType === 'comicread') {
+      initComicRead()
     }
     book.readCount += 1
     saveBook(book)

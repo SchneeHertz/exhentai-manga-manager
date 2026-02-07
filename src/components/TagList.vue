@@ -66,13 +66,13 @@ const formatTagText = (item) => {
 
 
 const getBookInfos = () => {
-  const filteredBooks = displayBookList.value.filter(book => !book.folderHide && !book.hiddenBook)
+  const filteredBooks = displayBookList.value.filter(book => !book.folderHide && !book.hiddenBook && !book.isCollection)
 
   const bookInfos = filteredBooks.map(book => ({
     artists: book?.tags?.artist ? [...book.tags.artist] : [],
     male: book?.tags?.male ? [...book.tags.male] : [],
     female: book?.tags?.female ? [...book.tags.female] : [],
-    mtime: book.mtime ? `${new Date(book.mtime).getFullYear()}-${(new Date(book.mtime).getMonth() + 1).toString().padStart(2, 0)}` : '',
+    mtime: book.mtime ? `${new Date(book.mtime).getFullYear()}-${(new Date(book.mtime).getMonth() + 1).toString().padStart(2, '0')}` : '',
   }))
 
   return bookInfos

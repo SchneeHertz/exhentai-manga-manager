@@ -27,7 +27,7 @@ const acceleratorInfo = [
       'ShowAbout': 'F1',
       'ShowAccelerator': 'Shift+F1',
       'Escape': 'Escape / Backspace / MouseButton3',
-      'RevertSearch': 'MouseButton4',
+      'RevertAction': 'MouseButton4',
     }
   },
   {

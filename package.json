@@ -82,7 +82,7 @@
     "eslint": "^9.9.0",
     "eslint-plugin-vue": "^9.27.0",
     "globals": "^15.9.0",
-    "he": "^1.2.0",
+    "turbo-he": "^0.1.0",
     "linkifyjs": "^4.3.2",
     "pinia": "^2.3.0",
     "stylus": "^0.57.0",

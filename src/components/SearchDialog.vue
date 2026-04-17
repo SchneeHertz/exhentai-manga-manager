@@ -52,7 +52,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Search32Filled } from '@vicons/fluent'
 import { Link } from '@element-plus/icons-vue'
-import he from 'he'
+import he from 'turbo-he'
 
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'

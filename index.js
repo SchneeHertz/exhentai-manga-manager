@@ -893,7 +893,7 @@ ipcMain.handle('save-setting', async (event, receiveSetting) => {
     tray = null
   }
   const targetPath = path.join(STORE_PATH, 'setting.json')
-  const tempPath = path.join(STORE_PATH, 'setting.json.tmp')
+  const tempPath = path.join(STORE_PATH, `setting.json.${nanoid()}.tmp`)
   await fs.promises.writeFile(tempPath, JSON.stringify(setting, null, '  '), { encoding: 'utf-8' })
   return await fs.promises.rename(tempPath, targetPath)
 })

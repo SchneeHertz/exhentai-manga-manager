@@ -517,18 +517,41 @@ const emit = defineEmits([
   'loadCollectionList',
 ])
 
+let settingLoaded = false
+let savedSettingJSON = ''
+let pendingSetting
+let saveQueue = Promise.resolve()
+
 onMounted(() => {
   ipcRenderer.invoke('load-setting')
     .then(async (res) => {
+      savedSettingJSON = JSON.stringify(res)
       setting.value = res
+      settingLoaded = true
 
       // set default value
-      if (res.autoCheckUpdates === undefined) setting.value.autoCheckUpdates = true
-      if (res.trimTitleRegExp === undefined) setting.value.trimTitleRegExp = '^\\d+[-]?\\s*|\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
-      if (res.defaultScraper === undefined) setting.value.defaultScraper = 'exhentai'
-      if (res.defaultInsertEmptyPage === undefined) setting.value.defaultInsertEmptyPage = true
-      if (res.viewerType === undefined) setting.value.viewerType = 'original'
-      saveSetting()
+      let settingChanged = false
+      if (res.autoCheckUpdates === undefined) {
+        setting.value.autoCheckUpdates = true
+        settingChanged = true
+      }
+      if (res.trimTitleRegExp === undefined) {
+        setting.value.trimTitleRegExp = '^\\d+[-]?\\s*|\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
+        settingChanged = true
+      }
+      if (res.defaultScraper === undefined) {
+        setting.value.defaultScraper = 'exhentai'
+        settingChanged = true
+      }
+      if (res.defaultInsertEmptyPage === undefined) {
+        setting.value.defaultInsertEmptyPage = true
+        settingChanged = true
+      }
+      if (res.viewerType === undefined) {
+        setting.value.viewerType = 'original'
+        settingChanged = true
+      }
+      if (settingChanged) saveSetting()
 
       // default action
       if (res.theme) changeTheme(res.theme)
@@ -704,9 +727,35 @@ const handleLanguageSet = async (languageCode) => {
   }
 }
 
-const saveSetting = _.debounce(() => {
-  ipcRenderer.invoke('save-setting', _.cloneDeep(setting.value))
-}, 500)
+const persistPendingSetting = () => {
+  const settingToSave = pendingSetting
+  pendingSetting = undefined
+  if (!settingToSave) return saveQueue
+
+  saveQueue = saveQueue
+    .then(async () => {
+      if (settingToSave.serialized === savedSettingJSON) return
+      await ipcRenderer.invoke('save-setting', settingToSave.value)
+      savedSettingJSON = settingToSave.serialized
+    })
+    .catch(error => {
+      console.error('Failed to save setting:', error)
+    })
+  return saveQueue
+}
+
+const debouncedPersistSetting = _.debounce(persistPendingSetting, 500)
+
+const saveSetting = () => {
+  if (!settingLoaded) return
+
+  const value = _.cloneDeep(setting.value)
+  pendingSetting = {
+    value,
+    serialized: JSON.stringify(value)
+  }
+  debouncedPersistSetting()
+}
 
 const openLink = (link) => {
   ipcRenderer.invoke('open-url', link)

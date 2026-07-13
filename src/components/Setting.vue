@@ -539,7 +539,7 @@ onMounted(() => {
         setting.value.trimTitleRegExp = '^\\d+[-]?\\s*|\\s*(\\[[^\\]]*\\]|\\([^\\)]*\\)|【[^】]*】|（[^）]*）)\\s*'
         settingChanged = true
       }
-      if (res.defaultScraper === undefined) {
+      if (!searchTypeList.value.some(({ value }) => value === res.defaultScraper)) {
         setting.value.defaultScraper = 'exhentai'
         settingChanged = true
       }

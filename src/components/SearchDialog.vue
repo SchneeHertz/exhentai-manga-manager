@@ -58,9 +58,9 @@ import { storeToRefs } from 'pinia'
 import { useAppStore } from '../pinia.js'
 const appStore = useAppStore()
 const {
-  searchTypeList, categoryOption,
+  searchTypeList,
   setting, bookList, serviceAvailable,
-  cookie, tag2cat
+  cookie
 } = storeToRefs(appStore)
 const { printMessage, returnTrimFileName, saveBook } = appStore
 
@@ -87,51 +87,11 @@ const openSearchDialog = (book, server) => {
 
 const resolveSearchResult = (bookId, url, type) => {
   const book = _.find(bookList.value, {id: bookId})
-  if (type === 'hentag') {
-    book.url = url
-    getBookInfoFromHentag(book)
-  } else if (type === 'e-hentai') {
+  if (type === 'e-hentai') {
     book.url = url
     getBookInfoFromEh(book)
   }
   dialogVisibleEhSearch.value = false
-}
-const getBookInfoFromHentag = async (book) => {
-  const data = await fetch(`https://hentag.com/public/api/vault/${book.url.slice(25)}`).then(res => res.json())
-  const tags = {}
-  data.language === 11 ? tags['language'] = ['chinese','translated'] : ''
-  data.parodies.length > 0 ? tags['parody'] = data.parodies.map(parody => parody.name) : ''
-  data.characters.length > 0 ? tags['character'] = data.characters.map(character => character.name) : ''
-  data.circles.length > 0 ? tags['group'] = data.circles.map(circle => circle.name) : ''
-  data.artists.length > 0 ? tags['artist'] = data.artists.map(artist => artist.name) : ''
-  data.maleTags.length > 0 ? tags['male'] = data.maleTags.map(maleTag => maleTag.name) : ''
-  data.femaleTags.length > 0 ? tags['female'] = data.femaleTags.map(femaleTag => femaleTag.name) : ''
-  if (data.otherTags.length > 0) {
-    data.otherTags.forEach(({ name }) => {
-      const cat = tag2cat.value[name]
-      if (cat) {
-        if (tags[cat]) {
-          tags[cat].push(name)
-        } else {
-          tags[cat] = [name]
-        }
-      } else {
-        if (tags['misc']) {
-          tags['misc'].push(name)
-        } else {
-          tags['misc'] = [name]
-        }
-      }
-    })
-  }
-  _.assign(book, {
-    title: data.title,
-    posted: Math.floor(data.createdAt / 1000),
-    category: categoryOption.value[data.category - 1],
-    tags
-  })
-  book.status = 'tagged'
-  await saveBook(book)
 }
 const getBookInfoFromEh = async (book) => {
   const match = /(\d+)\/([a-z0-9]+)/.exec(book.url)
@@ -191,9 +151,7 @@ const getBookInfoFromEh = async (book) => {
   }
 }
 const getBookInfo = (book) => {
-  if (book.url.startsWith('https://hentag.com')) {
-    getBookInfoFromHentag(book)
-  } else if (book.url.includes('exhentai') || book.url.includes('e-hentai')) {
+  if (book.url.includes('exhentai') || book.url.includes('e-hentai')) {
     getBookInfoFromEh(book)
   }
 }
@@ -271,12 +229,6 @@ const getBookListFromWeb = async (bookHash, title, server = 'e-hentai', bookPath
     .then(res => {
       return resolveEhentaiResult(res)
     })
-  } else if (server === 'hentag') {
-    resultList = await fetch(`https://hentag.com/public/api/vault-search?t=${encodeURI(title)}`)
-    .then(res => res.json())
-    .then(res => {
-      return resolveHentagResult(res)
-    })
   } else if (server === '.ehviewer') {
     const ehviewerData = await ipcRenderer.invoke('get-ehviewer-data', bookPath)
 
@@ -310,9 +262,6 @@ const redirectSearch = (bookHash, title, server = 'e-hentai') => {
     case 'exsearch':
       url = `https://exhentai.org/?f_search=${encodeURI(title)}&f_cats=161`
       break
-    case 'hentag':
-      url = `https://hentag.com/?t=${encodeURI(title)}`
-      break
   }
   ipcRenderer.invoke('open-url', url)
 }
@@ -338,28 +287,6 @@ const resolveEhentaiResult = (htmlString) => {
       printMessage('error', t('c.getMetadataFailed'))
     }
   }
-}
-
-const resolveHentagResult = (data) => {
-  const resultList = data.works.slice(0, 30)
-  ehSearchResultList.value = []
-  resultList.forEach((result) => {
-    const findExUrl = result.locations.find((location) => location.startsWith('https://exhentai.org'))
-    if (findExUrl) {
-      ehSearchResultList.value.push({
-        title: result.title,
-        url: findExUrl,
-        type: 'e-hentai'
-      })
-    } else {
-      ehSearchResultList.value.push({
-        title: result.title,
-        url: `https://hentag.com/vault/${result.id}`,
-        type: 'hentag'
-      })
-    }
-  })
-  return ehSearchResultList.value
 }
 
 defineExpose({
